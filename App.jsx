@@ -419,10 +419,17 @@ export default function App() {
     const playableIdx = p.hand.findIndex(c => c.type === 'ingredient' && canPlayCard(p, c));
     if (playableIdx !== -1) {
       const card = p.hand[playableIdx];
-      addLog(idx, `jugó ${getIngName(card.ingredient, card.language)} ${ING_EMOJI[card.ingredient]}`, pls);
       const newPls = clone(pls);
       newPls[idx].hand.splice(playableIdx, 1);
-      newPls[idx].table.push(card.ingredient);
+      let ingToPlay = card.ingredient;
+      if (card.ingredient === 'perrito') {
+        const burger = newPls[idx].burgers[newPls[idx].currentBurger] || [];
+        const tc = [...newPls[idx].table];
+        const needed = burger.filter(ing => { const i = tc.indexOf(ing); if (i !== -1) { tc.splice(i, 1); return false; } return true; });
+        ingToPlay = needed[0] || burger[0] || 'pan';
+      }
+      addLog(idx, `jugó ${getIngName(card.ingredient, card.language)} ${ING_EMOJI[card.ingredient]}`, pls);
+      newPls[idx].table.push(ingToPlay);
       const { player: up, freed, done } = advanceBurger(newPls[idx]);
       newPls[idx] = up;
       let newDiscard = [...discardArr, card];
