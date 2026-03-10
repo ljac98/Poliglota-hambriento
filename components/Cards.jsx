@@ -4,6 +4,21 @@ import {
   ING_EMOJI, ING_BG, LANG_BORDER, LANG_BG, LANG_TEXT,
   LANG_BADGE, LANG_SHORT, getIngName, getActionInfo
 } from '../constants';
+import ingPan    from '../imagenes/hamburguesas/objetivos/pan.png';
+import ingLechuga from '../imagenes/hamburguesas/objetivos/lechuga.png';
+import ingTomate  from '../imagenes/hamburguesas/objetivos/tomate.png';
+import ingCarne   from '../imagenes/hamburguesas/objetivos/carne.png';
+import ingQueso   from '../imagenes/hamburguesas/objetivos/queso.png';
+import ingPollo   from '../imagenes/hamburguesas/objetivos/pollo.png';
+import ingHuevo   from '../imagenes/hamburguesas/objetivos/huevo.png';
+import ingCebolla from '../imagenes/hamburguesas/objetivos/cebolla.png';
+import ingPalta   from '../imagenes/hamburguesas/objetivos/palta.png';
+
+const ING_IMG = {
+  pan: ingPan, lechuga: ingLechuga, tomate: ingTomate, carne: ingCarne,
+  queso: ingQueso, pollo: ingPollo, huevo: ingHuevo, cebolla: ingCebolla,
+  palta: ingPalta,
+};
 
 // ═══ INGREDIENT CARD (Lotería style) ═══
 export const IngredientCard = ({ card, onClick, selected, small, playable }) => {
@@ -38,7 +53,11 @@ export const IngredientCard = ({ card, onClick, selected, small, playable }) => 
         justifyContent: "center", fontSize: small ? 9 : 12, lineHeight: 1,
         boxShadow: "0 1px 3px rgba(0,0,0,0.3)"
       }}>
-        {isWild ? <span style={{ fontWeight: 900, color: isDark ? "#eee" : "#fff" }}>?</span> : ING_EMOJI[ing]}
+        {isWild
+          ? <span style={{ fontWeight: 900, color: isDark ? "#eee" : "#fff" }}>?</span>
+          : ING_IMG[ing]
+            ? <img src={ING_IMG[ing]} alt={ing} style={{ width: small ? 10 : 14, height: small ? 10 : 14, objectFit: 'contain' }} />
+            : ING_EMOJI[ing]}
       </div>
       {/* Language label */}
       <div style={{
@@ -54,9 +73,10 @@ export const IngredientCard = ({ card, onClick, selected, small, playable }) => 
           <HatSVG lang={lang} size={36} />
         </div>
         <div style={{ position: "relative", display: "inline-block" }}>
-          <span style={{ fontSize: small ? 26 : 36, lineHeight: 1, filter: "drop-shadow(0 2px 3px rgba(0,0,0,0.15))" }}>
-            {ING_EMOJI[ing]}
-          </span>
+          {ING_IMG[ing]
+            ? <img src={ING_IMG[ing]} alt={ing} style={{ width: small ? 26 : 36, height: small ? 26 : 36, objectFit: 'contain', filter: "drop-shadow(0 2px 3px rgba(0,0,0,0.15))", display: 'block' }} />
+            : <span style={{ fontSize: small ? 26 : 36, lineHeight: 1, filter: "drop-shadow(0 2px 3px rgba(0,0,0,0.15))" }}>{ING_EMOJI[ing]}</span>
+          }
           {/* Eyes */}
           <div style={{ position: "absolute", top: small ? "2px" : "3px", left: "50%", transform: "translateX(-50%)", display: "flex", gap: small ? 3 : 4, pointerEvents: "none" }}>
             {[0, 1].map(n => (
