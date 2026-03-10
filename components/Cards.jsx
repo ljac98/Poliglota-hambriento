@@ -13,22 +13,12 @@ import ingPollo   from '../imagenes/hamburguesas/objetivos/pollo.png';
 import ingHuevo   from '../imagenes/hamburguesas/objetivos/huevo.png';
 import ingCebolla from '../imagenes/hamburguesas/objetivos/cebolla.png';
 import ingPalta   from '../imagenes/hamburguesas/objetivos/palta.png';
-import comodinEsp from '../imagenes/ingredientes/comodines/español.png';
-import comodinIng from '../imagenes/ingredientes/comodines/ingles.png';
-import comodinFra from '../imagenes/ingredientes/comodines/frances.png';
-import comodinIta from '../imagenes/ingredientes/comodines/italiano.png';
-import comodinAle from '../imagenes/ingredientes/comodines/aleman.png';
-import comodinPor from '../imagenes/ingredientes/comodines/portugues.png';
+import comodinImg from '../imagenes/ingredientes/comodines/comodin.png';
 
 const ING_IMG = {
   pan: ingPan, lechuga: ingLechuga, tomate: ingTomate, carne: ingCarne,
   queso: ingQueso, pollo: ingPollo, huevo: ingHuevo, cebolla: ingCebolla,
   palta: ingPalta,
-};
-
-const COMODIN_IMG = {
-  español: comodinEsp, inglés: comodinIng, francés: comodinFra,
-  italiano: comodinIta, alemán: comodinAle, portugués: comodinPor,
 };
 
 // ═══ INGREDIENT CARD (Lotería style) ═══
@@ -85,7 +75,7 @@ export const IngredientCard = ({ card, onClick, selected, small, playable }) => 
         </div>
         <div style={{ position: "relative", display: "inline-block" }}>
           {isWild
-            ? <img src={COMODIN_IMG[lang]} alt="comodín" style={{ width: small ? 26 : 36, height: small ? 26 : 36, objectFit: 'contain', filter: "drop-shadow(0 2px 3px rgba(0,0,0,0.15))", display: 'block' }} />
+            ? <img src={comodinImg} alt="comodín" style={{ width: small ? 26 : 36, height: small ? 26 : 36, objectFit: 'contain', filter: "drop-shadow(0 2px 3px rgba(0,0,0,0.15))", display: 'block' }} />
             : ING_IMG[ing]
               ? <img src={ING_IMG[ing]} alt={ing} style={{ width: small ? 26 : 36, height: small ? 26 : 36, objectFit: 'contain', filter: "drop-shadow(0 2px 3px rgba(0,0,0,0.15))", display: 'block' }} />
               : <span style={{ fontSize: small ? 26 : 36, lineHeight: 1, filter: "drop-shadow(0 2px 3px rgba(0,0,0,0.15))" }}>{ING_EMOJI[ing]}</span>
