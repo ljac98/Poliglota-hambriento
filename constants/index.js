@@ -107,6 +107,18 @@ export const ACTION_IMG = {
   negacion:                'imagenes/acciones/cancel.png',
 };
 
+export const BURGER_TARGET_IMG = {
+  pan:     'imagenes/hamburguesas/objetivos/pan.png',
+  lechuga: 'imagenes/hamburguesas/objetivos/lechuga.png',
+  tomate:  'imagenes/hamburguesas/objetivos/tomate.png',
+  carne:   'imagenes/hamburguesas/objetivos/carne.png',
+  queso:   'imagenes/hamburguesas/objetivos/queso.png',
+  pollo:   'imagenes/hamburguesas/objetivos/pollo.png',
+  huevo:   'imagenes/hamburguesas/objetivos/huevo.png',
+  cebolla: 'imagenes/hamburguesas/objetivos/cebolla.png',
+  palta:   'imagenes/hamburguesas/objetivos/palta.png',
+};
+
 export const HAT_IMG = {
   español:   'imagenes/sombreros/sobreros esp.png',
   inglés:    'imagenes/sombreros/sobreros ing.png',

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ING_EMOJI, ING_BG, ING_IMG } from '../constants';
+import { ING_EMOJI, ING_BG, BURGER_TARGET_IMG } from '../constants';
 
 // ═══ BURGER TARGET (horizontal) ═══
 export const BurgerTarget = ({ ingredients, table, isCurrent }) => {
@@ -29,8 +29,8 @@ export const BurgerTarget = ({ ingredients, table, isCurrent }) => {
             border: filled ? "none" : `2px dashed ${ING_BG[ing]}44`,
             fontSize: 15, opacity: filled ? 1 : 0.35, transition: "all 0.3s",
           }}>
-            {ING_IMG[ing] ? (
-              <img src={ING_IMG[ing]} alt={ing} style={{ width: 16, height: 16, objectFit: "contain" }} />
+            {BURGER_TARGET_IMG[ing] ? (
+              <img src={BURGER_TARGET_IMG[ing]} alt={ing} style={{ width: 16, height: 16, objectFit: "contain" }} />
             ) : ING_EMOJI[ing]}
             {isDupe && (
               <div style={{
