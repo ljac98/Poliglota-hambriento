@@ -677,6 +677,43 @@ export default function App() {
     setPlayers(newPls); setDiscard(newDiscard); setExtraPlay(true);
   }
 
+  // Manual: swap main hat from perchero (costs half your hand)
+  function resolveManualCambiar(hatLang) {
+    const newPls = clone(players);
+    const p = newPls[0];
+    const hi = p.perchero.indexOf(hatLang);
+    p.perchero.splice(hi, 1);
+    const oldMain = p.mainHats[0];
+    p.mainHats[0] = hatLang;
+    p.perchero.push(oldMain);
+    // Cost: discard half the hand (rounded up)
+    const cost = Math.ceil(p.hand.length / 2);
+    const discarded = p.hand.splice(0, cost);
+    let newDiscard = [...discard, ...discarded];
+    addLog(0, `cambió sombrero a ${hatLang} (descartó ${cost} carta${cost !== 1 ? 's' : ''}) — puede jugar una carta`, newPls);
+    setModal(null); setSelectedIdx(null);
+    setPlayers(newPls); setDiscard(newDiscard); setExtraPlay(true);
+  }
+
+  // Manual: add an extra hat from perchero (costs discarding entire hand, reduces maxHand)
+  function resolveManualAgregar(hatLang) {
+    const newPls = clone(players);
+    const p = newPls[0];
+    const hi = p.perchero.indexOf(hatLang);
+    p.perchero.splice(hi, 1);
+    p.mainHats.push(hatLang);
+    // Cost: discard entire hand and reduce maxHand
+    let newDiscard = [...discard, ...p.hand];
+    p.hand = [];
+    p.maxHand = Math.max(1, p.maxHand - 1);
+    // Refill at new maxHand
+    const { drawn, deck: newDeck, discard: di2 } = drawN(deck, newDiscard, p.maxHand);
+    p.hand = drawn;
+    addLog(0, `agregó sombrero ${hatLang} — mano máx reducida a ${p.maxHand}`, newPls);
+    setModal(null); setSelectedIdx(null);
+    setPlayers(newPls); setDeck(newDeck); setDiscard(di2); setExtraPlay(true);
+  }
+
   function resolveBasurero(cardId) {
     const { cardIdx } = modal;
     const actionCard = players[0].hand[cardIdx];
@@ -845,8 +882,38 @@ export default function App() {
             background: 'rgba(255,255,255,.02)', borderRadius: 10, padding: '6px 10px',
             border: '2px solid #1e2a45', flexShrink: 0,
           }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1, marginBottom: 4 }}>
-              PERCHERO
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1 }}>
+                PERCHERO
+              </div>
+              {isHumanTurn && !extraPlay && human.perchero.length > 0 && (
+                <div style={{ display: 'flex', gap: 4 }}>
+                  <button
+                    onClick={() => setModal({ type: 'manual_cambiar' })}
+                    title="Cambia tu sombrero principal (cuesta descartar la mitad de tu mano)"
+                    style={{
+                      padding: '2px 7px', borderRadius: 6, border: '1px solid rgba(156,39,176,0.3)',
+                      background: 'rgba(156,39,176,0.12)', color: '#BA68C8', fontSize: 10,
+                      fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+                    }}
+                  >
+                    🎩 Cambiar
+                  </button>
+                  {human.hand.length > 0 && (
+                    <button
+                      onClick={() => setModal({ type: 'manual_agregar' })}
+                      title="Agrega un sombrero extra (descarta toda tu mano, mano máx se reduce)"
+                      style={{
+                        padding: '2px 7px', borderRadius: 6, border: '1px solid rgba(156,39,176,0.3)',
+                        background: 'rgba(156,39,176,0.12)', color: '#BA68C8', fontSize: 10,
+                        fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+                      }}
+                    >
+                      ➕ Agregar
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
             <div style={{ display: 'flex', gap: 6 }}>
               {human.perchero.map(h => <HatBadge key={h} lang={h} isMain={false} size="sm" />)}
@@ -1050,6 +1117,68 @@ export default function App() {
               <div
                 key={h}
                 onClick={() => resolveCambioSombrero(h)}
+                style={{
+                  padding: 10, borderRadius: 10, cursor: 'pointer',
+                  border: `2px solid ${LANG_BORDER[h]}88`,
+                  background: 'rgba(255,255,255,.04)', transition: 'all .15s',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                }}
+                onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,.1)'}
+                onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,.04)'}
+              >
+                <HatSVG lang={h} size={36} />
+                <span style={{ fontSize: 11, fontWeight: 700, color: LANG_TEXT[h] }}>
+                  {h.charAt(0).toUpperCase() + h.slice(1)}
+                </span>
+              </div>
+            ))}
+          </div>
+          <Btn onClick={() => setModal(null)} color="#333" style={{ color: '#aaa' }}>Cancelar</Btn>
+        </Modal>
+      )}
+
+      {/* Manual: Cambiar sombrero */}
+      {modal?.type === 'manual_cambiar' && (
+        <Modal title="🎩 Cambiar Sombrero — cuesta la mitad de tu mano">
+          <p style={{ color: '#888', fontSize: 12, marginBottom: 12 }}>
+            Elige un sombrero del perchero. Tu sombrero actual vuelve al perchero y descartás {Math.ceil(human.hand.length / 2)} carta{Math.ceil(human.hand.length / 2) !== 1 ? 's' : ''}. Luego podés jugar una carta extra.
+          </p>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+            {human.perchero.map(h => (
+              <div
+                key={h}
+                onClick={() => resolveManualCambiar(h)}
+                style={{
+                  padding: 10, borderRadius: 10, cursor: 'pointer',
+                  border: `2px solid ${LANG_BORDER[h]}88`,
+                  background: 'rgba(255,255,255,.04)', transition: 'all .15s',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                }}
+                onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,.1)'}
+                onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,.04)'}
+              >
+                <HatSVG lang={h} size={36} />
+                <span style={{ fontSize: 11, fontWeight: 700, color: LANG_TEXT[h] }}>
+                  {h.charAt(0).toUpperCase() + h.slice(1)}
+                </span>
+              </div>
+            ))}
+          </div>
+          <Btn onClick={() => setModal(null)} color="#333" style={{ color: '#aaa' }}>Cancelar</Btn>
+        </Modal>
+      )}
+
+      {/* Manual: Agregar sombrero */}
+      {modal?.type === 'manual_agregar' && (
+        <Modal title="➕ Agregar Sombrero — descartás toda tu mano">
+          <p style={{ color: '#888', fontSize: 12, marginBottom: 12 }}>
+            Elige un sombrero del perchero para agregarlo a tu sombrero principal. Descartás toda tu mano y tu máximo de cartas se reduce a {Math.max(1, human.maxHand - 1)}.
+          </p>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+            {human.perchero.map(h => (
+              <div
+                key={h}
+                onClick={() => resolveManualAgregar(h)}
                 style={{
                   padding: 10, borderRadius: 10, cursor: 'pointer',
                   border: `2px solid ${LANG_BORDER[h]}88`,
