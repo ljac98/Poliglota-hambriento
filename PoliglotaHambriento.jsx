@@ -118,7 +118,7 @@ const IngredientCard = ({card, onClick, selected, small, playable}) => {
       <div style={{position:"absolute",top:2,left:2,width:small?16:20,height:small?16:20,borderRadius:"50%",
         background:LANG_BADGE[lang],display:"flex",alignItems:"center",justifyContent:"center",
         fontSize:small?9:12,lineHeight:1,boxShadow:"0 1px 3px rgba(0,0,0,0.3)"}}>
-        {isWild ? <img src={COMODIN_IMG[lang]} alt="comodín" style={{width:small?10:14,height:small?10:14,objectFit:'contain'}}/> : ING_IMG[ing] ? <img src={ING_IMG[ing]} alt={ing} style={{width:small?10:14,height:small?10:14,objectFit:'contain'}}/> : ING_EMOJI[ing]}
+        {isWild ? <span style={{fontWeight:900,color:isDark?"#eee":"#fff"}}>?</span> : ING_IMG[ing] ? <img src={ING_IMG[ing]} alt={ing} style={{width:small?10:14,height:small?10:14,objectFit:'contain'}}/> : ING_EMOJI[ing]}
       </div>
       {/* Language */}
       <div style={{marginTop:small?3:5,fontSize:small?10:14,fontWeight:900,color:txtColor,letterSpacing:2,

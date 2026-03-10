@@ -65,7 +65,7 @@ export const IngredientCard = ({ card, onClick, selected, small, playable }) => 
         boxShadow: "0 1px 3px rgba(0,0,0,0.3)"
       }}>
         {isWild
-          ? <img src={COMODIN_IMG[lang]} alt="comodín" style={{ width: small ? 10 : 14, height: small ? 10 : 14, objectFit: 'contain' }} />
+          ? <span style={{ fontWeight: 900, color: isDark ? "#eee" : "#fff" }}>?</span>
           : ING_IMG[ing]
             ? <img src={ING_IMG[ing]} alt={ing} style={{ width: small ? 10 : 14, height: small ? 10 : 14, objectFit: 'contain' }} />
             : ING_EMOJI[ing]}
