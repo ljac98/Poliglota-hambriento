@@ -1,6 +1,6 @@
 import React from 'react';
 import HatSVG from './HatSVG';
-import { LANG_BORDER, LANG_TEXT, LANG_SHORT } from '../constants';
+import { LANG_BORDER, LANG_TEXT, LANG_SHORT, HAT_IMG } from '../constants';
 
 // ═══ HAT BADGE ═══
 export const HatBadge = ({ lang, isMain, onClick, size = "md" }) => {
@@ -14,7 +14,11 @@ export const HatBadge = ({ lang, isMain, onClick, size = "md" }) => {
       boxShadow: isMain ? "0 0 8px rgba(255,215,0,0.25)" : "none",
       transition: "all 0.2s",
     }}>
-      <HatSVG lang={lang} size={s} />
+      {HAT_IMG[lang] ? (
+        <img src={HAT_IMG[lang]} alt={lang} style={{ width: s, height: s, objectFit: "contain" }} />
+      ) : (
+        <HatSVG lang={lang} size={s} />
+      )}
       <span style={{
         fontSize: size === "sm" ? 6 : 7, fontWeight: 800,
         color: isMain ? "#FFD700" : LANG_TEXT[lang], letterSpacing: 0.5
@@ -69,7 +73,11 @@ export const PercheroSVG = ({ hats, onClickHat, height = 120 }) => {
             onMouseOver={e => { if (onClickHat) e.currentTarget.style.transform = `rotate(${b.side === "left" ? -12 : 12}deg) scale(1.2)`; }}
             onMouseOut={e => { e.currentTarget.style.transform = `rotate(${b.side === "left" ? -12 : 12}deg) scale(1)`; }}
           >
-            <HatSVG lang={lang} size={22} />
+            {HAT_IMG[lang] ? (
+              <img src={HAT_IMG[lang]} alt={lang} style={{ width: 28, height: 28, objectFit: "contain" }} />
+            ) : (
+              <HatSVG lang={lang} size={22} />
+            )}
             <div style={{ textAlign: "center", fontSize: 5, fontWeight: 800, color: LANG_TEXT[lang], marginTop: -2 }}>
               {LANG_SHORT[lang]}
             </div>

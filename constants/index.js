@@ -78,3 +78,40 @@ export const getActionInfo = (id) => ACTION_CARDS.find(a => a.id === id);
 
 // ═══ AI NAMES ═══
 export const AI_NAMES = ["Chef Bot", "Cocinerito", "Señor Hambre"];
+
+// ═══ IMAGE PATHS ═══
+export const ING_IMG = {
+  pan:     'imagenes/ingredientes/esquinas/pan.png',
+  lechuga: 'imagenes/ingredientes/esquinas/lechuga.png',
+  tomate:  'imagenes/ingredientes/esquinas/tomate.png',
+  carne:   'imagenes/ingredientes/esquinas/carne.png',
+  queso:   'imagenes/ingredientes/esquinas/queso.png',
+  pollo:   'imagenes/ingredientes/esquinas/pollo.png',
+  huevo:   'imagenes/ingredientes/esquinas/huevo.png',
+  cebolla: 'imagenes/ingredientes/esquinas/cebolla.png',
+  palta:   'imagenes/ingredientes/esquinas/palta.png',
+};
+
+export const ACTION_IMG = {
+  milanesa:                'imagenes/acciones/milanesa.png',
+  ensalada:                'imagenes/acciones/ensalada3.png',
+  pizza:                   'imagenes/acciones/pizza.png',
+  parrilla:                'imagenes/acciones/carnita.png',
+  tenedor:                 'imagenes/acciones/tenedor.png',
+  ladron:                  'imagenes/acciones/ladron.png',
+  intercambio_sombreros:   'imagenes/acciones/intercambio de sombreros.png',
+  intercambio_hamburguesa: 'imagenes/acciones/intercambio de hamburguesar.png',
+  cambio_sombrero:         'imagenes/acciones/intercambio.png',
+  basurero:                'imagenes/acciones/robar descarte.png',
+  gloton:                  'imagenes/acciones/comecomodines.png',
+  negacion:                'imagenes/acciones/cancel.png',
+};
+
+export const HAT_IMG = {
+  español:   'imagenes/sombreros/sobreros esp.png',
+  inglés:    'imagenes/sombreros/sobreros ing.png',
+  francés:   'imagenes/sombreros/sobreros fra.png',
+  italiano:  'imagenes/sombreros/sobreros ita.png',
+  alemán:    'imagenes/sombreros/sobreros ale.png',
+  portugués: 'imagenes/sombreros/sombrero por.png',
+};
