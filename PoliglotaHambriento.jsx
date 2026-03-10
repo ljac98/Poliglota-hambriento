@@ -117,15 +117,6 @@ const IngredientCard = ({card, onClick, selected, small, playable}) => {
           <span style={{fontSize:small?26:36,lineHeight:1,filter:"drop-shadow(0 2px 3px rgba(0,0,0,0.15))"}}>
             {ING_EMOJI[ing]}
           </span>
-          {/* Ojitos */}
-          <div style={{position:"absolute",top:small?"2px":"3px",left:"50%",transform:"translateX(-50%)",display:"flex",gap:small?3:4,pointerEvents:"none"}}>
-            <div style={{width:small?5:7,height:small?5:7,borderRadius:"50%",background:"#fff",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 1px 2px rgba(0,0,0,0.3)"}}>
-              <div style={{width:small?2.5:3.5,height:small?2.5:3.5,borderRadius:"50%",background:"#1a1a1a"}}/>
-            </div>
-            <div style={{width:small?5:7,height:small?5:7,borderRadius:"50%",background:"#fff",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 1px 2px rgba(0,0,0,0.3)"}}>
-              <div style={{width:small?2.5:3.5,height:small?2.5:3.5,borderRadius:"50%",background:"#1a1a1a"}}/>
-            </div>
-          </div>
         </div>
       </div>
       {/* Name */}
