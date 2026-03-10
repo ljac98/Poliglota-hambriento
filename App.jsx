@@ -530,6 +530,10 @@ export default function App() {
 
     if (card.type === 'ingredient') {
       if (!canPlayCard(human, card)) return;
+      if (card.ingredient === 'perrito') {
+        setModal({ type: 'wildcard', cardIdx: selectedIdx });
+        return;
+      }
       addLog(0, `jugó ${getIngName(card.ingredient, card.language)} ${ING_EMOJI[card.ingredient]}`, players);
       const newPls = clone(players);
       newPls[0].hand.splice(selectedIdx, 1);
@@ -588,6 +592,24 @@ export default function App() {
     const discarded = newPls[0].hand.splice(selectedIdx, 1)[0];
     setSelectedIdx(null);
     endTurn(newPls, deck, [...discard, discarded], 0);
+  }
+
+  function confirmWildcard(chosenIng) {
+    const { cardIdx } = modal;
+    const card = players[0].hand[cardIdx];
+    addLog(0, `jugó 🌭 Comodín como ${ING_EMOJI[chosenIng]} ${chosenIng} (${LANG_SHORT[card.language]})`, players);
+    const newPls = clone(players);
+    newPls[0].hand.splice(cardIdx, 1);
+    newPls[0].table.push(chosenIng);
+    const { player: up, freed, done } = advanceBurger(newPls[0]);
+    newPls[0] = up;
+    let newDiscard = [...discard, card];
+    if (done) {
+      freed.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ing, id: `f${Date.now()}${Math.random()}` }));
+      addLog(0, '¡completó una hamburguesa! 🎉', newPls);
+    }
+    setModal(null); setSelectedIdx(null); setExtraPlay(false);
+    endTurn(newPls, deck, newDiscard, 0);
   }
 
   // ── Modal resolvers ──
@@ -1219,6 +1241,41 @@ export default function App() {
           <Btn onClick={() => setModal(null)} color="#333" style={{ color: '#aaa' }}>Cancelar</Btn>
         </Modal>
       )}
+
+      {/* Wildcard (Comodín) modal */}
+      {modal?.type === 'wildcard' && (() => {
+        const human = players[0];
+        const burger = human.burgers[human.currentBurger] || [];
+        const needed = burger.filter(ing => !human.table.includes(ing));
+        const choices = needed.length > 0 ? needed : Object.keys(ING_EMOJI).filter(i => i !== 'perrito');
+        return (
+          <Modal title="🌭 Comodín — Elige ingrediente">
+            <p style={{ color: '#888', fontSize: 12, marginBottom: 12 }}>
+              {needed.length > 0 ? 'Estos son los ingredientes que te faltan:' : 'Elige el ingrediente que representa el comodín:'}
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+              {choices.map(ing => (
+                <div
+                  key={ing}
+                  onClick={() => confirmWildcard(ing)}
+                  style={{
+                    width: 64, borderRadius: 10, background: ING_BG[ing], padding: '8px 4px',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                    cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,.4)', transition: 'transform .1s',
+                    border: '2px solid rgba(0,0,0,0.15)',
+                  }}
+                  onMouseOver={e => e.currentTarget.style.transform = 'scale(1.1)'}
+                  onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}
+                >
+                  <span style={{ fontSize: 26 }}>{ING_EMOJI[ing]}</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: '#333', textAlign: 'center' }}>{ing}</span>
+                </div>
+              ))}
+            </div>
+            <Btn onClick={() => setModal(null)} color="#333" style={{ color: '#aaa' }}>Cancelar</Btn>
+          </Modal>
+        );
+      })()}
     </div>
   );
 }
