@@ -1,5 +1,20 @@
 import React from 'react';
 import { ING_EMOJI, ING_BG } from '../constants';
+import ingPan    from '../imagenes/hamburguesas/objetivos/pan.png';
+import ingLechuga from '../imagenes/hamburguesas/objetivos/lechuga.png';
+import ingTomate  from '../imagenes/hamburguesas/objetivos/tomate.png';
+import ingCarne   from '../imagenes/hamburguesas/objetivos/carne.png';
+import ingQueso   from '../imagenes/hamburguesas/objetivos/queso.png';
+import ingPollo   from '../imagenes/hamburguesas/objetivos/pollo.png';
+import ingHuevo   from '../imagenes/hamburguesas/objetivos/huevo.png';
+import ingCebolla from '../imagenes/hamburguesas/objetivos/cebolla.png';
+import ingPalta   from '../imagenes/hamburguesas/objetivos/palta.png';
+
+const ING_IMG = {
+  pan: ingPan, lechuga: ingLechuga, tomate: ingTomate, carne: ingCarne,
+  queso: ingQueso, pollo: ingPollo, huevo: ingHuevo, cebolla: ingCebolla,
+  palta: ingPalta,
+};
 
 // ═══ BURGER TARGET (horizontal) ═══
 export const BurgerTarget = ({ ingredients, table, isCurrent }) => {
@@ -27,9 +42,11 @@ export const BurgerTarget = ({ ingredients, table, isCurrent }) => {
             background: filled ? ING_BG[ing] : "rgba(255,255,255,0.06)",
             display: "flex", alignItems: "center", justifyContent: "center",
             border: filled ? "none" : `2px dashed ${ING_BG[ing]}44`,
-            fontSize: 15, opacity: filled ? 1 : 0.35, transition: "all 0.3s",
+            opacity: filled ? 1 : 0.35, transition: "all 0.3s",
           }}>
-            {ING_EMOJI[ing]}
+            {ING_IMG[ing]
+              ? <img src={ING_IMG[ing]} alt={ing} style={{ width: 20, height: 20, objectFit: 'contain' }} />
+              : ING_EMOJI[ing]}
             {isDupe && (
               <div style={{
                 position: "absolute", top: -4, right: -6, fontSize: 6, fontWeight: 900,
