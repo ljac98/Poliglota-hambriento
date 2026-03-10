@@ -15,6 +15,49 @@ import ingCebolla from '../imagenes/hamburguesas/objetivos/cebolla.png';
 import ingPalta   from '../imagenes/hamburguesas/objetivos/palta.png';
 import comodinImg from '../imagenes/ingredientes/comodines/comodin.png';
 
+// ── Imágenes de cartas de acción ──
+import imgMilanesa        from '../imagenes/acciones/milanesa.png';
+import imgEnsalada        from '../imagenes/acciones/ensalada3.png';
+import imgPizza           from '../imagenes/acciones/pizza.png';
+import imgParrilla        from '../imagenes/acciones/parrilla.png';
+import imgTenedor         from '../imagenes/acciones/tenedor.png';
+import imgLadron          from '../imagenes/acciones/ladron.png';
+import imgIntercambioSomb from '../imagenes/acciones/intercambio de sombreros.png';
+import imgIntercambioHamb from '../imagenes/acciones/intercambio de hamburguesar.png';
+import imgCambioSombrero  from '../imagenes/acciones/intercambio3.png';
+import imgBasurero        from '../imagenes/acciones/robar descarte.png';
+import imgGloton          from '../imagenes/acciones/comer.png';
+import imgNegacion        from '../imagenes/acciones/cancel.png';
+import imgComeComodines   from '../imagenes/acciones/comecomodines.png';
+// ── Esquinas de cartas de acción ──
+import eqMilanesa        from '../imagenes/acciones/esquina/milanga.png';
+import eqEnsalada        from '../imagenes/acciones/esquina/ensalada2.png';
+import eqPizza           from '../imagenes/acciones/esquina/pizza2.png';
+import eqParrilla        from '../imagenes/acciones/esquina/parrilla.png';
+import eqTenedor         from '../imagenes/acciones/esquina/tenedor2.png';
+import eqLadron          from '../imagenes/acciones/esquina/sombrerogenerico2.png';
+import eqIntercambioSomb from '../imagenes/acciones/esquina/intercambiosomb.png';
+import eqIntercambioHamb from '../imagenes/acciones/esquina/intercam.png';
+import eqBasurero        from '../imagenes/acciones/esquina/9-trash-can-drawing-tutorial.png';
+import eqGloton          from '../imagenes/acciones/esquina/comelona.png';
+import eqNegacion        from '../imagenes/acciones/esquina/cancelh.png';
+import eqComeComodines   from '../imagenes/acciones/esquina/pancho.png';
+
+const ACTION_IMG = {
+  milanesa: imgMilanesa, ensalada: imgEnsalada, pizza: imgPizza,
+  parrilla: imgParrilla, tenedor: imgTenedor, ladron: imgLadron,
+  intercambio_sombreros: imgIntercambioSomb, intercambio_hamburguesa: imgIntercambioHamb,
+  cambio_sombrero: imgCambioSombrero, basurero: imgBasurero,
+  gloton: imgGloton, negacion: imgNegacion, comecomodines: imgComeComodines,
+};
+const ACTION_CORNER_IMG = {
+  milanesa: eqMilanesa, ensalada: eqEnsalada, pizza: eqPizza,
+  parrilla: eqParrilla, tenedor: eqTenedor, ladron: eqLadron,
+  intercambio_sombreros: eqIntercambioSomb, intercambio_hamburguesa: eqIntercambioHamb,
+  cambio_sombrero: eqIntercambioSomb, basurero: eqBasurero,
+  gloton: eqGloton, negacion: eqNegacion, comecomodines: eqComeComodines,
+};
+
 const ING_IMG = {
   pan: ingPan, lechuga: ingLechuga, tomate: ingTomate, carne: ingCarne,
   queso: ingQueso, pollo: ingPollo, huevo: ingHuevo, cebolla: ingCebolla,
@@ -97,9 +140,14 @@ export const IngredientCard = ({ card, onClick, selected, small, playable }) => 
 export const ActionCard = ({ card, onClick, selected, small }) => {
   const info = getActionInfo(card.action);
   const w = small ? 64 : 86, h = small ? 94 : 126;
+  const mainImg = ACTION_IMG[card.action];
+  const cornerImg = ACTION_CORNER_IMG[card.action];
+  const cornerSize = small ? 14 : 18;
+  const mainSize = small ? 36 : 52;
 
   return (
     <div onClick={onClick} style={{
+      position: "relative",
       width: w, height: h, borderRadius: 8, cursor: "pointer",
       border: selected ? "3px solid #FFD700" : "3px solid #555",
       background: "linear-gradient(170deg,#1A1A2E 0%,#16213E 100%)",
@@ -109,7 +157,14 @@ export const ActionCard = ({ card, onClick, selected, small }) => {
       alignItems: "center", justifyContent: "center",
       gap: 2, color: "#eee", fontFamily: "'Fredoka',sans-serif", padding: "4px 3px",
     }}>
-      <span style={{ fontSize: small ? 22 : 32 }}>{info?.emoji}</span>
+      {cornerImg && <>
+        <img src={cornerImg} alt="" style={{ position:"absolute", top:3, left:3, width:cornerSize, height:cornerSize, objectFit:"contain" }} />
+        <img src={cornerImg} alt="" style={{ position:"absolute", bottom:3, right:3, width:cornerSize, height:cornerSize, objectFit:"contain", transform:"rotate(180deg)" }} />
+      </>}
+      {mainImg
+        ? <img src={mainImg} alt={info?.name} style={{ width:mainSize, height:mainSize, objectFit:"contain", filter:"drop-shadow(0 2px 4px rgba(0,0,0,0.4))" }} />
+        : <span style={{ fontSize: small ? 22 : 32 }}>{info?.emoji}</span>
+      }
       <span style={{ fontSize: small ? 7 : 9, fontWeight: 700, textAlign: "center", lineHeight: 1.1 }}>{info?.name}</span>
       <span style={{ fontSize: small ? 5 : 7, color: "#777", textAlign: "center", lineHeight: 1.1 }}>{info?.desc}</span>
     </div>
