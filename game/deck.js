@@ -115,7 +115,7 @@ export function checkBurgerComplete(player) {
   for (const ing of target) {
     const i = tc.indexOf(ing);
     if (i === -1) {
-      const w = tc.indexOf("perrito");
+      const w = tc.findIndex(t => t === "perrito" || t.startsWith("perrito|"));
       if (w === -1) return false;
       tc.splice(w, 1);
     } else {
