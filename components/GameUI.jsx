@@ -16,8 +16,25 @@ const ING_IMG = {
   palta: ingPalta,
 };
 
+// Resolve 'perrito' wildcards in the table to the ingredient slots they fill
+function resolveWildcards(table, target) {
+  const real = table.filter(t => t !== 'perrito');
+  let perritos = table.length - real.length;
+  if (perritos === 0) return real;
+  const resolved = [...real];
+  const covered = {};
+  resolved.forEach(t => { covered[t] = (covered[t] || 0) + 1; });
+  for (const ing of target) {
+    if (perritos === 0) break;
+    if ((covered[ing] || 0) > 0) { covered[ing]--; }
+    else { resolved.push(ing); perritos--; }
+  }
+  return resolved;
+}
+
 // ═══ BURGER TARGET (horizontal) ═══
 export const BurgerTarget = ({ ingredients, table, isCurrent }) => {
+  const resolvedTable = resolveWildcards(table, ingredients);
   const counts = {};
   ingredients.forEach(ing => { counts[ing] = (counts[ing] || 0) + 1; });
   const rendered = {};
@@ -32,7 +49,7 @@ export const BurgerTarget = ({ ingredients, table, isCurrent }) => {
       {ingredients.map((ing, i) => {
         rendered[ing] = (rendered[ing] || 0) + 1;
         const thisOccurrence = rendered[ing];
-        const have = table.filter(t => t === ing).length;
+        const have = resolvedTable.filter(t => t === ing).length;
         const filled = have >= thisOccurrence;
         const isDupe = counts[ing] > 1;
 
