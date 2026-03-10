@@ -466,7 +466,7 @@ export default function App() {
       } else if (card.action === 'ladron') {
         if (newPls[richest].mainHats.length > 0) {
           const stolen = newPls[richest].mainHats.splice(0, 1)[0];
-          newPls[idx].perchero.push(stolen);
+          newPls[idx].mainHats.push(stolen);
           if (newPls[richest].mainHats.length === 0 && newPls[richest].perchero.length > 0) {
             const nh = newPls[richest].perchero.shift();
             newPls[richest].mainHats.push(nh);
@@ -651,7 +651,7 @@ export default function App() {
     } else if (action === 'ladron') {
       if (newPls[targetIdx].mainHats.length === 0) { setModal(null); return; }
       const stolen = newPls[targetIdx].mainHats.splice(0, 1)[0];
-      newPls[0].perchero.push(stolen);
+      newPls[0].mainHats.push(stolen);
       addLog(0, `robó el sombrero ${stolen}`, newPls);
       if (newPls[targetIdx].mainHats.length === 0) {
         if (newPls[targetIdx].perchero.length > 0) {
