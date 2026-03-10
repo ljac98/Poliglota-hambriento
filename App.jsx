@@ -7,6 +7,20 @@ import { generateDeck, initPlayer, canPlayCard, checkBurgerComplete } from './ga
 import { shuffle, randInt } from './game/utils';
 import { GameCard } from './components/Cards';
 import { BurgerTarget, LogEntry } from './components/GameUI';
+import ingPan    from './imagenes/hamburguesas/objetivos/pan.png';
+import ingLechuga from './imagenes/hamburguesas/objetivos/lechuga.png';
+import ingTomate  from './imagenes/hamburguesas/objetivos/tomate.png';
+import ingCarne   from './imagenes/hamburguesas/objetivos/carne.png';
+import ingQueso   from './imagenes/hamburguesas/objetivos/queso.png';
+import ingPollo   from './imagenes/hamburguesas/objetivos/pollo.png';
+import ingHuevo   from './imagenes/hamburguesas/objetivos/huevo.png';
+import ingCebolla from './imagenes/hamburguesas/objetivos/cebolla.png';
+import ingPalta   from './imagenes/hamburguesas/objetivos/palta.png';
+const ING_IMG = {
+  pan: ingPan, lechuga: ingLechuga, tomate: ingTomate, carne: ingCarne,
+  queso: ingQueso, pollo: ingPollo, huevo: ingHuevo, cebolla: ingCebolla,
+  palta: ingPalta,
+};
 import { HatBadge, PercheroSVG } from './components/HatComponents';
 import hamImg from './imagenes/hamburguesas/ham.png';
 import HatSVG from './components/HatSVG';
@@ -292,7 +306,9 @@ function OpponentCard({ player, index, color, isActive }) {
               width: 22, height: 22, borderRadius: 5, background: ING_BG[ing],
               display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12,
             }}>
-              {ING_EMOJI[ing]}
+              {ING_IMG[ing]
+                ? <img src={ING_IMG[ing]} alt={ing} style={{ width: 16, height: 16, objectFit: 'contain' }} />
+                : ING_EMOJI[ing]}
             </div>
           ))}
         </div>
@@ -894,7 +910,9 @@ export default function App() {
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: 20, boxShadow: '0 2px 6px rgba(0,0,0,.3)',
                 }}>
-                  {ING_EMOJI[ing]}
+                  {ING_IMG[ing]
+                    ? <img src={ING_IMG[ing]} alt={ing} style={{ width: 26, height: 26, objectFit: 'contain' }} />
+                    : ING_EMOJI[ing]}
                 </div>
               ))}
             </div>
@@ -1091,7 +1109,9 @@ export default function App() {
                 onMouseOver={e => e.currentTarget.style.transform = 'scale(1.1)'}
                 onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}
               >
-                {ING_EMOJI[ing]}
+                {ING_IMG[ing]
+                  ? <img src={ING_IMG[ing]} alt={ing} style={{ width: 36, height: 36, objectFit: 'contain' }} />
+                  : ING_EMOJI[ing]}
               </div>
             ))}
           </div>
@@ -1268,7 +1288,9 @@ export default function App() {
                   onMouseOver={e => e.currentTarget.style.transform = 'scale(1.1)'}
                   onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}
                 >
-                  <span style={{ fontSize: 26 }}>{ING_EMOJI[ing]}</span>
+                  {ING_IMG[ing]
+                    ? <img src={ING_IMG[ing]} alt={ing} style={{ width: 36, height: 36, objectFit: 'contain' }} />
+                    : <span style={{ fontSize: 26 }}>{ING_EMOJI[ing]}</span>}
                   <span style={{ fontSize: 10, fontWeight: 700, color: '#333', textAlign: 'center' }}>{ing}</span>
                 </div>
               ))}
