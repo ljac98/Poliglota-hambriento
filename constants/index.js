@@ -72,6 +72,7 @@ export const ACTION_CARDS = [
   {id:"basurero",    name:"El Basurero",          emoji:"🗑️", desc:"Busca en descartes"},
   {id:"gloton",      name:"El Glotón",            emoji:"😋", desc:"Vacía mesa de otro"},
   {id:"negacion",    name:"Negación",             emoji:"🚫", desc:"Bloquea acción enemiga"},
+  {id:"comecomodines",name:"Come Comodines",       emoji:"🌭", desc:"Todos descartan sus comodines de la mesa"},
 ];
 
 export const getActionInfo = (id) => ACTION_CARDS.find(a => a.id === id);
