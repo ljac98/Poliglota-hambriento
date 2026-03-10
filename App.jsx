@@ -16,11 +16,15 @@ import ingPollo   from './imagenes/hamburguesas/objetivos/pollo.png';
 import ingHuevo   from './imagenes/hamburguesas/objetivos/huevo.png';
 import ingCebolla from './imagenes/hamburguesas/objetivos/cebolla.png';
 import ingPalta   from './imagenes/hamburguesas/objetivos/palta.png';
+import comodinImg from './imagenes/ingredientes/comodines/comodin.png';
 const ING_IMG = {
   pan: ingPan, lechuga: ingLechuga, tomate: ingTomate, carne: ingCarne,
   queso: ingQueso, pollo: ingPollo, huevo: ingHuevo, cebolla: ingCebolla,
-  palta: ingPalta,
+  palta: ingPalta, perrito: comodinImg,
 };
+// Wildcard helpers: 'perrito|lechuga' → base='perrito', chosen='lechuga'
+const ingKey = ing => ing && ing.includes('|') ? ing.split('|')[0] : ing;
+const ingChosen = ing => ing && ing.includes('|') ? ing.split('|')[1] : null;
 import { HatBadge, PercheroSVG } from './components/HatComponents';
 import hamImg from './imagenes/hamburguesas/ham.png';
 import HatSVG from './components/HatSVG';
@@ -45,16 +49,27 @@ function advanceBurger(player) {
 }
 
 function applyMass(players, discard, actionId) {
+  const ps = clone(players);
+  let di = [...discard];
+  if (actionId === 'comecomodines') {
+    ps.forEach(p => {
+      const kept = [];
+      p.table.forEach(ing => {
+        if (ingKey(ing) === 'perrito') di.push({ type: 'ingredient', ingredient: 'perrito', id: `d${Date.now()}${Math.random()}` });
+        else kept.push(ing);
+      });
+      p.table = kept;
+    });
+    return { players: ps, discard: di };
+  }
   const targets = {
     milanesa: ['pan', 'huevo'], ensalada: FRUITS_VEGS,
     pizza: ['queso'], parrilla: ['pollo', 'carne'],
   }[actionId] || [];
-  const ps = clone(players);
-  let di = [...discard];
   ps.forEach(p => {
     const kept = [];
     p.table.forEach(ing => {
-      if (targets.includes(ing)) di.push({ type: 'ingredient', ingredient: ing, id: `d${Date.now()}${Math.random()}` });
+      if (targets.includes(ingKey(ing))) di.push({ type: 'ingredient', ingredient: ingKey(ing), id: `d${Date.now()}${Math.random()}` });
       else kept.push(ing);
     });
     p.table = kept;
@@ -301,16 +316,19 @@ function OpponentCard({ player, index, color, isActive }) {
       {/* Table ingredients */}
       {player.table.length > 0 && (
         <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap', marginBottom: 4 }}>
-          {player.table.map((ing, i) => (
-            <div key={i} style={{
-              width: 22, height: 22, borderRadius: 5, background: ING_BG[ing],
-              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12,
-            }}>
-              {ING_IMG[ing]
-                ? <img src={ING_IMG[ing]} alt={ing} style={{ width: 16, height: 16, objectFit: 'contain' }} />
-                : ING_EMOJI[ing]}
-            </div>
-          ))}
+          {player.table.map((ing, i) => {
+            const base = ingKey(ing);
+            return (
+              <div key={i} style={{
+                width: 22, height: 22, borderRadius: 5, background: ING_BG[base],
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12,
+              }}>
+                {ING_IMG[base]
+                  ? <img src={ING_IMG[base]} alt={base} style={{ width: 16, height: 16, objectFit: 'contain' }} />
+                  : ING_EMOJI[base]}
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -426,7 +444,7 @@ export default function App() {
       const { player: up, freed, done } = advanceBurger(newPls[idx]);
       newPls[idx] = up;
       let newDiscard = [...discardArr, card];
-      if (done) { freed.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ing, id: `f${Date.now()}${Math.random()}` })); addLog(idx, '¡completó una hamburguesa! 🎉', newPls); }
+      if (done) { freed.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `f${Date.now()}${Math.random()}` })); addLog(idx, '¡completó una hamburguesa! 🎉', newPls); }
       setTimeout(() => { aiRunning.current = false; endTurn(newPls, deckArr, newDiscard, idx); }, 900);
       return;
     }
@@ -445,12 +463,12 @@ export default function App() {
       newPls[idx].hand.splice(actionIdx, 1);
       addLog(idx, `jugó ${info.name} ${info.emoji}`, pls);
 
-      const mass = ['milanesa', 'ensalada', 'pizza', 'parrilla'];
+      const mass = ['milanesa', 'ensalada', 'pizza', 'parrilla', 'comecomodines'];
       if (mass.includes(card.action)) {
         const r = applyMass(newPls, newDiscard, card.action);
         newPls = r.players; newDiscard = r.discard;
       } else if (card.action === 'gloton') {
-        newPls[richest].table.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ing, id: `g${Date.now()}${Math.random()}` }));
+        newPls[richest].table.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `g${Date.now()}${Math.random()}` }));
         newPls[richest].table = [];
         addLog(idx, `vació la mesa de ${pls[richest].name}`, newPls);
       } else if (card.action === 'tenedor') {
@@ -460,8 +478,8 @@ export default function App() {
           newPls[idx].table.push(stolen);
           const { player: up2, freed: fr2, done: dn2 } = advanceBurger(newPls[idx]);
           newPls[idx] = up2;
-          if (dn2) { fr2.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ing, id: `t${Date.now()}${Math.random()}` })); }
-          addLog(idx, `robó ${ING_EMOJI[stolen]} de ${pls[richest].name}`, newPls);
+          if (dn2) { fr2.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `t${Date.now()}${Math.random()}` })); }
+          addLog(idx, `robó ${ING_EMOJI[ingKey(stolen)]} de ${pls[richest].name}`, newPls);
         }
       } else if (card.action === 'ladron') {
         if (newPls[richest].mainHats.length > 0) {
@@ -502,7 +520,7 @@ export default function App() {
             newPls[idx].table.push(c2.ingredient);
             const { player: up3, freed: fr3, done: dn3 } = advanceBurger(newPls[idx]);
             newPls[idx] = up3;
-            if (dn3) { fr3.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ing, id: `c${Date.now()}${Math.random()}` })); addLog(idx, '¡completó una hamburguesa! 🎉', newPls); }
+            if (dn3) { fr3.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `c${Date.now()}${Math.random()}` })); addLog(idx, '¡completó una hamburguesa! 🎉', newPls); }
           }
         }
       }
@@ -547,6 +565,10 @@ export default function App() {
 
     if (card.type === 'ingredient') {
       if (!canPlayCard(human, card)) return;
+      if (card.ingredient === 'perrito') {
+        setModal({ type: 'wildcard', cardIdx: selectedIdx });
+        return;
+      }
       addLog(0, `jugó ${getIngName(card.ingredient, card.language)} ${ING_EMOJI[card.ingredient]}`, players);
       const newPls = clone(players);
       newPls[0].hand.splice(selectedIdx, 1);
@@ -555,7 +577,7 @@ export default function App() {
       newPls[0] = up;
       let newDiscard = [...discard, card];
       if (done) {
-        freed.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ing, id: `f${Date.now()}${Math.random()}` }));
+        freed.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `f${Date.now()}${Math.random()}` }));
         addLog(0, '¡completó una hamburguesa! 🎉', newPls);
       }
       setSelectedIdx(null);
@@ -569,7 +591,7 @@ export default function App() {
 
   function humanPlayAction(card, cardIdx) {
     const info = getActionInfo(card.action);
-    const mass = ['milanesa', 'ensalada', 'pizza', 'parrilla'];
+    const mass = ['milanesa', 'ensalada', 'pizza', 'parrilla', 'comecomodines'];
 
     if (mass.includes(card.action)) {
       addLog(0, `jugó ${info.name} ${info.emoji}`, players);
@@ -613,12 +635,12 @@ export default function App() {
     addLog(0, `jugó 🌭 Comodín como ${ING_EMOJI[chosenIng]} ${chosenIng} (${LANG_SHORT[card.language]})`, players);
     const newPls = clone(players);
     newPls[0].hand.splice(cardIdx, 1);
-    newPls[0].table.push(chosenIng);
+    newPls[0].table.push('perrito|' + chosenIng);
     const { player: up, freed, done } = advanceBurger(newPls[0]);
     newPls[0] = up;
     let newDiscard = [...discard, card];
     if (done) {
-      freed.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ing, id: `f${Date.now()}${Math.random()}` }));
+      freed.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `f${Date.now()}${Math.random()}` }));
       addLog(0, '¡completó una hamburguesa! 🎉', newPls);
     }
     setModal(null); setSelectedIdx(null); setExtraPlay(false);
@@ -636,7 +658,7 @@ export default function App() {
     let newDiscard = [...discard, card];
 
     if (action === 'gloton') {
-      newPls[targetIdx].table.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ing, id: `g${Date.now()}` }));
+      newPls[targetIdx].table.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `g${Date.now()}` }));
       newPls[targetIdx].table = [];
       setModal(null); setSelectedIdx(null); endTurn(newPls, deck, newDiscard, 0);
 
@@ -686,7 +708,7 @@ export default function App() {
     const { player: up, freed, done } = advanceBurger(newPls[0]);
     newPls[0] = up;
     let fd = newDiscard;
-    if (done) { freed.forEach(ing => fd = [...fd, { type: 'ingredient', ingredient: ing, id: `t${Date.now()}` }]); addLog(0, '¡completó una hamburguesa! 🎉', newPls); }
+    if (done) { freed.forEach(ing => fd = [...fd, { type: 'ingredient', ingredient: ingKey(ing), id: `t${Date.now()}` }]); addLog(0, '¡completó una hamburguesa! 🎉', newPls); }
     setModal(null); setSelectedIdx(null); endTurn(newPls, deck, fd, 0);
   }
 
@@ -900,17 +922,38 @@ export default function App() {
             </div>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', minHeight: 32 }}>
               {human.table.length === 0 && <span style={{ fontSize: 12, color: '#333' }}>Mesa vacía</span>}
-              {human.table.map((ing, i) => (
-                <div key={i} style={{
-                  width: 36, height: 36, borderRadius: 8, background: ING_BG[ing],
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 20, boxShadow: '0 2px 6px rgba(0,0,0,.3)',
-                }}>
-                  {ING_IMG[ing]
-                    ? <img src={ING_IMG[ing]} alt={ing} style={{ width: 26, height: 26, objectFit: 'contain' }} />
-                    : ING_EMOJI[ing]}
-                </div>
-              ))}
+              {human.table.map((ing, i) => {
+                const base = ingKey(ing);
+                const chosen = ingChosen(ing);
+                return (
+                  <div key={i} style={{
+                    width: 36, height: 36, borderRadius: 8,
+                    background: chosen
+                      ? `linear-gradient(to right, ${ING_BG.perrito || '#9b59b6'} 50%, ${ING_BG[chosen]} 50%)`
+                      : ING_BG[base],
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 20, boxShadow: '0 2px 6px rgba(0,0,0,.3)',
+                    overflow: 'hidden', position: 'relative',
+                  }}>
+                    {chosen ? (
+                      <>
+                        <div style={{ position: 'absolute', left: 0, top: 0, width: '50%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <img src={ING_IMG.perrito} alt="comodín" style={{ width: 22, height: 22, objectFit: 'contain' }} />
+                        </div>
+                        <div style={{ position: 'absolute', right: 0, top: 0, width: '50%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          {ING_IMG[chosen]
+                            ? <img src={ING_IMG[chosen]} alt={chosen} style={{ width: 22, height: 22, objectFit: 'contain' }} />
+                            : <span style={{ fontSize: 14 }}>{ING_EMOJI[chosen]}</span>}
+                        </div>
+                      </>
+                    ) : (
+                      ING_IMG[base]
+                        ? <img src={ING_IMG[base]} alt={base} style={{ width: 26, height: 26, objectFit: 'contain' }} />
+                        : ING_EMOJI[base]
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -1074,7 +1117,7 @@ export default function App() {
                   <div>
                     <div style={{ fontWeight: 800, color: PLAYER_COLORS[i % PLAYER_COLORS.length] }}>{p.name}</div>
                     <div style={{ fontSize: 11, color: '#777' }}>
-                      Mesa: {p.table.map(ing => ING_EMOJI[ing]).join(' ') || 'vacía'} •
+                      Mesa: {p.table.map(ing => ING_EMOJI[ingKey(ing)]).join(' ') || 'vacía'} •
                       Hambres: {p.currentBurger}/{p.totalBurgers}
                     </div>
                   </div>
@@ -1092,24 +1135,27 @@ export default function App() {
       {modal?.type === 'pickIngredient' && (
         <Modal title="🍴 El Tenedor — Elige ingrediente a robar">
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
-            {modal.newPls[modal.targetIdx].table.map((ing, i) => (
-              <div
-                key={i}
-                onClick={() => resolvePickIngredient(i)}
-                style={{
-                  width: 54, height: 54, borderRadius: 10, background: ING_BG[ing],
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 26, cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,.4)',
-                  transition: 'transform .1s',
-                }}
-                onMouseOver={e => e.currentTarget.style.transform = 'scale(1.1)'}
-                onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}
-              >
-                {ING_IMG[ing]
-                  ? <img src={ING_IMG[ing]} alt={ing} style={{ width: 36, height: 36, objectFit: 'contain' }} />
-                  : ING_EMOJI[ing]}
-              </div>
-            ))}
+            {modal.newPls[modal.targetIdx].table.map((ing, i) => {
+              const base = ingKey(ing);
+              return (
+                <div
+                  key={i}
+                  onClick={() => resolvePickIngredient(i)}
+                  style={{
+                    width: 54, height: 54, borderRadius: 10, background: ING_BG[base],
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 26, cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,.4)',
+                    transition: 'transform .1s',
+                  }}
+                  onMouseOver={e => e.currentTarget.style.transform = 'scale(1.1)'}
+                  onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}
+                >
+                  {ING_IMG[base]
+                    ? <img src={ING_IMG[base]} alt={base} style={{ width: 36, height: 36, objectFit: 'contain' }} />
+                    : ING_EMOJI[base]}
+                </div>
+              );
+            })}
           </div>
           <Btn onClick={() => setModal(null)} color="#333" style={{ color: '#aaa' }}>Cancelar</Btn>
         </Modal>

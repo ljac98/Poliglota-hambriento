@@ -16,18 +16,24 @@ const ING_IMG = {
   palta: ingPalta,
 };
 
-// Resolve 'perrito' wildcards in the table to the ingredient slots they fill
+// Resolve wildcard entries in the table to the ingredient slots they fill.
+// 'perrito|lechuga' uses the chosen ingredient; bare 'perrito' fills the first unfilled slot.
 function resolveWildcards(table, target) {
-  const real = table.filter(t => t !== 'perrito');
-  let perritos = table.length - real.length;
-  if (perritos === 0) return real;
-  const resolved = [...real];
+  const resolved = [];
+  let barePerritos = 0;
+  table.forEach(t => {
+    if (t === 'perrito') { barePerritos++; }
+    else if (t.startsWith('perrito|')) { resolved.push(t.split('|')[1]); }
+    else { resolved.push(t); }
+  });
+  if (barePerritos === 0) return resolved;
   const covered = {};
   resolved.forEach(t => { covered[t] = (covered[t] || 0) + 1; });
+  let left = barePerritos;
   for (const ing of target) {
-    if (perritos === 0) break;
+    if (left === 0) break;
     if ((covered[ing] || 0) > 0) { covered[ing]--; }
-    else { resolved.push(ing); perritos--; }
+    else { resolved.push(ing); left--; }
   }
   return resolved;
 }
