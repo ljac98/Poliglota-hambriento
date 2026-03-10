@@ -8,6 +8,7 @@ import { shuffle, randInt } from './game/utils';
 import { GameCard } from './components/Cards';
 import { BurgerTarget, LogEntry } from './components/GameUI';
 import { HatBadge, PercheroSVG } from './components/HatComponents';
+import hamImg from './imagenes/hamburguesas/ham.png';
 import HatSVG from './components/HatSVG';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -84,7 +85,7 @@ function SetupScreen({ onStart }) {
         boxShadow: '0 8px 40px rgba(0,0,0,.6)', border: '2px solid #2a2a4a',
       }}>
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
-          <div style={{ fontSize: 52 }}>🍔</div>
+          <img src={hamImg} alt="hamburguesa" style={{ width: 90, height: 90, objectFit: 'contain' }} />
           <h1 style={{ fontSize: 30, fontWeight: 900, color: '#FFD700', letterSpacing: 1 }}>Políglota Hambriento</h1>
           <p style={{ color: '#888', fontSize: 13, marginTop: 4 }}>Aprende vocabulario armando hamburguesas</p>
         </div>
