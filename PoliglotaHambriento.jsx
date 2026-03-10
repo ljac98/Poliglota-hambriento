@@ -1,4 +1,21 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import ingPan    from './imagenes/hamburguesas/objetivos/pan.png';
+import ingLechuga from './imagenes/hamburguesas/objetivos/lechuga.png';
+import ingTomate  from './imagenes/hamburguesas/objetivos/tomate.png';
+import ingCarne   from './imagenes/hamburguesas/objetivos/carne.png';
+import ingQueso   from './imagenes/hamburguesas/objetivos/queso.png';
+import ingPollo   from './imagenes/hamburguesas/objetivos/pollo.png';
+import ingHuevo   from './imagenes/hamburguesas/objetivos/huevo.png';
+import ingCebolla from './imagenes/hamburguesas/objetivos/cebolla.png';
+import ingPalta   from './imagenes/hamburguesas/objetivos/palta.png';
+import comodinEsp from './imagenes/ingredientes/comodines/español.png';
+import comodinIng from './imagenes/ingredientes/comodines/ingles.png';
+import comodinFra from './imagenes/ingredientes/comodines/frances.png';
+import comodinIta from './imagenes/ingredientes/comodines/italiano.png';
+import comodinAle from './imagenes/ingredientes/comodines/aleman.png';
+import comodinPor from './imagenes/ingredientes/comodines/portugues.png';
+const ING_IMG = {pan:ingPan,lechuga:ingLechuga,tomate:ingTomate,carne:ingCarne,queso:ingQueso,pollo:ingPollo,huevo:ingHuevo,cebolla:ingCebolla,palta:ingPalta};
+const COMODIN_IMG = {español:comodinEsp,inglés:comodinIng,francés:comodinFra,italiano:comodinIta,alemán:comodinAle,portugués:comodinPor};
 
 /* ═══ CONSTANTS ═══ */
 const INGREDIENTS = ["pan","lechuga","tomate","carne","queso","pollo","huevo","cebolla","palta"];
@@ -101,7 +118,7 @@ const IngredientCard = ({card, onClick, selected, small, playable}) => {
       <div style={{position:"absolute",top:2,left:2,width:small?16:20,height:small?16:20,borderRadius:"50%",
         background:LANG_BADGE[lang],display:"flex",alignItems:"center",justifyContent:"center",
         fontSize:small?9:12,lineHeight:1,boxShadow:"0 1px 3px rgba(0,0,0,0.3)"}}>
-        {isWild ? <span style={{fontWeight:900,color:isDark?"#eee":"#fff"}}>?</span> : ING_EMOJI[ing]}
+        {isWild ? <span style={{fontWeight:900,color:isDark?"#eee":"#fff"}}>?</span> : ING_IMG[ing] ? <img src={ING_IMG[ing]} alt={ing} style={{width:small?10:14,height:small?10:14,objectFit:'contain'}}/> : ING_EMOJI[ing]}
       </div>
       {/* Language */}
       <div style={{marginTop:small?3:5,fontSize:small?10:14,fontWeight:900,color:txtColor,letterSpacing:2,
@@ -114,9 +131,12 @@ const IngredientCard = ({card, onClick, selected, small, playable}) => {
           <HatSVG lang={lang} size={36}/>
         </div>
         <div style={{position:"relative",display:"inline-block"}}>
-          <span style={{fontSize:small?26:36,lineHeight:1,filter:"drop-shadow(0 2px 3px rgba(0,0,0,0.15))"}}>
-            {ING_EMOJI[ing]}
-          </span>
+          {isWild
+            ? <img src={COMODIN_IMG[lang]} alt="comodín" style={{width:small?26:36,height:small?26:36,objectFit:'contain',filter:"drop-shadow(0 2px 3px rgba(0,0,0,0.15))",display:'block'}}/>
+            : ING_IMG[ing]
+              ? <img src={ING_IMG[ing]} alt={ing} style={{width:small?26:36,height:small?26:36,objectFit:'contain',filter:"drop-shadow(0 2px 3px rgba(0,0,0,0.15))",display:'block'}}/>
+              : <span style={{fontSize:small?26:36,lineHeight:1,filter:"drop-shadow(0 2px 3px rgba(0,0,0,0.15))"}}>{ING_EMOJI[ing]}</span>
+          }
         </div>
       </div>
       {/* Name */}
