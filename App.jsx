@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import socket from './src/socket.js';
 import {
   LANGUAGES, LANG_BORDER, LANG_BG, LANG_TEXT, LANG_SHORT,
   ING_EMOJI, ING_BG, FRUITS_VEGS, AI_NAMES, getIngName, getActionInfo,
 } from './constants';
 import { generateDeck, initPlayer, canPlayCard, checkBurgerComplete } from './game';
-import { shuffle, randInt } from './game/utils';
+import { shuffle, randInt, uid } from './game/utils';
 import { GameCard } from './components/Cards';
 import { BurgerTarget, LogEntry } from './components/GameUI';
 import ingPan    from './imagenes/hamburguesas/objetivos/pan.png';
@@ -91,7 +92,7 @@ const Btn = ({ onClick, children, color = '#FFD700', disabled, style = {} }) => 
 );
 
 // ── Setup Screen ──────────────────────────────────────────────────────────────
-function SetupScreen({ onStart }) {
+function SetupScreen({ onStart, onOnline }) {
   const [name, setName] = useState('');
   const [hat, setHat] = useState(null);
   const [diff, setDiff] = useState('medio');
@@ -197,14 +198,23 @@ function SetupScreen({ onStart }) {
           </div>
         </div>
 
-        <Btn
-          onClick={() => onStart(name.trim(), hat, diff, aiCount)}
-          disabled={!name.trim() || !hat}
-          color="#FFD700"
-          style={{ width: '100%', fontSize: 16, padding: '12px 0' }}
-        >
-          🎮 ¡Jugar!
-        </Btn>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <Btn
+            onClick={() => onStart(name.trim(), hat, diff, aiCount)}
+            disabled={!name.trim() || !hat}
+            color="#FFD700"
+            style={{ flex: 1, fontSize: 16, padding: '12px 0' }}
+          >
+            🎮 vs IA
+          </Btn>
+          <Btn
+            onClick={onOnline}
+            color="#00BCD4"
+            style={{ flex: 1, fontSize: 16, padding: '12px 0' }}
+          >
+            🌐 Online
+          </Btn>
+        </div>
       </div>
     </div>
   );
@@ -345,6 +355,322 @@ function OpponentCard({ player, index, color, isActive }) {
   );
 }
 
+// ── Online Menu (create / join room) ─────────────────────────────────────────
+function OnlineMenu({ onCreated, onJoined, onBack }) {
+  const [tab, setTab] = useState('create');
+  const [name, setName] = useState('');
+  const [joinName, setJoinName] = useState('');
+  const [joinCode, setJoinCode] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  function handleCreate() {
+    if (!name.trim()) return;
+    setLoading(true); setError('');
+    socket.connect();
+    socket.once('roomCreated', ({ code }) => {
+      setLoading(false);
+      onCreated(name.trim(), code);
+    });
+    socket.emit('createRoom', { playerName: name.trim() });
+  }
+
+  function handleJoin() {
+    if (!joinName.trim() || !joinCode.trim()) return;
+    setLoading(true); setError('');
+    socket.connect();
+    socket.once('joinError', msg => { setError(msg); setLoading(false); socket.disconnect(); });
+    socket.once('roomJoined', ({ myIdx }) => {
+      setLoading(false);
+      onJoined(joinName.trim(), joinCode.trim().toUpperCase(), myIdx);
+    });
+    socket.emit('joinRoom', { playerName: joinName.trim(), code: joinCode.trim().toUpperCase() });
+  }
+
+  const tabStyle = (active) => ({
+    flex: 1, padding: '10px 0', borderRadius: 10, border: 'none', cursor: 'pointer',
+    fontFamily: "'Fredoka',sans-serif", fontWeight: 700, fontSize: 14,
+    background: active ? '#FFD700' : 'rgba(255,255,255,.06)',
+    color: active ? '#111' : '#aaa', transition: 'all .15s',
+  });
+  const inputStyle = {
+    width: '100%', padding: '10px 14px', borderRadius: 10, border: '2px solid #2a2a4a',
+    background: '#0f1117', color: '#eee', fontFamily: "'Fredoka',sans-serif",
+    fontSize: 15, outline: 'none', boxSizing: 'border-box',
+  };
+
+  return (
+    <div style={{
+      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: 'linear-gradient(135deg,#0f1117 0%,#1a1a2e 100%)',
+      fontFamily: "'Fredoka',sans-serif",
+    }}>
+      <div style={{
+        background: '#16213e', borderRadius: 20, padding: '36px 40px', maxWidth: 480, width: '90vw',
+        boxShadow: '0 8px 40px rgba(0,0,0,.6)', border: '2px solid #2a2a4a',
+      }}>
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+          <div style={{ fontSize: 50, marginBottom: 8 }}>🌐</div>
+          <h1 style={{ fontSize: 26, fontWeight: 900, color: '#FFD700' }}>Multijugador Online</h1>
+          <p style={{ color: '#888', fontSize: 13, marginTop: 4 }}>Juega con amigos en tiempo real</p>
+        </div>
+
+        {/* Tabs */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
+          <button style={tabStyle(tab === 'create')} onClick={() => { setTab('create'); setError(''); }}>
+            ➕ Crear sala
+          </button>
+          <button style={tabStyle(tab === 'join')} onClick={() => { setTab('join'); setError(''); }}>
+            🔗 Unirse a sala
+          </button>
+        </div>
+
+        {tab === 'create' && (
+          <div>
+            <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 6 }}>TU NOMBRE</label>
+            <input
+              value={name} onChange={e => setName(e.target.value)}
+              placeholder="Ingresa tu nombre..."
+              maxLength={20} style={inputStyle}
+              onKeyDown={e => e.key === 'Enter' && handleCreate()}
+            />
+            <Btn
+              onClick={handleCreate}
+              disabled={!name.trim() || loading}
+              color="#FFD700"
+              style={{ width: '100%', fontSize: 16, padding: '12px 0', marginTop: 20 }}
+            >
+              {loading ? '⏳ Creando...' : '🎮 Crear sala'}
+            </Btn>
+          </div>
+        )}
+
+        {tab === 'join' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div>
+              <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 6 }}>TU NOMBRE</label>
+              <input
+                value={joinName} onChange={e => setJoinName(e.target.value)}
+                placeholder="Ingresa tu nombre..." maxLength={20} style={inputStyle}
+              />
+            </div>
+            <div>
+              <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 6 }}>CÓDIGO DE SALA</label>
+              <input
+                value={joinCode} onChange={e => setJoinCode(e.target.value.toUpperCase())}
+                placeholder="Ej: ABCD1" maxLength={7} style={{ ...inputStyle, letterSpacing: 4, textTransform: 'uppercase' }}
+                onKeyDown={e => e.key === 'Enter' && handleJoin()}
+              />
+            </div>
+            <Btn
+              onClick={handleJoin}
+              disabled={!joinName.trim() || !joinCode.trim() || loading}
+              color="#00BCD4"
+              style={{ width: '100%', fontSize: 16, padding: '12px 0' }}
+            >
+              {loading ? '⏳ Uniéndose...' : '🔗 Unirse'}
+            </Btn>
+          </div>
+        )}
+
+        {error && (
+          <div style={{ marginTop: 14, padding: '10px 14px', borderRadius: 8, background: 'rgba(244,67,54,.15)', border: '1px solid #f44336', color: '#ef9a9a', fontSize: 13 }}>
+            ⚠️ {error}
+          </div>
+        )}
+
+        <div style={{ marginTop: 20, textAlign: 'center' }}>
+          <button onClick={onBack} style={{
+            background: 'none', border: 'none', color: '#555', cursor: 'pointer',
+            fontFamily: "'Fredoka',sans-serif", fontSize: 13,
+          }}>
+            ← Volver al menú
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Online Lobby (waiting room before game starts) ────────────────────────────
+function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack }) {
+  const [diff, setDiff] = useState('medio');
+  const [hatPicks, setHatPicks] = useState({});
+  const myHat = hatPicks[myName];
+
+  // Listen for other players' hat picks
+  useEffect(() => {
+    const handleHatPick = ({ playerName, hat }) => {
+      setHatPicks(prev => ({ ...prev, [playerName]: hat }));
+    };
+    socket.on('lobbyHatPick', handleHatPick);
+    return () => socket.off('lobbyHatPick', handleHatPick);
+  }, []);
+
+  const diffs = [
+    { id: 'facil', label: 'Fácil', desc: '1 hamburguesa' },
+    { id: 'medio', label: 'Medio', desc: '2 hamburguesas' },
+    { id: 'dificil', label: 'Difícil', desc: '3 hamburguesas' },
+  ];
+
+  function pickHat(lang) {
+    const taken = Object.values(hatPicks);
+    if (taken.includes(lang) && hatPicks[myName] !== lang) return;
+    setHatPicks(prev => ({ ...prev, [myName]: lang }));
+    socket.emit('lobbyHatPick', { code: roomCode, playerName: myName, hat: lang });
+  }
+
+  function handleStart() {
+    if (!myHat) return;
+    socket.emit('startGame', { code: roomCode, hatPicks, difficulty: diff });
+    onStart(hatPicks, diff);
+  }
+
+  return (
+    <div style={{
+      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: 'linear-gradient(135deg,#0f1117 0%,#1a1a2e 100%)',
+      fontFamily: "'Fredoka',sans-serif",
+    }}>
+      <div style={{
+        background: '#16213e', borderRadius: 20, padding: '32px 36px', maxWidth: 560, width: '92vw',
+        boxShadow: '0 8px 40px rgba(0,0,0,.6)', border: '2px solid #2a2a4a',
+      }}>
+        {/* Room code display */}
+        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+          <div style={{ fontSize: 13, color: '#888', fontWeight: 700, letterSpacing: 1, marginBottom: 6 }}>CÓDIGO DE SALA</div>
+          <div style={{
+            fontSize: 36, fontWeight: 900, color: '#FFD700', letterSpacing: 8,
+            background: 'rgba(255,215,0,.08)', borderRadius: 12, padding: '10px 20px',
+            border: '2px dashed rgba(255,215,0,.3)',
+          }}>
+            {roomCode}
+          </div>
+          <div style={{ fontSize: 12, color: '#555', marginTop: 8 }}>Comparte este código con tus amigos</div>
+        </div>
+
+        {/* Players */}
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: '#555', letterSpacing: 1, marginBottom: 10 }}>
+            JUGADORES ({players.length}/4)
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {players.map((p, i) => (
+              <div key={i} style={{
+                display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
+                borderRadius: 10, background: 'rgba(255,255,255,.04)',
+                border: `2px solid ${PLAYER_COLORS[i % PLAYER_COLORS.length]}44`,
+              }}>
+                <div style={{
+                  width: 28, height: 28, borderRadius: '50%',
+                  background: PLAYER_COLORS[i % PLAYER_COLORS.length] + '33',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 14, fontWeight: 900, color: PLAYER_COLORS[i % PLAYER_COLORS.length],
+                }}>
+                  {i + 1}
+                </div>
+                <span style={{ fontWeight: 700, color: '#eee' }}>{p.name}</span>
+                {p.name === myName && <span style={{ fontSize: 11, color: '#888' }}>(tú)</span>}
+                {i === 0 && <span style={{ fontSize: 11, color: '#FFD700', marginLeft: 'auto' }}>👑 Host</span>}
+                {hatPicks[p.name] && (
+                  <HatSVG lang={hatPicks[p.name]} size={24} />
+                )}
+              </div>
+            ))}
+            {players.length < 2 && (
+              <div style={{ fontSize: 12, color: '#555', textAlign: 'center', padding: 8 }}>
+                ⏳ Esperando más jugadores...
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Hat selection for current player */}
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ color: '#aaa', fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 8 }}>
+            TU IDIOMA {myHat ? '✅' : '(elige uno)'}
+          </label>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {LANGUAGES.map(lang => {
+              const takenBy = Object.entries(hatPicks).find(([n, h]) => h === lang && n !== myName);
+              const isTaken = !!takenBy;
+              return (
+                <div
+                  key={lang}
+                  onClick={() => !isTaken && pickHat(lang)}
+                  style={{
+                    flex: '1 1 28%', minWidth: 75, padding: '6px 4px', borderRadius: 8, cursor: isTaken ? 'not-allowed' : 'pointer',
+                    border: myHat === lang ? '2px solid #FFD700' : `2px solid ${LANG_BORDER[lang]}44`,
+                    background: myHat === lang ? 'rgba(255,215,0,.1)' : isTaken ? 'rgba(0,0,0,.2)' : 'rgba(255,255,255,.02)',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
+                    opacity: isTaken ? 0.4 : 1, transition: 'all .15s',
+                  }}
+                >
+                  <HatSVG lang={lang} size={28} />
+                  <span style={{ fontSize: 10, fontWeight: 800, color: myHat === lang ? '#FFD700' : LANG_TEXT[lang] }}>
+                    {lang.charAt(0).toUpperCase() + lang.slice(1)}
+                  </span>
+                  {isTaken && <span style={{ fontSize: 9, color: '#888' }}>{takenBy[0]}</span>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Difficulty (host only) */}
+        {isHost && (
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ color: '#aaa', fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 8 }}>DIFICULTAD</label>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {diffs.map(d => (
+                <div
+                  key={d.id}
+                  onClick={() => setDiff(d.id)}
+                  style={{
+                    flex: 1, padding: '7px 4px', borderRadius: 8, cursor: 'pointer', textAlign: 'center',
+                    border: diff === d.id ? '2px solid #FFD700' : '2px solid #2a2a4a',
+                    background: diff === d.id ? 'rgba(255,215,0,.08)' : 'rgba(255,255,255,.02)',
+                    transition: 'all .15s',
+                  }}
+                >
+                  <div style={{ fontSize: 12, fontWeight: 700, color: diff === d.id ? '#FFD700' : '#ccc' }}>{d.label}</div>
+                  <div style={{ fontSize: 9, color: '#666', marginTop: 2 }}>{d.desc}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {isHost ? (
+          <Btn
+            onClick={handleStart}
+            disabled={players.length < 2 || !myHat || Object.keys(hatPicks).length < players.length}
+            color="#4CAF50"
+            style={{ width: '100%', fontSize: 15, padding: '12px 0' }}
+          >
+            {Object.keys(hatPicks).length < players.length
+              ? `⏳ Esperando sombreros (${Object.keys(hatPicks).length}/${players.length})`
+              : '🚀 ¡Iniciar partida!'}
+          </Btn>
+        ) : (
+          <div style={{ textAlign: 'center', padding: 12, color: '#888', fontSize: 13 }}>
+            {!myHat ? '👆 Elige tu sombrero de idioma' : '⏳ Esperando que el host inicie...'}
+          </div>
+        )}
+
+        <div style={{ marginTop: 14, textAlign: 'center' }}>
+          <button onClick={onBack} style={{
+            background: 'none', border: 'none', color: '#555', cursor: 'pointer',
+            fontFamily: "'Fredoka',sans-serif", fontSize: 12,
+          }}>
+            ← Salir de la sala
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main App ──────────────────────────────────────────────────────────────────
 export default function App() {
   const [phase, setPhase] = useState('setup');
@@ -360,13 +686,85 @@ export default function App() {
   const [showLog, setShowLog] = useState(false);
   const aiRunning = useRef(false);
 
+  // ── Online multiplayer state ──
+  const [isOnline, setIsOnline] = useState(false);
+  const [isHost, setIsHost] = useState(false);
+  const [myPlayerIdx, setMyPlayerIdx] = useState(0);
+  const [roomCode, setRoomCode] = useState('');
+  const [lobbyPlayers, setLobbyPlayers] = useState([]);
+  // Human index: 0 for local/AI mode, myPlayerIdx for online
+  const HI = isOnline ? myPlayerIdx : 0;
+
   function addLog(playerIdx, text, pls) {
     const p = pls ? pls[playerIdx] : null;
     const color = PLAYER_COLORS[playerIdx % PLAYER_COLORS.length];
     setLog(prev => [{ player: p ? p.name : '', text, color }, ...prev].slice(0, 40));
   }
 
-  // ── Start game ──
+  // ── Socket: lobby updates (hat picks from others) ──
+  useEffect(() => {
+    if (!isOnline) return;
+    socket.on('lobbyUpdate', ({ players: pls }) => setLobbyPlayers(pls));
+    socket.on('lobbyHatPick', () => {});  // handled via lobbyUpdate in server if needed
+    socket.on('playerLeft', ({ players: pls }) => setLobbyPlayers(pls));
+    return () => {
+      socket.off('lobbyUpdate');
+      socket.off('lobbyHatPick');
+      socket.off('playerLeft');
+    };
+  }, [isOnline]);
+
+  // ── Socket: non-host receives full game state from host ──
+  useEffect(() => {
+    if (!isOnline || isHost) return;
+    socket.on('stateUpdate', ({ state }) => {
+      setPlayers(state.players);
+      setDeck(state.deck);
+      setDiscard(state.discard);
+      setCp(state.cp);
+      setLog(state.log);
+      setExtraPlay(state.extraPlay || false);
+      setModal(state.modal || null);
+      if (state.winner) { setWinner(state.winner); setPhase('gameover'); }
+      else if (state.phase) setPhase(state.phase);
+    });
+    return () => socket.off('stateUpdate');
+  }, [isOnline, isHost]);
+
+  // ── Socket: host syncs state to all clients after every change ──
+  const syncRef = useRef(null);
+  useEffect(() => {
+    if (!isOnline || !isHost || phase !== 'playing') return;
+    clearTimeout(syncRef.current);
+    syncRef.current = setTimeout(() => {
+      socket.emit('syncState', {
+        code: roomCode,
+        state: { players, deck, discard, cp, log, extraPlay, modal, winner, phase },
+      });
+    }, 80);
+  }, [players, deck, discard, cp, log, extraPlay, modal, winner, phase, isOnline, isHost]);
+
+  // ── Socket: host processes remote player actions ──
+  // We store the latest state in refs so the socket handler always has fresh values
+  const playersRef = useRef(players);
+  const deckRef = useRef(deck);
+  const discardRef = useRef(discard);
+  const modalRef = useRef(modal);
+  useEffect(() => { playersRef.current = players; }, [players]);
+  useEffect(() => { deckRef.current = deck; }, [deck]);
+  useEffect(() => { discardRef.current = discard; }, [discard]);
+  useEffect(() => { modalRef.current = modal; }, [modal]);
+
+  useEffect(() => {
+    if (!isOnline || !isHost) return;
+    const handler = ({ playerIdx, action }) => {
+      processRemoteAction(playerIdx, action);
+    };
+    socket.on('remoteAction', handler);
+    return () => socket.off('remoteAction', handler);
+  }, [isOnline, isHost]);  // eslint-disable-line
+
+  // ── Start game (local / vs AI) ──
   function startGame(name, hat, diff, aiCount) {
     const rawDeck = generateDeck();
     const deckArr = [...rawDeck];
@@ -380,17 +778,198 @@ export default function App() {
       usedHats.push(aiHat);
       ps.push(initPlayer(aiNames[i % aiNames.length], deckArr, aiHat, diff, true));
     }
-    setPlayers(ps);
-    setDeck(deckArr);
-    setDiscard([]);
-    setCp(0);
-    setLog([]);
-    setSelectedIdx(null);
-    setModal(null);
-    setWinner(null);
-    setExtraPlay(false);
+    setPlayers(ps); setDeck(deckArr); setDiscard([]);
+    setCp(0); setLog([]); setSelectedIdx(null); setModal(null);
+    setWinner(null); setExtraPlay(false);
     aiRunning.current = false;
     setPhase('playing');
+  }
+
+  // ── Start game (online host) ──
+  function startOnlineGame(hatPicks, diff, onlinePls) {
+    const rawDeck = generateDeck();
+    const deckArr = [...rawDeck];
+    const ps = onlinePls.map(p => initPlayer(p.name, deckArr, hatPicks[p.name], diff, false));
+    // Mark non-host players as remote
+    ps.forEach((p, i) => { if (i !== 0) p.isRemote = true; });
+    setPlayers(ps); setDeck(deckArr); setDiscard([]);
+    setCp(0); setLog([]); setSelectedIdx(null); setModal(null);
+    setWinner(null); setExtraPlay(false);
+    aiRunning.current = false;
+    setPhase('playing');
+  }
+
+  // ── Host: process remote player action ──
+  function processRemoteAction(idx, action) {
+    // Use refs to get fresh values (avoid stale closure)
+    {
+      const pls = clone(playersRef.current);
+      let dk = [...deckRef.current];
+      let di = [...discardRef.current];
+      const prevModal = modalRef.current;
+
+            const { type } = action;
+
+            if (type === 'playIngredient') {
+              const card = pls[idx].hand[action.cardIdx];
+              if (!card || !canPlayCard(pls[idx], card)) return;
+              addLog(idx, `jugó ${getIngName(card.ingredient, card.language)} ${ING_EMOJI[card.ingredient]}`, pls);
+              pls[idx].hand.splice(action.cardIdx, 1);
+              pls[idx].table.push(card.ingredient);
+              const { player: up, freed, done } = advanceBurger(pls[idx]);
+              pls[idx] = up;
+              di = [...di, card];
+              if (done) { freed.forEach(ing => di.push({ type: 'ingredient', ingredient: ingKey(ing), id: uid() })); addLog(idx, '¡completó una hamburguesa! 🎉', pls); }
+              setTimeout(() => endTurnFromRemote(pls, dk, di, idx), 0);
+
+            } else if (type === 'playWildcard') {
+              const card = pls[idx].hand[action.cardIdx];
+              if (!card) return;
+              addLog(idx, `jugó 🌭 Comodín como ${ING_EMOJI[action.ingredient]} ${action.ingredient}`, pls);
+              pls[idx].hand.splice(action.cardIdx, 1);
+              pls[idx].table.push('perrito|' + action.ingredient);
+              const { player: up, freed, done } = advanceBurger(pls[idx]);
+              pls[idx] = up;
+              di = [...di, card];
+              if (done) { freed.forEach(ing => di.push({ type: 'ingredient', ingredient: ingKey(ing), id: uid() })); addLog(idx, '¡completó una hamburguesa! 🎉', pls); }
+              setTimeout(() => endTurnFromRemote(pls, dk, di, idx), 0);
+
+            } else if (type === 'discard') {
+              const card = pls[idx].hand[action.cardIdx];
+              if (!card) return;
+              addLog(idx, `descartó una carta`, pls);
+              pls[idx].hand.splice(action.cardIdx, 1);
+              di = [...di, card];
+              setTimeout(() => endTurnFromRemote(pls, dk, di, idx), 0);
+
+            } else if (type === 'playMass') {
+              const card = pls[idx].hand[action.cardIdx];
+              if (!card) return;
+              const info = getActionInfo(card.action);
+              addLog(idx, `jugó ${info.name} ${info.emoji}`, pls);
+              pls[idx].hand.splice(action.cardIdx, 1);
+              di = [...di, card];
+              const r = applyMass(pls, di, card.action);
+              setTimeout(() => endTurnFromRemote(r.players, dk, r.discard, idx), 0);
+
+            } else if (type === 'playActionTarget') {
+              const card = pls[idx].hand[action.cardIdx];
+              if (!card) return;
+              const info = getActionInfo(card.action);
+              const ti = action.targetIdx;
+              addLog(idx, `jugó ${info.name} ${info.emoji} contra ${pls[ti].name}`, pls);
+              pls[idx].hand.splice(action.cardIdx, 1);
+              di = [...di, card];
+
+              if (card.action === 'gloton') {
+                pls[ti].table.forEach(ing => di.push({ type: 'ingredient', ingredient: ingKey(ing), id: uid() }));
+                pls[ti].table = [];
+                setTimeout(() => endTurnFromRemote(pls, dk, di, idx), 0);
+              } else if (card.action === 'tenedor' && action.ingIdx !== undefined) {
+                const stolen = pls[ti].table.splice(action.ingIdx, 1)[0];
+                pls[idx].table.push(stolen);
+                const { player: up, freed, done } = advanceBurger(pls[idx]);
+                pls[idx] = up;
+                if (done) { freed.forEach(ing => di.push({ type: 'ingredient', ingredient: ingKey(ing), id: uid() })); }
+                setTimeout(() => endTurnFromRemote(pls, dk, di, idx), 0);
+              } else if (card.action === 'ladron') {
+                if (pls[ti].mainHats.length > 0) {
+                  const stolen = pls[ti].mainHats.splice(0, 1)[0];
+                  pls[idx].mainHats.push(stolen);
+                  if (pls[ti].mainHats.length === 0 && pls[ti].perchero.length > 0) {
+                    // Victim needs to pick a new hat
+                    setPlayers(pls); setDiscard(di);
+                    setModal({ type: 'pickHatReplace', newPls: pls, newDiscard: di, victimIdx: ti, fromIdx: idx });
+                    return;
+                  }
+                }
+                setTimeout(() => endTurnFromRemote(pls, dk, di, idx), 0);
+              } else if (card.action === 'intercambio_sombreros') {
+                const tmp = pls[idx].mainHats[0];
+                pls[idx].mainHats[0] = pls[ti].mainHats[0];
+                pls[ti].mainHats[0] = tmp;
+                setTimeout(() => endTurnFromRemote(pls, dk, di, idx), 0);
+              } else if (card.action === 'intercambio_hamburguesa') {
+                const tmp = pls[idx].table;
+                pls[idx].table = pls[ti].table;
+                pls[ti].table = tmp;
+                setTimeout(() => endTurnFromRemote(pls, dk, di, idx), 0);
+              }
+
+            } else if (type === 'playCambioSombrero') {
+              const card = pls[idx].hand[action.cardIdx];
+              if (!card) return;
+              pls[idx].hand.splice(action.cardIdx, 1);
+              di = [...di, card];
+              const hi = pls[idx].perchero.indexOf(action.hatLang);
+              if (hi !== -1) pls[idx].perchero.splice(hi, 1);
+              pls[idx].mainHats.unshift(action.hatLang);
+              addLog(idx, `cambió sombrero a ${action.hatLang} — puede jugar una carta`, pls);
+              setPlayers(pls); setDiscard(di); setExtraPlay(true);
+
+            } else if (type === 'playBasurero') {
+              const card = pls[idx].hand[action.cardIdx];
+              if (!card) return;
+              pls[idx].hand.splice(action.cardIdx, 1);
+              di = [...di, card];
+              const found = di.find(c => c.id === action.pickedCardId);
+              if (found) {
+                di = di.filter(c => c.id !== action.pickedCardId);
+                pls[idx].hand.push(found);
+                addLog(idx, `rescató ${ING_EMOJI[found.ingredient]} del basurero`, pls);
+              }
+              setTimeout(() => endTurnFromRemote(pls, dk, di, idx), 0);
+
+            } else if (type === 'manualCambiar') {
+              const p = pls[idx];
+              const hi = p.perchero.indexOf(action.hatLang);
+              if (hi === -1) return;
+              p.perchero.splice(hi, 1);
+              const oldMain = p.mainHats[0];
+              p.mainHats[0] = action.hatLang;
+              p.perchero.push(oldMain);
+              const cost = Math.ceil(p.hand.length / 2);
+              const discarded = p.hand.splice(0, cost);
+              di = [...di, ...discarded];
+              addLog(idx, `cambió sombrero a ${action.hatLang} (descartó ${cost} cartas)`, pls);
+              setPlayers(pls); setDiscard(di); setExtraPlay(true);
+
+            } else if (type === 'manualAgregar') {
+              const p = pls[idx];
+              const hi = p.perchero.indexOf(action.hatLang);
+              if (hi === -1) return;
+              p.perchero.splice(hi, 1);
+              p.mainHats.push(action.hatLang);
+              di = [...di, ...p.hand];
+              p.hand = [];
+              p.maxHand = Math.max(1, p.maxHand - 1);
+              const { drawn, deck: nd, discard: nd2 } = drawN(dk, di, p.maxHand);
+              p.hand = drawn; dk = nd; di = nd2;
+              addLog(idx, `agregó sombrero ${action.hatLang} — mano máx reducida a ${p.maxHand}`, pls);
+              setPlayers(pls); setDeck(dk); setDiscard(di); setExtraPlay(true);
+
+            } else if (type === 'pickHatReplace') {
+              // Victim (remote) picks replacement hat after ladron
+              if (prevModal?.type === 'pickHatReplace') {
+                const { newPls, newDiscard, victimIdx, fromIdx } = prevModal;
+                const hi = newPls[victimIdx].perchero.indexOf(action.hatLang);
+                if (hi !== -1) {
+                  newPls[victimIdx].perchero.splice(hi, 1);
+                  newPls[victimIdx].mainHats.push(action.hatLang);
+                }
+                setModal(null);
+                setTimeout(() => endTurnFromRemote(newPls, dk, newDiscard, fromIdx ?? idx), 0);
+              }
+
+            } else if (type === 'passTurn') {
+              setExtraPlay(false);
+              setTimeout(() => endTurnFromRemote(pls, dk, di, idx), 0);
+            }
+    }
+  }
+
+  function endTurnFromRemote(pls, dk, di, idx) {
+    endTurn(pls, dk, di, idx);
   }
 
   // ── Check win ──
@@ -421,7 +1000,8 @@ export default function App() {
     setPlayers(newPls); setDeck(newDeck); setDiscard(newDiscard);
     setSelectedIdx(null); setExtraPlay(false);
     setCp(nextIdx);
-    if (nextIdx === 0) {
+    // In online mode skip transition screen (turn order is visible in UI)
+    if (nextIdx === HI && !isOnline) {
       setPhase('transition');
     }
     // If AI, useEffect will trigger
@@ -548,6 +1128,8 @@ export default function App() {
   useEffect(() => {
     if (phase !== 'playing') return;
     if (!players.length) return;
+    // Skip if it's a remote player's turn (they handle it on their client)
+    if (players[cp]?.isRemote) return;
     if (!players[cp]?.isAI) return;
     if (modal) return;
 
@@ -560,8 +1142,24 @@ export default function App() {
   // ── Human: Play selected card ──
   function humanPlay() {
     if (selectedIdx === null) return;
-    const human = players[0];
+    const human = players[HI];
     const card = human.hand[selectedIdx];
+
+    // Non-host: send action via socket
+    if (isOnline && !isHost) {
+      if (card.type === 'ingredient') {
+        if (!canPlayCard(human, card)) return;
+        if (card.ingredient === 'perrito') {
+          setModal({ type: 'wildcard', cardIdx: selectedIdx });
+          return;
+        }
+        socket.emit('playerAction', { code: roomCode, action: { type: 'playIngredient', cardIdx: selectedIdx } });
+        setSelectedIdx(null);
+      } else if (card.type === 'action') {
+        humanPlayActionRemote(card, selectedIdx);
+      }
+      return;
+    }
 
     if (card.type === 'ingredient') {
       if (!canPlayCard(human, card)) return;
@@ -569,23 +1167,43 @@ export default function App() {
         setModal({ type: 'wildcard', cardIdx: selectedIdx });
         return;
       }
-      addLog(0, `jugó ${getIngName(card.ingredient, card.language)} ${ING_EMOJI[card.ingredient]}`, players);
+      addLog(HI, `jugó ${getIngName(card.ingredient, card.language)} ${ING_EMOJI[card.ingredient]}`, players);
       const newPls = clone(players);
-      newPls[0].hand.splice(selectedIdx, 1);
-      newPls[0].table.push(card.ingredient);
-      const { player: up, freed, done } = advanceBurger(newPls[0]);
-      newPls[0] = up;
+      newPls[HI].hand.splice(selectedIdx, 1);
+      newPls[HI].table.push(card.ingredient);
+      const { player: up, freed, done } = advanceBurger(newPls[HI]);
+      newPls[HI] = up;
       let newDiscard = [...discard, card];
       if (done) {
         freed.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `f${Date.now()}${Math.random()}` }));
-        addLog(0, '¡completó una hamburguesa! 🎉', newPls);
+        addLog(HI, '¡completó una hamburguesa! 🎉', newPls);
       }
       setSelectedIdx(null);
       setExtraPlay(false);
-      endTurn(newPls, deck, newDiscard, 0);
+      endTurn(newPls, deck, newDiscard, HI);
 
     } else if (card.type === 'action') {
       humanPlayAction(card, selectedIdx);
+    }
+  }
+
+  // ── Non-host: action card dispatch via socket ──
+  function humanPlayActionRemote(card, cardIdx) {
+    const mass = ['milanesa', 'ensalada', 'pizza', 'parrilla', 'comecomodines'];
+    if (mass.includes(card.action)) {
+      socket.emit('playerAction', { code: roomCode, action: { type: 'playMass', cardIdx } });
+      setSelectedIdx(null);
+    } else if (card.action === 'cambio_sombrero') {
+      if (players[HI].perchero.length === 0) { alert('No tienes sombreros en el perchero'); return; }
+      setModal({ type: 'cambio_sombrero', cardIdx });
+    } else if (card.action === 'basurero') {
+      const ingCards = discard.filter(c => c.type === 'ingredient');
+      if (ingCards.length === 0) { alert('El basurero está vacío'); return; }
+      setModal({ type: 'basurero', cardIdx, cards: ingCards });
+    } else if (['tenedor', 'ladron', 'intercambio_sombreros', 'intercambio_hamburguesa', 'gloton'].includes(card.action)) {
+      setModal({ type: 'pickTarget', cardIdx, action: card.action });
+    } else if (card.action === 'negacion') {
+      alert('Negación se juega en respuesta a una acción enemiga');
     }
   }
 
@@ -594,16 +1212,16 @@ export default function App() {
     const mass = ['milanesa', 'ensalada', 'pizza', 'parrilla', 'comecomodines'];
 
     if (mass.includes(card.action)) {
-      addLog(0, `jugó ${info.name} ${info.emoji}`, players);
+      addLog(HI, `jugó ${info.name} ${info.emoji}`, players);
       const newPls = clone(players);
-      newPls[0].hand.splice(cardIdx, 1);
+      newPls[HI].hand.splice(cardIdx, 1);
       let newDiscard = [...discard, card];
       const { players: ps2, discard: di2 } = applyMass(newPls, newDiscard, card.action);
       setSelectedIdx(null);
-      endTurn(ps2, deck, di2, 0);
+      endTurn(ps2, deck, di2, HI);
 
     } else if (card.action === 'cambio_sombrero') {
-      if (players[0].perchero.length === 0) { alert('No tienes sombreros en el perchero'); return; }
+      if (players[HI].perchero.length === 0) { alert('No tienes sombreros en el perchero'); return; }
       setModal({ type: 'cambio_sombrero', cardIdx });
 
     } else if (card.action === 'basurero') {
@@ -621,183 +1239,295 @@ export default function App() {
 
   function humanDiscard() {
     if (selectedIdx === null) return;
-    const card = players[0].hand[selectedIdx];
-    addLog(0, `descartó ${card.type === 'ingredient' ? getIngName(card.ingredient, card.language) : getActionInfo(card.action).name}`, players);
+    if (isOnline && !isHost) {
+      socket.emit('playerAction', { code: roomCode, action: { type: 'discard', cardIdx: selectedIdx } });
+      setSelectedIdx(null);
+      return;
+    }
+    const card = players[HI].hand[selectedIdx];
+    addLog(HI, `descartó ${card.type === 'ingredient' ? getIngName(card.ingredient, card.language) : getActionInfo(card.action).name}`, players);
     const newPls = clone(players);
-    const discarded = newPls[0].hand.splice(selectedIdx, 1)[0];
+    const discarded = newPls[HI].hand.splice(selectedIdx, 1)[0];
     setSelectedIdx(null);
-    endTurn(newPls, deck, [...discard, discarded], 0);
+    endTurn(newPls, deck, [...discard, discarded], HI);
   }
 
   function confirmWildcard(chosenIng) {
     const { cardIdx } = modal;
-    const card = players[0].hand[cardIdx];
-    addLog(0, `jugó 🌭 Comodín como ${ING_EMOJI[chosenIng]} ${chosenIng} (${LANG_SHORT[card.language]})`, players);
+    setModal(null); setSelectedIdx(null);
+    if (isOnline && !isHost) {
+      socket.emit('playerAction', { code: roomCode, action: { type: 'playWildcard', cardIdx, ingredient: chosenIng } });
+      return;
+    }
+    const card = players[HI].hand[cardIdx];
+    addLog(HI, `jugó 🌭 Comodín como ${ING_EMOJI[chosenIng]} ${chosenIng} (${LANG_SHORT[card.language]})`, players);
     const newPls = clone(players);
-    newPls[0].hand.splice(cardIdx, 1);
-    newPls[0].table.push('perrito|' + chosenIng);
-    const { player: up, freed, done } = advanceBurger(newPls[0]);
-    newPls[0] = up;
+    newPls[HI].hand.splice(cardIdx, 1);
+    newPls[HI].table.push('perrito|' + chosenIng);
+    const { player: up, freed, done } = advanceBurger(newPls[HI]);
+    newPls[HI] = up;
     let newDiscard = [...discard, card];
     if (done) {
       freed.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `f${Date.now()}${Math.random()}` }));
-      addLog(0, '¡completó una hamburguesa! 🎉', newPls);
+      addLog(HI, '¡completó una hamburguesa! 🎉', newPls);
     }
-    setModal(null); setSelectedIdx(null); setExtraPlay(false);
-    endTurn(newPls, deck, newDiscard, 0);
+    setExtraPlay(false);
+    endTurn(newPls, deck, newDiscard, HI);
   }
 
   // ── Modal resolvers ──
   function resolvePickTarget(targetIdx) {
     const { cardIdx, action } = modal;
-    const card = players[0].hand[cardIdx];
+    setModal(null); setSelectedIdx(null);
+
+    // Non-host: send action via socket (tenedor needs ingIdx too, handled via nested modal)
+    if (isOnline && !isHost) {
+      if (action === 'tenedor') {
+        // Show ingredient picker locally, then send complete action
+        const newPls = clone(players);
+        const card = newPls[HI].hand[cardIdx];
+        newPls[HI].hand.splice(cardIdx, 1);
+        const newDiscard = [...discard, card];
+        if (newPls[targetIdx].table.length === 0) return;
+        setModal({ type: 'pickIngredientRemote', targetIdx, cardIdx, newPls, newDiscard });
+      } else {
+        socket.emit('playerAction', { code: roomCode, action: { type: 'playActionTarget', cardIdx, targetIdx, action } });
+      }
+      return;
+    }
+
+    const card = players[HI].hand[cardIdx];
     const info = getActionInfo(action);
-    addLog(0, `jugó ${info.name} ${info.emoji} contra ${players[targetIdx].name}`, players);
+    addLog(HI, `jugó ${info.name} ${info.emoji} contra ${players[targetIdx].name}`, players);
     const newPls = clone(players);
-    newPls[0].hand.splice(cardIdx, 1);
+    newPls[HI].hand.splice(cardIdx, 1);
     let newDiscard = [...discard, card];
 
     if (action === 'gloton') {
       newPls[targetIdx].table.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `g${Date.now()}` }));
       newPls[targetIdx].table = [];
-      setModal(null); setSelectedIdx(null); endTurn(newPls, deck, newDiscard, 0);
+      endTurn(newPls, deck, newDiscard, HI);
 
     } else if (action === 'tenedor') {
-      if (newPls[targetIdx].table.length === 0) { setModal(null); return; }
+      if (newPls[targetIdx].table.length === 0) return;
       setModal({ type: 'pickIngredient', targetIdx, newPls, newDiscard });
 
     } else if (action === 'ladron') {
-      if (newPls[targetIdx].mainHats.length === 0) { setModal(null); return; }
+      if (newPls[targetIdx].mainHats.length === 0) return;
       const stolen = newPls[targetIdx].mainHats.splice(0, 1)[0];
-      newPls[0].mainHats.push(stolen);
-      addLog(0, `robó el sombrero ${stolen}`, newPls);
+      newPls[HI].mainHats.push(stolen);
+      addLog(HI, `robó el sombrero ${stolen}`, newPls);
       if (newPls[targetIdx].mainHats.length === 0) {
         if (newPls[targetIdx].perchero.length > 0) {
           if (newPls[targetIdx].isAI) {
             const nh = newPls[targetIdx].perchero.shift();
             newPls[targetIdx].mainHats.push(nh);
-            setModal(null); setSelectedIdx(null); endTurn(newPls, deck, newDiscard, 0);
+            endTurn(newPls, deck, newDiscard, HI);
+          } else if (newPls[targetIdx].isRemote) {
+            // Remote victim: broadcast modal state, wait for their response
+            setModal({ type: 'pickHatReplace', newPls, newDiscard, victimIdx: targetIdx, fromIdx: HI });
+            setPlayers(newPls); setDiscard(newDiscard);
           } else {
             setModal({ type: 'pickHatReplace', newPls, newDiscard, victimIdx: targetIdx });
           }
           return;
         }
       }
-      setModal(null); setSelectedIdx(null); endTurn(newPls, deck, newDiscard, 0);
+      endTurn(newPls, deck, newDiscard, HI);
 
     } else if (action === 'intercambio_sombreros') {
-      if (newPls[0].mainHats[0] && newPls[targetIdx].mainHats[0]) {
-        const tmp = newPls[0].mainHats[0];
-        newPls[0].mainHats[0] = newPls[targetIdx].mainHats[0];
+      if (newPls[HI].mainHats[0] && newPls[targetIdx].mainHats[0]) {
+        const tmp = newPls[HI].mainHats[0];
+        newPls[HI].mainHats[0] = newPls[targetIdx].mainHats[0];
         newPls[targetIdx].mainHats[0] = tmp;
       }
-      setModal(null); setSelectedIdx(null); endTurn(newPls, deck, newDiscard, 0);
+      endTurn(newPls, deck, newDiscard, HI);
 
     } else if (action === 'intercambio_hamburguesa') {
-      const tmp = newPls[0].table;
-      newPls[0].table = newPls[targetIdx].table;
+      const tmp = newPls[HI].table;
+      newPls[HI].table = newPls[targetIdx].table;
       newPls[targetIdx].table = tmp;
-      setModal(null); setSelectedIdx(null); endTurn(newPls, deck, newDiscard, 0);
+      endTurn(newPls, deck, newDiscard, HI);
     }
   }
 
   function resolvePickIngredient(ingIdx) {
     const { targetIdx, newPls, newDiscard } = modal;
+    setModal(null); setSelectedIdx(null);
+    // Non-host: send complete action
+    if (isOnline && !isHost) {
+      const { cardIdx } = modal;
+      socket.emit('playerAction', { code: roomCode, action: { type: 'playActionTarget', cardIdx, targetIdx, action: 'tenedor', ingIdx } });
+      return;
+    }
     const stolen = newPls[targetIdx].table.splice(ingIdx, 1)[0];
-    newPls[0].table.push(stolen);
-    const { player: up, freed, done } = advanceBurger(newPls[0]);
-    newPls[0] = up;
+    newPls[HI].table.push(stolen);
+    const { player: up, freed, done } = advanceBurger(newPls[HI]);
+    newPls[HI] = up;
     let fd = newDiscard;
-    if (done) { freed.forEach(ing => fd = [...fd, { type: 'ingredient', ingredient: ingKey(ing), id: `t${Date.now()}` }]); addLog(0, '¡completó una hamburguesa! 🎉', newPls); }
-    setModal(null); setSelectedIdx(null); endTurn(newPls, deck, fd, 0);
+    if (done) { freed.forEach(ing => fd = [...fd, { type: 'ingredient', ingredient: ingKey(ing), id: `t${Date.now()}` }]); addLog(HI, '¡completó una hamburguesa! 🎉', newPls); }
+    endTurn(newPls, deck, fd, HI);
   }
 
   function resolveHatReplace(hatLang) {
-    const { newPls, newDiscard, victimIdx } = modal;
+    const { newPls, newDiscard, victimIdx, fromIdx } = modal;
+    setModal(null); setSelectedIdx(null);
+    // Non-host victim sends their hat pick
+    if (isOnline && !isHost) {
+      socket.emit('playerAction', { code: roomCode, action: { type: 'pickHatReplace', hatLang } });
+      return;
+    }
     const hi = newPls[victimIdx].perchero.indexOf(hatLang);
     newPls[victimIdx].perchero.splice(hi, 1);
     newPls[victimIdx].mainHats.push(hatLang);
-    setModal(null); setSelectedIdx(null); endTurn(newPls, deck, newDiscard, 0);
+    endTurn(newPls, deck, newDiscard, fromIdx ?? HI);
   }
 
   function resolveCambioSombrero(hatLang) {
     const { cardIdx } = modal;
-    const card = players[0].hand[cardIdx];
-    const newPls = clone(players);
-    newPls[0].hand.splice(cardIdx, 1);
-    let newDiscard = [...discard, card];
-    const hi = newPls[0].perchero.indexOf(hatLang);
-    newPls[0].perchero.splice(hi, 1);
-    newPls[0].mainHats.unshift(hatLang);
-    addLog(0, `cambió sombrero a ${hatLang} — puede jugar una carta`, newPls);
     setModal(null); setSelectedIdx(null);
+    if (isOnline && !isHost) {
+      socket.emit('playerAction', { code: roomCode, action: { type: 'playCambioSombrero', cardIdx, hatLang } });
+      return;
+    }
+    const card = players[HI].hand[cardIdx];
+    const newPls = clone(players);
+    newPls[HI].hand.splice(cardIdx, 1);
+    let newDiscard = [...discard, card];
+    const hi = newPls[HI].perchero.indexOf(hatLang);
+    newPls[HI].perchero.splice(hi, 1);
+    newPls[HI].mainHats.unshift(hatLang);
+    addLog(HI, `cambió sombrero a ${hatLang} — puede jugar una carta`, newPls);
     setPlayers(newPls); setDiscard(newDiscard); setExtraPlay(true);
   }
 
   // Manual: swap main hat from perchero (costs half your hand)
   function resolveManualCambiar(hatLang) {
+    setModal(null); setSelectedIdx(null);
+    if (isOnline && !isHost) {
+      socket.emit('playerAction', { code: roomCode, action: { type: 'manualCambiar', hatLang } });
+      return;
+    }
     const newPls = clone(players);
-    const p = newPls[0];
+    const p = newPls[HI];
     const hi = p.perchero.indexOf(hatLang);
     p.perchero.splice(hi, 1);
     const oldMain = p.mainHats[0];
     p.mainHats[0] = hatLang;
     p.perchero.push(oldMain);
-    // Cost: discard half the hand (rounded up)
     const cost = Math.ceil(p.hand.length / 2);
     const discarded = p.hand.splice(0, cost);
     let newDiscard = [...discard, ...discarded];
-    addLog(0, `cambió sombrero a ${hatLang} (descartó ${cost} carta${cost !== 1 ? 's' : ''}) — puede jugar una carta`, newPls);
-    setModal(null); setSelectedIdx(null);
+    addLog(HI, `cambió sombrero a ${hatLang} (descartó ${cost} carta${cost !== 1 ? 's' : ''}) — puede jugar una carta`, newPls);
     setPlayers(newPls); setDiscard(newDiscard); setExtraPlay(true);
   }
 
   // Manual: add an extra hat from perchero (costs discarding entire hand, reduces maxHand)
   function resolveManualAgregar(hatLang) {
+    setModal(null); setSelectedIdx(null);
+    if (isOnline && !isHost) {
+      socket.emit('playerAction', { code: roomCode, action: { type: 'manualAgregar', hatLang } });
+      return;
+    }
     const newPls = clone(players);
-    const p = newPls[0];
+    const p = newPls[HI];
     const hi = p.perchero.indexOf(hatLang);
     p.perchero.splice(hi, 1);
     p.mainHats.push(hatLang);
-    // Cost: discard entire hand and reduce maxHand
     let newDiscard = [...discard, ...p.hand];
     p.hand = [];
     p.maxHand = Math.max(1, p.maxHand - 1);
-    // Refill at new maxHand
     const { drawn, deck: newDeck, discard: di2 } = drawN(deck, newDiscard, p.maxHand);
     p.hand = drawn;
-    addLog(0, `agregó sombrero ${hatLang} — mano máx reducida a ${p.maxHand}`, newPls);
-    setModal(null); setSelectedIdx(null);
+    addLog(HI, `agregó sombrero ${hatLang} — mano máx reducida a ${p.maxHand}`, newPls);
     setPlayers(newPls); setDeck(newDeck); setDiscard(di2); setExtraPlay(true);
   }
 
   function resolveBasurero(cardId) {
     const { cardIdx } = modal;
-    const actionCard = players[0].hand[cardIdx];
+    setModal(null); setSelectedIdx(null);
+    if (isOnline && !isHost) {
+      socket.emit('playerAction', { code: roomCode, action: { type: 'playBasurero', cardIdx, pickedCardId: cardId } });
+      return;
+    }
+    const actionCard = players[HI].hand[cardIdx];
     const newPls = clone(players);
-    newPls[0].hand.splice(cardIdx, 1);
+    newPls[HI].hand.splice(cardIdx, 1);
     let newDiscard = [...discard, actionCard];
     const found = newDiscard.find(c => c.id === cardId);
     if (found) {
       newDiscard = newDiscard.filter(c => c.id !== cardId);
-      newPls[0].hand.push(found);
-      addLog(0, `rescató ${ING_EMOJI[found.ingredient]} del basurero`, newPls);
+      newPls[HI].hand.push(found);
+      addLog(HI, `rescató ${ING_EMOJI[found.ingredient]} del basurero`, newPls);
     }
-    setModal(null); setSelectedIdx(null); endTurn(newPls, deck, newDiscard, 0);
+    endTurn(newPls, deck, newDiscard, HI);
   }
 
   // ── Render phases ──
-  if (phase === 'setup') return <SetupScreen onStart={startGame} />;
-  if (phase === 'transition') return <TransitionScreen player={players[0]} onContinue={() => setPhase('playing')} />;
-  if (phase === 'gameover') return <GameOverScreen winner={winner} players={players} onRestart={() => setPhase('setup')} />;
+  if (phase === 'setup') return (
+    <SetupScreen
+      onStart={startGame}
+      onOnline={() => setPhase('onlineMenu')}
+    />
+  );
+
+  if (phase === 'onlineMenu') return (
+    <OnlineMenu
+      onBack={() => setPhase('setup')}
+      onCreated={(name, code) => {
+        setIsOnline(true); setIsHost(true); setMyPlayerIdx(0); setRoomCode(code);
+        setLobbyPlayers([{ name, idx: 0 }]);
+        setPhase('onlineLobby');
+      }}
+      onJoined={(name, code, myIdx) => {
+        setIsOnline(true); setIsHost(false); setMyPlayerIdx(myIdx); setRoomCode(code);
+        setLobbyPlayers([]);
+        // gameStarted event will trigger stateUpdate which sets phase to 'playing'
+        socket.once('gameStarted', () => setPhase('playing'));
+        setPhase('onlineLobby');
+      }}
+    />
+  );
+
+  if (phase === 'onlineLobby') return (
+    <OnlineLobby
+      roomCode={roomCode}
+      myName={lobbyPlayers[myPlayerIdx]?.name || ''}
+      isHost={isHost}
+      players={lobbyPlayers}
+      onStart={(hatPicks, diff) => {
+        if (isHost) {
+          startOnlineGame(hatPicks, diff, lobbyPlayers);
+        }
+      }}
+      onBack={() => {
+        socket.disconnect();
+        setIsOnline(false); setIsHost(false); setMyPlayerIdx(0); setRoomCode('');
+        setLobbyPlayers([]);
+        setPhase('setup');
+      }}
+    />
+  );
+
+  if (phase === 'transition') return <TransitionScreen player={players[HI]} onContinue={() => setPhase('playing')} />;
+  if (phase === 'gameover') return (
+    <GameOverScreen
+      winner={winner}
+      players={players}
+      onRestart={() => {
+        if (isOnline) { socket.disconnect(); setIsOnline(false); setIsHost(false); setMyPlayerIdx(0); setRoomCode(''); setLobbyPlayers([]); }
+        setPhase('setup');
+      }}
+    />
+  );
   if (!players.length) return null;
 
   // ── Playing screen ──
-  const human = players[0];
-  const opponents = players.slice(1);
-  const isHumanTurn = cp === 0;
+  const human = players[HI] || players[0];
+  const opponents = players.filter((_, i) => i !== HI);
+  const isHumanTurn = cp === HI;
   const burger = human.burgers[human.currentBurger];
-  const humanColor = PLAYER_COLORS[0];
+  const humanColor = PLAYER_COLORS[HI % PLAYER_COLORS.length];
 
   // Card playability
   const getPlayable = (card, idx) => {
@@ -825,13 +1555,18 @@ export default function App() {
           <span style={{ fontSize: 12, color: '#555' }}>🃏 {deck.length}</span>
           <span style={{ fontSize: 12, color: '#555' }}>🗑️ {discard.length}</span>
           <div style={{
-            background: cp === 0 ? 'rgba(255,215,0,.15)' : 'rgba(0,188,212,.15)',
-            border: `1px solid ${cp === 0 ? '#FFD700' : '#00BCD4'}`,
+            background: isHumanTurn ? 'rgba(255,215,0,.15)' : 'rgba(0,188,212,.15)',
+            border: `1px solid ${isHumanTurn ? '#FFD700' : '#00BCD4'}`,
             borderRadius: 8, padding: '3px 10px', fontSize: 12, fontWeight: 700,
-            color: cp === 0 ? '#FFD700' : '#00BCD4',
+            color: isHumanTurn ? '#FFD700' : '#00BCD4',
           }}>
-            {cp === 0 ? '🎴 Tu turno' : `⏳ Turno de ${players[cp]?.name}`}
+            {isHumanTurn ? '🎴 Tu turno' : `⏳ Turno de ${players[cp]?.name}`}
           </div>
+          {isOnline && (
+            <div style={{ fontSize: 11, color: '#555', padding: '3px 8px', borderRadius: 6, background: 'rgba(0,188,212,.08)', border: '1px solid rgba(0,188,212,.2)' }}>
+              🌐 Sala: {roomCode}
+            </div>
+          )}
           <Btn onClick={() => setShowLog(l => !l)} color="#2a2a4a" style={{ color: '#aaa', fontSize: 12, padding: '4px 10px' }}>
             📋 Log
           </Btn>
@@ -847,15 +1582,18 @@ export default function App() {
           overflowY: 'auto', padding: 12, display: 'flex', flexDirection: 'column', gap: 8,
         }}>
           <div style={{ fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1, marginBottom: 4 }}>OPONENTES</div>
-          {opponents.map((opp, i) => (
-            <OpponentCard
-              key={i}
-              player={opp}
-              index={i + 1}
-              color={PLAYER_COLORS[(i + 1) % PLAYER_COLORS.length]}
-              isActive={cp === i + 1}
-            />
-          ))}
+          {opponents.map((opp, i) => {
+            const realIdx = players.indexOf(opp);
+            return (
+              <OpponentCard
+                key={realIdx}
+                player={opp}
+                index={realIdx}
+                color={PLAYER_COLORS[realIdx % PLAYER_COLORS.length]}
+                isActive={cp === realIdx}
+              />
+            );
+          })}
 
           {/* Log panel */}
           {showLog && (
@@ -1025,7 +1763,13 @@ export default function App() {
                 🗑 Descartar
               </Btn>
               {extraPlay && (
-                <Btn onClick={() => { setExtraPlay(false); endTurn(players, deck, discard, 0); }} color="#888" style={{ flex: 1 }}>
+                <Btn onClick={() => {
+                  if (isOnline && !isHost) {
+                    socket.emit('playerAction', { code: roomCode, action: { type: 'passTurn' } });
+                  } else {
+                    setExtraPlay(false); endTurn(players, deck, discard, HI);
+                  }
+                }} color="#888" style={{ flex: 1 }}>
                   ⏭ Pasar turno
                 </Btn>
               )}
@@ -1036,7 +1780,7 @@ export default function App() {
             <div style={{
               textAlign: 'center', color: '#555', fontSize: 13, padding: '8px 0', flexShrink: 0,
             }}>
-              ⏳ Esperando a {players[cp]?.name}...
+              {players[cp]?.isRemote ? `🌐 Esperando la jugada de ${players[cp]?.name}...` : `⏳ Esperando a ${players[cp]?.name}...`}
             </div>
           )}
         </div>
@@ -1099,7 +1843,7 @@ export default function App() {
         <Modal title={`${getActionInfo(modal.action)?.emoji} ${getActionInfo(modal.action)?.name} — Elige oponente`}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {players.map((p, i) => {
-              if (i === 0) return null;
+              if (i === HI) return null;
               return (
                 <div
                   key={i}
@@ -1161,11 +1905,43 @@ export default function App() {
         </Modal>
       )}
 
+      {/* Pick Ingredient (Tenedor) - non-host remote version */}
+      {modal?.type === 'pickIngredientRemote' && (
+        <Modal title="🍴 El Tenedor — Elige ingrediente a robar">
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+            {modal.newPls[modal.targetIdx].table.map((ing, i) => {
+              const base = ingKey(ing);
+              return (
+                <div
+                  key={i}
+                  onClick={() => resolvePickIngredient(i)}
+                  style={{
+                    width: 54, height: 54, borderRadius: 10, background: ING_BG[base],
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 26, cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,.4)',
+                    transition: 'transform .1s',
+                  }}
+                  onMouseOver={e => e.currentTarget.style.transform = 'scale(1.1)'}
+                  onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}
+                >
+                  {ING_IMG[base]
+                    ? <img src={ING_IMG[base]} alt={base} style={{ width: 36, height: 36, objectFit: 'contain' }} />
+                    : ING_EMOJI[base]}
+                </div>
+              );
+            })}
+          </div>
+          <Btn onClick={() => setModal(null)} color="#333" style={{ color: '#aaa' }}>Cancelar</Btn>
+        </Modal>
+      )}
+
       {/* Pick Hat Replace (after Ladrón steals last hat) */}
-      {modal?.type === 'pickHatReplace' && (
+      {modal?.type === 'pickHatReplace' && (!isOnline || !isHost || modal.victimIdx === HI) && (
         <Modal title="🎩 Elige nuevo sombrero principal">
           <p style={{ color: '#888', fontSize: 12, marginBottom: 12 }}>
-            Tu sombrero principal fue robado. Elige uno del perchero.
+            {isOnline && isHost && modal.victimIdx !== HI
+              ? `⏳ Esperando que ${players[modal.victimIdx]?.name} elija su sombrero...`
+              : 'Tu sombrero principal fue robado. Elige uno del perchero.'}
           </p>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
             {modal.newPls[modal.victimIdx].perchero.map(h => (
