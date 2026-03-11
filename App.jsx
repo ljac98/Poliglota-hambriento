@@ -695,6 +695,12 @@ export default function App() {
   // Human index: 0 for local/AI mode, myPlayerIdx for online
   const HI = isOnline ? myPlayerIdx : 0;
 
+  // ── Negación state ──
+  // pendingNeg: null | { actingIdx, cardInfo, eligibleIdxs, responses: {i: bool} }
+  const [pendingNeg, setPendingNeg] = useState(null);
+  // Host-only ref that stores the resolve callback (not serializable over socket)
+  const pendingNegRef = useRef(null);
+
   function addLog(playerIdx, text, pls) {
     const p = pls ? pls[playerIdx] : null;
     const color = PLAYER_COLORS[playerIdx % PLAYER_COLORS.length];
@@ -725,6 +731,7 @@ export default function App() {
       setLog(state.log);
       setExtraPlay(state.extraPlay || false);
       setModal(state.modal || null);
+      setPendingNeg(state.pendingNeg || null);
       if (state.winner) { setWinner(state.winner); setPhase('gameover'); }
       else if (state.phase) setPhase(state.phase);
     });
@@ -739,10 +746,10 @@ export default function App() {
     syncRef.current = setTimeout(() => {
       socket.emit('syncState', {
         code: roomCode,
-        state: { players, deck, discard, cp, log, extraPlay, modal, winner, phase },
+        state: { players, deck, discard, cp, log, extraPlay, modal, pendingNeg, winner, phase },
       });
     }, 80);
-  }, [players, deck, discard, cp, log, extraPlay, modal, winner, phase, isOnline, isHost]);
+  }, [players, deck, discard, cp, log, extraPlay, modal, pendingNeg, winner, phase, isOnline, isHost]);
 
   // ── Socket: host processes remote player actions ──
   // We store the latest state in refs so the socket handler always has fresh values
@@ -763,6 +770,76 @@ export default function App() {
     socket.on('remoteAction', handler);
     return () => socket.off('remoteAction', handler);
   }, [isOnline, isHost]);  // eslint-disable-line
+
+  // ── Negación: check before applying any action ──
+  // resolveCallback: () => void  — called if action is NOT negated
+  function startNegCheck(actingIdx, card, resolveCallback) {
+    const pls = playersRef.current;
+    // Find players who can negate (opponents with a negación card in hand)
+    const eligible = pls.map((_, i) => i).filter(i =>
+      i !== actingIdx && pls[i].hand.some(c => c.action === 'negacion')
+    );
+
+    if (eligible.length === 0) { resolveCallback(); return; }
+
+    // AI players decide immediately (25% chance to use negación)
+    const responses = {};
+    for (const i of eligible) {
+      if (pls[i].isAI) responses[i] = Math.random() < 0.25;
+    }
+    const aiNegator = eligible.find(i => pls[i].isAI && responses[i] === true);
+    if (aiNegator !== undefined) { cancelWithNegation(actingIdx, aiNegator, card); return; }
+
+    // Human/remote players need to respond
+    const humanEligible = eligible.filter(i => !pls[i].isAI);
+    if (humanEligible.length === 0) { resolveCallback(); return; }
+
+    pendingNegRef.current = { actingIdx, card, resolveCallback, eligibleIdxs: humanEligible, responses };
+    setPendingNeg({ actingIdx, cardInfo: getActionInfo(card.action), eligibleIdxs: humanEligible, responses });
+  }
+
+  function cancelWithNegation(actingIdx, negatorIdx, card) {
+    const newPls = clone(playersRef.current);
+    // Remove action card from acting player's hand (by id, it's still there during neg check)
+    const cIdx = newPls[actingIdx].hand.findIndex(c => c.id === card.id);
+    if (cIdx !== -1) newPls[actingIdx].hand.splice(cIdx, 1);
+    // Remove one negación card from negator's hand
+    const nIdx = newPls[negatorIdx].hand.findIndex(c => c.action === 'negacion');
+    const negCard = nIdx !== -1 ? newPls[negatorIdx].hand.splice(nIdx, 1)[0] : null;
+    const newDiscard = [...discardRef.current, card, ...(negCard ? [negCard] : [])];
+    addLog(negatorIdx, `usó 🚫 Negación contra ${newPls[actingIdx].name}!`, newPls);
+    setPendingNeg(null); pendingNegRef.current = null;
+    endTurn(newPls, deckRef.current, newDiscard, actingIdx);
+  }
+
+  // Called by the local eligible player (host or non-host)
+  function respondNegation(negar) {
+    if (!pendingNeg) return;
+
+    // Non-host sends response via socket; host handles it in processRemoteAction
+    if (isOnline && !isHost) {
+      socket.emit('playerAction', { code: roomCode, action: { type: 'negationResponse', negar } });
+      // Optimistically mark as responded in local display
+      setPendingNeg(prev => prev ? { ...prev, responses: { ...prev.responses, [HI]: negar } } : null);
+      return;
+    }
+
+    if (negar) {
+      cancelWithNegation(pendingNeg.actingIdx, HI, pendingNeg.card ?? pendingNegRef.current?.card);
+      return;
+    }
+    // Passed — record and check if all responded
+    const newResponses = { ...pendingNeg.responses, [HI]: false };
+    if (pendingNegRef.current) pendingNegRef.current.responses = newResponses;
+    const remaining = pendingNeg.eligibleIdxs.filter(i => !(i in newResponses));
+    if (remaining.length === 0) {
+      const cb = pendingNegRef.current?.resolveCallback;
+      setPendingNeg(null); pendingNegRef.current = null;
+      cb?.();
+    } else {
+      setPendingNeg(prev => prev ? { ...prev, responses: newResponses } : null);
+    }
+  }
 
   // ── Start game (local / vs AI) ──
   function startGame(name, hat, diff, aiCount) {
@@ -797,6 +874,43 @@ export default function App() {
     setWinner(null); setExtraPlay(false);
     aiRunning.current = false;
     setPhase('playing');
+  }
+
+  // ── Shared targeted action resolution (used by host for both local and remote players) ──
+  function applyTargetedAction(card, actingIdx, ti, action, pls, dk, di) {
+    if (card.action === 'gloton') {
+      pls[ti].table.forEach(ing => di.push({ type: 'ingredient', ingredient: ingKey(ing), id: uid() }));
+      pls[ti].table = [];
+      endTurnFromRemote(pls, dk, di, actingIdx);
+    } else if (card.action === 'tenedor' && action.ingIdx !== undefined) {
+      const stolen = pls[ti].table.splice(action.ingIdx, 1)[0];
+      pls[actingIdx].table.push(stolen);
+      const { player: up, freed, done } = advanceBurger(pls[actingIdx]);
+      pls[actingIdx] = up;
+      if (done) { freed.forEach(ing => di.push({ type: 'ingredient', ingredient: ingKey(ing), id: uid() })); }
+      endTurnFromRemote(pls, dk, di, actingIdx);
+    } else if (card.action === 'ladron') {
+      if (pls[ti].mainHats.length > 0) {
+        const stolen = pls[ti].mainHats.splice(0, 1)[0];
+        pls[actingIdx].mainHats.push(stolen);
+        if (pls[ti].mainHats.length === 0 && pls[ti].perchero.length > 0) {
+          setPlayers(pls); setDiscard(di);
+          setModal({ type: 'pickHatReplace', newPls: pls, newDiscard: di, victimIdx: ti, fromIdx: actingIdx });
+          return;
+        }
+      }
+      endTurnFromRemote(pls, dk, di, actingIdx);
+    } else if (card.action === 'intercambio_sombreros') {
+      const tmp = pls[actingIdx].mainHats[0];
+      pls[actingIdx].mainHats[0] = pls[ti].mainHats[0];
+      pls[ti].mainHats[0] = tmp;
+      endTurnFromRemote(pls, dk, di, actingIdx);
+    } else if (card.action === 'intercambio_hamburguesa') {
+      const tmp = pls[actingIdx].table;
+      pls[actingIdx].table = pls[ti].table;
+      pls[ti].table = tmp;
+      endTurnFromRemote(pls, dk, di, actingIdx);
+    }
   }
 
   // ── Host: process remote player action ──
@@ -847,10 +961,15 @@ export default function App() {
               if (!card) return;
               const info = getActionInfo(card.action);
               addLog(idx, `jugó ${info.name} ${info.emoji}`, pls);
-              pls[idx].hand.splice(action.cardIdx, 1);
-              di = [...di, card];
-              const r = applyMass(pls, di, card.action);
-              setTimeout(() => endTurnFromRemote(r.players, dk, r.discard, idx), 0);
+              startNegCheck(idx, card, () => {
+                const fp = clone(playersRef.current);
+                const ci = fp[idx].hand.findIndex(c => c.id === card.id);
+                if (ci !== -1) fp[idx].hand.splice(ci, 1);
+                const fd = [...discardRef.current, card];
+                const r = applyMass(fp, fd, card.action);
+                endTurnFromRemote(r.players, deckRef.current, r.discard, idx);
+              });
+              return;
 
             } else if (type === 'playActionTarget') {
               const card = pls[idx].hand[action.cardIdx];
@@ -858,43 +977,15 @@ export default function App() {
               const info = getActionInfo(card.action);
               const ti = action.targetIdx;
               addLog(idx, `jugó ${info.name} ${info.emoji} contra ${pls[ti].name}`, pls);
-              pls[idx].hand.splice(action.cardIdx, 1);
-              di = [...di, card];
-
-              if (card.action === 'gloton') {
-                pls[ti].table.forEach(ing => di.push({ type: 'ingredient', ingredient: ingKey(ing), id: uid() }));
-                pls[ti].table = [];
-                setTimeout(() => endTurnFromRemote(pls, dk, di, idx), 0);
-              } else if (card.action === 'tenedor' && action.ingIdx !== undefined) {
-                const stolen = pls[ti].table.splice(action.ingIdx, 1)[0];
-                pls[idx].table.push(stolen);
-                const { player: up, freed, done } = advanceBurger(pls[idx]);
-                pls[idx] = up;
-                if (done) { freed.forEach(ing => di.push({ type: 'ingredient', ingredient: ingKey(ing), id: uid() })); }
-                setTimeout(() => endTurnFromRemote(pls, dk, di, idx), 0);
-              } else if (card.action === 'ladron') {
-                if (pls[ti].mainHats.length > 0) {
-                  const stolen = pls[ti].mainHats.splice(0, 1)[0];
-                  pls[idx].mainHats.push(stolen);
-                  if (pls[ti].mainHats.length === 0 && pls[ti].perchero.length > 0) {
-                    // Victim needs to pick a new hat
-                    setPlayers(pls); setDiscard(di);
-                    setModal({ type: 'pickHatReplace', newPls: pls, newDiscard: di, victimIdx: ti, fromIdx: idx });
-                    return;
-                  }
-                }
-                setTimeout(() => endTurnFromRemote(pls, dk, di, idx), 0);
-              } else if (card.action === 'intercambio_sombreros') {
-                const tmp = pls[idx].mainHats[0];
-                pls[idx].mainHats[0] = pls[ti].mainHats[0];
-                pls[ti].mainHats[0] = tmp;
-                setTimeout(() => endTurnFromRemote(pls, dk, di, idx), 0);
-              } else if (card.action === 'intercambio_hamburguesa') {
-                const tmp = pls[idx].table;
-                pls[idx].table = pls[ti].table;
-                pls[ti].table = tmp;
-                setTimeout(() => endTurnFromRemote(pls, dk, di, idx), 0);
-              }
+              startNegCheck(idx, card, () => {
+                const fp = clone(playersRef.current);
+                const fd = [...discardRef.current];
+                const ci = fp[idx].hand.findIndex(c => c.id === card.id);
+                if (ci !== -1) fp[idx].hand.splice(ci, 1);
+                const fd2 = [...fd, card];
+                applyTargetedAction(card, idx, ti, action, fp, deckRef.current, fd2);
+              });
+              return;
 
             } else if (type === 'playCambioSombrero') {
               const card = pls[idx].hand[action.cardIdx];
@@ -960,6 +1051,25 @@ export default function App() {
                 setModal(null);
                 setTimeout(() => endTurnFromRemote(newPls, dk, newDiscard, fromIdx ?? idx), 0);
               }
+
+            } else if (type === 'negationResponse') {
+              // Remote player responded to negation window
+              if (!pendingNegRef.current) return;
+              const pn = pendingNegRef.current;
+              if (action.negar) {
+                cancelWithNegation(pn.actingIdx, idx, pn.card);
+              } else {
+                const newResp = { ...pn.responses, [idx]: false };
+                pn.responses = newResp;
+                const remaining = pn.eligibleIdxs.filter(i => !(i in newResp));
+                setPendingNeg(prev => prev ? { ...prev, responses: newResp } : null);
+                if (remaining.length === 0) {
+                  const cb = pn.resolveCallback;
+                  setPendingNeg(null); pendingNegRef.current = null;
+                  cb?.();
+                }
+              }
+              return;
 
             } else if (type === 'passTurn') {
               setExtraPlay(false);
@@ -1203,7 +1313,7 @@ export default function App() {
     } else if (['tenedor', 'ladron', 'intercambio_sombreros', 'intercambio_hamburguesa', 'gloton'].includes(card.action)) {
       setModal({ type: 'pickTarget', cardIdx, action: card.action });
     } else if (card.action === 'negacion') {
-      alert('Negación se juega en respuesta a una acción enemiga');
+      alert('Negación se juega automáticamente cuando un oponente juega una acción.');
     }
   }
 
@@ -1211,30 +1321,48 @@ export default function App() {
     const info = getActionInfo(card.action);
     const mass = ['milanesa', 'ensalada', 'pizza', 'parrilla', 'comecomodines'];
 
-    if (mass.includes(card.action)) {
-      addLog(HI, `jugó ${info.name} ${info.emoji}`, players);
-      const newPls = clone(players);
-      newPls[HI].hand.splice(cardIdx, 1);
-      let newDiscard = [...discard, card];
-      const { players: ps2, discard: di2 } = applyMass(newPls, newDiscard, card.action);
-      setSelectedIdx(null);
-      endTurn(ps2, deck, di2, HI);
-
-    } else if (card.action === 'cambio_sombrero') {
-      if (players[HI].perchero.length === 0) { alert('No tienes sombreros en el perchero'); return; }
-      setModal({ type: 'cambio_sombrero', cardIdx });
-
-    } else if (card.action === 'basurero') {
-      const ingCards = discard.filter(c => c.type === 'ingredient');
-      if (ingCards.length === 0) { alert('El basurero está vacío'); return; }
-      setModal({ type: 'basurero', cardIdx, cards: ingCards });
-
-    } else if (['tenedor', 'ladron', 'intercambio_sombreros', 'intercambio_hamburguesa', 'gloton'].includes(card.action)) {
-      setModal({ type: 'pickTarget', cardIdx, action: card.action });
-
-    } else if (card.action === 'negacion') {
-      alert('Negación se juega en respuesta a una acción enemiga');
+    if (card.action === 'negacion') {
+      alert('Negación se juega automáticamente cuando un oponente juega una acción.');
+      return;
     }
+
+    setSelectedIdx(null);
+    addLog(HI, `jugó ${info.name} ${info.emoji}`, players);
+
+    // Check negation before resolving — card stays in hand during the check
+    startNegCheck(HI, card, () => {
+      // Use refs for fresh state (callback may be async)
+      const pls = playersRef.current;
+      const dk  = deckRef.current;
+      const di  = discardRef.current;
+
+      if (mass.includes(card.action)) {
+        const newPls = clone(pls);
+        const ci = newPls[HI].hand.findIndex(c => c.id === card.id);
+        if (ci !== -1) newPls[HI].hand.splice(ci, 1);
+        const newDiscard = [...di, card];
+        const { players: ps2, discard: di2 } = applyMass(newPls, newDiscard, card.action);
+        endTurn(ps2, dk, di2, HI);
+
+      } else if (card.action === 'cambio_sombrero') {
+        if (pls[HI].perchero.length === 0) return;
+        setModal({ type: 'cambio_sombrero', cardIdx });
+
+      } else if (card.action === 'basurero') {
+        const ingCards = di.filter(c => c.type === 'ingredient');
+        if (ingCards.length === 0) {
+          const newPls = clone(pls);
+          const ci = newPls[HI].hand.findIndex(c => c.id === card.id);
+          if (ci !== -1) newPls[HI].hand.splice(ci, 1);
+          endTurn(newPls, dk, [...di, card], HI);
+          return;
+        }
+        setModal({ type: 'basurero', cardIdx, cards: ingCards });
+
+      } else if (['tenedor', 'ladron', 'intercambio_sombreros', 'intercambio_hamburguesa', 'gloton'].includes(card.action)) {
+        setModal({ type: 'pickTarget', cardIdx, action: card.action });
+      }
+    });
   }
 
   function humanDiscard() {
@@ -2117,6 +2245,23 @@ export default function App() {
           </Modal>
         );
       })()}
+
+      {/* Negación window modal */}
+      {pendingNeg && pendingNeg.eligibleIdxs.includes(HI) && !(HI in (pendingNeg.responses || {})) && (
+        <Modal title="🚫 ¿Negación?">
+          <p style={{ marginBottom: 8, fontSize: 14 }}>
+            <strong>{players[pendingNeg.actingIdx]?.name}</strong> jugó{' '}
+            <strong>{pendingNeg.cardInfo?.emoji} {pendingNeg.cardInfo?.name}</strong>
+          </p>
+          <p style={{ color: '#aaa', fontSize: 12, marginBottom: 16 }}>
+            ¿Quieres gastar una carta de Negación para cancelar esta acción?
+          </p>
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+            <Btn onClick={() => respondNegation(true)} color="#c0392b">🚫 Negar</Btn>
+            <Btn onClick={() => respondNegation(false)} color="#27ae60">✅ Dejar pasar</Btn>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
