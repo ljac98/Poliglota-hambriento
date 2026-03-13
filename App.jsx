@@ -1901,8 +1901,10 @@ export default function App() {
         MANO ({human.hand.length}/{human.maxHand})
       </div>
       <div style={{
-        display: 'flex', justifyContent: 'center', alignItems: 'flex-end',
-        paddingTop: 36, paddingBottom: 8, flex: 1, overflow: 'visible', minHeight: 170,
+        display: 'flex', justifyContent: isMobile ? 'flex-start' : 'center', alignItems: 'flex-end',
+        paddingTop: 36, paddingBottom: 8, flex: 1,
+        overflowX: isMobile ? 'auto' : 'visible', overflowY: isMobile ? 'hidden' : 'visible',
+        minHeight: 170,
       }}>
         {human.hand.map((card, i) => {
           const playable = card.type === 'ingredient' ? canPlayCard(human, card) : null;
