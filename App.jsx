@@ -1920,32 +1920,55 @@ export default function App() {
   );
 
   // ── Panel: Mano (right sidebar) ──
+  const handN = human.hand.length;
+  const MAX_ANGLE = isMobile ? 12 : 14;
+  const OVERLAP = isMobile ? 20 : 18;
   const manoPanel = (
     <div style={{
       ...(isMobile
-        ? { flex: 1, overflowY: 'auto', padding: '12px 10px', display: 'flex', flexDirection: 'column', gap: 8 }
-        : { width: 'clamp(200px, 28vw, 340px)', flexShrink: 0, background: '#12192e', borderLeft: '2px solid #1e2a45', display: 'flex', flexDirection: 'column', padding: '12px 10px', gap: 8, overflowY: 'auto' }
+        ? { flex: 1, overflow: 'visible', padding: '8px 10px 0', display: 'flex', flexDirection: 'column', gap: 6 }
+        : { width: 'clamp(260px, 30vw, 420px)', flexShrink: 0, background: '#12192e', borderLeft: '2px solid #1e2a45', display: 'flex', flexDirection: 'column', padding: '10px 10px 0', gap: 6, overflowY: 'visible', overflowX: 'hidden' }
       ),
     }}>
-      <div style={{ fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1 }}>
+      <div style={{ fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1, flexShrink: 0 }}>
         MANO ({human.hand.length}/{human.maxHand})
       </div>
 
+      {/* Fan hand layout */}
       <div style={{
-        display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'center',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'flex-end',
+        paddingTop: 40,
+        paddingBottom: 16,
+        flex: 1,
+        overflow: 'visible',
       }}>
         {human.hand.map((card, i) => {
           const playable = card.type === 'ingredient' ? canPlayCard(human, card) : null;
+          const angle = handN > 1 ? -MAX_ANGLE + i * (2 * MAX_ANGLE / (handN - 1)) : 0;
+          const isSelected = selectedIdx === i;
           return (
             <div
               key={card.id}
-              onClick={() => isHumanTurn ? setSelectedIdx(selectedIdx === i ? null : i) : null}
-              style={{ cursor: isHumanTurn ? 'pointer' : 'default' }}
+              onClick={() => isHumanTurn ? setSelectedIdx(isSelected ? null : i) : null}
+              onMouseEnter={e => { if (!isSelected && isHumanTurn) e.currentTarget.style.transform = `translateY(-14px) rotate(${angle * 0.4}deg)`; }}
+              onMouseLeave={e => { if (!isSelected) e.currentTarget.style.transform = `translateY(0px) rotate(${angle}deg)`; }}
+              style={{
+                cursor: isHumanTurn ? 'pointer' : 'default',
+                marginLeft: i === 0 ? 0 : -OVERLAP,
+                transform: isSelected ? 'translateY(-28px) rotate(0deg)' : `translateY(0px) rotate(${angle}deg)`,
+                transformOrigin: 'bottom center',
+                transition: 'transform 0.15s',
+                zIndex: isSelected ? handN + 1 : i,
+                position: 'relative',
+              }}
             >
               <GameCard
                 card={card}
-                selected={selectedIdx === i}
+                selected={isSelected}
                 playable={isHumanTurn ? playable : false}
+                large={true}
                 small={false}
               />
             </div>
@@ -1955,7 +1978,7 @@ export default function App() {
 
       {isHumanTurn && selectedIdx !== null && (
         <div style={{
-          marginTop: 8, padding: '8px 10px', borderRadius: 8,
+          flexShrink: 0, padding: '8px 10px', borderRadius: 8, marginBottom: 8,
           background: 'rgba(255,255,255,.04)', border: '1px solid #2a2a4a',
           fontSize: 11, color: '#aaa',
         }}>
@@ -2041,10 +2064,12 @@ export default function App() {
           </div>
         </div>
       ) : (
-        <div style={{ flex: 1, display: 'flex', gap: 0, overflow: 'hidden' }}>
+        <div style={{ flex: 1, display: 'flex', gap: 0, overflow: 'hidden', position: 'relative' }}>
           {rivalesPanel}
           {mesaPanel}
-          {manoPanel}
+          <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', overflow: 'visible', zIndex: 10 }}>
+            {manoPanel}
+          </div>
         </div>
       )}
 
