@@ -1749,7 +1749,7 @@ export default function App() {
 
   // ── Panel: Mesa (center) ──
   const mesaPanel = (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: isMobile ? 'auto' : 'visible', padding: '12px 16px', gap: 10 }}>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', padding: '12px 16px', gap: 10 }}>
 
       {/* Player header */}
       <div style={{
