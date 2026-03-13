@@ -122,7 +122,7 @@ export const BurgerTarget = ({ ingredients, table, isCurrent }) => {
 
       {/* Ingredient icons row */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 3, alignItems: "center" }}>
-        {ingredients.map((ing, i) => {
+        {isCurrent ? ingredients.map((ing, i) => {
           rendered[ing] = (rendered[ing] || 0) + 1;
           const thisOccurrence = rendered[ing];
           const have = resolvedTable.filter(t => t === ing).length;
@@ -152,7 +152,15 @@ export const BurgerTarget = ({ ingredients, table, isCurrent }) => {
               )}
             </div>
           );
-        })}
+        }) : ingredients.map((_, i) => (
+          <div key={i} style={{
+            width: 26, height: 26, borderRadius: 6,
+            background: "rgba(255,255,255,0.06)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            border: "2px dashed rgba(255,255,255,0.15)",
+            fontSize: 14, color: "rgba(255,255,255,0.3)",
+          }}>?</div>
+        ))}
       </div>
     </div>
   );
