@@ -1703,6 +1703,9 @@ export default function App() {
   };
 
   const isMobile = typeof window !== 'undefined' && window.innerWidth <= 640;
+  const handN = human.hand.length;
+  const MAX_ANGLE = isMobile ? 12 : 14;
+  const OVERLAP = isMobile ? 20 : 18;
 
   // ── Panel: Rivals (left sidebar) ──
   const rivalesPanel = (
@@ -1739,7 +1742,7 @@ export default function App() {
 
   // ── Panel: Mesa (center) ──
   const mesaPanel = (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: isMobile ? 'auto' : 'hidden', padding: '12px 16px', gap: 10 }}>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: isMobile ? 'auto' : 'visible', padding: '12px 16px', gap: 10 }}>
 
       {/* Player header */}
       <div style={{
@@ -1747,17 +1750,12 @@ export default function App() {
         background: 'rgba(255,215,0,.06)', borderRadius: 12, padding: '8px 14px',
         border: '2px solid rgba(255,215,0,.2)', flexShrink: 0,
       }}>
-        <HatSVG lang={human.mainHats[0] || LANGUAGES[0]} size={32} />
         <div>
           <div style={{ fontWeight: 900, fontSize: 16, color: humanColor }}>{human.name}</div>
           <div style={{ fontSize: 11, color: '#777' }}>
             🍔 {human.currentBurger}/{human.totalBurgers} hamburguesas
             {extraPlay && <span style={{ color: '#FFD700', marginLeft: 8 }}>⚡ Turno extra!</span>}
           </div>
-        </div>
-        {/* Main hats */}
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
-          {human.mainHats.map(h => <HatBadge key={h} lang={h} isMain size="md" />)}
         </div>
       </div>
 
@@ -1828,22 +1826,38 @@ export default function App() {
         </div>
       </div>
 
-      {/* Perchero */}
+      {/* Perchero + Principal */}
       <div style={{
-        background: 'rgba(255,255,255,.02)', borderRadius: 10, padding: '6px 10px',
+        background: 'rgba(255,255,255,.02)', borderRadius: 10, padding: '8px 10px',
         border: '2px solid #1e2a45', flexShrink: 0,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-          <div style={{ fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1 }}>
-            PERCHERO
-          </div>
-          {isHumanTurn && !extraPlay && human.perchero.length > 0 && (
+        <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+          {/* Sombrero(s) principal(es) */}
+          <div>
+            <div style={{ fontSize: 9, color: '#555', fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>PRINCIPAL</div>
             <div style={{ display: 'flex', gap: 4 }}>
+              {human.mainHats.map(h => <HatBadge key={h} lang={h} isMain size="md" />)}
+            </div>
+          </div>
+
+          {/* Sombreros en el perchero */}
+          {human.perchero.length > 0 && (
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 9, color: '#555', fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>PERCHERO</div>
+              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                {human.perchero.map(h => <HatBadge key={h} lang={h} isMain={false} size="sm" />)}
+              </div>
+            </div>
+          )}
+
+          {/* Botones Cambiar / Agregar */}
+          {isHumanTurn && !extraPlay && human.perchero.length > 0 && (
+            <div style={{ display: 'flex', gap: 4, flexShrink: 0, marginLeft: 'auto' }}>
               <button
                 onClick={() => setModal({ type: 'manual_cambiar' })}
                 title="Cambia tu sombrero principal (cuesta descartar la mitad de tu mano)"
                 style={{
-                  padding: '2px 7px', borderRadius: 6, border: '1px solid rgba(156,39,176,0.3)',
+                  padding: '3px 8px', borderRadius: 6, border: '1px solid rgba(156,39,176,0.3)',
                   background: 'rgba(156,39,176,0.12)', color: '#BA68C8', fontSize: 10,
                   fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
                 }}
@@ -1855,7 +1869,7 @@ export default function App() {
                   onClick={() => setModal({ type: 'manual_agregar' })}
                   title="Agrega un sombrero extra (descarta toda tu mano, mano máx se reduce)"
                   style={{
-                    padding: '2px 7px', borderRadius: 6, border: '1px solid rgba(156,39,176,0.3)',
+                    padding: '3px 8px', borderRadius: 6, border: '1px solid rgba(156,39,176,0.3)',
                     background: 'rgba(156,39,176,0.12)', color: '#BA68C8', fontSize: 10,
                     fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
                   }}
@@ -1866,13 +1880,63 @@ export default function App() {
             </div>
           )}
         </div>
-        <div style={{ display: 'flex', gap: 6 }}>
-          {human.perchero.map(h => <HatBadge key={h} lang={h} isMain={false} size="sm" />)}
-        </div>
       </div>
 
-      {/* Spacer (desktop only) */}
-      {!isMobile && <div style={{ flex: 1 }} />}
+      {/* Hand — fan layout */}
+      <div style={{ fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1, flexShrink: 0 }}>
+        MANO ({human.hand.length}/{human.maxHand})
+      </div>
+      <div style={{
+        display: 'flex', justifyContent: 'center', alignItems: 'flex-end',
+        paddingTop: 36, paddingBottom: 8, flex: 1, overflow: 'visible', minHeight: 170,
+      }}>
+        {human.hand.map((card, i) => {
+          const playable = card.type === 'ingredient' ? canPlayCard(human, card) : null;
+          const angle = handN > 1 ? -MAX_ANGLE + i * (2 * MAX_ANGLE / (handN - 1)) : 0;
+          const isSelected = selectedIdx === i;
+          return (
+            <div
+              key={card.id}
+              onClick={() => isHumanTurn ? setSelectedIdx(isSelected ? null : i) : null}
+              onMouseEnter={e => { if (!isSelected && isHumanTurn) e.currentTarget.style.transform = `translateY(-14px) rotate(${angle * 0.4}deg)`; }}
+              onMouseLeave={e => { if (!isSelected) e.currentTarget.style.transform = `translateY(0px) rotate(${angle}deg)`; }}
+              style={{
+                cursor: isHumanTurn ? 'pointer' : 'default',
+                marginLeft: i === 0 ? 0 : -OVERLAP,
+                transform: isSelected ? 'translateY(-28px) rotate(0deg)' : `translateY(0px) rotate(${angle}deg)`,
+                transformOrigin: 'bottom center',
+                transition: 'transform 0.15s',
+                zIndex: isSelected ? handN + 1 : i,
+                position: 'relative',
+              }}
+            >
+              <GameCard
+                card={card}
+                selected={isSelected}
+                playable={isHumanTurn ? playable : false}
+                large={true}
+                small={false}
+              />
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Info carta seleccionada */}
+      {isHumanTurn && selectedIdx !== null && (
+        <div style={{
+          flexShrink: 0, padding: '6px 10px', borderRadius: 8, marginBottom: 4,
+          background: 'rgba(255,255,255,.04)', border: '1px solid #2a2a4a', fontSize: 11, color: '#aaa',
+        }}>
+          {human.hand[selectedIdx]?.type === 'ingredient' ? (
+            canPlayCard(human, human.hand[selectedIdx])
+              ? <span style={{ color: '#4CAF50' }}>✅ Puedes jugar esta carta</span>
+              : <span style={{ color: '#FF7043' }}>❌ No puedes jugar esta carta ahora (sombrero o ingrediente no necesario)</span>
+          ) : (
+            <span style={{ color: '#FFD700' }}>⚡ {getActionInfo(human.hand[selectedIdx]?.action)?.desc}</span>
+          )}
+        </div>
+      )}
 
       {/* Action buttons */}
       {isHumanTurn && (
@@ -1920,80 +1984,6 @@ export default function App() {
   );
 
   // ── Panel: Mano (right sidebar) ──
-  const handN = human.hand.length;
-  const MAX_ANGLE = isMobile ? 12 : 14;
-  const OVERLAP = isMobile ? 20 : 18;
-  const manoPanel = (
-    <div style={{
-      ...(isMobile
-        ? { flex: 1, overflow: 'visible', padding: '8px 10px 0', display: 'flex', flexDirection: 'column', gap: 6 }
-        : { width: 'clamp(260px, 30vw, 420px)', flexShrink: 0, background: '#12192e', borderLeft: '2px solid #1e2a45', display: 'flex', flexDirection: 'column', padding: '10px 10px 0', gap: 6, overflowY: 'visible', overflowX: 'hidden' }
-      ),
-    }}>
-      <div style={{ fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1, flexShrink: 0 }}>
-        MANO ({human.hand.length}/{human.maxHand})
-      </div>
-
-      {/* Fan hand layout */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'flex-end',
-        paddingTop: 40,
-        paddingBottom: 16,
-        flex: 1,
-        overflow: 'visible',
-      }}>
-        {human.hand.map((card, i) => {
-          const playable = card.type === 'ingredient' ? canPlayCard(human, card) : null;
-          const angle = handN > 1 ? -MAX_ANGLE + i * (2 * MAX_ANGLE / (handN - 1)) : 0;
-          const isSelected = selectedIdx === i;
-          return (
-            <div
-              key={card.id}
-              onClick={() => isHumanTurn ? setSelectedIdx(isSelected ? null : i) : null}
-              onMouseEnter={e => { if (!isSelected && isHumanTurn) e.currentTarget.style.transform = `translateY(-14px) rotate(${angle * 0.4}deg)`; }}
-              onMouseLeave={e => { if (!isSelected) e.currentTarget.style.transform = `translateY(0px) rotate(${angle}deg)`; }}
-              style={{
-                cursor: isHumanTurn ? 'pointer' : 'default',
-                marginLeft: i === 0 ? 0 : -OVERLAP,
-                transform: isSelected ? 'translateY(-28px) rotate(0deg)' : `translateY(0px) rotate(${angle}deg)`,
-                transformOrigin: 'bottom center',
-                transition: 'transform 0.15s',
-                zIndex: isSelected ? handN + 1 : i,
-                position: 'relative',
-              }}
-            >
-              <GameCard
-                card={card}
-                selected={isSelected}
-                playable={isHumanTurn ? playable : false}
-                large={true}
-                small={false}
-              />
-            </div>
-          );
-        })}
-      </div>
-
-      {isHumanTurn && selectedIdx !== null && (
-        <div style={{
-          flexShrink: 0, padding: '8px 10px', borderRadius: 8, marginBottom: 8,
-          background: 'rgba(255,255,255,.04)', border: '1px solid #2a2a4a',
-          fontSize: 11, color: '#aaa',
-        }}>
-          {human.hand[selectedIdx]?.type === 'ingredient' ? (
-            canPlayCard(human, human.hand[selectedIdx])
-              ? <span style={{ color: '#4CAF50' }}>✅ Puedes jugar esta carta</span>
-              : <span style={{ color: '#FF7043' }}>❌ No puedes jugar esta carta ahora (sombrero o ingrediente no necesario)</span>
-          ) : (
-            <span style={{ color: '#FFD700' }}>⚡ {getActionInfo(human.hand[selectedIdx]?.action)?.desc}</span>
-          )}
-        </div>
-      )}
-    </div>
-  );
-
   return (
     <div style={{
       height: '100vh', display: 'flex', flexDirection: 'column',
@@ -2033,14 +2023,12 @@ export default function App() {
       {isMobile ? (
         <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           {mobileTab === 'mesa' && mesaPanel}
-          {mobileTab === 'mano' && manoPanel}
           {mobileTab === 'rivales' && rivalesPanel}
 
           {/* Mobile tab bar */}
           <div style={{ display: 'flex', flexShrink: 0, background: '#16213e', borderTop: '2px solid #2a2a4a' }}>
             {[
               { id: 'mesa', label: '🍔 Mesa', notify: isHumanTurn },
-              { id: 'mano', label: `🃏 Mano (${human.hand.length})` },
               { id: 'rivales', label: '👥 Rivales' },
             ].map(tab => (
               <button key={tab.id} onClick={() => setMobileTab(tab.id)} style={{
@@ -2064,12 +2052,9 @@ export default function App() {
           </div>
         </div>
       ) : (
-        <div style={{ flex: 1, display: 'flex', gap: 0, overflow: 'hidden', position: 'relative' }}>
+        <div style={{ flex: 1, display: 'flex', gap: 0, overflow: 'hidden' }}>
           {rivalesPanel}
           {mesaPanel}
-          <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', overflow: 'visible', zIndex: 10 }}>
-            {manoPanel}
-          </div>
         </div>
       )}
 
