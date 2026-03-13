@@ -65,22 +65,22 @@ const ING_IMG = {
 };
 
 // ═══ INGREDIENT CARD (Lotería style) ═══
-export const IngredientCard = ({ card, onClick, selected, small, playable }) => {
+export const IngredientCard = ({ card, onClick, selected, small, large, playable }) => {
   const { language: lang, ingredient: ing } = card;
   const isWild = ing === "perrito";
   const border = LANG_BORDER[lang];
   const bg = LANG_BG[lang];
   const txtColor = LANG_TEXT[lang];
   const isDark = lang === "inglés";
-  const w = small ? 64 : 86, h = small ? 94 : 126;
+  const w = large ? 105 : (small ? 64 : 86);
+  const h = large ? 154 : (small ? 94 : 126);
   const dimmed = playable === false;
 
   return (
     <div onClick={onClick} style={{
       width: w, height: h, borderRadius: 8, overflow: "hidden", cursor: "pointer",
       border: selected ? "3px solid #FFD700" : `4px solid ${border}`,
-      boxShadow: selected ? "0 0 18px rgba(255,215,0,0.6),0 4px 12px rgba(0,0,0,0.3)" : "0 2px 8px rgba(0,0,0,0.25)",
-      transform: selected ? "translateY(-10px) scale(1.06)" : "scale(1)",
+      boxShadow: selected ? "0 0 22px rgba(255,215,0,0.7),0 6px 16px rgba(0,0,0,0.4)" : "0 2px 8px rgba(0,0,0,0.25)",
       transition: "all 0.2s", background: bg, display: "flex", flexDirection: "column",
       alignItems: "center", position: "relative",
       opacity: dimmed ? 0.4 : 1,
@@ -92,20 +92,21 @@ export const IngredientCard = ({ card, onClick, selected, small, playable }) => 
       )}
       {/* Ingredient badge top-left */}
       <div style={{
-        position: "absolute", top: 2, left: 2, width: small ? 16 : 20, height: small ? 16 : 20,
+        position: "absolute", top: 2, left: 2,
+        width: large ? 24 : (small ? 16 : 20), height: large ? 24 : (small ? 16 : 20),
         borderRadius: "50%", background: LANG_BADGE[lang], display: "flex", alignItems: "center",
-        justifyContent: "center", fontSize: small ? 9 : 12, lineHeight: 1,
+        justifyContent: "center", fontSize: large ? 13 : (small ? 9 : 12), lineHeight: 1,
         boxShadow: "0 1px 3px rgba(0,0,0,0.3)"
       }}>
         {isWild
           ? <span style={{ fontWeight: 900, color: isDark ? "#eee" : "#fff" }}>?</span>
           : ING_IMG[ing]
-            ? <img src={ING_IMG[ing]} alt={ing} style={{ width: small ? 10 : 14, height: small ? 10 : 14, objectFit: 'contain' }} />
+            ? <img src={ING_IMG[ing]} alt={ing} style={{ width: large ? 16 : (small ? 10 : 14), height: large ? 16 : (small ? 10 : 14), objectFit: 'contain' }} />
             : ING_EMOJI[ing]}
       </div>
       {/* Language label */}
       <div style={{
-        marginTop: small ? 3 : 5, fontSize: small ? 10 : 14, fontWeight: 900,
+        marginTop: small ? 3 : 5, fontSize: large ? 17 : (small ? 10 : 14), fontWeight: 900,
         color: txtColor, letterSpacing: 2, fontFamily: "'Fredoka',sans-serif",
         textShadow: isDark ? "none" : "0 1px 0 rgba(255,255,255,0.3)"
       }}>
@@ -113,21 +114,21 @@ export const IngredientCard = ({ card, onClick, selected, small, playable }) => 
       </div>
       {/* Center: hat on ingredient with eyes */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", marginTop: -2 }}>
-        <div style={{ transform: small ? "scale(0.38)" : "scale(0.48)", transformOrigin: "bottom center", lineHeight: 0, marginBottom: small ? -6 : -4 }}>
+        <div style={{ transform: large ? "scale(0.58)" : (small ? "scale(0.38)" : "scale(0.48)"), transformOrigin: "bottom center", lineHeight: 0, marginBottom: large ? -2 : (small ? -6 : -4) }}>
           <HatSVG lang={lang} size={36} />
         </div>
         <div style={{ position: "relative", display: "inline-block" }}>
           {isWild
-            ? <img src={comodinImg} alt="comodín" style={{ width: small ? 26 : 36, height: small ? 26 : 36, objectFit: 'contain', filter: "drop-shadow(0 2px 3px rgba(0,0,0,0.15))", display: 'block' }} />
+            ? <img src={comodinImg} alt="comodín" style={{ width: large ? 44 : (small ? 26 : 36), height: large ? 44 : (small ? 26 : 36), objectFit: 'contain', filter: "drop-shadow(0 2px 3px rgba(0,0,0,0.15))", display: 'block' }} />
             : ING_IMG[ing]
-              ? <img src={ING_IMG[ing]} alt={ing} style={{ width: small ? 26 : 36, height: small ? 26 : 36, objectFit: 'contain', filter: "drop-shadow(0 2px 3px rgba(0,0,0,0.15))", display: 'block' }} />
-              : <span style={{ fontSize: small ? 26 : 36, lineHeight: 1, filter: "drop-shadow(0 2px 3px rgba(0,0,0,0.15))" }}>{ING_EMOJI[ing]}</span>
+              ? <img src={ING_IMG[ing]} alt={ing} style={{ width: large ? 44 : (small ? 26 : 36), height: large ? 44 : (small ? 26 : 36), objectFit: 'contain', filter: "drop-shadow(0 2px 3px rgba(0,0,0,0.15))", display: 'block' }} />
+              : <span style={{ fontSize: large ? 44 : (small ? 26 : 36), lineHeight: 1, filter: "drop-shadow(0 2px 3px rgba(0,0,0,0.15))" }}>{ING_EMOJI[ing]}</span>
           }
         </div>
       </div>
       {/* Name in language */}
       <div style={{
-        marginBottom: small ? 3 : 6, fontSize: small ? 7 : 10, fontWeight: 700,
+        marginBottom: small ? 3 : 6, fontSize: large ? 12 : (small ? 7 : 10), fontWeight: 700,
         color: isDark ? "#ccc" : "#444", fontFamily: "'Fredoka',sans-serif"
       }}>
         {getIngName(ing, lang)}
@@ -137,13 +138,14 @@ export const IngredientCard = ({ card, onClick, selected, small, playable }) => 
 };
 
 // ═══ ACTION CARD ═══
-export const ActionCard = ({ card, onClick, selected, small }) => {
+export const ActionCard = ({ card, onClick, selected, small, large }) => {
   const info = getActionInfo(card.action);
-  const w = small ? 64 : 86, h = small ? 94 : 126;
+  const w = large ? 105 : (small ? 64 : 86);
+  const h = large ? 154 : (small ? 94 : 126);
   const mainImg = ACTION_IMG[card.action];
   const cornerImg = ACTION_CORNER_IMG[card.action];
-  const cornerSize = small ? 14 : 18;
-  const mainSize = small ? 36 : 52;
+  const cornerSize = large ? 22 : (small ? 14 : 18);
+  const mainSize = large ? 64 : (small ? 36 : 52);
 
   return (
     <div onClick={onClick} style={{
@@ -165,15 +167,15 @@ export const ActionCard = ({ card, onClick, selected, small }) => {
         ? <img src={mainImg} alt={info?.name} style={{ width:mainSize, height:mainSize, objectFit:"contain", filter:"drop-shadow(0 2px 4px rgba(0,0,0,0.4))" }} />
         : <span style={{ fontSize: small ? 22 : 32 }}>{info?.emoji}</span>
       }
-      <span style={{ fontSize: small ? 7 : 9, fontWeight: 700, textAlign: "center", lineHeight: 1.1 }}>{info?.name}</span>
-      <span style={{ fontSize: small ? 5 : 7, color: "#777", textAlign: "center", lineHeight: 1.1 }}>{info?.desc}</span>
+      <span style={{ fontSize: large ? 11 : (small ? 7 : 9), fontWeight: 700, textAlign: "center", lineHeight: 1.1 }}>{info?.name}</span>
+      <span style={{ fontSize: large ? 8 : (small ? 5 : 7), color: "#777", textAlign: "center", lineHeight: 1.1 }}>{info?.desc}</span>
     </div>
   );
 };
 
 // ═══ GAME CARD (wrapper) ═══
-export const GameCard = ({ card, playable, ...props }) => {
+export const GameCard = ({ card, playable, large, ...props }) => {
   return card.type === "ingredient"
-    ? <IngredientCard card={card} playable={playable} {...props} />
-    : <ActionCard card={card} {...props} />;
+    ? <IngredientCard card={card} playable={playable} large={large} {...props} />
+    : <ActionCard card={card} large={large} {...props} />;
 };
