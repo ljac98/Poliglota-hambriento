@@ -1054,10 +1054,16 @@ export default function App() {
               const oldMain = p.mainHats[0];
               p.mainHats[0] = action.hatLang;
               p.perchero.push(oldMain);
-              const cost = Math.ceil(p.hand.length / 2);
-              const discarded = p.hand.splice(0, cost);
+              let discarded;
+              if (action.cardIndices) {
+                const sorted = [...action.cardIndices].sort((a, b) => b - a);
+                discarded = sorted.map(i => p.hand.splice(i, 1)[0]);
+              } else {
+                const cost = Math.ceil(p.hand.length / 2);
+                discarded = p.hand.splice(0, cost);
+              }
               di = [...di, ...discarded];
-              addLog(idx, `cambió sombrero a ${action.hatLang} (descartó ${cost} cartas)`, pls);
+              addLog(idx, `cambió sombrero a ${action.hatLang} (descartó ${discarded.length} cartas)`, pls);
               setPlayers(pls); setDiscard(di); setExtraPlay(true);
 
             } else if (type === 'manualAgregar') {
@@ -1564,11 +1570,11 @@ export default function App() {
     setPlayers(newPls); setDiscard(newDiscard); setExtraPlay(true);
   }
 
-  // Manual: swap main hat from perchero (costs half your hand)
-  function resolveManualCambiar(hatLang) {
+  // Manual: swap main hat from perchero (costs half your hand — player chooses which cards)
+  function resolveManualCambiar(hatLang, cardIndices) {
     setModal(null); setSelectedIdx(null);
     if (isOnline && !isHost) {
-      socket.emit('playerAction', { code: roomCode, action: { type: 'manualCambiar', hatLang } });
+      socket.emit('playerAction', { code: roomCode, action: { type: 'manualCambiar', hatLang, cardIndices } });
       return;
     }
     const newPls = clone(players);
@@ -1578,9 +1584,10 @@ export default function App() {
     const oldMain = p.mainHats[0];
     p.mainHats[0] = hatLang;
     p.perchero.push(oldMain);
-    const cost = Math.ceil(p.hand.length / 2);
-    const discarded = p.hand.splice(0, cost);
+    const sorted = [...cardIndices].sort((a, b) => b - a);
+    const discarded = sorted.map(i => p.hand.splice(i, 1)[0]);
     let newDiscard = [...discard, ...discarded];
+    const cost = discarded.length;
     addLog(HI, `cambió sombrero a ${hatLang} (descartó ${cost} carta${cost !== 1 ? 's' : ''}) — puede jugar una carta`, newPls);
     setPlayers(newPls); setDiscard(newDiscard); setExtraPlay(true);
   }
@@ -2220,17 +2227,17 @@ export default function App() {
         </Modal>
       )}
 
-      {/* Manual: Cambiar sombrero */}
+      {/* Manual: Cambiar sombrero — paso 1: elegir sombrero */}
       {modal?.type === 'manual_cambiar' && (
-        <Modal title="🎩 Cambiar Sombrero — cuesta la mitad de tu mano">
+        <Modal title="🎩 Cambiar Sombrero — paso 1: elegir sombrero">
           <p style={{ color: '#888', fontSize: 12, marginBottom: 12 }}>
-            Elige un sombrero del perchero. Tu sombrero actual vuelve al perchero y descartás {Math.ceil(human.hand.length / 2)} carta{Math.ceil(human.hand.length / 2) !== 1 ? 's' : ''}. Luego podés jugar una carta extra.
+            Elige un sombrero del perchero. Luego elegirás qué {Math.ceil(human.hand.length / 2)} carta{Math.ceil(human.hand.length / 2) !== 1 ? 's' : ''} descartar.
           </p>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
             {human.perchero.map(h => (
               <div
                 key={h}
-                onClick={() => resolveManualCambiar(h)}
+                onClick={() => setModal({ type: 'manual_cambiar_discard', hatLang: h, selected: [] })}
                 style={{
                   padding: 10, borderRadius: 10, cursor: 'pointer',
                   border: `2px solid ${LANG_BORDER[h]}88`,
@@ -2250,6 +2257,58 @@ export default function App() {
           <Btn onClick={() => setModal(null)} color="#333" style={{ color: '#aaa' }}>Cancelar</Btn>
         </Modal>
       )}
+
+      {/* Manual: Cambiar sombrero — paso 2: elegir cartas a descartar */}
+      {modal?.type === 'manual_cambiar_discard' && (() => {
+        const cost = Math.ceil(human.hand.length / 2);
+        const sel = modal.selected;
+        const remaining = cost - sel.length;
+        return (
+          <Modal title={`🎩 Cambiar a ${modal.hatLang.charAt(0).toUpperCase() + modal.hatLang.slice(1)} — paso 2: elegir cartas`}>
+            <p style={{ color: '#888', fontSize: 12, marginBottom: 8 }}>
+              Elegí <strong style={{ color: remaining > 0 ? '#FFD700' : '#4CAF50' }}>
+                {remaining > 0 ? `${remaining} carta${remaining !== 1 ? 's' : ''} más` : '¡Listo!'}
+              </strong> para descartar ({sel.length}/{cost})
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12, justifyContent: 'center' }}>
+              {human.hand.map((card, i) => {
+                const isSel = sel.includes(i);
+                return (
+                  <div
+                    key={card.id}
+                    onClick={() => {
+                      const newSel = isSel
+                        ? sel.filter(x => x !== i)
+                        : sel.length < cost ? [...sel, i] : sel;
+                      setModal({ ...modal, selected: newSel });
+                    }}
+                    style={{
+                      cursor: 'pointer', transition: 'all .15s',
+                      outline: isSel ? '3px solid #FF7043' : '3px solid transparent',
+                      borderRadius: 8,
+                      transform: isSel ? 'translateY(-6px)' : 'none',
+                      opacity: !isSel && sel.length >= cost ? 0.4 : 1,
+                    }}
+                  >
+                    <GameCard card={card} selected={false} playable={false} large={false} small={true} />
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <Btn onClick={() => setModal({ type: 'manual_cambiar' })} color="#333" style={{ color: '#aaa' }}>← Volver</Btn>
+              <Btn
+                onClick={() => resolveManualCambiar(modal.hatLang, modal.selected)}
+                disabled={sel.length !== cost}
+                color="#9C27B0"
+                style={{ flex: 1 }}
+              >
+                Confirmar descarte
+              </Btn>
+            </div>
+          </Modal>
+        );
+      })()}
 
       {/* Manual: Agregar sombrero */}
       {modal?.type === 'manual_agregar' && (
