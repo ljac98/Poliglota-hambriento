@@ -71,6 +71,11 @@ export const BurgerTarget = ({ ingredients, table, isCurrent }) => {
     const have = resolvedTable.filter(t => t === ing).length;
     return have >= stackRendered[ing];
   });
+  const panFilled = (() => {
+    const panIdx = ingredients.indexOf('pan');
+    if (panIdx === -1) return true;
+    return stackFilled[panIdx];
+  })();
 
   return (
     <div style={{
@@ -79,35 +84,45 @@ export const BurgerTarget = ({ ingredients, table, isCurrent }) => {
       background: isCurrent ? "rgba(255,215,0,0.1)" : "rgba(255,255,255,0.03)",
       border: isCurrent ? "2px solid #FFD700" : "2px solid transparent",
     }}>
-      {/* Stacked burger visual */}
-      <div style={{
-        display: "flex", flexDirection: "column", alignItems: "center",
-        flexShrink: 0, width: 50,
-      }}>
-        <img src={burgerPanArriba} alt="pan" style={{ width: 50, height: 'auto', marginBottom: -4 }} />
-        {[...ingredients].reverse().map((ing, i) => {
-          const realIdx = ingredients.length - 1 - i;
-          const filled = stackFilled[realIdx];
-          return (
-            BURGER_STACK_IMG[ing] && <img
-              key={i}
-              src={BURGER_STACK_IMG[ing]}
-              alt={ing}
-              style={{
-                width: 46, height: 'auto', marginTop: -4, marginBottom: -4,
-                opacity: filled ? 1 : 0.25,
-                transition: 'opacity 0.3s',
-                filter: filled ? 'none' : 'grayscale(0.5)',
-              }}
-            />
-          );
-        })}
-        <img src={burgerPanAbajo} alt="pan" style={{ width: 50, height: 'auto', marginTop: -4 }} />
-      </div>
+      {/* Stacked burger visual — only for the current target */}
+      {isCurrent && (
+        <div style={{
+          display: "flex", flexDirection: "column", alignItems: "center",
+          flexShrink: 0, width: 50,
+        }}>
+          <img src={burgerPanArriba} alt="pan" style={{
+            width: 50, height: 'auto', marginBottom: -4,
+            opacity: panFilled ? 1 : 0.25, transition: 'opacity 0.3s',
+            filter: panFilled ? 'none' : 'grayscale(0.5)',
+          }} />
+          {[...ingredients].reverse().map((ing, i) => {
+            const realIdx = ingredients.length - 1 - i;
+            const filled = stackFilled[realIdx];
+            return (
+              BURGER_STACK_IMG[ing] && <img
+                key={i}
+                src={BURGER_STACK_IMG[ing]}
+                alt={ing}
+                style={{
+                  width: 46, height: 'auto', marginTop: -4, marginBottom: -4,
+                  opacity: filled ? 1 : 0.25,
+                  transition: 'opacity 0.3s',
+                  filter: filled ? 'none' : 'grayscale(0.5)',
+                }}
+              />
+            );
+          })}
+          <img src={burgerPanAbajo} alt="pan" style={{
+            width: 50, height: 'auto', marginTop: -4,
+            opacity: panFilled ? 1 : 0.25, transition: 'opacity 0.3s',
+            filter: panFilled ? 'none' : 'grayscale(0.5)',
+          }} />
+        </div>
+      )}
 
       {/* Ingredient icons row */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 3, alignItems: "center" }}>
-        {ingredients.map((ing, i) => {
+        {isCurrent ? ingredients.map((ing, i) => {
           rendered[ing] = (rendered[ing] || 0) + 1;
           const thisOccurrence = rendered[ing];
           const have = resolvedTable.filter(t => t === ing).length;
@@ -137,7 +152,15 @@ export const BurgerTarget = ({ ingredients, table, isCurrent }) => {
               )}
             </div>
           );
-        })}
+        }) : ingredients.map((_, i) => (
+          <div key={i} style={{
+            width: 26, height: 26, borderRadius: 6,
+            background: "rgba(255,255,255,0.06)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            border: "2px dashed rgba(255,255,255,0.15)",
+            fontSize: 14, color: "rgba(255,255,255,0.3)",
+          }}>?</div>
+        ))}
       </div>
     </div>
   );
