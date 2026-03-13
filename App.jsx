@@ -119,7 +119,7 @@ function SetupScreen({ onStart, onOnline }) {
       }}>
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
           <img src={hamImg} alt="hamburguesa" style={{ width: 90, height: 90, objectFit: 'contain' }} />
-          <h1 style={{ fontSize: 30, fontWeight: 900, color: '#FFD700', letterSpacing: 1 }}>Políglota Hambriento</h1>
+          <h1 style={{ fontSize: 30, fontWeight: 900, color: '#FFD700', letterSpacing: 1 }}>HUNGRY POLY</h1>
           <p style={{ color: '#888', fontSize: 13, marginTop: 4 }}>Aprende vocabulario armando hamburguesas</p>
         </div>
 
@@ -2003,7 +2003,7 @@ export default function App() {
         background: '#16213e', borderBottom: '2px solid #2a2a4a', flexShrink: 0,
       }}>
         <span style={{ fontSize: 22 }}>🍔</span>
-        {!isMobile && <span style={{ fontWeight: 900, fontSize: 16, color: '#FFD700' }}>Políglota Hambriento</span>}
+        {!isMobile && <span style={{ fontWeight: 900, fontSize: 16, color: '#FFD700' }}>HUNGRY POLY</span>}
         <div style={{ marginLeft: 'auto', display: 'flex', gap: isMobile ? 6 : 12, alignItems: 'center' }}>
           <span style={{ fontSize: 12, color: '#555' }}>🃏 {deck.length}</span>
           <span style={{ fontSize: 12, color: '#555' }}>🗑️ {discard.length}</span>
