@@ -109,9 +109,12 @@ function SetupScreen({ onStart, onOnline }) {
       minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
       background: 'linear-gradient(135deg,#0f1117 0%,#1a1a2e 100%)',
       fontFamily: "'Fredoka',sans-serif",
+      overflowY: 'auto', padding: '20px 0',
     }}>
       <div style={{
-        background: '#16213e', borderRadius: 20, padding: '36px 40px', maxWidth: 520, width: '90vw',
+        background: '#16213e', borderRadius: 20,
+        padding: 'clamp(20px, 5vw, 36px) clamp(16px, 5vw, 40px)',
+        maxWidth: 520, width: '92vw',
         boxShadow: '0 8px 40px rgba(0,0,0,.6)', border: '2px solid #2a2a4a',
       }}>
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
@@ -406,9 +409,12 @@ function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '' }) {
       minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
       background: 'linear-gradient(135deg,#0f1117 0%,#1a1a2e 100%)',
       fontFamily: "'Fredoka',sans-serif",
+      overflowY: 'auto', padding: '20px 0',
     }}>
       <div style={{
-        background: '#16213e', borderRadius: 20, padding: '36px 40px', maxWidth: 480, width: '90vw',
+        background: '#16213e', borderRadius: 20,
+        padding: 'clamp(20px, 5vw, 36px) clamp(16px, 5vw, 40px)',
+        maxWidth: 480, width: '92vw',
         boxShadow: '0 8px 40px rgba(0,0,0,.6)', border: '2px solid #2a2a4a',
       }}>
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
@@ -542,9 +548,12 @@ function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack }) {
       minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
       background: 'linear-gradient(135deg,#0f1117 0%,#1a1a2e 100%)',
       fontFamily: "'Fredoka',sans-serif",
+      overflowY: 'auto', padding: '20px 0',
     }}>
       <div style={{
-        background: '#16213e', borderRadius: 20, padding: '32px 36px', maxWidth: 560, width: '92vw',
+        background: '#16213e', borderRadius: 20,
+        padding: 'clamp(18px, 4vw, 32px) clamp(14px, 4vw, 36px)',
+        maxWidth: 560, width: '94vw',
         boxShadow: '0 8px 40px rgba(0,0,0,.6)', border: '2px solid #2a2a4a',
       }}>
         {/* Room code display */}
