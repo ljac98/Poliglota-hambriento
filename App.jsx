@@ -356,11 +356,11 @@ function OpponentCard({ player, index, color, isActive }) {
 }
 
 // ── Online Menu (create / join room) ─────────────────────────────────────────
-function OnlineMenu({ onCreated, onJoined, onBack }) {
-  const [tab, setTab] = useState('create');
+function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '' }) {
+  const [tab, setTab] = useState(initialCode ? 'join' : 'create');
   const [name, setName] = useState('');
   const [joinName, setJoinName] = useState('');
-  const [joinCode, setJoinCode] = useState('');
+  const [joinCode, setJoinCode] = useState(initialCode);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -370,6 +370,7 @@ function OnlineMenu({ onCreated, onJoined, onBack }) {
     socket.connect();
     socket.once('roomCreated', ({ code }) => {
       setLoading(false);
+      window.history.replaceState({}, '', window.location.pathname);
       onCreated(name.trim(), code);
     });
     socket.emit('createRoom', { playerName: name.trim() });
@@ -382,6 +383,7 @@ function OnlineMenu({ onCreated, onJoined, onBack }) {
     socket.once('joinError', msg => { setError(msg); setLoading(false); socket.disconnect(); });
     socket.once('roomJoined', ({ myIdx }) => {
       setLoading(false);
+      window.history.replaceState({}, '', window.location.pathname);
       onJoined(joinName.trim(), joinCode.trim().toUpperCase(), myIdx);
     });
     socket.emit('joinRoom', { playerName: joinName.trim(), code: joinCode.trim().toUpperCase() });
@@ -496,6 +498,15 @@ function OnlineMenu({ onCreated, onJoined, onBack }) {
 function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack }) {
   const [diff, setDiff] = useState('medio');
   const [hatPicks, setHatPicks] = useState({});
+  const [copied, setCopied] = useState(false);
+
+  function handleCopyLink() {
+    const link = window.location.origin + '/?sala=' + roomCode;
+    navigator.clipboard.writeText(link).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
   const myHat = hatPicks[myName];
 
   // Listen for other players' hat picks
@@ -547,6 +558,19 @@ function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack }) {
             {roomCode}
           </div>
           <div style={{ fontSize: 12, color: '#555', marginTop: 8 }}>Comparte este código con tus amigos</div>
+          <button
+            onClick={handleCopyLink}
+            style={{
+              marginTop: 10, padding: '7px 18px', borderRadius: 10,
+              border: '1px solid rgba(255,215,0,.35)',
+              background: copied ? 'rgba(76,175,80,.18)' : 'rgba(255,215,0,.08)',
+              color: copied ? '#81C784' : '#FFD700',
+              fontFamily: "'Fredoka',sans-serif", fontWeight: 700, fontSize: 13,
+              cursor: 'pointer', transition: 'all .2s',
+            }}
+          >
+            {copied ? '✅ ¡Enlace copiado!' : '🔗 Copiar enlace'}
+          </button>
         </div>
 
         {/* Players */}
@@ -673,7 +697,8 @@ function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack }) {
 
 // ── Main App ──────────────────────────────────────────────────────────────────
 export default function App() {
-  const [phase, setPhase] = useState('setup');
+  const initialSalaCode = new URLSearchParams(window.location.search).get('sala') || '';
+  const [phase, setPhase] = useState(initialSalaCode ? 'onlineMenu' : 'setup');
   const [players, setPlayers] = useState([]);
   const [deck, setDeck] = useState([]);
   const [discard, setDiscard] = useState([]);
@@ -1601,6 +1626,7 @@ export default function App() {
 
   if (phase === 'onlineMenu') return (
     <OnlineMenu
+      initialCode={initialSalaCode}
       onBack={() => setPhase('setup')}
       onCreated={(name, code) => {
         setIsOnline(true); setIsHost(true); setMyPlayerIdx(0); setRoomCode(code);
