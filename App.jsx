@@ -1901,10 +1901,14 @@ export default function App() {
         MANO ({human.hand.length}/{human.maxHand})
       </div>
       <div style={{
-        display: 'flex', justifyContent: isMobile ? 'flex-start' : 'center', alignItems: 'flex-end',
-        paddingTop: 36, paddingBottom: 8, flex: 1,
+        display: 'flex', justifyContent: isMobile ? 'flex-start' : 'center', alignItems: isMobile ? 'center' : 'flex-end',
+        padding: isMobile ? '8px 12px' : '36px 0 8px 0',
+        flex: isMobile ? 'none' : 1,
         overflowX: isMobile ? 'auto' : 'visible', overflowY: isMobile ? 'hidden' : 'visible',
-        minHeight: 170,
+        minHeight: isMobile ? 'auto' : 170,
+        gap: isMobile ? 10 : 0,
+        scrollSnapType: isMobile ? 'x mandatory' : 'none',
+        WebkitOverflowScrolling: 'touch',
       }}>
         {human.hand.map((card, i) => {
           const playable = card.type === 'ingredient' ? canPlayCard(human, card) : null;
@@ -1914,12 +1918,16 @@ export default function App() {
             <div
               key={card.id}
               onClick={() => isHumanTurn ? setSelectedIdx(isSelected ? null : i) : null}
-              onMouseEnter={e => { if (!isSelected && isHumanTurn) e.currentTarget.style.transform = `translateY(-14px) rotate(${angle * 0.4}deg)`; }}
-              onMouseLeave={e => { if (!isSelected) e.currentTarget.style.transform = `translateY(0px) rotate(${angle}deg)`; }}
+              onMouseEnter={e => { if (!isMobile && !isSelected && isHumanTurn) e.currentTarget.style.transform = `translateY(-14px) rotate(${angle * 0.4}deg)`; }}
+              onMouseLeave={e => { if (!isMobile && !isSelected) e.currentTarget.style.transform = `translateY(0px) rotate(${angle}deg)`; }}
               style={{
                 cursor: isHumanTurn ? 'pointer' : 'default',
-                marginLeft: i === 0 ? 0 : -OVERLAP,
-                transform: isSelected ? 'translateY(-28px) rotate(0deg)' : `translateY(0px) rotate(${angle}deg)`,
+                marginLeft: isMobile ? 0 : (i === 0 ? 0 : -OVERLAP),
+                flexShrink: isMobile ? 0 : undefined,
+                scrollSnapAlign: isMobile ? 'center' : undefined,
+                transform: isMobile
+                  ? (isSelected ? 'translateY(-10px)' : 'none')
+                  : (isSelected ? 'translateY(-28px) rotate(0deg)' : `translateY(0px) rotate(${angle}deg)`),
                 transformOrigin: 'bottom center',
                 transition: 'transform 0.15s',
                 zIndex: isSelected ? handN + 1 : i,
