@@ -718,6 +718,7 @@ export default function App() {
   const [winner, setWinner] = useState(null);
   const [extraPlay, setExtraPlay] = useState(false);
   const [showLog, setShowLog] = useState(false);
+  const [mobileTab, setMobileTab] = useState('mesa');
   const aiRunning = useRef(false);
 
   // ── Online multiplayer state ──
@@ -1701,6 +1702,275 @@ export default function App() {
     return null; // action cards always selectable
   };
 
+  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 640;
+
+  // ── Panel: Rivals (left sidebar) ──
+  const rivalesPanel = (
+    <div style={{
+      ...(isMobile
+        ? { flex: 1, overflowY: 'auto', padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }
+        : { width: 220, flexShrink: 0, background: '#12192e', borderRight: '2px solid #1e2a45', overflowY: 'auto', padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }
+      ),
+    }}>
+      <div style={{ fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1, marginBottom: 4 }}>OPONENTES</div>
+      {opponents.map((opp, i) => {
+        const realIdx = players.indexOf(opp);
+        return (
+          <OpponentCard
+            key={realIdx}
+            player={opp}
+            index={realIdx}
+            color={PLAYER_COLORS[realIdx % PLAYER_COLORS.length]}
+            isActive={cp === realIdx}
+          />
+        );
+      })}
+
+      {/* Log panel */}
+      {showLog && (
+        <div style={{ marginTop: 8 }}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1, marginBottom: 6 }}>HISTORIAL</div>
+          {log.length === 0 && <div style={{ fontSize: 11, color: '#444' }}>Sin eventos aún</div>}
+          {log.map((e, i) => <LogEntry key={i} e={e} />)}
+        </div>
+      )}
+    </div>
+  );
+
+  // ── Panel: Mesa (center) ──
+  const mesaPanel = (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: isMobile ? 'auto' : 'hidden', padding: '12px 16px', gap: 10 }}>
+
+      {/* Player header */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 10,
+        background: 'rgba(255,215,0,.06)', borderRadius: 12, padding: '8px 14px',
+        border: '2px solid rgba(255,215,0,.2)', flexShrink: 0,
+      }}>
+        <HatSVG lang={human.mainHats[0] || LANGUAGES[0]} size={32} />
+        <div>
+          <div style={{ fontWeight: 900, fontSize: 16, color: humanColor }}>{human.name}</div>
+          <div style={{ fontSize: 11, color: '#777' }}>
+            🍔 {human.currentBurger}/{human.totalBurgers} hamburguesas
+            {extraPlay && <span style={{ color: '#FFD700', marginLeft: 8 }}>⚡ Turno extra!</span>}
+          </div>
+        </div>
+        {/* Main hats */}
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
+          {human.mainHats.map(h => <HatBadge key={h} lang={h} isMain size="md" />)}
+        </div>
+      </div>
+
+      {/* Burger targets */}
+      <div style={{
+        background: 'rgba(255,255,255,.03)', borderRadius: 10, padding: '8px 10px',
+        border: '2px solid #1e2a45', flexShrink: 0,
+      }}>
+        <div style={{ fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1, marginBottom: 6 }}>HAMBURGUESAS</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {human.burgers.map((b, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: 11, color: i === human.currentBurger ? '#FFD700' : '#555', width: 14, fontWeight: 700 }}>
+                {i < human.currentBurger ? '✅' : i === human.currentBurger ? '▶' : '○'}
+              </span>
+              <BurgerTarget
+                ingredients={b}
+                table={i === human.currentBurger ? human.table : i < human.currentBurger ? b : []}
+                isCurrent={i === human.currentBurger}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Table */}
+      <div style={{
+        background: 'rgba(255,255,255,.03)', borderRadius: 10, padding: '8px 10px',
+        border: '2px solid #1e2a45', flexShrink: 0,
+      }}>
+        <div style={{ fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1, marginBottom: 6 }}>
+          MESA ({human.table.length} ingredientes)
+        </div>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', minHeight: 32 }}>
+          {human.table.length === 0 && <span style={{ fontSize: 12, color: '#333' }}>Mesa vacía</span>}
+          {human.table.map((ing, i) => {
+            const base = ingKey(ing);
+            const chosen = ingChosen(ing);
+            return (
+              <div key={i} style={{
+                width: 36, height: 36, borderRadius: 8,
+                background: chosen
+                  ? `linear-gradient(to right, ${ING_BG.perrito || '#9b59b6'} 50%, ${ING_BG[chosen]} 50%)`
+                  : ING_BG[base],
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 20, boxShadow: '0 2px 6px rgba(0,0,0,.3)',
+                overflow: 'hidden', position: 'relative',
+              }}>
+                {chosen ? (
+                  <>
+                    <div style={{ position: 'absolute', left: 0, top: 0, width: '50%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <img src={ING_IMG.perrito} alt="comodín" style={{ width: 22, height: 22, objectFit: 'contain' }} />
+                    </div>
+                    <div style={{ position: 'absolute', right: 0, top: 0, width: '50%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {ING_IMG[chosen]
+                        ? <img src={ING_IMG[chosen]} alt={chosen} style={{ width: 22, height: 22, objectFit: 'contain' }} />
+                        : <span style={{ fontSize: 14 }}>{ING_EMOJI[chosen]}</span>}
+                    </div>
+                  </>
+                ) : (
+                  ING_IMG[base]
+                    ? <img src={ING_IMG[base]} alt={base} style={{ width: 26, height: 26, objectFit: 'contain' }} />
+                    : ING_EMOJI[base]
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Perchero */}
+      <div style={{
+        background: 'rgba(255,255,255,.02)', borderRadius: 10, padding: '6px 10px',
+        border: '2px solid #1e2a45', flexShrink: 0,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1 }}>
+            PERCHERO
+          </div>
+          {isHumanTurn && !extraPlay && human.perchero.length > 0 && (
+            <div style={{ display: 'flex', gap: 4 }}>
+              <button
+                onClick={() => setModal({ type: 'manual_cambiar' })}
+                title="Cambia tu sombrero principal (cuesta descartar la mitad de tu mano)"
+                style={{
+                  padding: '2px 7px', borderRadius: 6, border: '1px solid rgba(156,39,176,0.3)',
+                  background: 'rgba(156,39,176,0.12)', color: '#BA68C8', fontSize: 10,
+                  fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+                }}
+              >
+                🎩 Cambiar
+              </button>
+              {human.hand.length > 0 && (
+                <button
+                  onClick={() => setModal({ type: 'manual_agregar' })}
+                  title="Agrega un sombrero extra (descarta toda tu mano, mano máx se reduce)"
+                  style={{
+                    padding: '2px 7px', borderRadius: 6, border: '1px solid rgba(156,39,176,0.3)',
+                    background: 'rgba(156,39,176,0.12)', color: '#BA68C8', fontSize: 10,
+                    fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+                  }}
+                >
+                  ➕ Agregar
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+        <div style={{ display: 'flex', gap: 6 }}>
+          {human.perchero.map(h => <HatBadge key={h} lang={h} isMain={false} size="sm" />)}
+        </div>
+      </div>
+
+      {/* Spacer (desktop only) */}
+      {!isMobile && <div style={{ flex: 1 }} />}
+
+      {/* Action buttons */}
+      {isHumanTurn && (
+        <div style={{
+          display: 'flex', gap: 8, flexShrink: 0, padding: '6px 0',
+        }}>
+          <Btn
+            onClick={humanPlay}
+            disabled={selectedIdx === null}
+            color="#4CAF50"
+            style={{ flex: 1 }}
+          >
+            ▶ Jugar carta
+          </Btn>
+          <Btn
+            onClick={humanDiscard}
+            disabled={selectedIdx === null || extraPlay}
+            color="#FF7043"
+            style={{ flex: 1 }}
+          >
+            🗑 Descartar
+          </Btn>
+          {extraPlay && (
+            <Btn onClick={() => {
+              if (isOnline && !isHost) {
+                socket.emit('playerAction', { code: roomCode, action: { type: 'passTurn' } });
+              } else {
+                setExtraPlay(false); endTurn(players, deck, discard, HI);
+              }
+            }} color="#888" style={{ flex: 1 }}>
+              ⏭ Pasar turno
+            </Btn>
+          )}
+        </div>
+      )}
+
+      {!isHumanTurn && (
+        <div style={{
+          textAlign: 'center', color: '#555', fontSize: 13, padding: '8px 0', flexShrink: 0,
+        }}>
+          {players[cp]?.isRemote ? `🌐 Esperando la jugada de ${players[cp]?.name}...` : `⏳ Esperando a ${players[cp]?.name}...`}
+        </div>
+      )}
+    </div>
+  );
+
+  // ── Panel: Mano (right sidebar) ──
+  const manoPanel = (
+    <div style={{
+      ...(isMobile
+        ? { flex: 1, overflowY: 'auto', padding: '12px 10px', display: 'flex', flexDirection: 'column', gap: 8 }
+        : { width: 'clamp(200px, 28vw, 340px)', flexShrink: 0, background: '#12192e', borderLeft: '2px solid #1e2a45', display: 'flex', flexDirection: 'column', padding: '12px 10px', gap: 8, overflowY: 'auto' }
+      ),
+    }}>
+      <div style={{ fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1 }}>
+        MANO ({human.hand.length}/{human.maxHand})
+      </div>
+
+      <div style={{
+        display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'center',
+      }}>
+        {human.hand.map((card, i) => {
+          const playable = card.type === 'ingredient' ? canPlayCard(human, card) : null;
+          return (
+            <div
+              key={card.id}
+              onClick={() => isHumanTurn ? setSelectedIdx(selectedIdx === i ? null : i) : null}
+              style={{ cursor: isHumanTurn ? 'pointer' : 'default' }}
+            >
+              <GameCard
+                card={card}
+                selected={selectedIdx === i}
+                playable={isHumanTurn ? playable : false}
+                small={false}
+              />
+            </div>
+          );
+        })}
+      </div>
+
+      {isHumanTurn && selectedIdx !== null && (
+        <div style={{
+          marginTop: 8, padding: '8px 10px', borderRadius: 8,
+          background: 'rgba(255,255,255,.04)', border: '1px solid #2a2a4a',
+          fontSize: 11, color: '#aaa',
+        }}>
+          {human.hand[selectedIdx]?.type === 'ingredient' ? (
+            canPlayCard(human, human.hand[selectedIdx])
+              ? <span style={{ color: '#4CAF50' }}>✅ Puedes jugar esta carta</span>
+              : <span style={{ color: '#FF7043' }}>❌ No puedes jugar esta carta ahora (sombrero o ingrediente no necesario)</span>
+          ) : (
+            <span style={{ color: '#FFD700' }}>⚡ {getActionInfo(human.hand[selectedIdx]?.action)?.desc}</span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div style={{
       height: '100vh', display: 'flex', flexDirection: 'column',
@@ -1709,23 +1979,23 @@ export default function App() {
 
       {/* ── Header ── */}
       <div style={{
-        display: 'flex', alignItems: 'center', gap: 12, padding: '8px 16px',
+        display: 'flex', alignItems: 'center', gap: isMobile ? 6 : 12, padding: isMobile ? '6px 10px' : '8px 16px',
         background: '#16213e', borderBottom: '2px solid #2a2a4a', flexShrink: 0,
       }}>
         <span style={{ fontSize: 22 }}>🍔</span>
-        <span style={{ fontWeight: 900, fontSize: 16, color: '#FFD700' }}>Políglota Hambriento</span>
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: 12, alignItems: 'center' }}>
+        {!isMobile && <span style={{ fontWeight: 900, fontSize: 16, color: '#FFD700' }}>Políglota Hambriento</span>}
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: isMobile ? 6 : 12, alignItems: 'center' }}>
           <span style={{ fontSize: 12, color: '#555' }}>🃏 {deck.length}</span>
           <span style={{ fontSize: 12, color: '#555' }}>🗑️ {discard.length}</span>
           <div style={{
             background: isHumanTurn ? 'rgba(255,215,0,.15)' : 'rgba(0,188,212,.15)',
             border: `1px solid ${isHumanTurn ? '#FFD700' : '#00BCD4'}`,
-            borderRadius: 8, padding: '3px 10px', fontSize: 12, fontWeight: 700,
+            borderRadius: 8, padding: isMobile ? '3px 6px' : '3px 10px', fontSize: isMobile ? 11 : 12, fontWeight: 700,
             color: isHumanTurn ? '#FFD700' : '#00BCD4',
           }}>
-            {isHumanTurn ? '🎴 Tu turno' : `⏳ Turno de ${players[cp]?.name}`}
+            {isHumanTurn ? '🎴 Tu turno' : `⏳ ${players[cp]?.name}`}
           </div>
-          {isOnline && (
+          {isOnline && !isMobile && (
             <div style={{ fontSize: 11, color: '#555', padding: '3px 8px', borderRadius: 6, background: 'rgba(0,188,212,.08)', border: '1px solid rgba(0,188,212,.2)' }}>
               🌐 Sala: {roomCode}
             </div>
@@ -1737,267 +2007,46 @@ export default function App() {
       </div>
 
       {/* ── Main area ── */}
-      <div style={{ flex: 1, display: 'flex', gap: 0, overflow: 'hidden' }}>
+      {isMobile ? (
+        <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+          {mobileTab === 'mesa' && mesaPanel}
+          {mobileTab === 'mano' && manoPanel}
+          {mobileTab === 'rivales' && rivalesPanel}
 
-        {/* Left: opponents + log */}
-        <div style={{
-          width: 220, flexShrink: 0, background: '#12192e', borderRight: '2px solid #1e2a45',
-          overflowY: 'auto', padding: 12, display: 'flex', flexDirection: 'column', gap: 8,
-        }}>
-          <div style={{ fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1, marginBottom: 4 }}>OPONENTES</div>
-          {opponents.map((opp, i) => {
-            const realIdx = players.indexOf(opp);
-            return (
-              <OpponentCard
-                key={realIdx}
-                player={opp}
-                index={realIdx}
-                color={PLAYER_COLORS[realIdx % PLAYER_COLORS.length]}
-                isActive={cp === realIdx}
-              />
-            );
-          })}
-
-          {/* Log panel */}
-          {showLog && (
-            <div style={{ marginTop: 8 }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1, marginBottom: 6 }}>HISTORIAL</div>
-              {log.length === 0 && <div style={{ fontSize: 11, color: '#444' }}>Sin eventos aún</div>}
-              {log.map((e, i) => <LogEntry key={i} e={e} />)}
-            </div>
-          )}
+          {/* Mobile tab bar */}
+          <div style={{ display: 'flex', flexShrink: 0, background: '#16213e', borderTop: '2px solid #2a2a4a' }}>
+            {[
+              { id: 'mesa', label: '🍔 Mesa', notify: isHumanTurn },
+              { id: 'mano', label: `🃏 Mano (${human.hand.length})` },
+              { id: 'rivales', label: '👥 Rivales' },
+            ].map(tab => (
+              <button key={tab.id} onClick={() => setMobileTab(tab.id)} style={{
+                flex: 1, padding: '10px 4px', border: 'none', cursor: 'pointer',
+                background: mobileTab === tab.id ? 'rgba(255,215,0,.1)' : 'transparent',
+                color: mobileTab === tab.id ? '#FFD700' : '#666',
+                fontSize: 12, fontWeight: mobileTab === tab.id ? 800 : 600,
+                borderTop: mobileTab === tab.id ? '2px solid #FFD700' : '2px solid transparent',
+                fontFamily: "'Fredoka',sans-serif",
+                position: 'relative',
+              }}>
+                {tab.label}
+                {tab.notify && mobileTab !== tab.id && (
+                  <span style={{
+                    position: 'absolute', top: 4, right: 8,
+                    width: 7, height: 7, borderRadius: '50%', background: '#FFD700',
+                  }} />
+                )}
+              </button>
+            ))}
+          </div>
         </div>
-
-        {/* Center: human player area */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '12px 16px', gap: 10 }}>
-
-          {/* Player header */}
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 10,
-            background: 'rgba(255,215,0,.06)', borderRadius: 12, padding: '8px 14px',
-            border: '2px solid rgba(255,215,0,.2)', flexShrink: 0,
-          }}>
-            <HatSVG lang={human.mainHats[0] || LANGUAGES[0]} size={32} />
-            <div>
-              <div style={{ fontWeight: 900, fontSize: 16, color: humanColor }}>{human.name}</div>
-              <div style={{ fontSize: 11, color: '#777' }}>
-                🍔 {human.currentBurger}/{human.totalBurgers} hamburguesas
-                {extraPlay && <span style={{ color: '#FFD700', marginLeft: 8 }}>⚡ Turno extra!</span>}
-              </div>
-            </div>
-            {/* Main hats */}
-            <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
-              {human.mainHats.map(h => <HatBadge key={h} lang={h} isMain size="md" />)}
-            </div>
-          </div>
-
-          {/* Burger targets */}
-          <div style={{
-            background: 'rgba(255,255,255,.03)', borderRadius: 10, padding: '8px 10px',
-            border: '2px solid #1e2a45', flexShrink: 0,
-          }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1, marginBottom: 6 }}>HAMBURGUESAS</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              {human.burgers.map((b, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ fontSize: 11, color: i === human.currentBurger ? '#FFD700' : '#555', width: 14, fontWeight: 700 }}>
-                    {i < human.currentBurger ? '✅' : i === human.currentBurger ? '▶' : '○'}
-                  </span>
-                  <BurgerTarget
-                    ingredients={b}
-                    table={i === human.currentBurger ? human.table : i < human.currentBurger ? b : []}
-                    isCurrent={i === human.currentBurger}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Table */}
-          <div style={{
-            background: 'rgba(255,255,255,.03)', borderRadius: 10, padding: '8px 10px',
-            border: '2px solid #1e2a45', flexShrink: 0,
-          }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1, marginBottom: 6 }}>
-              MESA ({human.table.length} ingredientes)
-            </div>
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', minHeight: 32 }}>
-              {human.table.length === 0 && <span style={{ fontSize: 12, color: '#333' }}>Mesa vacía</span>}
-              {human.table.map((ing, i) => {
-                const base = ingKey(ing);
-                const chosen = ingChosen(ing);
-                return (
-                  <div key={i} style={{
-                    width: 36, height: 36, borderRadius: 8,
-                    background: chosen
-                      ? `linear-gradient(to right, ${ING_BG.perrito || '#9b59b6'} 50%, ${ING_BG[chosen]} 50%)`
-                      : ING_BG[base],
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 20, boxShadow: '0 2px 6px rgba(0,0,0,.3)',
-                    overflow: 'hidden', position: 'relative',
-                  }}>
-                    {chosen ? (
-                      <>
-                        <div style={{ position: 'absolute', left: 0, top: 0, width: '50%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <img src={ING_IMG.perrito} alt="comodín" style={{ width: 22, height: 22, objectFit: 'contain' }} />
-                        </div>
-                        <div style={{ position: 'absolute', right: 0, top: 0, width: '50%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          {ING_IMG[chosen]
-                            ? <img src={ING_IMG[chosen]} alt={chosen} style={{ width: 22, height: 22, objectFit: 'contain' }} />
-                            : <span style={{ fontSize: 14 }}>{ING_EMOJI[chosen]}</span>}
-                        </div>
-                      </>
-                    ) : (
-                      ING_IMG[base]
-                        ? <img src={ING_IMG[base]} alt={base} style={{ width: 26, height: 26, objectFit: 'contain' }} />
-                        : ING_EMOJI[base]
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Perchero */}
-          <div style={{
-            background: 'rgba(255,255,255,.02)', borderRadius: 10, padding: '6px 10px',
-            border: '2px solid #1e2a45', flexShrink: 0,
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1 }}>
-                PERCHERO
-              </div>
-              {isHumanTurn && !extraPlay && human.perchero.length > 0 && (
-                <div style={{ display: 'flex', gap: 4 }}>
-                  <button
-                    onClick={() => setModal({ type: 'manual_cambiar' })}
-                    title="Cambia tu sombrero principal (cuesta descartar la mitad de tu mano)"
-                    style={{
-                      padding: '2px 7px', borderRadius: 6, border: '1px solid rgba(156,39,176,0.3)',
-                      background: 'rgba(156,39,176,0.12)', color: '#BA68C8', fontSize: 10,
-                      fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-                    }}
-                  >
-                    🎩 Cambiar
-                  </button>
-                  {human.hand.length > 0 && (
-                    <button
-                      onClick={() => setModal({ type: 'manual_agregar' })}
-                      title="Agrega un sombrero extra (descarta toda tu mano, mano máx se reduce)"
-                      style={{
-                        padding: '2px 7px', borderRadius: 6, border: '1px solid rgba(156,39,176,0.3)',
-                        background: 'rgba(156,39,176,0.12)', color: '#BA68C8', fontSize: 10,
-                        fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-                      }}
-                    >
-                      ➕ Agregar
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-            <div style={{ display: 'flex', gap: 6 }}>
-              {human.perchero.map(h => <HatBadge key={h} lang={h} isMain={false} size="sm" />)}
-            </div>
-          </div>
-
-          {/* Spacer */}
-          <div style={{ flex: 1 }} />
-
-          {/* Action buttons */}
-          {isHumanTurn && (
-            <div style={{
-              display: 'flex', gap: 8, flexShrink: 0, padding: '6px 0',
-            }}>
-              <Btn
-                onClick={humanPlay}
-                disabled={selectedIdx === null}
-                color="#4CAF50"
-                style={{ flex: 1 }}
-              >
-                ▶ Jugar carta
-              </Btn>
-              <Btn
-                onClick={humanDiscard}
-                disabled={selectedIdx === null || extraPlay}
-                color="#FF7043"
-                style={{ flex: 1 }}
-              >
-                🗑 Descartar
-              </Btn>
-              {extraPlay && (
-                <Btn onClick={() => {
-                  if (isOnline && !isHost) {
-                    socket.emit('playerAction', { code: roomCode, action: { type: 'passTurn' } });
-                  } else {
-                    setExtraPlay(false); endTurn(players, deck, discard, HI);
-                  }
-                }} color="#888" style={{ flex: 1 }}>
-                  ⏭ Pasar turno
-                </Btn>
-              )}
-            </div>
-          )}
-
-          {!isHumanTurn && (
-            <div style={{
-              textAlign: 'center', color: '#555', fontSize: 13, padding: '8px 0', flexShrink: 0,
-            }}>
-              {players[cp]?.isRemote ? `🌐 Esperando la jugada de ${players[cp]?.name}...` : `⏳ Esperando a ${players[cp]?.name}...`}
-            </div>
-          )}
+      ) : (
+        <div style={{ flex: 1, display: 'flex', gap: 0, overflow: 'hidden' }}>
+          {rivalesPanel}
+          {mesaPanel}
+          {manoPanel}
         </div>
-
-        {/* Right: hand */}
-        <div style={{
-          width: 'clamp(200px, 28vw, 340px)', flexShrink: 0,
-          background: '#12192e', borderLeft: '2px solid #1e2a45',
-          display: 'flex', flexDirection: 'column', padding: '12px 10px', gap: 8,
-          overflowY: 'auto',
-        }}>
-          <div style={{ fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1 }}>
-            MANO ({human.hand.length}/{human.maxHand})
-          </div>
-
-          <div style={{
-            display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'center',
-          }}>
-            {human.hand.map((card, i) => {
-              const playable = card.type === 'ingredient' ? canPlayCard(human, card) : null;
-              return (
-                <div
-                  key={card.id}
-                  onClick={() => isHumanTurn ? setSelectedIdx(selectedIdx === i ? null : i) : null}
-                  style={{ cursor: isHumanTurn ? 'pointer' : 'default' }}
-                >
-                  <GameCard
-                    card={card}
-                    selected={selectedIdx === i}
-                    playable={isHumanTurn ? playable : false}
-                    small={false}
-                  />
-                </div>
-              );
-            })}
-          </div>
-
-          {isHumanTurn && selectedIdx !== null && (
-            <div style={{
-              marginTop: 8, padding: '8px 10px', borderRadius: 8,
-              background: 'rgba(255,255,255,.04)', border: '1px solid #2a2a4a',
-              fontSize: 11, color: '#aaa',
-            }}>
-              {human.hand[selectedIdx]?.type === 'ingredient' ? (
-                canPlayCard(human, human.hand[selectedIdx])
-                  ? <span style={{ color: '#4CAF50' }}>✅ Puedes jugar esta carta</span>
-                  : <span style={{ color: '#FF7043' }}>❌ No puedes jugar esta carta ahora (sombrero o ingrediente no necesario)</span>
-              ) : (
-                <span style={{ color: '#FFD700' }}>⚡ {getActionInfo(human.hand[selectedIdx]?.action)?.desc}</span>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
+      )}
 
       {/* ── Modals ── */}
 
