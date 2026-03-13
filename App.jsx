@@ -765,7 +765,12 @@ export default function App() {
       setCp(state.cp);
       setLog(state.log);
       setExtraPlay(state.extraPlay || false);
-      setModal(state.modal || null);
+      setModal(currentModal => {
+        const privateModals = ['cambio_sombrero', 'manual_cambiar', 'manual_cambiar_discard', 'manual_agregar'];
+        if (state.modal) return state.modal;
+        if (currentModal && privateModals.includes(currentModal.type)) return currentModal;
+        return null;
+      });
       setPendingNeg(state.pendingNeg || null);
       if (state.winner) { setWinner(state.winner); setPhase('gameover'); }
       else if (state.phase) setPhase(state.phase);
@@ -779,9 +784,11 @@ export default function App() {
     if (!isOnline || !isHost || phase !== 'playing') return;
     clearTimeout(syncRef.current);
     syncRef.current = setTimeout(() => {
+      const privateModals = ['cambio_sombrero', 'manual_cambiar', 'manual_cambiar_discard', 'manual_agregar'];
+      const syncModal = modal && privateModals.includes(modal.type) ? null : modal;
       socket.emit('syncState', {
         code: roomCode,
-        state: { players, deck, discard, cp, log, extraPlay, modal, pendingNeg, winner, phase },
+        state: { players, deck, discard, cp, log, extraPlay, modal: syncModal, pendingNeg, winner, phase },
       });
     }, 80);
   }, [players, deck, discard, cp, log, extraPlay, modal, pendingNeg, winner, phase, isOnline, isHost]);
