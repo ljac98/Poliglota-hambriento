@@ -112,5 +112,5 @@ io.on('connection', socket => {
 
 const PORT = process.env.PORT || 3001;
 httpServer.listen(PORT, () => {
-  console.log(`🎮 Servidor Políglota Hambriento en puerto ${PORT}`);
+  console.log(`🎮 Servidor HUNGRY POLY en puerto ${PORT}`);
 });
