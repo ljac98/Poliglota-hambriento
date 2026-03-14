@@ -1852,7 +1852,7 @@ export default function App() {
         {/* Sombrero(s) principal(es) */}
         <div>
           <div style={{ fontSize: 9, color: '#555', fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>PRINCIPAL</div>
-          <div style={{ display: 'flex', gap: 4 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, auto)', gap: 4 }}>
             {human.mainHats.map(h => <HatBadge key={h} lang={h} isMain size="lg" />)}
           </div>
         </div>
