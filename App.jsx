@@ -1983,6 +1983,9 @@ export default function App() {
                 }}>
                   {card.type === 'ingredient' ? (<>
                     <span style={{ fontWeight: 700, fontSize: 14 }}>{getIngName(card.ingredient, card.language)}</span>
+                    {card.ingredient === 'perrito' && (
+                      <span style={{ fontSize: 12, color: '#ccc' }}>Escoge el ingrediente que necesites</span>
+                    )}
                     {canPlayCard(human, card)
                       ? <span style={{ color: '#4CAF50', fontSize: 12 }}>✅ Puedes jugar</span>
                       : <span style={{ color: '#FF7043', fontSize: 12 }}>❌ No puedes jugar</span>}
