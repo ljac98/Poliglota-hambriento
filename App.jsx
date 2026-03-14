@@ -1755,255 +1755,292 @@ export default function App() {
     </div>
   );
 
-  // ── Panel: Mesa (center) ──
-  const mesaPanel = (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', padding: '12px 16px', gap: 10 }}>
+  // ── Panel: Mesa (center) — section blocks ──
 
-      {/* Player header */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 10,
-        background: 'rgba(255,215,0,.06)', borderRadius: 12, padding: '8px 14px',
-        border: '2px solid rgba(255,215,0,.2)', flexShrink: 0,
-      }}>
+  const playerHeader = (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 10,
+      background: 'rgba(255,215,0,.06)', borderRadius: 12, padding: '8px 14px',
+      border: '2px solid rgba(255,215,0,.2)', flexShrink: 0,
+    }}>
+      <div>
+        <div style={{ fontWeight: 900, fontSize: 16, color: humanColor }}>{human.name}</div>
+        <div style={{ fontSize: 11, color: '#777' }}>
+          🍔 {human.currentBurger}/{human.totalBurgers} hamburguesas
+          {extraPlay && <span style={{ color: '#FFD700', marginLeft: 8 }}>⚡ Turno extra!</span>}
+        </div>
+      </div>
+    </div>
+  );
+
+  const burgersSection = (
+    <div style={{
+      background: 'rgba(255,255,255,.03)', borderRadius: 10, padding: '8px 10px',
+      border: '2px solid #1e2a45', flexShrink: 0,
+    }}>
+      <div style={{ fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1, marginBottom: 6 }}>HAMBURGUESAS</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {human.burgers.map((b, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 11, color: i === human.currentBurger ? '#FFD700' : '#555', width: 14, fontWeight: 700 }}>
+              {i < human.currentBurger ? '✅' : i === human.currentBurger ? '▶' : '○'}
+            </span>
+            <BurgerTarget
+              ingredients={b}
+              table={i === human.currentBurger ? human.table : i < human.currentBurger ? b : []}
+              isCurrent={i === human.currentBurger}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const tableSection = (
+    <div style={{
+      background: 'rgba(255,255,255,.03)', borderRadius: 10, padding: '8px 10px',
+      border: '2px solid #1e2a45', flexShrink: 0,
+    }}>
+      <div style={{ fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1, marginBottom: 6 }}>
+        MESA ({human.table.length} ingredientes)
+      </div>
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', minHeight: 32 }}>
+        {human.table.length === 0 && <span style={{ fontSize: 12, color: '#333' }}>Mesa vacía</span>}
+        {human.table.map((ing, i) => {
+          const base = ingKey(ing);
+          const chosen = ingChosen(ing);
+          return (
+            <div key={i} style={{
+              width: 36, height: 36, borderRadius: 8,
+              background: chosen
+                ? `linear-gradient(to right, ${ING_BG.perrito || '#9b59b6'} 50%, ${ING_BG[chosen]} 50%)`
+                : ING_BG[base],
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 20, boxShadow: '0 2px 6px rgba(0,0,0,.3)',
+              overflow: 'hidden', position: 'relative',
+            }}>
+              {chosen ? (
+                <>
+                  <div style={{ position: 'absolute', left: 0, top: 0, width: '50%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <img src={ING_IMG.perrito} alt="comodín" style={{ width: 22, height: 22, objectFit: 'contain' }} />
+                  </div>
+                  <div style={{ position: 'absolute', right: 0, top: 0, width: '50%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {ING_IMG[chosen]
+                      ? <img src={ING_IMG[chosen]} alt={chosen} style={{ width: 22, height: 22, objectFit: 'contain' }} />
+                      : <span style={{ fontSize: 14 }}>{ING_EMOJI[chosen]}</span>}
+                  </div>
+                </>
+              ) : (
+                ING_IMG[base]
+                  ? <img src={ING_IMG[base]} alt={base} style={{ width: 26, height: 26, objectFit: 'contain' }} />
+                  : ING_EMOJI[base]
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  const hatsSection = (
+    <div style={{
+      background: 'rgba(255,255,255,.02)', borderRadius: 10, padding: '8px 10px',
+      border: '2px solid #1e2a45', flexShrink: 0,
+    }}>
+      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+        {/* Sombrero(s) principal(es) */}
         <div>
-          <div style={{ fontWeight: 900, fontSize: 16, color: humanColor }}>{human.name}</div>
-          <div style={{ fontSize: 11, color: '#777' }}>
-            🍔 {human.currentBurger}/{human.totalBurgers} hamburguesas
-            {extraPlay && <span style={{ color: '#FFD700', marginLeft: 8 }}>⚡ Turno extra!</span>}
+          <div style={{ fontSize: 9, color: '#555', fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>PRINCIPAL</div>
+          <div style={{ display: 'flex', gap: 4 }}>
+            {human.mainHats.map(h => <HatBadge key={h} lang={h} isMain size="md" />)}
           </div>
         </div>
-      </div>
 
-      {/* Burger targets */}
-      <div style={{
-        background: 'rgba(255,255,255,.03)', borderRadius: 10, padding: '8px 10px',
-        border: '2px solid #1e2a45', flexShrink: 0,
-      }}>
-        <div style={{ fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1, marginBottom: 6 }}>HAMBURGUESAS</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {human.burgers.map((b, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 11, color: i === human.currentBurger ? '#FFD700' : '#555', width: 14, fontWeight: 700 }}>
-                {i < human.currentBurger ? '✅' : i === human.currentBurger ? '▶' : '○'}
-              </span>
-              <BurgerTarget
-                ingredients={b}
-                table={i === human.currentBurger ? human.table : i < human.currentBurger ? b : []}
-                isCurrent={i === human.currentBurger}
-              />
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Table */}
-      <div style={{
-        background: 'rgba(255,255,255,.03)', borderRadius: 10, padding: '8px 10px',
-        border: '2px solid #1e2a45', flexShrink: 0,
-      }}>
-        <div style={{ fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1, marginBottom: 6 }}>
-          MESA ({human.table.length} ingredientes)
-        </div>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', minHeight: 32 }}>
-          {human.table.length === 0 && <span style={{ fontSize: 12, color: '#333' }}>Mesa vacía</span>}
-          {human.table.map((ing, i) => {
-            const base = ingKey(ing);
-            const chosen = ingChosen(ing);
-            return (
-              <div key={i} style={{
-                width: 36, height: 36, borderRadius: 8,
-                background: chosen
-                  ? `linear-gradient(to right, ${ING_BG.perrito || '#9b59b6'} 50%, ${ING_BG[chosen]} 50%)`
-                  : ING_BG[base],
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 20, boxShadow: '0 2px 6px rgba(0,0,0,.3)',
-                overflow: 'hidden', position: 'relative',
-              }}>
-                {chosen ? (
-                  <>
-                    <div style={{ position: 'absolute', left: 0, top: 0, width: '50%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <img src={ING_IMG.perrito} alt="comodín" style={{ width: 22, height: 22, objectFit: 'contain' }} />
-                    </div>
-                    <div style={{ position: 'absolute', right: 0, top: 0, width: '50%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      {ING_IMG[chosen]
-                        ? <img src={ING_IMG[chosen]} alt={chosen} style={{ width: 22, height: 22, objectFit: 'contain' }} />
-                        : <span style={{ fontSize: 14 }}>{ING_EMOJI[chosen]}</span>}
-                    </div>
-                  </>
-                ) : (
-                  ING_IMG[base]
-                    ? <img src={ING_IMG[base]} alt={base} style={{ width: 26, height: 26, objectFit: 'contain' }} />
-                    : ING_EMOJI[base]
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Perchero + Principal */}
-      <div style={{
-        background: 'rgba(255,255,255,.02)', borderRadius: 10, padding: '8px 10px',
-        border: '2px solid #1e2a45', flexShrink: 0,
-      }}>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-          {/* Sombrero(s) principal(es) */}
-          <div>
-            <div style={{ fontSize: 9, color: '#555', fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>PRINCIPAL</div>
-            <div style={{ display: 'flex', gap: 4 }}>
-              {human.mainHats.map(h => <HatBadge key={h} lang={h} isMain size="md" />)}
+        {/* Sombreros en el perchero */}
+        {human.perchero.length > 0 && (
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 9, color: '#555', fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>PERCHERO</div>
+            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+              {human.perchero.map(h => <HatBadge key={h} lang={h} isMain={false} size="sm" />)}
             </div>
           </div>
+        )}
 
-          {/* Sombreros en el perchero */}
-          {human.perchero.length > 0 && (
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 9, color: '#555', fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>PERCHERO</div>
-              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                {human.perchero.map(h => <HatBadge key={h} lang={h} isMain={false} size="sm" />)}
-              </div>
-            </div>
-          )}
-
-          {/* Botones Cambiar / Agregar */}
-          {isHumanTurn && !extraPlay && human.perchero.length > 0 && (
-            <div style={{ display: 'flex', gap: 4, flexShrink: 0, marginLeft: 'auto' }}>
+        {/* Botones Cambiar / Agregar */}
+        {isHumanTurn && !extraPlay && human.perchero.length > 0 && (
+          <div style={{ display: 'flex', gap: 4, flexShrink: 0, marginLeft: 'auto' }}>
+            <button
+              onClick={() => setModal({ type: 'manual_cambiar' })}
+              title="Cambia tu sombrero principal (cuesta descartar la mitad de tu mano)"
+              style={{
+                padding: '3px 8px', borderRadius: 6, border: '1px solid rgba(156,39,176,0.3)',
+                background: 'rgba(156,39,176,0.12)', color: '#BA68C8', fontSize: 10,
+                fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+              }}
+            >
+              🎩 Cambiar
+            </button>
+            {human.hand.length > 0 && (
               <button
-                onClick={() => setModal({ type: 'manual_cambiar' })}
-                title="Cambia tu sombrero principal (cuesta descartar la mitad de tu mano)"
+                onClick={() => setModal({ type: 'manual_agregar' })}
+                title="Agrega un sombrero extra (descarta toda tu mano, mano máx se reduce)"
                 style={{
                   padding: '3px 8px', borderRadius: 6, border: '1px solid rgba(156,39,176,0.3)',
                   background: 'rgba(156,39,176,0.12)', color: '#BA68C8', fontSize: 10,
                   fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
                 }}
               >
-                🎩 Cambiar
+                ➕ Agregar
               </button>
-              {human.hand.length > 0 && (
-                <button
-                  onClick={() => setModal({ type: 'manual_agregar' })}
-                  title="Agrega un sombrero extra (descarta toda tu mano, mano máx se reduce)"
-                  style={{
-                    padding: '3px 8px', borderRadius: 6, border: '1px solid rgba(156,39,176,0.3)',
-                    background: 'rgba(156,39,176,0.12)', color: '#BA68C8', fontSize: 10,
-                    fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-                  }}
-                >
-                  ➕ Agregar
-                </button>
-              )}
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
+    </div>
+  );
 
-      {/* Hand — fan layout */}
-      <div style={{ fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1, flexShrink: 0 }}>
-        MANO ({human.hand.length}/{human.maxHand})
-      </div>
-      <div style={{
-        display: 'flex', justifyContent: isMobile ? 'flex-start' : 'center', alignItems: isMobile ? 'center' : 'flex-end',
-        padding: isMobile ? '8px 12px' : '36px 0 8px 0',
-        flex: isMobile ? 'none' : 1,
-        overflowX: isMobile ? 'auto' : 'visible', overflowY: isMobile ? 'hidden' : 'visible',
-        minHeight: isMobile ? 'auto' : 170,
-        gap: isMobile ? 10 : 0,
-        scrollSnapType: isMobile ? 'x mandatory' : 'none',
-        WebkitOverflowScrolling: 'touch',
-      }}>
-        {human.hand.map((card, i) => {
-          const playable = card.type === 'ingredient' ? canPlayCard(human, card) : null;
-          const angle = handN > 1 ? -MAX_ANGLE + i * (2 * MAX_ANGLE / (handN - 1)) : 0;
-          const isSelected = selectedIdx === i;
-          return (
-            <div
-              key={card.id}
-              onClick={() => isHumanTurn ? setSelectedIdx(isSelected ? null : i) : null}
-              onMouseEnter={e => { if (!isMobile && !isSelected && isHumanTurn) e.currentTarget.style.transform = `translateY(-14px) rotate(${angle * 0.4}deg)`; }}
-              onMouseLeave={e => { if (!isMobile && !isSelected) e.currentTarget.style.transform = `translateY(0px) rotate(${angle}deg)`; }}
-              style={{
-                cursor: isHumanTurn ? 'pointer' : 'default',
-                marginLeft: isMobile ? 0 : (i === 0 ? 0 : -OVERLAP),
-                flexShrink: isMobile ? 0 : undefined,
-                scrollSnapAlign: isMobile ? 'center' : undefined,
-                transform: isMobile
-                  ? (isSelected ? 'translateY(-10px)' : 'none')
-                  : (isSelected ? 'translateY(-28px) rotate(0deg)' : `translateY(0px) rotate(${angle}deg)`),
-                transformOrigin: 'bottom center',
-                transition: 'transform 0.15s',
-                zIndex: isSelected ? handN + 1 : i,
-                position: 'relative',
-              }}
-            >
-              <GameCard
-                card={card}
-                selected={isSelected}
-                playable={isHumanTurn ? playable : false}
-                large={true}
-                small={false}
-              />
-            </div>
-          );
-        })}
-      </div>
+  const handLabel = (
+    <div style={{ fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1, flexShrink: 0 }}>
+      MANO ({human.hand.length}/{human.maxHand})
+    </div>
+  );
 
-      {/* Info carta seleccionada */}
-      {isHumanTurn && selectedIdx !== null && (
-        <div style={{
-          flexShrink: 0, padding: '6px 10px', borderRadius: 8, marginBottom: 4,
-          background: 'rgba(255,255,255,.04)', border: '1px solid #2a2a4a', fontSize: 11, color: '#aaa',
-        }}>
-          {human.hand[selectedIdx]?.type === 'ingredient' ? (
-            canPlayCard(human, human.hand[selectedIdx])
-              ? <span style={{ color: '#4CAF50' }}>✅ Puedes jugar esta carta</span>
-              : <span style={{ color: '#FF7043' }}>❌ No puedes jugar esta carta ahora (sombrero o ingrediente no necesario)</span>
-          ) : (
-            <span style={{ color: '#FFD700' }}>⚡ {getActionInfo(human.hand[selectedIdx]?.action)?.desc}</span>
-          )}
-        </div>
-      )}
-
-      {/* Action buttons */}
-      {isHumanTurn && (
-        <div style={{
-          display: 'flex', gap: 8, flexShrink: 0, padding: '6px 0',
-        }}>
-          <Btn
-            onClick={humanPlay}
-            disabled={selectedIdx === null}
-            color="#4CAF50"
-            style={{ flex: 1 }}
+  const handFan = (
+    <div style={{
+      display: 'flex', justifyContent: isMobile ? 'flex-start' : 'center', alignItems: isMobile ? 'center' : 'flex-end',
+      padding: isMobile ? '8px 12px' : '36px 0 8px 0',
+      flex: isMobile ? 'none' : 1,
+      overflowX: isMobile ? 'auto' : 'visible', overflowY: isMobile ? 'hidden' : 'visible',
+      minHeight: isMobile ? 'auto' : 170,
+      gap: isMobile ? 10 : 0,
+      scrollSnapType: isMobile ? 'x mandatory' : 'none',
+      WebkitOverflowScrolling: 'touch',
+    }}>
+      {human.hand.map((card, i) => {
+        const playable = card.type === 'ingredient' ? canPlayCard(human, card) : null;
+        const angle = handN > 1 ? -MAX_ANGLE + i * (2 * MAX_ANGLE / (handN - 1)) : 0;
+        const isSelected = selectedIdx === i;
+        return (
+          <div
+            key={card.id}
+            onClick={() => isHumanTurn ? setSelectedIdx(isSelected ? null : i) : null}
+            onMouseEnter={e => { if (!isMobile && !isSelected && isHumanTurn) e.currentTarget.style.transform = `translateY(-14px) rotate(${angle * 0.4}deg)`; }}
+            onMouseLeave={e => { if (!isMobile && !isSelected) e.currentTarget.style.transform = `translateY(0px) rotate(${angle}deg)`; }}
+            style={{
+              cursor: isHumanTurn ? 'pointer' : 'default',
+              marginLeft: isMobile ? 0 : (i === 0 ? 0 : -OVERLAP),
+              flexShrink: isMobile ? 0 : undefined,
+              scrollSnapAlign: isMobile ? 'center' : undefined,
+              transform: isMobile
+                ? (isSelected ? 'translateY(-10px)' : 'none')
+                : (isSelected ? 'translateY(-28px) rotate(0deg)' : `translateY(0px) rotate(${angle}deg)`),
+              transformOrigin: 'bottom center',
+              transition: 'transform 0.15s',
+              zIndex: isSelected ? handN + 1 : i,
+              position: 'relative',
+            }}
           >
-            ▶ Jugar carta
-          </Btn>
-          <Btn
-            onClick={humanDiscard}
-            disabled={selectedIdx === null || extraPlay}
-            color="#FF7043"
-            style={{ flex: 1 }}
-          >
-            🗑 Descartar
-          </Btn>
-          {extraPlay && (
-            <Btn onClick={() => {
-              if (isOnline && !isHost) {
-                socket.emit('playerAction', { code: roomCode, action: { type: 'passTurn' } });
-              } else {
-                setExtraPlay(false); endTurn(players, deck, discard, HI);
-              }
-            }} color="#888" style={{ flex: 1 }}>
-              ⏭ Pasar turno
-            </Btn>
-          )}
-        </div>
-      )}
+            <GameCard
+              card={card}
+              selected={isSelected}
+              playable={isHumanTurn ? playable : false}
+              large={true}
+              small={false}
+            />
+          </div>
+        );
+      })}
+    </div>
+  );
 
-      {!isHumanTurn && (
-        <div style={{
-          textAlign: 'center', color: '#555', fontSize: 13, padding: '8px 0', flexShrink: 0,
-        }}>
-          {players[cp]?.isRemote ? `🌐 Esperando la jugada de ${players[cp]?.name}...` : `⏳ Esperando a ${players[cp]?.name}...`}
-        </div>
+  const selectedCardInfo = isHumanTurn && selectedIdx !== null && (
+    <div style={{
+      flexShrink: 0, padding: '6px 10px', borderRadius: 8, marginBottom: 4,
+      background: 'rgba(255,255,255,.04)', border: '1px solid #2a2a4a', fontSize: 11, color: '#aaa',
+    }}>
+      {human.hand[selectedIdx]?.type === 'ingredient' ? (
+        canPlayCard(human, human.hand[selectedIdx])
+          ? <span style={{ color: '#4CAF50' }}>✅ Puedes jugar esta carta</span>
+          : <span style={{ color: '#FF7043' }}>❌ No puedes jugar esta carta ahora (sombrero o ingrediente no necesario)</span>
+      ) : (
+        <span style={{ color: '#FFD700' }}>⚡ {getActionInfo(human.hand[selectedIdx]?.action)?.desc}</span>
+      )}
+    </div>
+  );
+
+  const actionButtons = isHumanTurn && (
+    <div style={{
+      display: 'flex', gap: 8, flexShrink: 0, padding: '6px 0',
+    }}>
+      <Btn
+        onClick={humanPlay}
+        disabled={selectedIdx === null}
+        color="#4CAF50"
+        style={{ flex: 1 }}
+      >
+        ▶ Jugar carta
+      </Btn>
+      <Btn
+        onClick={humanDiscard}
+        disabled={selectedIdx === null || extraPlay}
+        color="#FF7043"
+        style={{ flex: 1 }}
+      >
+        🗑 Descartar
+      </Btn>
+      {extraPlay && (
+        <Btn onClick={() => {
+          if (isOnline && !isHost) {
+            socket.emit('playerAction', { code: roomCode, action: { type: 'passTurn' } });
+          } else {
+            setExtraPlay(false); endTurn(players, deck, discard, HI);
+          }
+        }} color="#888" style={{ flex: 1 }}>
+          ⏭ Pasar turno
+        </Btn>
+      )}
+    </div>
+  );
+
+  const turnStatus = !isHumanTurn && (
+    <div style={{
+      textAlign: 'center', color: '#555', fontSize: 13, padding: '8px 0', flexShrink: 0,
+    }}>
+      {players[cp]?.isRemote ? `🌐 Esperando la jugada de ${players[cp]?.name}...` : `⏳ Esperando a ${players[cp]?.name}...`}
+    </div>
+  );
+
+  const burgersAndHatsRow = (
+    <div style={{ display: 'flex', gap: 10, alignItems: 'stretch' }}>
+      <div style={{ flex: 1 }}>{burgersSection}</div>
+      <div style={{ flex: 1 }}>{hatsSection}</div>
+    </div>
+  );
+
+  const mesaPanel = (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', padding: '12px 16px', gap: 10 }}>
+      {playerHeader}
+      {isMobile ? (
+        <>
+          {burgersSection}
+          {tableSection}
+          {hatsSection}
+          {handLabel}
+          {handFan}
+          {selectedCardInfo}
+          {actionButtons}
+          {turnStatus}
+        </>
+      ) : (
+        <>
+          {burgersAndHatsRow}
+          {tableSection}
+          {actionButtons}
+          {handLabel}
+          {handFan}
+          {selectedCardInfo}
+          {turnStatus}
+        </>
       )}
     </div>
   );
