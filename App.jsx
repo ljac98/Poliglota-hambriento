@@ -50,6 +50,26 @@ function advanceBurger(player) {
   return { player: { ...player, table: [], currentBurger: player.currentBurger + 1 }, freed, done: true };
 }
 
+function filterTable(player, discardArr) {
+  const target = player.burgers[player.currentBurger] || [];
+  const needed = [...target];
+  const keep = [];
+  for (const item of player.table) {
+    const ing = item.startsWith('perrito|') ? item.split('|')[1] : item;
+    const ni = needed.indexOf(ing);
+    if (ni !== -1) {
+      keep.push(item);
+      needed.splice(ni, 1);
+    } else if ((item === 'perrito' || item.startsWith('perrito|')) && needed.length > 0) {
+      keep.push(item);
+      needed.splice(0, 1);
+    } else {
+      discardArr.push({ type: 'ingredient', ingredient: item.startsWith('perrito') ? 'perrito' : item, id: `c${Date.now()}${Math.random()}` });
+    }
+  }
+  player.table = keep;
+}
+
 function applyMass(players, discard, actionId, playerIdx) {
   const ps = clone(players);
   let di = [...discard];
@@ -954,6 +974,8 @@ export default function App() {
       const tmp = pls[actingIdx].table;
       pls[actingIdx].table = pls[ti].table;
       pls[ti].table = tmp;
+      filterTable(pls[actingIdx], di);
+      filterTable(pls[ti], di);
       endTurnFromRemote(pls, dk, di, actingIdx);
     } else if (card.action === 'cambio_sombrero') {
       const tmp = [...pls[actingIdx].mainHats];
@@ -1237,6 +1259,8 @@ export default function App() {
         const tmp = newPls[idx].table;
         newPls[idx].table = newPls[richest].table;
         newPls[richest].table = tmp;
+        filterTable(newPls[idx], newDiscard);
+        filterTable(newPls[richest], newDiscard);
         addLog(idx, `intercambió mesa con ${pls[richest].name}`, newPls);
       } else if (card.action === 'cambio_sombrero') {
         const tmp = [...newPls[idx].mainHats];
@@ -1514,6 +1538,8 @@ export default function App() {
       const tmp = newPls[HI].table;
       newPls[HI].table = newPls[targetIdx].table;
       newPls[targetIdx].table = tmp;
+      filterTable(newPls[HI], newDiscard);
+      filterTable(newPls[targetIdx], newDiscard);
       endTurn(newPls, deck, newDiscard, HI);
 
     } else if (action === 'cambio_sombrero') {
