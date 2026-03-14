@@ -2424,7 +2424,7 @@ export default function App() {
           }
           return remaining;
         })();
-        const choices = needed.length > 0 ? needed : Object.keys(ING_EMOJI).filter(i => i !== 'perrito');
+        const choices = needed.length > 0 ? [...new Set(needed)] : Object.keys(ING_EMOJI).filter(i => i !== 'perrito');
         return (
           <Modal title="🌭 Comodín — Elige ingrediente">
             <p style={{ color: '#888', fontSize: 12, marginBottom: 12 }}>
