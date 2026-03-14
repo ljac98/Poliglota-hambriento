@@ -769,7 +769,7 @@ export default function App() {
       setLog(state.log);
       setExtraPlay(state.extraPlay || false);
       setModal(currentModal => {
-        const privateModals = ['cambio_sombrero', 'manual_cambiar', 'manual_cambiar_discard', 'manual_agregar', 'wildcard', 'basurero'];
+        const privateModals = ['manual_cambiar', 'manual_cambiar_discard', 'manual_agregar', 'wildcard', 'basurero'];
         if (state.modal) return state.modal;
         if (currentModal && privateModals.includes(currentModal.type)) return currentModal;
         return null;
@@ -787,7 +787,7 @@ export default function App() {
     if (!isOnline || !isHost || phase !== 'playing') return;
     clearTimeout(syncRef.current);
     syncRef.current = setTimeout(() => {
-      const privateModals = ['cambio_sombrero', 'manual_cambiar', 'manual_cambiar_discard', 'manual_agregar', 'wildcard', 'basurero'];
+      const privateModals = ['manual_cambiar', 'manual_cambiar_discard', 'manual_agregar', 'wildcard', 'basurero'];
       const syncModal = modal && privateModals.includes(modal.type) ? null : modal;
       socket.emit('syncState', {
         code: roomCode,
@@ -955,6 +955,11 @@ export default function App() {
       pls[actingIdx].table = pls[ti].table;
       pls[ti].table = tmp;
       endTurnFromRemote(pls, dk, di, actingIdx);
+    } else if (card.action === 'cambio_sombrero') {
+      const tmp = [...pls[actingIdx].mainHats];
+      pls[actingIdx].mainHats = [...pls[ti].mainHats];
+      pls[ti].mainHats = tmp;
+      setPlayers(pls); setDiscard(di); setExtraPlay(true);
     }
   }
 
@@ -1031,17 +1036,6 @@ export default function App() {
                 applyTargetedAction(card, idx, ti, action, fp, deckRef.current, fd2);
               });
               return;
-
-            } else if (type === 'playCambioSombrero') {
-              const card = pls[idx].hand[action.cardIdx];
-              if (!card) return;
-              pls[idx].hand.splice(action.cardIdx, 1);
-              di = [...di, card];
-              const hi = pls[idx].perchero.indexOf(action.hatLang);
-              if (hi !== -1) pls[idx].perchero.splice(hi, 1);
-              pls[idx].mainHats.unshift(action.hatLang);
-              addLog(idx, `cambió sombrero a ${action.hatLang} — puede jugar una carta`, pls);
-              setPlayers(pls); setDiscard(di); setExtraPlay(true);
 
             } else if (type === 'playBasurero') {
               const card = pls[idx].hand[action.cardIdx];
@@ -1245,24 +1239,20 @@ export default function App() {
         newPls[richest].table = tmp;
         addLog(idx, `intercambió mesa con ${pls[richest].name}`, newPls);
       } else if (card.action === 'cambio_sombrero') {
-        if (newPls[idx].perchero.length > 0) {
-          // Pick hat that helps most (matches needed ingredient language)
-          const burger = newPls[idx].burgers[newPls[idx].currentBurger];
-          const needed = burger ? burger.filter(ing => !newPls[idx].table.includes(ing)) : [];
-          const newHat = newPls[idx].perchero.shift();
-          newPls[idx].mainHats.unshift(newHat);
-          addLog(idx, `cambió sombrero a ${newHat}`, newPls);
-          // Then try to play an ingredient with the new hat
-          const pi2 = newPls[idx].hand.findIndex(c => c.type === 'ingredient' && canPlayCard(newPls[idx], c));
-          if (pi2 !== -1) {
-            const c2 = newPls[idx].hand[pi2];
-            addLog(idx, `jugó ${getIngName(c2.ingredient, c2.language)} ${ING_EMOJI[c2.ingredient]}`, newPls);
-            newPls[idx].hand.splice(pi2, 1);
-            newPls[idx].table.push(c2.ingredient);
-            const { player: up3, freed: fr3, done: dn3 } = advanceBurger(newPls[idx]);
-            newPls[idx] = up3;
-            if (dn3) { fr3.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `c${Date.now()}${Math.random()}` })); addLog(idx, '¡completó una hamburguesa! 🎉', newPls); }
-          }
+        const tmp = [...newPls[idx].mainHats];
+        newPls[idx].mainHats = [...newPls[richest].mainHats];
+        newPls[richest].mainHats = tmp;
+        addLog(idx, `intercambió todos los sombreros con ${pls[richest].name}`, newPls);
+        // Extra play: try to play an ingredient with the new hats
+        const pi2 = newPls[idx].hand.findIndex(c => c.type === 'ingredient' && canPlayCard(newPls[idx], c));
+        if (pi2 !== -1) {
+          const c2 = newPls[idx].hand[pi2];
+          addLog(idx, `jugó ${getIngName(c2.ingredient, c2.language)} ${ING_EMOJI[c2.ingredient]}`, newPls);
+          newPls[idx].hand.splice(pi2, 1);
+          newPls[idx].table.push(c2.ingredient);
+          const { player: up3, freed: fr3, done: dn3 } = advanceBurger(newPls[idx]);
+          newPls[idx] = up3;
+          if (dn3) { fr3.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `c${Date.now()}${Math.random()}` })); addLog(idx, '¡completó una hamburguesa! 🎉', newPls); }
         }
       }
 
@@ -1355,8 +1345,7 @@ export default function App() {
       socket.emit('playerAction', { code: roomCode, action: { type: 'playMass', cardIdx } });
       setSelectedIdx(null);
     } else if (card.action === 'cambio_sombrero') {
-      if (players[HI].perchero.length === 0) { alert('No tienes sombreros en el perchero'); return; }
-      setModal({ type: 'cambio_sombrero', cardIdx });
+      setModal({ type: 'pickTarget', cardIdx, action: card.action });
     } else if (card.action === 'basurero') {
       const ingCards = discard.filter(c => c.type === 'ingredient');
       if (ingCards.length === 0) { alert('El basurero está vacío'); return; }
@@ -1396,8 +1385,7 @@ export default function App() {
         endTurn(ps2, dk, di2, HI);
 
       } else if (card.action === 'cambio_sombrero') {
-        if (pls[HI].perchero.length === 0) return;
-        setModal({ type: 'cambio_sombrero', cardIdx });
+        setModal({ type: 'pickTarget', cardIdx, action: card.action });
 
       } else if (card.action === 'basurero') {
         const ingCards = di.filter(c => c.type === 'ingredient');
@@ -1527,6 +1515,12 @@ export default function App() {
       newPls[HI].table = newPls[targetIdx].table;
       newPls[targetIdx].table = tmp;
       endTurn(newPls, deck, newDiscard, HI);
+
+    } else if (action === 'cambio_sombrero') {
+      const tmp = [...newPls[HI].mainHats];
+      newPls[HI].mainHats = [...newPls[targetIdx].mainHats];
+      newPls[targetIdx].mainHats = tmp;
+      setPlayers(newPls); setDiscard(newDiscard); setExtraPlay(true);
     }
   }
 
@@ -1560,24 +1554,6 @@ export default function App() {
     newPls[victimIdx].perchero.splice(hi, 1);
     newPls[victimIdx].mainHats.push(hatLang);
     endTurn(newPls, deck, newDiscard, fromIdx ?? HI);
-  }
-
-  function resolveCambioSombrero(hatLang) {
-    const { cardIdx } = modal;
-    setModal(null); setSelectedIdx(null);
-    if (isOnline && !isHost) {
-      socket.emit('playerAction', { code: roomCode, action: { type: 'playCambioSombrero', cardIdx, hatLang } });
-      return;
-    }
-    const card = players[HI].hand[cardIdx];
-    const newPls = clone(players);
-    newPls[HI].hand.splice(cardIdx, 1);
-    let newDiscard = [...discard, card];
-    const hi = newPls[HI].perchero.indexOf(hatLang);
-    newPls[HI].perchero.splice(hi, 1);
-    newPls[HI].mainHats.unshift(hatLang);
-    addLog(HI, `cambió sombrero a ${hatLang} — puede jugar una carta`, newPls);
-    setPlayers(newPls); setDiscard(newDiscard); setExtraPlay(true);
   }
 
   // Manual: swap main hat from perchero (costs half your hand — player chooses which cards)
@@ -2294,37 +2270,6 @@ export default function App() {
               </div>
             ))}
           </div>
-        </Modal>
-      )}
-
-      {/* Cambio Sombrero */}
-      {modal?.type === 'cambio_sombrero' && (
-        <Modal title="👒 Cambio Sombrero — Elige nuevo sombrero principal">
-          <p style={{ color: '#888', fontSize: 12, marginBottom: 12 }}>
-            Elige un sombrero del perchero. Luego podrás jugar una carta adicional.
-          </p>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
-            {human.perchero.map(h => (
-              <div
-                key={h}
-                onClick={() => resolveCambioSombrero(h)}
-                style={{
-                  padding: 10, borderRadius: 10, cursor: 'pointer',
-                  border: `2px solid ${LANG_BORDER[h]}88`,
-                  background: 'rgba(255,255,255,.04)', transition: 'all .15s',
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-                }}
-                onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,.1)'}
-                onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,.04)'}
-              >
-                <HatSVG lang={h} size={36} />
-                <span style={{ fontSize: 11, fontWeight: 700, color: LANG_TEXT[h] }}>
-                  {h.charAt(0).toUpperCase() + h.slice(1)}
-                </span>
-              </div>
-            ))}
-          </div>
-          <Btn onClick={() => setModal(null)} color="#333" style={{ color: '#aaa' }}>Cancelar</Btn>
         </Modal>
       )}
 
