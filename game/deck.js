@@ -50,7 +50,8 @@ export function genBurger(size) {
   
   // Fill remaining with duplicates of existing ingredients
   while (result.length < size) {
-    const dupe = result[randInt(0, result.length - 1)];
+    const noPan = result.filter(i => i !== "pan");
+    const dupe = noPan[randInt(0, noPan.length - 1)];
     result.push(dupe);
   }
   
