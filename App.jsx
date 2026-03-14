@@ -2381,7 +2381,7 @@ export default function App() {
 
       {/* Wildcard (Comodín) modal */}
       {modal?.type === 'wildcard' && (() => {
-        const human = players[0];
+        const human = players[HI];
         const burger = human.burgers[human.currentBurger] || [];
         const needed = (() => {
           const remaining = [...burger];
