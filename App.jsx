@@ -1861,11 +1861,11 @@ export default function App() {
         {human.perchero.length > 0 && (() => {
           const branchPositions = [
             { left: '10%', top: '2%', rotate: -12 },
-            { left: '58%', top: '2%', rotate: 12 },
+            { left: '68%', top: '2%', rotate: 12 },
             { left: '5%', top: '30%', rotate: -10 },
-            { left: '55%', top: '30%', rotate: 10 },
+            { left: '63%', top: '30%', rotate: 10 },
             { left: '8%', top: '58%', rotate: -12 },
-            { left: '53%', top: '58%', rotate: 12 },
+            { left: '62%', top: '58%', rotate: 12 },
           ];
           return (
             <div>
