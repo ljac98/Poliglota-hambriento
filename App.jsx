@@ -1968,6 +1968,39 @@ export default function App() {
               position: 'relative',
             }}
           >
+            {isSelected && isHumanTurn && (
+              <div style={{
+                position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, marginBottom: 8,
+                zIndex: 200, whiteSpace: 'nowrap',
+              }}
+              onClick={e => e.stopPropagation()}
+              >
+                <div style={{
+                  fontSize: 10, textAlign: 'center', padding: '4px 10px', borderRadius: 6,
+                  background: 'rgba(0,0,0,0.85)', color: '#ddd',
+                  display: 'flex', flexDirection: 'column', gap: 2,
+                }}>
+                  {card.type === 'ingredient' ? (<>
+                    <span style={{ fontWeight: 700, fontSize: 11 }}>{getIngName(card.ingredient, card.language)}</span>
+                    {canPlayCard(human, card)
+                      ? <span style={{ color: '#4CAF50', fontSize: 9 }}>✅ Puedes jugar</span>
+                      : <span style={{ color: '#FF7043', fontSize: 9 }}>❌ No puedes jugar</span>}
+                  </>) : (<>
+                    <span style={{ fontWeight: 700, fontSize: 11, color: '#FFD700' }}>{getActionInfo(card.action)?.name}</span>
+                    <span style={{ fontSize: 9, color: '#ccc' }}>{getActionInfo(card.action)?.desc}</span>
+                  </>)}
+                </div>
+                <div style={{ display: 'flex', gap: 4 }}>
+                  <Btn onClick={humanPlay} color="#4CAF50" style={{ fontSize: 11, padding: '6px 12px' }}>
+                    ▶ Jugar
+                  </Btn>
+                  <Btn onClick={humanDiscard} disabled={extraPlay} color="#FF7043" style={{ fontSize: 11, padding: '6px 12px' }}>
+                    🗑 Descartar
+                  </Btn>
+                </div>
+              </div>
+            )}
             <GameCard
               card={card}
               selected={isSelected}
@@ -1996,37 +2029,19 @@ export default function App() {
     </div>
   );
 
-  const actionButtons = isHumanTurn && (
+  const actionButtons = isHumanTurn && extraPlay && (
     <div style={{
       display: 'flex', gap: 8, flexShrink: 0, padding: '6px 0',
     }}>
-      <Btn
-        onClick={humanPlay}
-        disabled={selectedIdx === null}
-        color="#4CAF50"
-        style={{ flex: 1 }}
-      >
-        ▶ Jugar carta
+      <Btn onClick={() => {
+        if (isOnline && !isHost) {
+          socket.emit('playerAction', { code: roomCode, action: { type: 'passTurn' } });
+        } else {
+          setExtraPlay(false); endTurn(players, deck, discard, HI);
+        }
+      }} color="#888" style={{ flex: 1 }}>
+        ⏭ Pasar turno
       </Btn>
-      <Btn
-        onClick={humanDiscard}
-        disabled={selectedIdx === null || extraPlay}
-        color="#FF7043"
-        style={{ flex: 1 }}
-      >
-        🗑 Descartar
-      </Btn>
-      {extraPlay && (
-        <Btn onClick={() => {
-          if (isOnline && !isHost) {
-            socket.emit('playerAction', { code: roomCode, action: { type: 'passTurn' } });
-          } else {
-            setExtraPlay(false); endTurn(players, deck, discard, HI);
-          }
-        }} color="#888" style={{ flex: 1 }}>
-          ⏭ Pasar turno
-        </Btn>
-      )}
     </div>
   );
 
@@ -2055,7 +2070,6 @@ export default function App() {
           {hatsSection}
           {handLabel}
           {handFan}
-          {selectedCardInfo}
           {actionButtons}
           {turnStatus}
         </>
@@ -2066,7 +2080,6 @@ export default function App() {
           {actionButtons}
           {handLabel}
           {handFan}
-          {selectedCardInfo}
           {turnStatus}
         </>
       )}
