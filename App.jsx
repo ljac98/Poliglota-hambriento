@@ -50,11 +50,12 @@ function advanceBurger(player) {
   return { player: { ...player, table: [], currentBurger: player.currentBurger + 1 }, freed, done: true };
 }
 
-function applyMass(players, discard, actionId) {
+function applyMass(players, discard, actionId, playerIdx) {
   const ps = clone(players);
   let di = [...discard];
   if (actionId === 'comecomodines') {
-    ps.forEach(p => {
+    ps.forEach((p, i) => {
+      if (i === playerIdx) return;
       const kept = [];
       p.table.forEach(ing => {
         if (ingKey(ing) === 'perrito') di.push({ type: 'ingredient', ingredient: 'perrito', id: `d${Date.now()}${Math.random()}` });
@@ -68,7 +69,8 @@ function applyMass(players, discard, actionId) {
     milanesa: ['pan', 'huevo'], ensalada: FRUITS_VEGS,
     pizza: ['queso'], parrilla: ['pollo', 'carne'],
   }[actionId] || [];
-  ps.forEach(p => {
+  ps.forEach((p, i) => {
+    if (i === playerIdx) return;
     const kept = [];
     p.table.forEach(ing => {
       if (targets.includes(ingKey(ing))) di.push({ type: 'ingredient', ingredient: ingKey(ing), id: `d${Date.now()}${Math.random()}` });
@@ -1009,7 +1011,7 @@ export default function App() {
                 const ci = fp[idx].hand.findIndex(c => c.id === card.id);
                 if (ci !== -1) fp[idx].hand.splice(ci, 1);
                 const fd = [...discardRef.current, card];
-                const r = applyMass(fp, fd, card.action);
+                const r = applyMass(fp, fd, card.action, idx);
                 endTurnFromRemote(r.players, deckRef.current, r.discard, idx);
               });
               return;
@@ -1204,7 +1206,7 @@ export default function App() {
 
       const mass = ['milanesa', 'ensalada', 'pizza', 'parrilla', 'comecomodines'];
       if (mass.includes(card.action)) {
-        const r = applyMass(newPls, newDiscard, card.action);
+        const r = applyMass(newPls, newDiscard, card.action, idx);
         newPls = r.players; newDiscard = r.discard;
       } else if (card.action === 'gloton') {
         newPls[richest].table.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `g${Date.now()}${Math.random()}` }));
@@ -1390,7 +1392,7 @@ export default function App() {
         const ci = newPls[HI].hand.findIndex(c => c.id === card.id);
         if (ci !== -1) newPls[HI].hand.splice(ci, 1);
         const newDiscard = [...di, card];
-        const { players: ps2, discard: di2 } = applyMass(newPls, newDiscard, card.action);
+        const { players: ps2, discard: di2 } = applyMass(newPls, newDiscard, card.action, HI);
         endTurn(ps2, dk, di2, HI);
 
       } else if (card.action === 'cambio_sombrero') {
