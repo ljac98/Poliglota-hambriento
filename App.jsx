@@ -93,7 +93,7 @@ function applyMass(players, discard, actionId, playerIdx) {
     if (i === playerIdx) return;
     const kept = [];
     p.table.forEach(ing => {
-      if (targets.includes(ingKey(ing))) di.push({ type: 'ingredient', ingredient: ingKey(ing), id: `d${Date.now()}${Math.random()}` });
+      if (targets.includes(ingKey(ing)) || targets.includes(ingChosen(ing))) di.push({ type: 'ingredient', ingredient: ingKey(ing), id: `d${Date.now()}${Math.random()}` });
       else kept.push(ing);
     });
     p.table = kept;
