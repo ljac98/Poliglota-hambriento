@@ -742,6 +742,7 @@ export default function App() {
   const [extraPlay, setExtraPlay] = useState(false);
   const [showLog, setShowLog] = useState(false);
   const [mobileTab, setMobileTab] = useState('mesa');
+  const [showPercheroModal, setShowPercheroModal] = useState(false);
   const aiRunning = useRef(false);
   const [turnTime, setTurnTime] = useState(60);
   const turnTimerRef = useRef(null);
@@ -1841,7 +1842,7 @@ export default function App() {
       border: '2px solid #1e2a45', flexShrink: 0,
     }}>
       <div style={{ fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1, marginBottom: 6 }}>HAMBURGUESAS</div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <div style={{ display: 'flex', flexDirection: isMobile ? 'row' : 'column', gap: 4, flexWrap: 'wrap' }}>
         {human.burgers.map((b, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ fontSize: 11, color: i === human.currentBurger ? '#FFD700' : '#555', width: 14, fontWeight: 700 }}>
@@ -1904,6 +1905,71 @@ export default function App() {
     </div>
   );
 
+  const percheroTree = human.perchero.length > 0 && (() => {
+    const branchPositions = [
+      { left: '10%', top: '2%', rotate: -12 },
+      { left: '68%', top: '2%', rotate: 12 },
+      { left: '5%', top: '30%', rotate: -10 },
+      { left: '63%', top: '30%', rotate: 10 },
+      { left: '8%', top: '58%', rotate: -12 },
+      { left: '62%', top: '58%', rotate: 12 },
+    ];
+    return (
+      <div>
+        <div style={{ fontSize: 9, color: '#555', fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>PERCHERO</div>
+        <div style={{ position: 'relative', width: 180, height: 220 }}>
+          <img src={percheroImg} alt="Perchero" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+          {human.perchero.map((h, i) => {
+            if (i >= branchPositions.length) return null;
+            const pos = branchPositions[i];
+            return (
+              <div key={h} style={{
+                position: 'absolute', left: pos.left, top: pos.top,
+                transform: `rotate(${pos.rotate}deg)`,
+                display: 'flex', flexDirection: 'column', alignItems: 'center',
+                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
+              }}>
+                <HatSVG lang={h} size={32} />
+                <span style={{ fontSize: 7, fontWeight: 800, color: LANG_TEXT[h], letterSpacing: 0.5, marginTop: -2 }}>
+                  {LANG_SHORT[h]}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  })();
+
+  const percheroButtons = isHumanTurn && !extraPlay && human.perchero.length > 0 && (
+    <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+      <button
+        onClick={() => { setShowPercheroModal(false); setModal({ type: 'manual_cambiar' }); }}
+        title="Cambia tu sombrero principal (cuesta descartar la mitad de tu mano)"
+        style={{
+          padding: '8px 16px', borderRadius: 8, border: '1px solid rgba(156,39,176,0.3)',
+          background: 'rgba(156,39,176,0.12)', color: '#BA68C8', fontSize: 14,
+          fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+        }}
+      >
+        🎩 Cambiar
+      </button>
+      {human.hand.length > 0 && (
+        <button
+          onClick={() => { setShowPercheroModal(false); setModal({ type: 'manual_agregar' }); }}
+          title="Agrega un sombrero extra (descarta toda tu mano, mano máx se reduce)"
+          style={{
+            padding: '8px 16px', borderRadius: 8, border: '1px solid rgba(156,39,176,0.3)',
+            background: 'rgba(156,39,176,0.12)', color: '#BA68C8', fontSize: 14,
+            fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+          }}
+        >
+          ➕ Agregar
+        </button>
+      )}
+    </div>
+  );
+
   const hatsSection = (
     <div style={{
       background: 'rgba(255,255,255,.02)', borderRadius: 10, padding: '8px 10px',
@@ -1918,72 +1984,23 @@ export default function App() {
           </div>
         </div>
 
-        {/* Sombreros en el perchero */}
-        {human.perchero.length > 0 && (() => {
-          const branchPositions = [
-            { left: '10%', top: '2%', rotate: -12 },
-            { left: '68%', top: '2%', rotate: 12 },
-            { left: '5%', top: '30%', rotate: -10 },
-            { left: '63%', top: '30%', rotate: 10 },
-            { left: '8%', top: '58%', rotate: -12 },
-            { left: '62%', top: '58%', rotate: 12 },
-          ];
-          return (
-            <div>
-              <div style={{ fontSize: 9, color: '#555', fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>PERCHERO</div>
-              <div style={{ position: 'relative', width: 180, height: 220 }}>
-                <img src={percheroImg} alt="Perchero" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                {human.perchero.map((h, i) => {
-                  if (i >= branchPositions.length) return null;
-                  const pos = branchPositions[i];
-                  return (
-                    <div key={h} style={{
-                      position: 'absolute', left: pos.left, top: pos.top,
-                      transform: `rotate(${pos.rotate}deg)`,
-                      display: 'flex', flexDirection: 'column', alignItems: 'center',
-                      filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
-                    }}>
-                      <HatSVG lang={h} size={32} />
-                      <span style={{ fontSize: 7, fontWeight: 800, color: LANG_TEXT[h], letterSpacing: 0.5, marginTop: -2 }}>
-                        {LANG_SHORT[h]}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })()}
-
-        {/* Botones Cambiar / Agregar */}
-        {isHumanTurn && !extraPlay && human.perchero.length > 0 && (
-          <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-            <button
-              onClick={() => setModal({ type: 'manual_cambiar' })}
-              title="Cambia tu sombrero principal (cuesta descartar la mitad de tu mano)"
-              style={{
-                padding: '8px 16px', borderRadius: 8, border: '1px solid rgba(156,39,176,0.3)',
-                background: 'rgba(156,39,176,0.12)', color: '#BA68C8', fontSize: 14,
-                fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-              }}
-            >
-              🎩 Cambiar
+        {/* On mobile: button to open perchero modal; on desktop: inline perchero */}
+        {isMobile ? (
+          human.perchero.length > 0 && (
+            <button onClick={() => setShowPercheroModal(true)} style={{
+              padding: '6px 14px', borderRadius: 8, border: '1px solid #2a2a4a',
+              background: 'rgba(255,255,255,.05)', color: '#aaa',
+              fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+            }}>
+              🧥 Ver perchero ({human.perchero.length})
             </button>
-            {human.hand.length > 0 && (
-              <button
-                onClick={() => setModal({ type: 'manual_agregar' })}
-                title="Agrega un sombrero extra (descarta toda tu mano, mano máx se reduce)"
-                style={{
-                  padding: '8px 16px', borderRadius: 8, border: '1px solid rgba(156,39,176,0.3)',
-                  background: 'rgba(156,39,176,0.12)', color: '#BA68C8', fontSize: 14,
-                  fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-                }}
-              >
-                ➕ Agregar
-              </button>
-            )}
-          </div>
+          )
+        ) : (
+          percheroTree
         )}
+
+        {/* Botones Cambiar / Agregar — only inline on desktop */}
+        {!isMobile && percheroButtons}
       </div>
     </div>
   );
@@ -2352,6 +2369,23 @@ export default function App() {
                 </span>
               </div>
             ))}
+          </div>
+        </Modal>
+      )}
+
+      {/* Mobile: Perchero modal */}
+      {showPercheroModal && (
+        <Modal title="🧥 Perchero">
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+            {percheroTree}
+            {percheroButtons}
+            <button onClick={() => setShowPercheroModal(false)} style={{
+              padding: '8px 24px', borderRadius: 8, border: '1px solid #2a2a4a',
+              background: 'rgba(255,255,255,.08)', color: '#aaa',
+              fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+            }}>
+              Cerrar
+            </button>
           </div>
         </Modal>
       )}
