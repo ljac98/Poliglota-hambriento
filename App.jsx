@@ -2017,7 +2017,7 @@ export default function App() {
   const handFan = (
     <div style={{
       display: 'flex', justifyContent: isMobile ? 'flex-start' : 'center', alignItems: isMobile ? 'center' : 'flex-end',
-      padding: isMobile ? '20px 12px' : '36px 0 8px 0',
+      padding: isMobile ? '50px 12px' : '36px 0 8px 0',
       flex: isMobile ? 'none' : 1,
       overflowX: isMobile ? 'auto' : 'visible', overflowY: isMobile ? 'hidden' : 'visible',
       minHeight: isMobile ? 'auto' : 170,
