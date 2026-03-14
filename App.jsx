@@ -766,7 +766,7 @@ export default function App() {
       setLog(state.log);
       setExtraPlay(state.extraPlay || false);
       setModal(currentModal => {
-        const privateModals = ['cambio_sombrero', 'manual_cambiar', 'manual_cambiar_discard', 'manual_agregar'];
+        const privateModals = ['cambio_sombrero', 'manual_cambiar', 'manual_cambiar_discard', 'manual_agregar', 'wildcard', 'basurero'];
         if (state.modal) return state.modal;
         if (currentModal && privateModals.includes(currentModal.type)) return currentModal;
         return null;
@@ -784,7 +784,7 @@ export default function App() {
     if (!isOnline || !isHost || phase !== 'playing') return;
     clearTimeout(syncRef.current);
     syncRef.current = setTimeout(() => {
-      const privateModals = ['cambio_sombrero', 'manual_cambiar', 'manual_cambiar_discard', 'manual_agregar'];
+      const privateModals = ['cambio_sombrero', 'manual_cambiar', 'manual_cambiar_discard', 'manual_agregar', 'wildcard', 'basurero'];
       const syncModal = modal && privateModals.includes(modal.type) ? null : modal;
       socket.emit('syncState', {
         code: roomCode,
@@ -981,7 +981,7 @@ export default function App() {
             } else if (type === 'playWildcard') {
               const card = pls[idx].hand[action.cardIdx];
               if (!card) return;
-              addLog(idx, `jugó 🌭 Comodín como ${ING_EMOJI[action.ingredient]} ${action.ingredient}`, pls);
+              addLog(idx, 'jugó 🌭 Comodín', pls);
               pls[idx].hand.splice(action.cardIdx, 1);
               pls[idx].table.push('perrito|' + action.ingredient);
               const { player: up, freed, done } = advanceBurger(pls[idx]);
@@ -1049,7 +1049,7 @@ export default function App() {
               if (found) {
                 di = di.filter(c => c.id !== action.pickedCardId);
                 pls[idx].hand.push(found);
-                addLog(idx, `rescató ${ING_EMOJI[found.ingredient]} del basurero`, pls);
+                addLog(idx, 'rescató una carta del 🗑️ basurero', pls);
               }
               setTimeout(() => endTurnFromRemote(pls, dk, di, idx), 0);
 
@@ -1436,7 +1436,7 @@ export default function App() {
       return;
     }
     const card = players[HI].hand[cardIdx];
-    addLog(HI, `jugó 🌭 Comodín como ${ING_EMOJI[chosenIng]} ${chosenIng} (${LANG_SHORT[card.language]})`, players);
+    addLog(HI, 'jugó 🌭 Comodín', players);
     const newPls = clone(players);
     newPls[HI].hand.splice(cardIdx, 1);
     newPls[HI].table.push('perrito|' + chosenIng);
@@ -1635,7 +1635,7 @@ export default function App() {
     if (found) {
       newDiscard = newDiscard.filter(c => c.id !== cardId);
       newPls[HI].hand.push(found);
-      addLog(HI, `rescató ${ING_EMOJI[found.ingredient]} del basurero`, newPls);
+      addLog(HI, 'rescató una carta del 🗑️ basurero', newPls);
     }
     endTurn(newPls, deck, newDiscard, HI);
   }
