@@ -1977,16 +1977,19 @@ export default function App() {
               onClick={e => e.stopPropagation()}
               >
                 <div style={{
-                  fontSize: 10, textAlign: 'center', padding: '3px 8px', borderRadius: 6,
-                  background: 'rgba(0,0,0,0.8)', color: '#aaa',
+                  fontSize: 10, textAlign: 'center', padding: '4px 10px', borderRadius: 6,
+                  background: 'rgba(0,0,0,0.85)', color: '#ddd',
+                  display: 'flex', flexDirection: 'column', gap: 2,
                 }}>
-                  {card.type === 'ingredient' ? (
-                    canPlayCard(human, card)
-                      ? <span style={{ color: '#4CAF50' }}>✅ Puedes jugar</span>
-                      : <span style={{ color: '#FF7043' }}>❌ No puedes jugar</span>
-                  ) : (
-                    <span style={{ color: '#FFD700' }}>⚡ {getActionInfo(card.action)?.desc}</span>
-                  )}
+                  {card.type === 'ingredient' ? (<>
+                    <span style={{ fontWeight: 700, fontSize: 11 }}>{getIngName(card.ingredient, card.language)}</span>
+                    {canPlayCard(human, card)
+                      ? <span style={{ color: '#4CAF50', fontSize: 9 }}>✅ Puedes jugar</span>
+                      : <span style={{ color: '#FF7043', fontSize: 9 }}>❌ No puedes jugar</span>}
+                  </>) : (<>
+                    <span style={{ fontWeight: 700, fontSize: 11, color: '#FFD700' }}>{getActionInfo(card.action)?.name}</span>
+                    <span style={{ fontSize: 9, color: '#ccc' }}>{getActionInfo(card.action)?.desc}</span>
+                  </>)}
                 </div>
                 <div style={{ display: 'flex', gap: 4 }}>
                   <Btn onClick={humanPlay} color="#4CAF50" style={{ fontSize: 11, padding: '6px 12px' }}>
