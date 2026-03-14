@@ -743,6 +743,8 @@ export default function App() {
   const [showLog, setShowLog] = useState(false);
   const [mobileTab, setMobileTab] = useState('mesa');
   const aiRunning = useRef(false);
+  const [turnTime, setTurnTime] = useState(60);
+  const turnTimerRef = useRef(null);
 
   // ── Online multiplayer state ──
   const [isOnline, setIsOnline] = useState(false);
@@ -1314,6 +1316,49 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [phase, cp, players, deck, discard, modal]);
 
+  // ── Turn timer (60s) ──
+  useEffect(() => {
+    clearInterval(turnTimerRef.current);
+    const isHuman = players[cp] && !players[cp].isAI && !players[cp].isRemote;
+    if (phase !== 'playing' || !isHuman) { setTurnTime(60); return; }
+    setTurnTime(60);
+    turnTimerRef.current = setInterval(() => {
+      setTurnTime(prev => {
+        if (prev <= 1) {
+          clearInterval(turnTimerRef.current);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(turnTimerRef.current);
+  }, [phase, cp, players.length]);
+
+  useEffect(() => {
+    if (document.getElementById('pulse-keyframes')) return;
+    const style = document.createElement('style');
+    style.id = 'pulse-keyframes';
+    style.textContent = '@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}';
+    document.head.appendChild(style);
+  }, []);
+
+  useEffect(() => {
+    if (turnTime !== 0) return;
+    if (phase !== 'playing') return;
+    const p = players[cp];
+    if (!p || p.isAI || p.isRemote) return;
+    if (p.hand.length === 0) return;
+    // Timeout: discard random card and end turn
+    const randIdx = Math.floor(Math.random() * p.hand.length);
+    const card = p.hand[randIdx];
+    addLog(cp, `se le acabó el tiempo — descartó ${card.type === 'ingredient' ? getIngName(card.ingredient, card.language) : getActionInfo(card.action).name}`, players);
+    const newPls = clone(players);
+    const discarded = newPls[cp].hand.splice(randIdx, 1)[0];
+    setSelectedIdx(null);
+    setModal(null);
+    endTurn(newPls, deck, [...discard, discarded], cp);
+  }, [turnTime]);
+
   // ── Human: Play selected card ──
   function humanPlay() {
     if (selectedIdx === null) return;
@@ -1768,13 +1813,25 @@ export default function App() {
       background: 'rgba(255,215,0,.06)', borderRadius: 12, padding: '8px 14px',
       border: '2px solid rgba(255,215,0,.2)', flexShrink: 0,
     }}>
-      <div>
+      <div style={{ flex: 1 }}>
         <div style={{ fontWeight: 900, fontSize: 16, color: humanColor }}>{human.name}</div>
         <div style={{ fontSize: 11, color: '#777' }}>
           🍔 {human.currentBurger}/{human.totalBurgers} hamburguesas
           {extraPlay && <span style={{ color: '#FFD700', marginLeft: 8 }}>⚡ Turno extra!</span>}
         </div>
       </div>
+      {isHumanTurn && (
+        <div style={{
+          minWidth: 44, height: 44, borderRadius: '50%',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontWeight: 900, fontSize: 18,
+          color: turnTime <= 10 ? '#ff4444' : turnTime <= 20 ? '#ffaa00' : '#4ecdc4',
+          border: `3px solid ${turnTime <= 10 ? '#ff4444' : turnTime <= 20 ? '#ffaa00' : '#4ecdc4'}`,
+          animation: turnTime <= 10 ? 'pulse 1s infinite' : 'none',
+        }}>
+          {turnTime}
+        </div>
+      )}
     </div>
   );
 
