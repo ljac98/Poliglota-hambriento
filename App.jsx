@@ -1847,34 +1847,34 @@ export default function App() {
       background: 'rgba(255,255,255,.02)', borderRadius: 10, padding: '8px 10px',
       border: '2px solid #1e2a45', flexShrink: 0,
     }}>
-      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }}>
         {/* Sombrero(s) principal(es) */}
         <div>
           <div style={{ fontSize: 9, color: '#555', fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>PRINCIPAL</div>
           <div style={{ display: 'flex', gap: 4 }}>
-            {human.mainHats.map(h => <HatBadge key={h} lang={h} isMain size="md" />)}
+            {human.mainHats.map(h => <HatBadge key={h} lang={h} isMain size="lg" />)}
           </div>
         </div>
 
         {/* Sombreros en el perchero */}
         {human.perchero.length > 0 && (
-          <div style={{ flex: 1 }}>
+          <div>
             <div style={{ fontSize: 9, color: '#555', fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>PERCHERO</div>
             <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-              {human.perchero.map(h => <HatBadge key={h} lang={h} isMain={false} size="sm" />)}
+              {human.perchero.map(h => <HatBadge key={h} lang={h} isMain={false} size="md" />)}
             </div>
           </div>
         )}
 
         {/* Botones Cambiar / Agregar */}
         {isHumanTurn && !extraPlay && human.perchero.length > 0 && (
-          <div style={{ display: 'flex', gap: 4, flexShrink: 0, marginLeft: 'auto' }}>
+          <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
             <button
               onClick={() => setModal({ type: 'manual_cambiar' })}
               title="Cambia tu sombrero principal (cuesta descartar la mitad de tu mano)"
               style={{
-                padding: '3px 8px', borderRadius: 6, border: '1px solid rgba(156,39,176,0.3)',
-                background: 'rgba(156,39,176,0.12)', color: '#BA68C8', fontSize: 10,
+                padding: '8px 16px', borderRadius: 8, border: '1px solid rgba(156,39,176,0.3)',
+                background: 'rgba(156,39,176,0.12)', color: '#BA68C8', fontSize: 14,
                 fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
               }}
             >
@@ -1885,8 +1885,8 @@ export default function App() {
                 onClick={() => setModal({ type: 'manual_agregar' })}
                 title="Agrega un sombrero extra (descarta toda tu mano, mano máx se reduce)"
                 style={{
-                  padding: '3px 8px', borderRadius: 6, border: '1px solid rgba(156,39,176,0.3)',
-                  background: 'rgba(156,39,176,0.12)', color: '#BA68C8', fontSize: 10,
+                  padding: '8px 16px', borderRadius: 8, border: '1px solid rgba(156,39,176,0.3)',
+                  background: 'rgba(156,39,176,0.12)', color: '#BA68C8', fontSize: 14,
                   fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
                 }}
               >
