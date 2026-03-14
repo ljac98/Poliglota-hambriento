@@ -2017,7 +2017,7 @@ export default function App() {
   const handFan = (
     <div style={{
       display: 'flex', justifyContent: isMobile ? 'flex-start' : 'center', alignItems: isMobile ? 'center' : 'flex-end',
-      padding: isMobile ? '50px 12px' : '36px 0 8px 0',
+      padding: isMobile ? '8px 12px' : '36px 0 8px 0',
       flex: isMobile ? 'none' : 1,
       overflowX: isMobile ? 'auto' : 'visible', overflowY: isMobile ? 'hidden' : 'visible',
       minHeight: isMobile ? 'auto' : 170,
@@ -2049,7 +2049,7 @@ export default function App() {
               position: 'relative',
             }}
           >
-            {isSelected && isHumanTurn && (
+            {isSelected && isHumanTurn && !isMobile && (
               <div style={{
                 position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)',
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, marginBottom: 8,
@@ -2391,6 +2391,52 @@ export default function App() {
           </div>
         </Modal>
       )}
+
+      {/* Mobile: Card detail modal */}
+      {isMobile && isHumanTurn && selectedIdx !== null && human.hand[selectedIdx] && (() => {
+        const card = human.hand[selectedIdx];
+        const playable = card.type === 'ingredient' ? canPlayCard(human, card) : null;
+        return (
+          <Modal title={card.type === 'ingredient' ? '🃏 Carta de Ingrediente' : '⚡ Carta de Acción'}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+              <GameCard card={card} selected playable={playable} large />
+              <div style={{
+                fontSize: 14, textAlign: 'center', padding: '8px 14px', borderRadius: 8,
+                background: 'rgba(0,0,0,0.5)', color: '#ddd',
+                display: 'flex', flexDirection: 'column', gap: 4, width: '100%',
+              }}>
+                {card.type === 'ingredient' ? (<>
+                  <span style={{ fontWeight: 700, fontSize: 16 }}>{getIngName(card.ingredient, card.language)}</span>
+                  {card.ingredient === 'perrito' && (
+                    <span style={{ fontSize: 13, color: '#ccc' }}>Escoge el ingrediente que necesites</span>
+                  )}
+                  {canPlayCard(human, card)
+                    ? <span style={{ color: '#4CAF50', fontSize: 13 }}>✅ Puedes jugar</span>
+                    : <span style={{ color: '#FF7043', fontSize: 13 }}>❌ No puedes jugar</span>}
+                </>) : (<>
+                  <span style={{ fontWeight: 700, fontSize: 16, color: '#FFD700' }}>{getActionInfo(card.action)?.name}</span>
+                  <span style={{ fontSize: 13, color: '#ccc' }}>{getActionInfo(card.action)?.desc}</span>
+                </>)}
+              </div>
+              <div style={{ display: 'flex', gap: 8, width: '100%' }}>
+                <Btn onClick={() => { humanPlay(); }} color="#4CAF50" style={{ flex: 1, fontSize: 14, padding: '10px 16px' }}>
+                  ▶ Jugar
+                </Btn>
+                <Btn onClick={() => { humanDiscard(); }} disabled={extraPlay} color="#FF7043" style={{ flex: 1, fontSize: 14, padding: '10px 16px' }}>
+                  🗑 Descartar
+                </Btn>
+              </div>
+              <button onClick={() => setSelectedIdx(null)} style={{
+                padding: '8px 24px', borderRadius: 8, border: '1px solid #2a2a4a',
+                background: 'rgba(255,255,255,.08)', color: '#aaa',
+                fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+              }}>
+                Cerrar
+              </button>
+            </div>
+          </Modal>
+        );
+      })()}
 
       {/* Manual: Cambiar sombrero — paso 1: elegir sombrero */}
       {modal?.type === 'manual_cambiar' && (
