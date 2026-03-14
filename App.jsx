@@ -2383,7 +2383,18 @@ export default function App() {
       {modal?.type === 'wildcard' && (() => {
         const human = players[0];
         const burger = human.burgers[human.currentBurger] || [];
-        const needed = burger.filter(ing => !human.table.includes(ing));
+        const needed = (() => {
+          const remaining = [...burger];
+          const tableCopy = human.table.map(t => t.startsWith('perrito|') ? t.split('|')[1] : t);
+          for (let i = remaining.length - 1; i >= 0; i--) {
+            const idx = tableCopy.indexOf(remaining[i]);
+            if (idx !== -1) {
+              remaining.splice(i, 1);
+              tableCopy.splice(idx, 1);
+            }
+          }
+          return remaining;
+        })();
         const choices = needed.length > 0 ? needed : Object.keys(ING_EMOJI).filter(i => i !== 'perrito');
         return (
           <Modal title="🌭 Comodín — Elige ingrediente">
