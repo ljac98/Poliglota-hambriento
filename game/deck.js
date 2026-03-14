@@ -95,7 +95,7 @@ export function canPlayCard(player, card) {
   
   const target = player.burgers[player.currentBurger];
   const needed = [...target];
-  const tableCopy = [...player.table];
+  const tableCopy = player.table.map(t => t.startsWith('perrito|') ? t.split('|')[1] : t);
   
   for (let i = needed.length - 1; i >= 0; i--) {
     const idx = tableCopy.indexOf(needed[i]);
