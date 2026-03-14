@@ -1660,6 +1660,7 @@ export default function App() {
       onJoined={(name, code, myIdx) => {
         setIsOnline(true); setIsHost(false); setMyPlayerIdx(myIdx); setRoomCode(code);
         setLobbyPlayers([]);
+        socket.once('lobbyUpdate', ({ players: pls }) => setLobbyPlayers(pls));
         // gameStarted event will trigger stateUpdate which sets phase to 'playing'
         socket.once('gameStarted', () => setPhase('playing'));
         setPhase('onlineLobby');
