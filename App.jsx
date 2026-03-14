@@ -29,6 +29,7 @@ const ingChosen = ing => ing && ing.includes('|') ? ing.split('|')[1] : null;
 import { HatBadge, PercheroSVG } from './components/HatComponents';
 import hamImg from './imagenes/hamburguesas/ham.png';
 import HatSVG from './components/HatSVG';
+import percheroImg from './imagenes/sombreros/perchero/percherofinal.png';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 const PLAYER_COLORS = ['#FFD700', '#00BCD4', '#FF7043', '#66BB6A', '#CE93D8'];
@@ -1857,14 +1858,41 @@ export default function App() {
         </div>
 
         {/* Sombreros en el perchero */}
-        {human.perchero.length > 0 && (
-          <div>
-            <div style={{ fontSize: 9, color: '#555', fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>PERCHERO</div>
-            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-              {human.perchero.map(h => <HatBadge key={h} lang={h} isMain={false} size="md" />)}
+        {human.perchero.length > 0 && (() => {
+          const branchPositions = [
+            { left: '10%', top: '2%', rotate: -12 },
+            { left: '58%', top: '2%', rotate: 12 },
+            { left: '5%', top: '30%', rotate: -10 },
+            { left: '55%', top: '30%', rotate: 10 },
+            { left: '8%', top: '58%', rotate: -12 },
+            { left: '53%', top: '58%', rotate: 12 },
+          ];
+          return (
+            <div>
+              <div style={{ fontSize: 9, color: '#555', fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>PERCHERO</div>
+              <div style={{ position: 'relative', width: 180, height: 220 }}>
+                <img src={percheroImg} alt="Perchero" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                {human.perchero.map((h, i) => {
+                  if (i >= branchPositions.length) return null;
+                  const pos = branchPositions[i];
+                  return (
+                    <div key={h} style={{
+                      position: 'absolute', left: pos.left, top: pos.top,
+                      transform: `rotate(${pos.rotate}deg)`,
+                      display: 'flex', flexDirection: 'column', alignItems: 'center',
+                      filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
+                    }}>
+                      <HatSVG lang={h} size={32} />
+                      <span style={{ fontSize: 7, fontWeight: 800, color: LANG_TEXT[h], letterSpacing: 0.5, marginTop: -2 }}>
+                        {LANG_SHORT[h]}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Botones Cambiar / Agregar */}
         {isHumanTurn && !extraPlay && human.perchero.length > 0 && (
