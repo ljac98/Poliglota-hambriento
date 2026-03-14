@@ -1979,7 +1979,10 @@ export default function App() {
         {/* Sombrero(s) principal(es) */}
         <div>
           <div style={{ fontSize: 9, color: '#555', fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>PRINCIPAL</div>
-          <div style={{ display: 'grid', gridTemplateRows: 'repeat(3, auto)', gridAutoFlow: 'column', gap: 4 }}>
+          <div style={isMobile
+            ? { display: 'flex', gap: 4, flexWrap: 'wrap' }
+            : { display: 'grid', gridTemplateRows: 'repeat(3, auto)', gridAutoFlow: 'column', gap: 4 }
+          }>
             {human.mainHats.map(h => <HatBadge key={h} lang={h} isMain size="lg" />)}
           </div>
         </div>
@@ -1999,8 +2002,8 @@ export default function App() {
           percheroTree
         )}
 
-        {/* Botones Cambiar / Agregar — only inline on desktop */}
-        {!isMobile && percheroButtons}
+        {/* Botones Cambiar / Agregar */}
+        {percheroButtons}
       </div>
     </div>
   );
@@ -2378,7 +2381,6 @@ export default function App() {
         <Modal title="🧥 Perchero">
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
             {percheroTree}
-            {percheroButtons}
             <button onClick={() => setShowPercheroModal(false)} style={{
               padding: '8px 24px', borderRadius: 8, border: '1px solid #2a2a4a',
               background: 'rgba(255,255,255,.08)', color: '#aaa',
