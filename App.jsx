@@ -427,25 +427,51 @@ function OpponentCard({ player, index, color, isActive, onIngredientClick }) {
   );
 }
 
-// ── Online Menu (create / join room) ─────────────────────────────────────────
+// ── Online Menu (create / join / lobby) ──────────────────────────────────────
 function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '' }) {
   const [tab, setTab] = useState(initialCode ? 'join' : 'create');
   const [name, setName] = useState('');
+  const [isPublic, setIsPublic] = useState(false);
+  const [roomName, setRoomName] = useState('');
   const [joinName, setJoinName] = useState('');
   const [joinCode, setJoinCode] = useState(initialCode);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [lobbyRooms, setLobbyRooms] = useState([]);
+  const [lobbyLoading, setLobbyLoading] = useState(false);
+  const [lobbyName, setLobbyName] = useState('');
+
+  // ── Lobby browser: fetch & subscribe to public rooms ──
+  useEffect(() => {
+    if (tab !== 'lobby') return;
+    setLobbyLoading(true);
+    socket.connect();
+    socket.emit('listRooms', (rooms) => {
+      setLobbyRooms(rooms);
+      setLobbyLoading(false);
+    });
+    socket.emit('joinLobbyBrowser');
+    const handleUpdate = (rooms) => setLobbyRooms(rooms);
+    socket.on('lobbyListUpdate', handleUpdate);
+    return () => {
+      socket.emit('leaveLobbyBrowser');
+      socket.off('lobbyListUpdate', handleUpdate);
+      // Only disconnect if we haven't joined a room
+      if (!socket.data?.roomCode) socket.disconnect();
+    };
+  }, [tab]);
 
   function handleCreate() {
     if (!name.trim()) return;
+    if (isPublic && !roomName.trim()) return;
     setLoading(true); setError('');
     socket.connect();
-    socket.once('roomCreated', ({ code }) => {
+    socket.once('roomCreated', ({ code, isPublic: pub, roomName: rn }) => {
       setLoading(false);
       window.history.replaceState({}, '', window.location.pathname);
-      onCreated(name.trim(), code);
+      onCreated(name.trim(), code, pub, rn);
     });
-    socket.emit('createRoom', { playerName: name.trim() });
+    socket.emit('createRoom', { playerName: name.trim(), isPublic, roomName: roomName.trim() });
   }
 
   function handleJoin() {
@@ -453,17 +479,30 @@ function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '' }) {
     setLoading(true); setError('');
     socket.connect();
     socket.once('joinError', msg => { setError(msg); setLoading(false); socket.disconnect(); });
-    socket.once('roomJoined', ({ myIdx }) => {
+    socket.once('roomJoined', ({ myIdx, isPublic: pub, roomName: rn }) => {
       setLoading(false);
       window.history.replaceState({}, '', window.location.pathname);
-      onJoined(joinName.trim(), joinCode.trim().toUpperCase(), myIdx);
+      onJoined(joinName.trim(), joinCode.trim().toUpperCase(), myIdx, pub, rn);
     });
     socket.emit('joinRoom', { playerName: joinName.trim(), code: joinCode.trim().toUpperCase() });
   }
 
+  function handleLobbyJoin(roomCode) {
+    if (!lobbyName.trim()) { setError('Ingresa tu nombre primero'); return; }
+    setLoading(true); setError('');
+    // Socket is already connected from lobby tab
+    socket.once('joinError', msg => { setError(msg); setLoading(false); });
+    socket.once('roomJoined', ({ code, myIdx, isPublic: pub, roomName: rn }) => {
+      setLoading(false);
+      window.history.replaceState({}, '', window.location.pathname);
+      onJoined(lobbyName.trim(), roomCode, myIdx, pub, rn);
+    });
+    socket.emit('joinRoom', { playerName: lobbyName.trim(), code: roomCode });
+  }
+
   const tabStyle = (active) => ({
     flex: 1, padding: '10px 0', borderRadius: 10, border: 'none', cursor: 'pointer',
-    fontFamily: "'Fredoka',sans-serif", fontWeight: 700, fontSize: 14,
+    fontFamily: "'Fredoka',sans-serif", fontWeight: 700, fontSize: 13,
     background: active ? '#FFD700' : 'rgba(255,255,255,.06)',
     color: active ? '#111' : '#aaa', transition: 'all .15s',
   });
@@ -472,6 +511,12 @@ function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '' }) {
     background: '#0f1117', color: '#eee', fontFamily: "'Fredoka',sans-serif",
     fontSize: 15, outline: 'none', boxSizing: 'border-box',
   };
+  const toggleStyle = (active) => ({
+    flex: 1, padding: '8px 4px', borderRadius: 8, cursor: 'pointer', textAlign: 'center',
+    border: active ? '2px solid #FFD700' : '2px solid #2a2a4a',
+    background: active ? 'rgba(255,215,0,.08)' : 'rgba(255,255,255,.02)',
+    transition: 'all .15s',
+  });
 
   return (
     <div style={{
@@ -493,12 +538,15 @@ function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '' }) {
         </div>
 
         {/* Tabs */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
+        <div style={{ display: 'flex', gap: 6, marginBottom: 24 }}>
           <button style={tabStyle(tab === 'create')} onClick={() => { setTab('create'); setError(''); }}>
             ➕ Crear sala
           </button>
+          <button style={tabStyle(tab === 'lobby')} onClick={() => { setTab('lobby'); setError(''); }}>
+            🏠 Lobby
+          </button>
           <button style={tabStyle(tab === 'join')} onClick={() => { setTab('join'); setError(''); }}>
-            🔗 Unirse a sala
+            🔑 Código
           </button>
         </div>
 
@@ -511,14 +559,86 @@ function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '' }) {
               maxLength={20} style={inputStyle}
               onKeyDown={e => e.key === 'Enter' && handleCreate()}
             />
+
+            {/* Public / Private toggle */}
+            <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 6, marginTop: 16 }}>TIPO DE SALA</label>
+            <div style={{ display: 'flex', gap: 8, marginBottom: isPublic ? 14 : 0 }}>
+              <div onClick={() => setIsPublic(false)} style={toggleStyle(!isPublic)}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: !isPublic ? '#FFD700' : '#ccc' }}>🔒 Privada</div>
+                <div style={{ fontSize: 10, color: '#666', marginTop: 2 }}>Solo con código</div>
+              </div>
+              <div onClick={() => setIsPublic(true)} style={toggleStyle(isPublic)}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: isPublic ? '#FFD700' : '#ccc' }}>🌐 Pública</div>
+                <div style={{ fontSize: 10, color: '#666', marginTop: 2 }}>Visible en lobby</div>
+              </div>
+            </div>
+
+            {isPublic && (
+              <div>
+                <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 6 }}>NOMBRE DE SALA</label>
+                <input
+                  value={roomName} onChange={e => setRoomName(e.target.value)}
+                  placeholder="Ej: Partida rápida"
+                  maxLength={30} style={inputStyle}
+                />
+              </div>
+            )}
+
             <Btn
               onClick={handleCreate}
-              disabled={!name.trim() || loading}
+              disabled={!name.trim() || (isPublic && !roomName.trim()) || loading}
               color="#FFD700"
               style={{ width: '100%', fontSize: 16, padding: '12px 0', marginTop: 20 }}
             >
               {loading ? '⏳ Creando...' : '🎮 Crear sala'}
             </Btn>
+          </div>
+        )}
+
+        {tab === 'lobby' && (
+          <div>
+            <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 6 }}>TU NOMBRE</label>
+            <input
+              value={lobbyName} onChange={e => setLobbyName(e.target.value)}
+              placeholder="Ingresa tu nombre..."
+              maxLength={20} style={{ ...inputStyle, marginBottom: 16 }}
+            />
+
+            <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 8 }}>SALAS PÚBLICAS</label>
+            {lobbyLoading ? (
+              <div style={{ textAlign: 'center', padding: 20, color: '#888', fontSize: 13 }}>
+                ⏳ Cargando salas...
+              </div>
+            ) : lobbyRooms.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: 30, color: '#555', fontSize: 13 }}>
+                No hay salas públicas disponibles
+              </div>
+            ) : (
+              <div style={{ maxHeight: 280, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {lobbyRooms.map(room => (
+                  <div key={room.code} style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '12px 14px', borderRadius: 10,
+                    background: 'rgba(255,255,255,.04)', border: '2px solid #2a2a4a',
+                  }}>
+                    <div>
+                      <div style={{ fontWeight: 700, color: '#eee', fontSize: 14 }}>{room.roomName}</div>
+                      <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>
+                        👑 {room.hostName} · {room.playerCount}/4 jugadores
+                      </div>
+                    </div>
+                    <Btn
+                      onClick={() => handleLobbyJoin(room.code)}
+                      disabled={loading}
+                      color="#00BCD4"
+                      style={{ fontSize: 13, padding: '8px 16px' }}
+                    >
+                      Unirse
+                    </Btn>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -570,7 +690,7 @@ function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '' }) {
 }
 
 // ── Online Lobby (waiting room before game starts) ────────────────────────────
-function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack }) {
+function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack, isPublic, roomDisplayName }) {
   const [diff, setDiff] = useState('medio');
   const [hatPicks, setHatPicks] = useState({});
   const [copied, setCopied] = useState(false);
@@ -625,30 +745,46 @@ function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack }) {
         maxWidth: 560, width: '94vw',
         boxShadow: '0 8px 40px rgba(0,0,0,.6)', border: '2px solid #2a2a4a',
       }}>
-        {/* Room code display */}
+        {/* Room info display */}
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <div style={{ fontSize: 13, color: '#888', fontWeight: 700, letterSpacing: 1, marginBottom: 6 }}>CÓDIGO DE SALA</div>
-          <div style={{
-            fontSize: 36, fontWeight: 900, color: '#FFD700', letterSpacing: 8,
-            background: 'rgba(255,215,0,.08)', borderRadius: 12, padding: '10px 20px',
-            border: '2px dashed rgba(255,215,0,.3)',
-          }}>
-            {roomCode}
-          </div>
-          <div style={{ fontSize: 12, color: '#555', marginTop: 8 }}>Comparte este código con tus amigos</div>
-          <button
-            onClick={handleCopyLink}
-            style={{
-              marginTop: 10, padding: '7px 18px', borderRadius: 10,
-              border: '1px solid rgba(255,215,0,.35)',
-              background: copied ? 'rgba(76,175,80,.18)' : 'rgba(255,215,0,.08)',
-              color: copied ? '#81C784' : '#FFD700',
-              fontFamily: "'Fredoka',sans-serif", fontWeight: 700, fontSize: 13,
-              cursor: 'pointer', transition: 'all .2s',
-            }}
-          >
-            {copied ? '✅ ¡Enlace copiado!' : '🔗 Copiar enlace'}
-          </button>
+          {isPublic ? (
+            <>
+              <div style={{ fontSize: 13, color: '#888', fontWeight: 700, letterSpacing: 1, marginBottom: 6 }}>🌐 SALA PÚBLICA</div>
+              <div style={{
+                fontSize: 24, fontWeight: 900, color: '#FFD700',
+                background: 'rgba(255,215,0,.08)', borderRadius: 12, padding: '10px 20px',
+                border: '2px dashed rgba(255,215,0,.3)',
+              }}>
+                {roomDisplayName}
+              </div>
+              <div style={{ fontSize: 11, color: '#555', marginTop: 6 }}>Código: {roomCode}</div>
+            </>
+          ) : (
+            <>
+              <div style={{ fontSize: 13, color: '#888', fontWeight: 700, letterSpacing: 1, marginBottom: 6 }}>🔒 CÓDIGO DE SALA</div>
+              <div style={{
+                fontSize: 36, fontWeight: 900, color: '#FFD700', letterSpacing: 8,
+                background: 'rgba(255,215,0,.08)', borderRadius: 12, padding: '10px 20px',
+                border: '2px dashed rgba(255,215,0,.3)',
+              }}>
+                {roomCode}
+              </div>
+              <div style={{ fontSize: 12, color: '#555', marginTop: 8 }}>Comparte este código con tus amigos</div>
+              <button
+                onClick={handleCopyLink}
+                style={{
+                  marginTop: 10, padding: '7px 18px', borderRadius: 10,
+                  border: '1px solid rgba(255,215,0,.35)',
+                  background: copied ? 'rgba(76,175,80,.18)' : 'rgba(255,215,0,.08)',
+                  color: copied ? '#81C784' : '#FFD700',
+                  fontFamily: "'Fredoka',sans-serif", fontWeight: 700, fontSize: 13,
+                  cursor: 'pointer', transition: 'all .2s',
+                }}
+              >
+                {copied ? '✅ ¡Enlace copiado!' : '🔗 Copiar enlace'}
+              </button>
+            </>
+          )}
         </div>
 
         {/* Players */}
@@ -798,6 +934,8 @@ export default function App() {
   const [isHost, setIsHost] = useState(false);
   const [myPlayerIdx, setMyPlayerIdx] = useState(0);
   const [roomCode, setRoomCode] = useState('');
+  const [roomIsPublic, setRoomIsPublic] = useState(false);
+  const [roomDisplayName, setRoomDisplayName] = useState('');
   const [lobbyPlayers, setLobbyPlayers] = useState([]);
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
@@ -1801,13 +1939,15 @@ export default function App() {
     <OnlineMenu
       initialCode={initialSalaCode}
       onBack={() => setPhase('setup')}
-      onCreated={(name, code) => {
+      onCreated={(name, code, pub, rn) => {
         setIsOnline(true); setIsHost(true); setMyPlayerIdx(0); setRoomCode(code);
+        setRoomIsPublic(!!pub); setRoomDisplayName(rn || '');
         setLobbyPlayers([{ name, idx: 0 }]);
         setPhase('onlineLobby');
       }}
-      onJoined={(name, code, myIdx) => {
+      onJoined={(name, code, myIdx, pub, rn) => {
         setIsOnline(true); setIsHost(false); setMyPlayerIdx(myIdx); setRoomCode(code);
+        setRoomIsPublic(!!pub); setRoomDisplayName(rn || '');
         setLobbyPlayers([]);
         socket.once('lobbyUpdate', ({ players: pls }) => setLobbyPlayers(pls));
         // gameStarted event will trigger stateUpdate which sets phase to 'playing'
@@ -1823,6 +1963,8 @@ export default function App() {
       myName={lobbyPlayers[myPlayerIdx]?.name || ''}
       isHost={isHost}
       players={lobbyPlayers}
+      isPublic={roomIsPublic}
+      roomDisplayName={roomDisplayName}
       onStart={(hatPicks, diff) => {
         if (isHost) {
           startOnlineGame(hatPicks, diff, lobbyPlayers);
@@ -1831,6 +1973,7 @@ export default function App() {
       onBack={() => {
         socket.disconnect();
         setIsOnline(false); setIsHost(false); setMyPlayerIdx(0); setRoomCode('');
+        setRoomIsPublic(false); setRoomDisplayName('');
         setLobbyPlayers([]);
         setPhase('setup');
       }}
@@ -1843,7 +1986,7 @@ export default function App() {
       winner={winner}
       players={players}
       onRestart={() => {
-        if (isOnline) { socket.disconnect(); setIsOnline(false); setIsHost(false); setMyPlayerIdx(0); setRoomCode(''); setLobbyPlayers([]); }
+        if (isOnline) { socket.disconnect(); setIsOnline(false); setIsHost(false); setMyPlayerIdx(0); setRoomCode(''); setRoomIsPublic(false); setRoomDisplayName(''); setLobbyPlayers([]); }
         setPhase('setup');
       }}
     />
