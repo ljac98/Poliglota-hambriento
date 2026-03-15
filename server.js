@@ -30,7 +30,14 @@ function verifyToken(token) {
 
 // ── REST API ──
 
-app.post('/api/register', async (req, res) => {
+const dbAvailable = !!process.env.DATABASE_URL;
+
+function requireDB(req, res, next) {
+  if (!dbAvailable) return res.status(503).json({ error: 'Base de datos no configurada. Agrega PostgreSQL en Railway.' });
+  next();
+}
+
+app.post('/api/register', requireDB, async (req, res) => {
   try {
     const { username, password, displayName } = req.body;
     if (!username || !password || !displayName) return res.status(400).json({ error: 'Faltan campos' });
@@ -47,11 +54,12 @@ app.post('/api/register', async (req, res) => {
     res.json({ token, user: { id: user.id, username: user.username, displayName: user.display_name, wins: user.wins, gamesPlayed: user.games_played } });
   } catch (err) {
     if (err.code === '23505') return res.status(400).json({ error: 'Ese nombre de usuario ya existe' });
-    res.status(500).json({ error: 'Error del servidor' });
+    console.error('Register error:', err.message);
+    res.status(500).json({ error: 'Error del servidor: ' + err.message });
   }
 });
 
-app.post('/api/login', async (req, res) => {
+app.post('/api/login', requireDB, async (req, res) => {
   try {
     const { username, password } = req.body;
     if (!username || !password) return res.status(400).json({ error: 'Faltan campos' });
@@ -70,7 +78,7 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-app.get('/api/profile/:id', async (req, res) => {
+app.get('/api/profile/:id', requireDB, async (req, res) => {
   try {
     const result = await pool.query(
       'SELECT id, username, display_name, wins, games_played, created_at FROM users WHERE id = $1',
@@ -84,7 +92,7 @@ app.get('/api/profile/:id', async (req, res) => {
   }
 });
 
-app.get('/api/history/:userId', async (req, res) => {
+app.get('/api/history/:userId', requireDB, async (req, res) => {
   try {
     const result = await pool.query(
       'SELECT * FROM game_history WHERE players @> $1::jsonb ORDER BY finished_at DESC LIMIT 50',
