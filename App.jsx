@@ -1192,6 +1192,9 @@ export default function App() {
       if (pls[ti].mainHats.length > 0) {
         const stolen = pls[ti].mainHats.splice(0, 1)[0];
         pls[actingIdx].mainHats.push(stolen);
+        if (pls[ti].mainHats.length > 0) {
+          pls[ti].maxHand = Math.min(6, pls[ti].maxHand + 1);
+        }
         if (pls[ti].mainHats.length === 0 && pls[ti].perchero.length > 0) {
           setPlayers(pls); setDiscard(di);
           setModal({ type: 'pickHatReplace', newPls: pls, newDiscard: di, victimIdx: ti, fromIdx: actingIdx });
@@ -1496,6 +1499,9 @@ export default function App() {
         if (newPls[richest].mainHats.length > 0) {
           const stolen = newPls[richest].mainHats.splice(0, 1)[0];
           newPls[idx].mainHats.push(stolen);
+          if (newPls[richest].mainHats.length > 0) {
+            newPls[richest].maxHand = Math.min(6, newPls[richest].maxHand + 1);
+          }
           if (newPls[richest].mainHats.length === 0 && newPls[richest].perchero.length > 0) {
             const nh = newPls[richest].perchero.shift();
             newPls[richest].mainHats.push(nh);
@@ -1797,6 +1803,9 @@ export default function App() {
         if (newPls[targetIdx].mainHats.length === 0) return;
         const stolen = newPls[targetIdx].mainHats.splice(0, 1)[0];
         newPls[HI].mainHats.push(stolen);
+        if (newPls[targetIdx].mainHats.length > 0) {
+          newPls[targetIdx].maxHand = Math.min(6, newPls[targetIdx].maxHand + 1);
+        }
         addLog(HI, `robó el sombrero ${stolen}`, newPls);
         if (newPls[targetIdx].mainHats.length === 0) {
           if (newPls[targetIdx].perchero.length > 0) {
