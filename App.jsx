@@ -385,20 +385,22 @@ function SetupScreen({ onStart, onOnline, user, onLogout, onHistory }) {
           )}
         </div>
 
-        {/* Name */}
-        <div style={{ marginBottom: 20 }}>
-          <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 6 }}>TU NOMBRE</label>
-          <input
-            value={name} onChange={e => setName(e.target.value)}
-            placeholder="Ingresa tu nombre..."
-            maxLength={20}
-            style={{
-              width: '100%', padding: '10px 14px', borderRadius: 10, border: '2px solid #2a2a4a',
-              background: '#0f1117', color: '#eee', fontFamily: "'Fredoka',sans-serif",
-              fontSize: 15, outline: 'none',
-            }}
-          />
-        </div>
+        {/* Name – only show input if not logged in */}
+        {!user && (
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 6 }}>TU NOMBRE</label>
+            <input
+              value={name} onChange={e => setName(e.target.value)}
+              placeholder="Ingresa tu nombre..."
+              maxLength={20}
+              style={{
+                width: '100%', padding: '10px 14px', borderRadius: 10, border: '2px solid #2a2a4a',
+                background: '#0f1117', color: '#eee', fontFamily: "'Fredoka',sans-serif",
+                fontSize: 15, outline: 'none',
+              }}
+            />
+          </div>
+        )}
 
         {/* Hat selection */}
         <div style={{ marginBottom: 20 }}>
@@ -661,18 +663,18 @@ function OpponentCard({ player, index, color, isActive, onIngredientClick }) {
 }
 
 // ── Online Menu (create / join / lobby) ──────────────────────────────────────
-function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '' }) {
+function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '', user }) {
   const [tab, setTab] = useState(initialCode ? 'join' : 'create');
-  const [name, setName] = useState('');
+  const [name, setName] = useState(user?.displayName || '');
   const [isPublic, setIsPublic] = useState(false);
   const [roomName, setRoomName] = useState('');
-  const [joinName, setJoinName] = useState('');
+  const [joinName, setJoinName] = useState(user?.displayName || '');
   const [joinCode, setJoinCode] = useState(initialCode);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [lobbyRooms, setLobbyRooms] = useState([]);
   const [lobbyLoading, setLobbyLoading] = useState(false);
-  const [lobbyName, setLobbyName] = useState('');
+  const [lobbyName, setLobbyName] = useState(user?.displayName || '');
   const joinedRoomRef = useRef(false);
 
   // ── Lobby browser: fetch & subscribe to public rooms ──
@@ -786,13 +788,15 @@ function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '' }) {
 
         {tab === 'create' && (
           <div>
-            <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 6 }}>TU NOMBRE</label>
-            <input
-              value={name} onChange={e => setName(e.target.value)}
-              placeholder="Ingresa tu nombre..."
-              maxLength={20} style={inputStyle}
-              onKeyDown={e => e.key === 'Enter' && handleCreate()}
-            />
+            {!user && (<>
+              <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 6 }}>TU NOMBRE</label>
+              <input
+                value={name} onChange={e => setName(e.target.value)}
+                placeholder="Ingresa tu nombre..."
+                maxLength={20} style={inputStyle}
+                onKeyDown={e => e.key === 'Enter' && handleCreate()}
+              />
+            </>)}
 
             {/* Public / Private toggle */}
             <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 6, marginTop: 16 }}>TIPO DE SALA</label>
@@ -831,12 +835,14 @@ function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '' }) {
 
         {tab === 'lobby' && (
           <div>
-            <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 6 }}>TU NOMBRE</label>
-            <input
-              value={lobbyName} onChange={e => setLobbyName(e.target.value)}
-              placeholder="Ingresa tu nombre..."
-              maxLength={20} style={{ ...inputStyle, marginBottom: 16 }}
-            />
+            {!user && (<>
+              <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 6 }}>TU NOMBRE</label>
+              <input
+                value={lobbyName} onChange={e => setLobbyName(e.target.value)}
+                placeholder="Ingresa tu nombre..."
+                maxLength={20} style={{ ...inputStyle, marginBottom: 16 }}
+              />
+            </>)}
 
             <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 8 }}>SALAS PÚBLICAS</label>
             {lobbyLoading ? (
@@ -878,13 +884,15 @@ function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '' }) {
 
         {tab === 'join' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <div>
-              <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 6 }}>TU NOMBRE</label>
-              <input
-                value={joinName} onChange={e => setJoinName(e.target.value)}
-                placeholder="Ingresa tu nombre..." maxLength={20} style={inputStyle}
-              />
-            </div>
+            {!user && (
+              <div>
+                <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 6 }}>TU NOMBRE</label>
+                <input
+                  value={joinName} onChange={e => setJoinName(e.target.value)}
+                  placeholder="Ingresa tu nombre..." maxLength={20} style={inputStyle}
+                />
+              </div>
+            )}
             <div>
               <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 6 }}>CÓDIGO DE SALA</label>
               <input
@@ -2219,6 +2227,7 @@ export default function App() {
 
   if (phase === 'onlineMenu') return (
     <OnlineMenu
+      user={user}
       initialCode={initialSalaCode}
       onBack={() => setPhase('setup')}
       onCreated={(name, code, pub, rn) => {
