@@ -957,6 +957,7 @@ export default function App() {
   const [unreadChat, setUnreadChat] = useState(0);
   const chatEndRef = useRef(null);
   const showChatRef = useRef(showChat);
+  const lastSyncCpRef = useRef(null);
   // Human index: 0 for local/AI mode, myPlayerIdx for online
   const HI = isOnline ? myPlayerIdx : 0;
 
@@ -1019,12 +1020,13 @@ export default function App() {
       });
       setPendingNeg(state.pendingNeg || null);
       if (state.winner) { setWinner(state.winner); setPhase('gameover'); }
-      else if (state.cp === myPlayerIdx && state.phase === 'playing') {
-        setPhase(prev => prev === 'transition' ? prev : 'transition');
-      } else {
-        // Never adopt 'transition' from host — only show it for the player whose turn it is
-        setPhase(state.phase === 'transition' ? 'playing' : (state.phase || 'playing'));
+      else if (state.cp === myPlayerIdx && lastSyncCpRef.current !== myPlayerIdx) {
+        // Only show transition when cp just changed to this player's turn
+        setPhase('transition');
+      } else if (state.cp !== myPlayerIdx) {
+        setPhase('playing');
       }
+      lastSyncCpRef.current = state.cp;
     });
     return () => socket.off('stateUpdate');
   }, [isOnline, isHost]);
@@ -1032,16 +1034,17 @@ export default function App() {
   // ── Socket: host syncs state to all clients after every change ──
   const syncRef = useRef(null);
   useEffect(() => {
-    if (!isOnline || !isHost || phase !== 'playing') return;
     clearTimeout(syncRef.current);
+    if (!isOnline || !isHost || phase !== 'playing') return;
     syncRef.current = setTimeout(() => {
       const privateModals = ['manual_cambiar', 'manual_cambiar_discard', 'manual_agregar', 'wildcard', 'basurero', 'pickHatReplace', 'pickHatExchange', 'ingredientInfo'];
       const syncModal = modal && privateModals.includes(modal.type) ? null : modal;
       socket.emit('syncState', {
         code: roomCode,
-        state: { players, deck, discard, cp, log, extraPlay, modal: syncModal, pendingNeg, winner, phase },
+        state: { players, deck, discard, cp, log, extraPlay, modal: syncModal, pendingNeg, winner, phase: 'playing' },
       });
     }, 80);
+    return () => clearTimeout(syncRef.current);
   }, [players, deck, discard, cp, log, extraPlay, modal, pendingNeg, winner, phase, isOnline, isHost]);
 
   // ── Socket: host processes remote player actions ──
