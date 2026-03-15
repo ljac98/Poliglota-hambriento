@@ -960,6 +960,7 @@ export default function App() {
   const chatEndRef = useRef(null);
   const showChatRef = useRef(showChat);
   const lastSyncCpRef = useRef(null);
+  const lastExtraPlayRef = useRef(false);
   // Human index: 0 for local/AI mode, myPlayerIdx for online
   const HI = isOnline ? myPlayerIdx : 0;
 
@@ -1025,10 +1026,13 @@ export default function App() {
       else if (state.cp === myPlayerIdx && lastSyncCpRef.current !== myPlayerIdx) {
         // Only show transition when cp just changed to this player's turn
         setPhase('transition');
+      } else if (state.cp === myPlayerIdx && state.extraPlay && !lastExtraPlayRef.current) {
+        setPhase('transition');
       } else if (state.cp !== myPlayerIdx) {
         setPhase('playing');
       }
       lastSyncCpRef.current = state.cp;
+      lastExtraPlayRef.current = state.extraPlay || false;
     });
     return () => socket.off('stateUpdate');
   }, [isOnline, isHost]);
@@ -1914,7 +1918,7 @@ export default function App() {
     let newDiscard = [...discard, ...discarded];
     const cost = discarded.length;
     addLog(HI, `cambió sombrero a ${hatLang} (descartó ${cost} carta${cost !== 1 ? 's' : ''}) — puede jugar una carta`, newPls);
-    setPlayers(newPls); setDiscard(newDiscard); setExtraPlay(true);
+    setPlayers(newPls); setDiscard(newDiscard); setExtraPlay(true); setPhase('transition');
   }
 
   // Manual: add an extra hat from perchero (costs discarding entire hand, reduces maxHand)
@@ -1935,7 +1939,7 @@ export default function App() {
     const { drawn, deck: newDeck, discard: di2 } = drawN(deck, newDiscard, p.maxHand);
     p.hand = drawn;
     addLog(HI, `agregó sombrero ${hatLang} — mano máx reducida a ${p.maxHand}`, newPls);
-    setPlayers(newPls); setDeck(newDeck); setDiscard(di2); setExtraPlay(true);
+    setPlayers(newPls); setDeck(newDeck); setDiscard(di2); setExtraPlay(true); setPhase('transition');
   }
 
   function resolveBasurero(cardId) {
@@ -2091,7 +2095,7 @@ export default function App() {
         <div style={{ fontWeight: 900, fontSize: 16, color: humanColor }}>{human.name}</div>
         <div style={{ fontSize: 11, color: '#777' }}>
           🍔 {human.currentBurger}/{human.totalBurgers} hamburguesas
-          {extraPlay && <span style={{ color: '#FFD700', marginLeft: 8 }}>⚡ Turno extra!</span>}
+          {extraPlay && <span style={{ color: '#FFD700', marginLeft: 8 }}>🍔 Puedes agregar un ingrediente</span>}
         </div>
       </div>
       {phase === 'playing' && players[cp] && !players[cp].isAI && (
