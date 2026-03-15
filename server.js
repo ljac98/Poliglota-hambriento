@@ -87,6 +87,13 @@ io.on('connection', socket => {
     io.to(room.hostId).emit('remoteAction', { fromId: socket.id, playerIdx: player.idx, action });
   });
 
+  // ── Chat message relay ──
+  socket.on('chatMessage', ({ code, playerName, text }) => {
+    const room = rooms.get(code);
+    if (!room) return;
+    io.to(code).emit('chatMessage', { playerName, text, timestamp: Date.now() });
+  });
+
   // ── Disconnect cleanup ──
   socket.on('disconnect', () => {
     const code = socket.data?.roomCode;

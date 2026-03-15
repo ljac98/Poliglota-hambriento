@@ -785,6 +785,12 @@ export default function App() {
   const [myPlayerIdx, setMyPlayerIdx] = useState(0);
   const [roomCode, setRoomCode] = useState('');
   const [lobbyPlayers, setLobbyPlayers] = useState([]);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatInput, setChatInput] = useState('');
+  const [showChat, setShowChat] = useState(false);
+  const [unreadChat, setUnreadChat] = useState(0);
+  const chatEndRef = useRef(null);
+  const showChatRef = useRef(showChat);
   // Human index: 0 for local/AI mode, myPlayerIdx for online
   const HI = isOnline ? myPlayerIdx : 0;
 
@@ -800,18 +806,34 @@ export default function App() {
     setLog(prev => [{ player: p ? p.name : '', text, color }, ...prev].slice(0, 40));
   }
 
+  function sendChatMessage() {
+    if (!chatInput.trim() || !isOnline) return;
+    socket.emit('chatMessage', { code: roomCode, playerName: players[HI]?.name || lobbyPlayers.find(p => p.idx === myPlayerIdx)?.name || 'Jugador', text: chatInput.trim() });
+    setChatInput('');
+  }
+
   // ── Socket: lobby updates (hat picks from others) ──
   useEffect(() => {
     if (!isOnline) return;
     socket.on('lobbyUpdate', ({ players: pls }) => setLobbyPlayers(pls));
     socket.on('lobbyHatPick', () => {});  // handled via lobbyUpdate in server if needed
     socket.on('playerLeft', ({ players: pls }) => setLobbyPlayers(pls));
+    socket.on('chatMessage', (msg) => {
+      setChatMessages(prev => [...prev, msg]);
+      if (!showChatRef.current) setUnreadChat(prev => prev + 1);
+    });
     return () => {
       socket.off('lobbyUpdate');
       socket.off('lobbyHatPick');
       socket.off('playerLeft');
+      socket.off('chatMessage');
     };
   }, [isOnline]);
+
+  useEffect(() => { showChatRef.current = showChat; }, [showChat]);
+  useEffect(() => {
+    if (showChat) chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages, showChat]);
 
   // ── Socket: non-host receives full game state from host ──
   useEffect(() => {
@@ -2264,6 +2286,18 @@ export default function App() {
           <Btn onClick={() => setShowLog(l => !l)} color="#2a2a4a" style={{ color: '#aaa', fontSize: 12, padding: '4px 10px' }}>
             📋 Log
           </Btn>
+          {isOnline && (
+            <Btn onClick={() => { setShowChat(s => !s); setUnreadChat(0); }} color="#2a2a4a" style={{ color: '#aaa', fontSize: 12, padding: '4px 10px', position: 'relative' }}>
+              💬 Chat
+              {unreadChat > 0 && (
+                <span style={{
+                  position: 'absolute', top: -4, right: -4, minWidth: 16, height: 16,
+                  borderRadius: '50%', background: '#ff4444', color: '#fff',
+                  fontSize: 10, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>{unreadChat}</span>
+              )}
+            </Btn>
+          )}
         </div>
       </div>
 
@@ -2272,14 +2306,47 @@ export default function App() {
         <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           {mobileTab === 'mesa' && mesaPanel}
           {mobileTab === 'rivales' && rivalesPanel}
+          {mobileTab === 'chat' && (
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <div style={{ flex: 1, overflowY: 'auto', padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {chatMessages.length === 0 && (
+                  <div style={{ color: '#444', fontSize: 12, textAlign: 'center', marginTop: 40 }}>Sin mensajes aún</div>
+                )}
+                {chatMessages.map((msg, i) => (
+                  <div key={i} style={{ fontSize: 13 }}>
+                    <span style={{ fontWeight: 800, color: '#4ecdc4' }}>{msg.playerName}: </span>
+                    <span style={{ color: '#ccc' }}>{msg.text}</span>
+                  </div>
+                ))}
+                <div ref={chatEndRef} />
+              </div>
+              <div style={{ display: 'flex', gap: 6, padding: '8px 12px', borderTop: '1px solid #2a2a4a', flexShrink: 0 }}>
+                <input
+                  value={chatInput}
+                  onChange={e => setChatInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && sendChatMessage()}
+                  placeholder="Escribe un mensaje..."
+                  style={{
+                    flex: 1, background: 'rgba(255,255,255,.06)', border: '1px solid #2a2a4a',
+                    borderRadius: 8, padding: '8px 10px', color: '#ccc', fontSize: 13,
+                    fontFamily: "'Fredoka',sans-serif", outline: 'none',
+                  }}
+                />
+                <Btn onClick={sendChatMessage} color="#4ecdc4" style={{ padding: '8px 14px', fontSize: 13 }}>
+                  Enviar
+                </Btn>
+              </div>
+            </div>
+          )}
 
           {/* Mobile tab bar */}
           <div style={{ display: 'flex', flexShrink: 0, background: '#16213e', borderTop: '2px solid #2a2a4a' }}>
             {[
               { id: 'mesa', label: '🍔 Mesa', notify: isHumanTurn },
               { id: 'rivales', label: '👥 Rivales' },
+              ...(isOnline ? [{ id: 'chat', label: '💬 Chat', notify: unreadChat > 0 }] : []),
             ].map(tab => (
-              <button key={tab.id} onClick={() => setMobileTab(tab.id)} style={{
+              <button key={tab.id} onClick={() => { setMobileTab(tab.id); if (tab.id === 'chat') setUnreadChat(0); }} style={{
                 flex: 1, padding: '10px 4px', border: 'none', cursor: 'pointer',
                 background: mobileTab === tab.id ? 'rgba(255,215,0,.1)' : 'transparent',
                 color: mobileTab === tab.id ? '#FFD700' : '#666',
@@ -2842,6 +2909,60 @@ export default function App() {
             <Btn onClick={() => respondNegation(false)} color="#27ae60">✅ Dejar pasar</Btn>
           </div>
         </Modal>
+      )}
+
+      {/* ── Chat panel ── */}
+      {isOnline && showChat && (
+        <div style={{
+          position: 'fixed', bottom: isMobile ? 50 : 16, right: 16,
+          width: isMobile ? 'calc(100% - 32px)' : 320, maxHeight: isMobile ? '60vh' : '50vh',
+          background: '#16213e', border: '2px solid #2a2a4a', borderRadius: 14,
+          display: 'flex', flexDirection: 'column', zIndex: 9999,
+          boxShadow: '0 8px 32px rgba(0,0,0,.5)',
+        }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', padding: '10px 14px',
+            borderBottom: '1px solid #2a2a4a',
+          }}>
+            <span style={{ fontWeight: 800, fontSize: 14, color: '#4ecdc4', flex: 1 }}>💬 Chat</span>
+            <span onClick={() => setShowChat(false)} style={{ cursor: 'pointer', color: '#666', fontSize: 18, lineHeight: 1 }}>✕</span>
+          </div>
+          <div style={{
+            flex: 1, overflowY: 'auto', padding: '8px 12px',
+            display: 'flex', flexDirection: 'column', gap: 6,
+            minHeight: 120, maxHeight: isMobile ? '40vh' : '35vh',
+          }}>
+            {chatMessages.length === 0 && (
+              <div style={{ color: '#444', fontSize: 12, textAlign: 'center', marginTop: 20 }}>Sin mensajes aún</div>
+            )}
+            {chatMessages.map((msg, i) => (
+              <div key={i} style={{ fontSize: 12 }}>
+                <span style={{ fontWeight: 800, color: '#4ecdc4' }}>{msg.playerName}: </span>
+                <span style={{ color: '#ccc' }}>{msg.text}</span>
+              </div>
+            ))}
+            <div ref={chatEndRef} />
+          </div>
+          <div style={{
+            display: 'flex', gap: 6, padding: '8px 12px',
+            borderTop: '1px solid #2a2a4a',
+          }}>
+            <input
+              value={chatInput}
+              onChange={e => setChatInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && sendChatMessage()}
+              placeholder="Escribe un mensaje..."
+              style={{
+                flex: 1, background: 'rgba(255,255,255,.06)', border: '1px solid #2a2a4a',
+                borderRadius: 8, padding: '6px 10px', color: '#ccc', fontSize: 12,
+                fontFamily: "'Fredoka',sans-serif", outline: 'none',
+              }}
+            />
+            <Btn onClick={sendChatMessage} color="#4ecdc4" style={{ padding: '6px 12px', fontSize: 12 }}>
+              Enviar
+            </Btn>
+          </div>
+        </div>
       )}
     </div>
   );
