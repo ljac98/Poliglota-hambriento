@@ -93,7 +93,7 @@ function applyMass(players, discard, actionId, playerIdx) {
     if (i === playerIdx) return;
     const kept = [];
     p.table.forEach(ing => {
-      if (targets.includes(ingKey(ing))) di.push({ type: 'ingredient', ingredient: ingKey(ing), id: `d${Date.now()}${Math.random()}` });
+      if (targets.includes(ingKey(ing)) || targets.includes(ingChosen(ing))) di.push({ type: 'ingredient', ingredient: ingKey(ing), id: `d${Date.now()}${Math.random()}` });
       else kept.push(ing);
     });
     p.table = kept;
@@ -354,14 +354,32 @@ function OpponentCard({ player, index, color, isActive }) {
         <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap', marginBottom: 4 }}>
           {player.table.map((ing, i) => {
             const base = ingKey(ing);
+            const chosen = ingChosen(ing);
             return (
               <div key={i} style={{
-                width: 22, height: 22, borderRadius: 5, background: ING_BG[base],
-                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12,
+                width: 30, height: 30, borderRadius: 6,
+                background: chosen
+                  ? `linear-gradient(to right, ${ING_BG.perrito || '#9b59b6'} 50%, ${ING_BG[chosen]} 50%)`
+                  : ING_BG[base],
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14,
+                overflow: 'hidden', position: 'relative',
               }}>
-                {ING_IMG[base]
-                  ? <img src={ING_IMG[base]} alt={base} style={{ width: 16, height: 16, objectFit: 'contain' }} />
-                  : ING_EMOJI[base]}
+                {chosen ? (
+                  <>
+                    <div style={{ position: 'absolute', left: 0, top: 0, width: '50%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <img src={ING_IMG.perrito} alt="comodín" style={{ width: 14, height: 14, objectFit: 'contain' }} />
+                    </div>
+                    <div style={{ position: 'absolute', right: 0, top: 0, width: '50%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {ING_IMG[chosen]
+                        ? <img src={ING_IMG[chosen]} alt={chosen} style={{ width: 14, height: 14, objectFit: 'contain' }} />
+                        : <span style={{ fontSize: 10 }}>{ING_EMOJI[chosen]}</span>}
+                    </div>
+                  </>
+                ) : (
+                  ING_IMG[base]
+                    ? <img src={ING_IMG[base]} alt={base} style={{ width: 22, height: 22, objectFit: 'contain' }} />
+                    : ING_EMOJI[base]
+                )}
               </div>
             );
           })}
@@ -792,7 +810,7 @@ export default function App() {
       setLog(state.log);
       setExtraPlay(state.extraPlay || false);
       setModal(currentModal => {
-        const privateModals = ['manual_cambiar', 'manual_cambiar_discard', 'manual_agregar', 'wildcard', 'basurero'];
+        const privateModals = ['manual_cambiar', 'manual_cambiar_discard', 'manual_agregar', 'wildcard', 'basurero', 'pickHatReplace'];
         if (state.modal) return state.modal;
         if (currentModal && privateModals.includes(currentModal.type)) return currentModal;
         return null;
@@ -810,7 +828,7 @@ export default function App() {
     if (!isOnline || !isHost || phase !== 'playing') return;
     clearTimeout(syncRef.current);
     syncRef.current = setTimeout(() => {
-      const privateModals = ['manual_cambiar', 'manual_cambiar_discard', 'manual_agregar', 'wildcard', 'basurero'];
+      const privateModals = ['manual_cambiar', 'manual_cambiar_discard', 'manual_agregar', 'wildcard', 'basurero', 'pickHatReplace'];
       const syncModal = modal && privateModals.includes(modal.type) ? null : modal;
       socket.emit('syncState', {
         code: roomCode,
@@ -841,11 +859,12 @@ export default function App() {
 
   // ── Negación: check before applying any action ──
   // resolveCallback: () => void  — called if action is NOT negated
-  function startNegCheck(actingIdx, card, resolveCallback) {
+  function startNegCheck(actingIdx, card, resolveCallback, affectedIdxs) {
     const pls = playersRef.current;
-    // Find players who can negate (opponents with a negación card in hand)
+    // Find players who can negate (only affected players with a negación card)
     const eligible = pls.map((_, i) => i).filter(i =>
-      i !== actingIdx && pls[i].hand.some(c => c.action === 'negacion')
+      i !== actingIdx && pls[i].hand.some(c => c.action === 'negacion') &&
+      (!affectedIdxs || affectedIdxs.includes(i))
     );
 
     if (eligible.length === 0) { resolveCallback(); return; }
@@ -1059,7 +1078,7 @@ export default function App() {
                 if (ci !== -1) fp[idx].hand.splice(ci, 1);
                 const fd2 = [...fd, card];
                 applyTargetedAction(card, idx, ti, action, fp, deckRef.current, fd2);
-              });
+              }, [ti]);
               return;
 
             } else if (type === 'playBasurero') {
@@ -1430,18 +1449,25 @@ export default function App() {
   function humanPlayAction(card, cardIdx) {
     const info = getActionInfo(card.action);
     const mass = ['milanesa', 'ensalada', 'pizza', 'parrilla', 'comecomodines'];
+    const targeted = ['tenedor', 'ladron', 'intercambio_sombreros', 'intercambio_hamburguesa', 'gloton', 'cambio_sombrero'];
 
     if (card.action === 'negacion') {
       alert('Negación se juega automáticamente cuando un oponente juega una acción.');
       return;
     }
 
+    // Targeted actions: pick target FIRST, then negation check (only target can negate)
+    if (targeted.includes(card.action)) {
+      setSelectedIdx(null);
+      setModal({ type: 'pickTarget', cardIdx, action: card.action });
+      return;
+    }
+
     setSelectedIdx(null);
     addLog(HI, `jugó ${info.name} ${info.emoji}`, players);
 
-    // Check negation before resolving — card stays in hand during the check
+    // Mass actions & basurero: all opponents can negate
     startNegCheck(HI, card, () => {
-      // Use refs for fresh state (callback may be async)
       const pls = playersRef.current;
       const dk  = deckRef.current;
       const di  = discardRef.current;
@@ -1454,9 +1480,6 @@ export default function App() {
         const { players: ps2, discard: di2 } = applyMass(newPls, newDiscard, card.action, HI);
         endTurn(ps2, dk, di2, HI);
 
-      } else if (card.action === 'cambio_sombrero') {
-        setModal({ type: 'pickTarget', cardIdx, action: card.action });
-
       } else if (card.action === 'basurero') {
         const ingCards = di.filter(c => c.type === 'ingredient');
         if (ingCards.length === 0) {
@@ -1467,9 +1490,6 @@ export default function App() {
           return;
         }
         setModal({ type: 'basurero', cardIdx, cards: ingCards });
-
-      } else if (['tenedor', 'ladron', 'intercambio_sombreros', 'intercambio_hamburguesa', 'gloton'].includes(card.action)) {
-        setModal({ type: 'pickTarget', cardIdx, action: card.action });
       }
     });
   }
@@ -1536,64 +1556,71 @@ export default function App() {
     const card = players[HI].hand[cardIdx];
     const info = getActionInfo(action);
     addLog(HI, `jugó ${info.name} ${info.emoji} contra ${players[targetIdx].name}`, players);
-    const newPls = clone(players);
-    newPls[HI].hand.splice(cardIdx, 1);
-    let newDiscard = [...discard, card];
 
-    if (action === 'gloton') {
-      newPls[targetIdx].table.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `g${Date.now()}` }));
-      newPls[targetIdx].table = [];
-      endTurn(newPls, deck, newDiscard, HI);
+    // Negation check: only the targeted player can negate
+    startNegCheck(HI, card, () => {
+      const pls = playersRef.current;
+      const dk  = deckRef.current;
+      const di  = discardRef.current;
+      const newPls = clone(pls);
+      const ci = newPls[HI].hand.findIndex(c => c.id === card.id);
+      if (ci !== -1) newPls[HI].hand.splice(ci, 1);
+      let newDiscard = [...di, card];
 
-    } else if (action === 'tenedor') {
-      if (newPls[targetIdx].table.length === 0) return;
-      setModal({ type: 'pickIngredient', targetIdx, newPls, newDiscard });
+      if (action === 'gloton') {
+        newPls[targetIdx].table.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `g${Date.now()}` }));
+        newPls[targetIdx].table = [];
+        endTurn(newPls, dk, newDiscard, HI);
 
-    } else if (action === 'ladron') {
-      if (newPls[targetIdx].mainHats.length === 0) return;
-      const stolen = newPls[targetIdx].mainHats.splice(0, 1)[0];
-      newPls[HI].mainHats.push(stolen);
-      addLog(HI, `robó el sombrero ${stolen}`, newPls);
-      if (newPls[targetIdx].mainHats.length === 0) {
-        if (newPls[targetIdx].perchero.length > 0) {
-          if (newPls[targetIdx].isAI) {
-            const nh = newPls[targetIdx].perchero.shift();
-            newPls[targetIdx].mainHats.push(nh);
-            endTurn(newPls, deck, newDiscard, HI);
-          } else if (newPls[targetIdx].isRemote) {
-            // Remote victim: broadcast modal state, wait for their response
-            setModal({ type: 'pickHatReplace', newPls, newDiscard, victimIdx: targetIdx, fromIdx: HI });
-            setPlayers(newPls); setDiscard(newDiscard);
-          } else {
-            setModal({ type: 'pickHatReplace', newPls, newDiscard, victimIdx: targetIdx });
+      } else if (action === 'tenedor') {
+        if (newPls[targetIdx].table.length === 0) return;
+        setModal({ type: 'pickIngredient', targetIdx, newPls, newDiscard });
+
+      } else if (action === 'ladron') {
+        if (newPls[targetIdx].mainHats.length === 0) return;
+        const stolen = newPls[targetIdx].mainHats.splice(0, 1)[0];
+        newPls[HI].mainHats.push(stolen);
+        addLog(HI, `robó el sombrero ${stolen}`, newPls);
+        if (newPls[targetIdx].mainHats.length === 0) {
+          if (newPls[targetIdx].perchero.length > 0) {
+            if (newPls[targetIdx].isAI) {
+              const nh = newPls[targetIdx].perchero.shift();
+              newPls[targetIdx].mainHats.push(nh);
+              endTurn(newPls, dk, newDiscard, HI);
+            } else if (newPls[targetIdx].isRemote) {
+              setModal({ type: 'pickHatReplace', newPls, newDiscard, victimIdx: targetIdx, fromIdx: HI });
+              setPlayers(newPls); setDiscard(newDiscard);
+            } else {
+              setModal({ type: 'pickHatReplace', newPls, newDiscard, victimIdx: targetIdx });
+            }
+            return;
           }
-          return;
         }
+        endTurn(newPls, dk, newDiscard, HI);
+
+      } else if (action === 'intercambio_sombreros') {
+        if (newPls[HI].mainHats[0] && newPls[targetIdx].mainHats[0]) {
+          const tmp = newPls[HI].mainHats[0];
+          newPls[HI].mainHats[0] = newPls[targetIdx].mainHats[0];
+          newPls[targetIdx].mainHats[0] = tmp;
+        }
+        endTurn(newPls, dk, newDiscard, HI);
+
+      } else if (action === 'intercambio_hamburguesa') {
+        const tmp = newPls[HI].table;
+        newPls[HI].table = newPls[targetIdx].table;
+        newPls[targetIdx].table = tmp;
+        filterTable(newPls[HI], newDiscard);
+        filterTable(newPls[targetIdx], newDiscard);
+        endTurn(newPls, dk, newDiscard, HI);
+
+      } else if (action === 'cambio_sombrero') {
+        const tmp = [...newPls[HI].mainHats];
+        newPls[HI].mainHats = [...newPls[targetIdx].mainHats];
+        newPls[targetIdx].mainHats = tmp;
+        setPlayers(newPls); setDiscard(newDiscard); setExtraPlay(true);
       }
-      endTurn(newPls, deck, newDiscard, HI);
-
-    } else if (action === 'intercambio_sombreros') {
-      if (newPls[HI].mainHats[0] && newPls[targetIdx].mainHats[0]) {
-        const tmp = newPls[HI].mainHats[0];
-        newPls[HI].mainHats[0] = newPls[targetIdx].mainHats[0];
-        newPls[targetIdx].mainHats[0] = tmp;
-      }
-      endTurn(newPls, deck, newDiscard, HI);
-
-    } else if (action === 'intercambio_hamburguesa') {
-      const tmp = newPls[HI].table;
-      newPls[HI].table = newPls[targetIdx].table;
-      newPls[targetIdx].table = tmp;
-      filterTable(newPls[HI], newDiscard);
-      filterTable(newPls[targetIdx], newDiscard);
-      endTurn(newPls, deck, newDiscard, HI);
-
-    } else if (action === 'cambio_sombrero') {
-      const tmp = [...newPls[HI].mainHats];
-      newPls[HI].mainHats = [...newPls[targetIdx].mainHats];
-      newPls[targetIdx].mainHats = tmp;
-      setPlayers(newPls); setDiscard(newDiscard); setExtraPlay(true);
-    }
+    }, [targetIdx]);
   }
 
   function resolvePickIngredient(ingIdx) {
