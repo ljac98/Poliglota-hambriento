@@ -2272,9 +2272,19 @@ export default function App() {
     </div>
   );
 
+  const addedHats = human.mainHats.slice(1);
+  const isReduced = human.maxHand < 6;
+
   const handLabel = (
-    <div style={{ fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1, flexShrink: 0 }}>
+    <div style={{ fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1, flexShrink: 0, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 4 }}>
       MANO ({human.hand.length}/{human.maxHand})
+      {isReduced && (
+        <span style={{ color: '#FF7043', display: 'inline-flex', alignItems: 'center', gap: 2 }}>
+          ⚠ Máx reducido por agregar: {addedHats.map(h => (
+            <HatBadge key={h} lang={h} isMain size="sm" />
+          ))}
+        </span>
+      )}
     </div>
   );
 
@@ -2911,7 +2921,7 @@ export default function App() {
       {modal?.type === 'manual_agregar' && (
         <Modal title="➕ Agregar Sombrero — descartás toda tu mano">
           <p style={{ color: '#888', fontSize: 12, marginBottom: 12 }}>
-            Elige un sombrero del perchero para agregarlo a tu sombrero principal. Descartás toda tu mano y tu máximo de cartas se reduce a {Math.max(1, human.maxHand - 1)}.
+            Elige un sombrero del perchero para agregarlo a tu sombrero principal. Descartás toda tu mano y tu máximo de cartas se reduce en 1 (a {Math.max(1, human.maxHand - 1)}). ¡Este efecto es acumulable!
           </p>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
             {human.perchero.map(h => (
