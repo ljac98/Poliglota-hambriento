@@ -995,9 +995,22 @@ export default function App() {
       }
       endTurnFromRemote(pls, dk, di, actingIdx);
     } else if (card.action === 'intercambio_sombreros') {
-      const tmp = pls[actingIdx].mainHats[0];
-      pls[actingIdx].mainHats[0] = pls[ti].mainHats[0];
-      pls[ti].mainHats[0] = tmp;
+      const myHat = action.myHat;
+      const theirHat = action.theirHat;
+      if (myHat && theirHat) {
+        const mi = pls[actingIdx].mainHats.indexOf(myHat);
+        const ti2 = pls[ti].mainHats.indexOf(theirHat);
+        if (mi !== -1 && ti2 !== -1) {
+          pls[actingIdx].mainHats.splice(mi, 1);
+          pls[ti].mainHats.splice(ti2, 1);
+          pls[actingIdx].mainHats.push(theirHat);
+          pls[ti].mainHats.push(myHat);
+        }
+      } else {
+        const tmp = pls[actingIdx].mainHats[0];
+        pls[actingIdx].mainHats[0] = pls[ti].mainHats[0];
+        pls[ti].mainHats[0] = tmp;
+      }
       endTurnFromRemote(pls, dk, di, actingIdx);
     } else if (card.action === 'intercambio_hamburguesa') {
       const tmp = pls[actingIdx].table;
@@ -1566,6 +1579,9 @@ export default function App() {
         const newDiscard = [...discard, card];
         if (newPls[targetIdx].table.length === 0) return;
         setModal({ type: 'pickIngredientRemote', targetIdx, cardIdx, newPls, newDiscard });
+      } else if (action === 'intercambio_sombreros') {
+        // Show hat exchange picker locally
+        setModal({ type: 'pickHatExchange', targetIdx, cardIdx, isRemote: true });
       } else {
         socket.emit('playerAction', { code: roomCode, action: { type: 'playActionTarget', cardIdx, targetIdx, action } });
       }
@@ -1618,12 +1634,11 @@ export default function App() {
         endTurn(newPls, dk, newDiscard, HI);
 
       } else if (action === 'intercambio_sombreros') {
-        if (newPls[HI].mainHats[0] && newPls[targetIdx].mainHats[0]) {
-          const tmp = newPls[HI].mainHats[0];
-          newPls[HI].mainHats[0] = newPls[targetIdx].mainHats[0];
-          newPls[targetIdx].mainHats[0] = tmp;
+        if (newPls[HI].mainHats.length > 0 && newPls[targetIdx].mainHats.length > 0) {
+          setModal({ type: 'pickHatExchange', targetIdx, newPls, newDiscard, dk });
+        } else {
+          endTurn(newPls, dk, newDiscard, HI);
         }
-        endTurn(newPls, dk, newDiscard, HI);
 
       } else if (action === 'intercambio_hamburguesa') {
         const tmp = newPls[HI].table;
@@ -1672,6 +1687,26 @@ export default function App() {
     newPls[victimIdx].perchero.splice(hi, 1);
     newPls[victimIdx].mainHats.push(hatLang);
     endTurn(newPls, deck, newDiscard, fromIdx ?? HI);
+  }
+
+  function resolveHatExchange(myHat, theirHat) {
+    const { targetIdx, newPls, newDiscard, dk, cardIdx, isRemote } = modal;
+    setModal(null); setSelectedIdx(null);
+    // Non-host: send complete action via socket
+    if (isOnline && !isHost) {
+      socket.emit('playerAction', { code: roomCode, action: { type: 'playActionTarget', cardIdx, targetIdx, action: 'intercambio_sombreros', myHat, theirHat } });
+      return;
+    }
+    // Host/local: execute swap
+    const mi = newPls[HI].mainHats.indexOf(myHat);
+    const ti = newPls[targetIdx].mainHats.indexOf(theirHat);
+    if (mi !== -1 && ti !== -1) {
+      newPls[HI].mainHats.splice(mi, 1);
+      newPls[targetIdx].mainHats.splice(ti, 1);
+      newPls[HI].mainHats.push(theirHat);
+      newPls[targetIdx].mainHats.push(myHat);
+    }
+    endTurn(newPls, dk || deck, newDiscard || discard, HI);
   }
 
   // Manual: swap main hat from perchero (costs half your hand — player chooses which cards)
@@ -2422,6 +2457,83 @@ export default function App() {
           </div>
         </Modal>
       )}
+
+      {modal?.type === 'pickHatExchange' && (() => {
+        const myHats = modal.isRemote ? players[HI].mainHats : modal.newPls[HI].mainHats;
+        const theirHats = modal.isRemote ? players[modal.targetIdx].mainHats : modal.newPls[modal.targetIdx].mainHats;
+        const targetName = players[modal.targetIdx]?.name || 'Oponente';
+        return (
+          <Modal title="🔄 Intercambio de Sombreros">
+            <p style={{ color: '#888', fontSize: 12, marginBottom: 12 }}>
+              Elige el sombrero que quieres dar y el que quieres recibir de {targetName}.
+            </p>
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontWeight: 800, fontSize: 13, color: '#4ecdc4', marginBottom: 8 }}>Tu sombrero a dar:</div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {myHats.map(h => (
+                  <div
+                    key={h}
+                    onClick={() => setModal(prev => ({ ...prev, selectedMyHat: h }))}
+                    style={{
+                      padding: 10, borderRadius: 10, cursor: 'pointer',
+                      border: modal.selectedMyHat === h ? `3px solid #FFD700` : `2px solid ${LANG_BORDER[h]}88`,
+                      background: modal.selectedMyHat === h ? 'rgba(255,215,0,.12)' : 'rgba(255,255,255,.04)',
+                      transition: 'all .15s',
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                    }}
+                    onMouseOver={e => { if (modal.selectedMyHat !== h) e.currentTarget.style.background = 'rgba(255,255,255,.1)'; }}
+                    onMouseOut={e => { if (modal.selectedMyHat !== h) e.currentTarget.style.background = 'rgba(255,255,255,.04)'; }}
+                  >
+                    <HatSVG lang={h} size={36} />
+                    <span style={{ fontSize: 11, fontWeight: 700, color: modal.selectedMyHat === h ? '#FFD700' : LANG_TEXT[h] }}>
+                      {h.charAt(0).toUpperCase() + h.slice(1)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontWeight: 800, fontSize: 13, color: '#ff6b6b', marginBottom: 8 }}>Sombrero que quieres de {targetName}:</div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {theirHats.map(h => (
+                  <div
+                    key={h}
+                    onClick={() => setModal(prev => ({ ...prev, selectedTheirHat: h }))}
+                    style={{
+                      padding: 10, borderRadius: 10, cursor: 'pointer',
+                      border: modal.selectedTheirHat === h ? `3px solid #FFD700` : `2px solid ${LANG_BORDER[h]}88`,
+                      background: modal.selectedTheirHat === h ? 'rgba(255,215,0,.12)' : 'rgba(255,255,255,.04)',
+                      transition: 'all .15s',
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                    }}
+                    onMouseOver={e => { if (modal.selectedTheirHat !== h) e.currentTarget.style.background = 'rgba(255,255,255,.1)'; }}
+                    onMouseOut={e => { if (modal.selectedTheirHat !== h) e.currentTarget.style.background = 'rgba(255,255,255,.04)'; }}
+                  >
+                    <HatSVG lang={h} size={36} />
+                    <span style={{ fontSize: 11, fontWeight: 700, color: modal.selectedTheirHat === h ? '#FFD700' : LANG_TEXT[h] }}>
+                      {h.charAt(0).toUpperCase() + h.slice(1)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <button
+              disabled={!modal.selectedMyHat || !modal.selectedTheirHat}
+              onClick={() => resolveHatExchange(modal.selectedMyHat, modal.selectedTheirHat)}
+              style={{
+                width: '100%', padding: '10px 0', borderRadius: 10,
+                border: 'none', fontFamily: 'inherit', fontWeight: 800, fontSize: 14,
+                cursor: modal.selectedMyHat && modal.selectedTheirHat ? 'pointer' : 'not-allowed',
+                background: modal.selectedMyHat && modal.selectedTheirHat ? 'linear-gradient(135deg, #4ecdc4, #44b09e)' : 'rgba(255,255,255,.08)',
+                color: modal.selectedMyHat && modal.selectedTheirHat ? '#fff' : '#555',
+                transition: 'all .2s',
+              }}
+            >
+              Intercambiar
+            </button>
+          </Modal>
+        );
+      })()}
 
       {/* Mobile: Perchero modal */}
       {showPercheroModal && (
