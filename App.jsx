@@ -332,7 +332,7 @@ function Modal({ title, children }) {
 }
 
 // ── Opponent Card (compact) ───────────────────────────────────────────────────
-function OpponentCard({ player, index, color, isActive }) {
+function OpponentCard({ player, index, color, isActive, onIngredientClick }) {
   const burger = player.burgers[player.currentBurger];
   return (
     <div style={{
@@ -363,7 +363,7 @@ function OpponentCard({ player, index, color, isActive }) {
             const base = ingKey(ing);
             const chosen = ingChosen(ing);
             return (
-              <div key={i} onClick={() => setModal({ type: 'ingredientInfo', ingredient: ing })} style={{
+              <div key={i} onClick={() => onIngredientClick?.(ing)} style={{
                 width: 30, height: 30, borderRadius: 6,
                 background: chosen
                   ? `linear-gradient(to right, ${ING_BG.perrito || '#9b59b6'} 50%, ${ING_BG[chosen]} 50%)`
@@ -817,7 +817,7 @@ export default function App() {
       setLog(state.log);
       setExtraPlay(state.extraPlay || false);
       setModal(currentModal => {
-        const privateModals = ['manual_cambiar', 'manual_cambiar_discard', 'manual_agregar', 'wildcard', 'basurero', 'pickHatReplace'];
+        const privateModals = ['manual_cambiar', 'manual_cambiar_discard', 'manual_agregar', 'wildcard', 'basurero', 'pickHatReplace', 'ingredientInfo'];
         if (state.modal) return state.modal;
         if (currentModal && privateModals.includes(currentModal.type)) return currentModal;
         return null;
@@ -835,7 +835,7 @@ export default function App() {
     if (!isOnline || !isHost || phase !== 'playing') return;
     clearTimeout(syncRef.current);
     syncRef.current = setTimeout(() => {
-      const privateModals = ['manual_cambiar', 'manual_cambiar_discard', 'manual_agregar', 'wildcard', 'basurero', 'pickHatReplace'];
+      const privateModals = ['manual_cambiar', 'manual_cambiar_discard', 'manual_agregar', 'wildcard', 'basurero', 'pickHatReplace', 'ingredientInfo'];
       const syncModal = modal && privateModals.includes(modal.type) ? null : modal;
       socket.emit('syncState', {
         code: roomCode,
@@ -1837,6 +1837,7 @@ export default function App() {
             index={realIdx}
             color={PLAYER_COLORS[realIdx % PLAYER_COLORS.length]}
             isActive={cp === realIdx}
+            onIngredientClick={(ing) => setModal({ type: 'ingredientInfo', ingredient: ing })}
           />
         );
       })}
