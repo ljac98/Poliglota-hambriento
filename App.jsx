@@ -2476,7 +2476,7 @@ export default function App() {
             borderRadius: 8, padding: isMobile ? '3px 6px' : '3px 10px', fontSize: isMobile ? 11 : 12, fontWeight: 700,
             color: isHumanTurn ? '#FFD700' : '#00BCD4',
           }}>
-            {isHumanTurn ? '🎴 Tu turno' : `⏳ ${players[cp]?.name}`}
+            {isHumanTurn ? (extraPlay ? '🍔 Puedes agregar un ingrediente' : '🎴 Tu turno') : `⏳ ${players[cp]?.name}`}
           </div>
           {isOnline && !isMobile && (
             <div style={{ fontSize: 11, color: '#555', padding: '3px 8px', borderRadius: 6, background: 'rgba(0,188,212,.08)', border: '1px solid rgba(0,188,212,.2)' }}>
