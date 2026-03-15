@@ -111,13 +111,7 @@ app.get('/api/history/:userId', requireDB, async (req, res) => {
 // ── Health check ──
 app.get('/api/health', (req, res) => res.json({ status: 'ok', time: Date.now() }));
 
-// ── Static files ──
-if (existsSync(distPath)) {
-  app.use(express.static(distPath));
-  app.get('*', (req, res) => res.sendFile(join(distPath, 'index.html')));
-}
-
-// ── Socket.io ──
+// ── Socket.io (BEFORE static files to avoid catch-all interference) ──
 const io = new Server(httpServer, {
   cors: { origin: '*', methods: ['GET', 'POST'] },
   transports: ['polling', 'websocket'],
@@ -125,13 +119,16 @@ const io = new Server(httpServer, {
   addTrailingSlash: false,
 });
 
-// Log engine-level errors
 io.engine.on('connection_error', (err) => {
   console.error('⚠️ Engine connection error:', err.req?.url, err.code, err.message);
 });
 
-// Optional JWT auth for sockets
+io.engine.on('connection', (rawSocket) => {
+  console.log('🔧 Engine.IO raw connection:', rawSocket.id);
+});
+
 io.use((socket, next) => {
+  console.log('🔑 Socket middleware running for:', socket.id);
   try {
     const token = socket.handshake.auth?.token;
     if (token) {
@@ -147,6 +144,12 @@ io.use((socket, next) => {
     next(err);
   }
 });
+
+// ── Static files ──
+if (existsSync(distPath)) {
+  app.use(express.static(distPath));
+  app.get('*', (req, res) => res.sendFile(join(distPath, 'index.html')));
+}
 
 const rooms = new Map();
 const genCode = () => Math.random().toString(36).substring(2, 7).toUpperCase();
