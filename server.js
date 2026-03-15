@@ -87,7 +87,7 @@ app.get('/api/profile/:id', async (req, res) => {
 app.get('/api/history/:userId', async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT * FROM game_history WHERE players @> $1::jsonb ORDER BY finished_at DESC LIMIT 20',
+      'SELECT * FROM game_history WHERE players @> $1::jsonb ORDER BY finished_at DESC LIMIT 50',
       [JSON.stringify([{ userId: parseInt(req.params.userId) }])]
     );
     res.json(result.rows.map(r => ({
