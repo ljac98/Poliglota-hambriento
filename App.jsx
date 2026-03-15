@@ -3043,7 +3043,7 @@ export default function App() {
         const isWildcard = base === 'perrito';
         const specific = ING_AFFECTED_BY[displayIng] || [];
         const general = ['tenedor', 'gloton', 'intercambio_hamburguesa'];
-        const allActionIds = [...specific, ...general];
+        const allActionIds = [...specific, ...general, ...(isWildcard && !specific.includes('comecomodines') ? ['comecomodines'] : [])];
         return (
           <Modal title={`${ING_EMOJI[displayIng]} ${ING_NAMES[displayIng]?.español || displayIng}`}>
             {isWildcard && chosen && (
