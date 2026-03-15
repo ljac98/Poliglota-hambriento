@@ -1034,8 +1034,8 @@ export default function App() {
   // ── Socket: host syncs state to all clients after every change ──
   const syncRef = useRef(null);
   useEffect(() => {
-    if (!isOnline || !isHost || phase !== 'playing') return;
     clearTimeout(syncRef.current);
+    if (!isOnline || !isHost || phase !== 'playing') return;
     syncRef.current = setTimeout(() => {
       const privateModals = ['manual_cambiar', 'manual_cambiar_discard', 'manual_agregar', 'wildcard', 'basurero', 'pickHatReplace', 'pickHatExchange', 'ingredientInfo'];
       const syncModal = modal && privateModals.includes(modal.type) ? null : modal;
@@ -1044,6 +1044,7 @@ export default function App() {
         state: { players, deck, discard, cp, log, extraPlay, modal: syncModal, pendingNeg, winner, phase: 'playing' },
       });
     }, 80);
+    return () => clearTimeout(syncRef.current);
   }, [players, deck, discard, cp, log, extraPlay, modal, pendingNeg, winner, phase, isOnline, isHost]);
 
   // ── Socket: host processes remote player actions ──
