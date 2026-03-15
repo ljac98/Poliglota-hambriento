@@ -120,6 +120,9 @@ if (existsSync(distPath)) {
 // ── Socket.io ──
 const io = new Server(httpServer, {
   cors: { origin: '*', methods: ['GET', 'POST'] },
+  transports: ['polling'],
+  allowUpgrades: false,
+  addTrailingSlash: false,
 });
 
 // Log engine-level errors
