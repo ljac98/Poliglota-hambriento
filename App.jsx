@@ -1021,7 +1021,10 @@ export default function App() {
       if (state.winner) { setWinner(state.winner); setPhase('gameover'); }
       else if (state.cp === myPlayerIdx && state.phase === 'playing') {
         setPhase(prev => prev === 'transition' ? prev : 'transition');
-      } else if (state.phase) setPhase(state.phase);
+      } else {
+        // Never adopt 'transition' from host — only show it for the player whose turn it is
+        setPhase(state.phase === 'transition' ? 'playing' : (state.phase || 'playing'));
+      }
     });
     return () => socket.off('stateUpdate');
   }, [isOnline, isHost]);
