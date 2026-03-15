@@ -3,6 +3,7 @@ import socket from './src/socket.js';
 import {
   LANGUAGES, LANG_BORDER, LANG_BG, LANG_TEXT, LANG_SHORT,
   ING_EMOJI, ING_BG, FRUITS_VEGS, AI_NAMES, getIngName, getActionInfo,
+  ING_NAMES, ACTION_CARDS,
 } from './constants';
 import { generateDeck, initPlayer, canPlayCard, checkBurgerComplete } from './game';
 import { shuffle, randInt, uid } from './game/utils';
@@ -26,6 +27,12 @@ const ING_IMG = {
 // Wildcard helpers: 'perrito|lechuga' → base='perrito', chosen='lechuga'
 const ingKey = ing => ing && ing.includes('|') ? ing.split('|')[0] : ing;
 const ingChosen = ing => ing && ing.includes('|') ? ing.split('|')[1] : null;
+const ING_AFFECTED_BY = {
+  pan: ['milanesa'], huevo: ['milanesa'],
+  lechuga: ['ensalada'], tomate: ['ensalada'], cebolla: ['ensalada'], palta: ['ensalada'],
+  queso: ['pizza'], pollo: ['parrilla'], carne: ['parrilla'],
+  perrito: ['comecomodines'],
+};
 import { HatBadge, PercheroSVG } from './components/HatComponents';
 import hamImg from './imagenes/hamburguesas/ham.png';
 import HatSVG from './components/HatSVG';
@@ -356,13 +363,13 @@ function OpponentCard({ player, index, color, isActive }) {
             const base = ingKey(ing);
             const chosen = ingChosen(ing);
             return (
-              <div key={i} style={{
+              <div key={i} onClick={() => setModal({ type: 'ingredientInfo', ingredient: ing })} style={{
                 width: 30, height: 30, borderRadius: 6,
                 background: chosen
                   ? `linear-gradient(to right, ${ING_BG.perrito || '#9b59b6'} 50%, ${ING_BG[chosen]} 50%)`
                   : ING_BG[base],
                 display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14,
-                overflow: 'hidden', position: 'relative',
+                overflow: 'hidden', position: 'relative', cursor: 'pointer',
               }}>
                 {chosen ? (
                   <>
@@ -1912,14 +1919,14 @@ export default function App() {
           const base = ingKey(ing);
           const chosen = ingChosen(ing);
           return (
-            <div key={i} style={{
+            <div key={i} onClick={() => setModal({ type: 'ingredientInfo', ingredient: ing })} style={{
               width: 36, height: 36, borderRadius: 8,
               background: chosen
                 ? `linear-gradient(to right, ${ING_BG.perrito || '#9b59b6'} 50%, ${ING_BG[chosen]} 50%)`
                 : ING_BG[base],
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: 20, boxShadow: '0 2px 6px rgba(0,0,0,.3)',
-              overflow: 'hidden', position: 'relative',
+              overflow: 'hidden', position: 'relative', cursor: 'pointer',
             }}>
               {chosen ? (
                 <>
@@ -2656,6 +2663,74 @@ export default function App() {
               ))}
             </div>
             <Btn onClick={() => setModal(null)} color="#333" style={{ color: '#aaa' }}>Cancelar</Btn>
+          </Modal>
+        );
+      })()}
+
+      {/* Ingredient info modal */}
+      {modal?.type === 'ingredientInfo' && (() => {
+        const raw = modal.ingredient;
+        const base = ingKey(raw);
+        const chosen = ingChosen(raw);
+        const displayIng = chosen || base;
+        const isWildcard = base === 'perrito';
+        const specific = ING_AFFECTED_BY[displayIng] || [];
+        const general = ['tenedor', 'gloton', 'intercambio_hamburguesa'];
+        const allActionIds = [...specific, ...general];
+        return (
+          <Modal title={`${ING_EMOJI[displayIng]} ${ING_NAMES[displayIng]?.español || displayIng}`}>
+            {isWildcard && chosen && (
+              <p style={{ color: '#ccc', fontSize: 13, marginBottom: 12 }}>
+                Comodín actuando como: {ING_EMOJI[chosen]} {ING_NAMES[chosen]?.español || chosen}
+              </p>
+            )}
+            {isWildcard && !chosen && (
+              <p style={{ color: '#ccc', fontSize: 13, marginBottom: 12 }}>
+                Puede representar cualquier ingrediente
+              </p>
+            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+              <div style={{
+                width: 56, height: 56, borderRadius: 12, background: ING_BG[displayIng],
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                {ING_IMG[displayIng]
+                  ? <img src={ING_IMG[displayIng]} alt={displayIng} style={{ width: 40, height: 40, objectFit: 'contain' }} />
+                  : <span style={{ fontSize: 32 }}>{ING_EMOJI[displayIng]}</span>}
+              </div>
+            </div>
+            <h4 style={{ fontSize: 14, fontWeight: 800, color: '#FFD700', marginBottom: 8 }}>Nombres</h4>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 12px', marginBottom: 16 }}>
+              {LANGUAGES.map(lang => (
+                <div key={lang} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
+                  <span style={{
+                    background: LANG_BG[lang], color: LANG_TEXT[lang], border: `1px solid ${LANG_BORDER[lang]}`,
+                    borderRadius: 4, padding: '1px 5px', fontSize: 10, fontWeight: 700, minWidth: 28, textAlign: 'center',
+                  }}>{LANG_SHORT[lang]}</span>
+                  <span style={{ color: '#ddd' }}>{getIngName(displayIng, lang)}</span>
+                </div>
+              ))}
+            </div>
+            <h4 style={{ fontSize: 14, fontWeight: 800, color: '#FFD700', marginBottom: 8 }}>Cartas que lo afectan</h4>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
+              {allActionIds.map(id => {
+                const info = getActionInfo(id);
+                if (!info) return null;
+                return (
+                  <div key={id} style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    background: 'rgba(255,255,255,0.05)', borderRadius: 8, padding: '6px 10px',
+                  }}>
+                    <span style={{ fontSize: 18 }}>{info.emoji}</span>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: '#eee' }}>{info.name}</div>
+                      <div style={{ fontSize: 11, color: '#999' }}>{info.desc}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <Btn onClick={() => setModal(null)} color="#333" style={{ color: '#aaa' }}>Cerrar</Btn>
           </Modal>
         );
       })()}
