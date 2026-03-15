@@ -867,7 +867,9 @@ export default function App() {
       });
       setPendingNeg(state.pendingNeg || null);
       if (state.winner) { setWinner(state.winner); setPhase('gameover'); }
-      else if (state.phase) setPhase(state.phase);
+      else if (state.cp === myPlayerIdx && state.phase === 'playing') {
+        setPhase(prev => prev === 'transition' ? prev : 'transition');
+      } else if (state.phase) setPhase(state.phase);
     });
     return () => socket.off('stateUpdate');
   }, [isOnline, isHost]);
