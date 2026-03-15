@@ -354,14 +354,32 @@ function OpponentCard({ player, index, color, isActive }) {
         <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap', marginBottom: 4 }}>
           {player.table.map((ing, i) => {
             const base = ingKey(ing);
+            const chosen = ingChosen(ing);
             return (
               <div key={i} style={{
-                width: 22, height: 22, borderRadius: 5, background: ING_BG[base],
-                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12,
+                width: 30, height: 30, borderRadius: 6,
+                background: chosen
+                  ? `linear-gradient(to right, ${ING_BG.perrito || '#9b59b6'} 50%, ${ING_BG[chosen]} 50%)`
+                  : ING_BG[base],
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14,
+                overflow: 'hidden', position: 'relative',
               }}>
-                {ING_IMG[base]
-                  ? <img src={ING_IMG[base]} alt={base} style={{ width: 16, height: 16, objectFit: 'contain' }} />
-                  : ING_EMOJI[base]}
+                {chosen ? (
+                  <>
+                    <div style={{ position: 'absolute', left: 0, top: 0, width: '50%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <img src={ING_IMG.perrito} alt="comodín" style={{ width: 14, height: 14, objectFit: 'contain' }} />
+                    </div>
+                    <div style={{ position: 'absolute', right: 0, top: 0, width: '50%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {ING_IMG[chosen]
+                        ? <img src={ING_IMG[chosen]} alt={chosen} style={{ width: 14, height: 14, objectFit: 'contain' }} />
+                        : <span style={{ fontSize: 10 }}>{ING_EMOJI[chosen]}</span>}
+                    </div>
+                  </>
+                ) : (
+                  ING_IMG[base]
+                    ? <img src={ING_IMG[base]} alt={base} style={{ width: 22, height: 22, objectFit: 'contain' }} />
+                    : ING_EMOJI[base]
+                )}
               </div>
             );
           })}
