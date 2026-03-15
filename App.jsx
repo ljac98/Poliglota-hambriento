@@ -45,7 +45,14 @@ const clone = o => JSON.parse(JSON.stringify(o));
 function drawN(deck, discard, n) {
   let d = [...deck], di = [...discard], drawn = [];
   for (let i = 0; i < n; i++) {
-    if (d.length === 0) { d = shuffle(di); di = []; }
+    if (d.length === 0) {
+      d = shuffle(di.map(c =>
+        c.type === 'ingredient' && !c.language
+          ? { ...c, language: LANGUAGES[Math.floor(Math.random() * LANGUAGES.length)] }
+          : c
+      ));
+      di = [];
+    }
     if (d.length > 0) drawn.push(d.shift());
   }
   return { drawn, deck: d, discard: di };
