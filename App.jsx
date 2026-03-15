@@ -37,6 +37,7 @@ import { HatBadge, PercheroSVG } from './components/HatComponents';
 import hamImg from './imagenes/hamburguesas/ham.png';
 import HatSVG from './components/HatSVG';
 import percheroImg from './imagenes/sombreros/perchero/percherofinal.png';
+import imgGlotonHead from './imagenes/acciones/comer.png';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 const PLAYER_COLORS = ['#FFD700', '#00BCD4', '#FF7043', '#66BB6A', '#CE93D8'];
@@ -272,7 +273,20 @@ function TransitionScreen({ player, onContinue }) {
         cursor: 'pointer', userSelect: 'none',
       }}
     >
-      <div style={{ fontSize: 60, marginBottom: 16 }}>🎴</div>
+      {/* Sombreros principales del jugador */}
+      <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
+        {(player?.mainHats || []).map(h => (
+          <HatBadge key={h} lang={h} isMain size="lg" />
+        ))}
+      </div>
+      {/* Cabeza del Glotón */}
+      <div style={{
+        width: 120, height: 120, borderRadius: '50%', overflow: 'hidden',
+        border: '3px solid #FFD700', boxShadow: '0 0 30px rgba(255,215,0,0.3)',
+        marginBottom: 16,
+      }}>
+        <img src={imgGlotonHead} alt="El Glotón" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+      </div>
       <h2 style={{ fontSize: 28, fontWeight: 900, color: '#FFD700', marginBottom: 8 }}>Tu turno</h2>
       <div style={{ fontSize: 22, color: '#eee', marginBottom: 6 }}>
         {player?.name}
@@ -1244,7 +1258,7 @@ export default function App() {
     setSelectedIdx(null); setExtraPlay(false);
     setCp(nextIdx);
     // In online mode skip transition screen (turn order is visible in UI)
-    if (nextIdx === HI && !isOnline) {
+    if (nextIdx === HI) {
       setPhase('transition');
     }
     // If AI, useEffect will trigger
