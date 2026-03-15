@@ -21,21 +21,44 @@ const io = new Server(httpServer, {
 const rooms = new Map();
 const genCode = () => Math.random().toString(36).substring(2, 7).toUpperCase();
 
+// ── Helper: get public rooms list for lobby browser ──
+function getPublicRoomsList() {
+  const list = [];
+  for (const [code, room] of rooms) {
+    if (room.isPublic && !room.started && room.players.length < 4) {
+      list.push({
+        code,
+        roomName: room.roomName,
+        playerCount: room.players.length,
+        hostName: room.players[0]?.name || '',
+      });
+    }
+  }
+  return list;
+}
+
+function broadcastLobbyList() {
+  io.to('lobby-browser').emit('lobbyListUpdate', getPublicRoomsList());
+}
+
 io.on('connection', socket => {
   // ── Create room ──
-  socket.on('createRoom', ({ playerName }) => {
+  socket.on('createRoom', ({ playerName, isPublic, roomName }) => {
     const code = genCode();
     rooms.set(code, {
       hostId: socket.id,
       players: [{ id: socket.id, name: playerName, idx: 0 }],
       started: false,
+      isPublic: !!isPublic,
+      roomName: roomName || '',
     });
     socket.join(code);
     socket.data.roomCode = code;
-    socket.emit('roomCreated', { code });
+    socket.emit('roomCreated', { code, isPublic: !!isPublic, roomName: roomName || '' });
     io.to(code).emit('lobbyUpdate', {
       players: rooms.get(code).players.map(p => ({ name: p.name, idx: p.idx })),
     });
+    if (isPublic) broadcastLobbyList();
   });
 
   // ── Join room ──
@@ -48,11 +71,21 @@ io.on('connection', socket => {
     room.players.push({ id: socket.id, name: playerName, idx });
     socket.join(code);
     socket.data.roomCode = code;
-    socket.emit('roomJoined', { code, myIdx: idx });
+    socket.emit('roomJoined', { code, myIdx: idx, isPublic: room.isPublic, roomName: room.roomName });
     io.to(code).emit('lobbyUpdate', {
       players: room.players.map(p => ({ name: p.name, idx: p.idx })),
     });
+    if (room.isPublic) broadcastLobbyList();
   });
+
+  // ── List public rooms (lobby browser) ──
+  socket.on('listRooms', (callback) => {
+    if (typeof callback === 'function') callback(getPublicRoomsList());
+  });
+
+  // ── Join/leave lobby browser channel ──
+  socket.on('joinLobbyBrowser', () => socket.join('lobby-browser'));
+  socket.on('leaveLobbyBrowser', () => socket.leave('lobby-browser'));
 
   // ── Relay hat pick in lobby ──
   socket.on('lobbyHatPick', ({ code, playerName, hat }) => {
@@ -69,6 +102,7 @@ io.on('connection', socket => {
       difficulty,
       players: room.players.map(p => ({ name: p.name, idx: p.idx })),
     });
+    if (room.isPublic) broadcastLobbyList();
   });
 
   // ── Host syncs full game state to all clients ──
@@ -100,6 +134,7 @@ io.on('connection', socket => {
     if (!code) return;
     const room = rooms.get(code);
     if (!room) return;
+    const wasPublic = room.isPublic;
     const pi = room.players.findIndex(p => p.id === socket.id);
     if (pi === -1) return;
     room.players.splice(pi, 1);
@@ -114,6 +149,7 @@ io.on('connection', socket => {
         players: room.players.map(p => ({ name: p.name, idx: p.idx })),
       });
     }
+    if (wasPublic) broadcastLobbyList();
   });
 });
 
