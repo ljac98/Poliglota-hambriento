@@ -108,6 +108,9 @@ app.get('/api/history/:userId', requireDB, async (req, res) => {
   }
 });
 
+// ── Health check ──
+app.get('/api/health', (req, res) => res.json({ status: 'ok', time: Date.now() }));
+
 // ── Static files ──
 if (existsSync(distPath)) {
   app.use(express.static(distPath));
@@ -119,17 +122,27 @@ const io = new Server(httpServer, {
   cors: { origin: '*', methods: ['GET', 'POST'] },
 });
 
+// Log engine-level errors
+io.engine.on('connection_error', (err) => {
+  console.error('⚠️ Engine connection error:', err.req?.url, err.code, err.message);
+});
+
 // Optional JWT auth for sockets
 io.use((socket, next) => {
-  const token = socket.handshake.auth?.token;
-  if (token) {
-    const decoded = verifyToken(token);
-    if (decoded) {
-      socket.data.userId = decoded.id;
-      socket.data.username = decoded.username;
+  try {
+    const token = socket.handshake.auth?.token;
+    if (token) {
+      const decoded = verifyToken(token);
+      if (decoded) {
+        socket.data.userId = decoded.id;
+        socket.data.username = decoded.username;
+      }
     }
+    next();
+  } catch (err) {
+    console.error('⚠️ Socket middleware error:', err);
+    next(err);
   }
-  next();
 });
 
 const rooms = new Map();
