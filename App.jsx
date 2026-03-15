@@ -2319,7 +2319,11 @@ export default function App() {
         return (
           <div
             key={card.id}
-            onClick={() => isHumanTurn ? setSelectedIdx(isSelected ? null : i) : null}
+            onClick={() => {
+              if (!isHumanTurn) return;
+              if (extraPlay && card.type !== 'ingredient') return;
+              setSelectedIdx(isSelected ? null : i);
+            }}
             onMouseEnter={e => { if (!isMobile && !isSelected && isHumanTurn) e.currentTarget.style.transform = `translateY(-14px) rotate(${angle * 0.4}deg)`; }}
             onMouseLeave={e => { if (!isMobile && !isSelected) e.currentTarget.style.transform = `translateY(0px) rotate(${angle}deg)`; }}
             style={{
@@ -2363,7 +2367,7 @@ export default function App() {
                   </>)}
                 </div>
                 <div style={{ display: 'flex', gap: 4 }}>
-                  <Btn onClick={humanPlay} color="#4CAF50" style={{ fontSize: 11, padding: '6px 12px' }}>
+                  <Btn onClick={humanPlay} disabled={extraPlay && card.type !== 'ingredient'} color="#4CAF50" style={{ fontSize: 11, padding: '6px 12px' }}>
                     ▶ Jugar
                   </Btn>
                   <Btn onClick={humanDiscard} disabled={extraPlay} color="#FF7043" style={{ fontSize: 11, padding: '6px 12px' }}>
@@ -2828,7 +2832,7 @@ export default function App() {
                 </>)}
               </div>
               <div style={{ display: 'flex', gap: 8, width: '100%' }}>
-                <Btn onClick={() => { humanPlay(); }} color="#4CAF50" style={{ flex: 1, fontSize: 14, padding: '10px 16px' }}>
+                <Btn onClick={() => { humanPlay(); }} disabled={extraPlay && card.type !== 'ingredient'} color="#4CAF50" style={{ flex: 1, fontSize: 14, padding: '10px 16px' }}>
                   ▶ Jugar
                 </Btn>
                 <Btn onClick={() => { humanDiscard(); }} disabled={extraPlay} color="#FF7043" style={{ flex: 1, fontSize: 14, padding: '10px 16px' }}>
