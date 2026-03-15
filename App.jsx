@@ -1917,7 +1917,7 @@ export default function App() {
     const discarded = sorted.map(i => p.hand.splice(i, 1)[0]);
     let newDiscard = [...discard, ...discarded];
     const cost = discarded.length;
-    addLog(HI, `cambió sombrero a ${hatLang} (descartó ${cost} carta${cost !== 1 ? 's' : ''}) — puede jugar una carta`, newPls);
+    addLog(HI, `cambió sombrero a ${hatLang} (descartó ${cost} carta${cost !== 1 ? 's' : ''}) — puede jugar un ingrediente`, newPls);
     setPlayers(newPls); setDiscard(newDiscard); setExtraPlay(true); setPhase('transition');
   }
 
@@ -2313,7 +2313,7 @@ export default function App() {
       WebkitOverflowScrolling: 'touch',
     }}>
       {human.hand.map((card, i) => {
-        const playable = card.type === 'ingredient' ? canPlayCard(human, card) : null;
+        const playable = card.type === 'ingredient' ? canPlayCard(human, card) : (extraPlay ? false : null);
         const angle = handN > 1 ? -MAX_ANGLE + i * (2 * MAX_ANGLE / (handN - 1)) : 0;
         const isSelected = selectedIdx === i;
         return (
@@ -2808,7 +2808,7 @@ export default function App() {
       {/* Mobile: Card detail modal */}
       {isMobile && isHumanTurn && selectedIdx !== null && human.hand[selectedIdx] && (() => {
         const card = human.hand[selectedIdx];
-        const playable = card.type === 'ingredient' ? canPlayCard(human, card) : null;
+        const playable = card.type === 'ingredient' ? canPlayCard(human, card) : (extraPlay ? false : null);
         return (
           <Modal title={card.type === 'ingredient' ? '🃏 Carta de Ingrediente' : '⚡ Carta de Acción'}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
@@ -2855,7 +2855,7 @@ export default function App() {
       {modal?.type === 'manual_cambiar' && (
         <Modal title="🎩 Cambiar Sombrero — paso 1: elegir sombrero">
           <p style={{ color: '#888', fontSize: 12, marginBottom: 12 }}>
-            Elige un sombrero del perchero. Luego elegirás qué {Math.ceil(human.hand.length / 2)} carta{Math.ceil(human.hand.length / 2) !== 1 ? 's' : ''} descartar.
+            Elige un sombrero del perchero. Luego elegirás qué {Math.ceil(human.hand.length / 2)} carta{Math.ceil(human.hand.length / 2) !== 1 ? 's' : ''} descartar. ¡Solo podrás jugar una carta de ingrediente después!
           </p>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
             {human.perchero.map(h => (
@@ -2938,7 +2938,7 @@ export default function App() {
       {modal?.type === 'manual_agregar' && (
         <Modal title="➕ Agregar Sombrero — descartás toda tu mano">
           <p style={{ color: '#888', fontSize: 12, marginBottom: 12 }}>
-            Elige un sombrero del perchero para agregarlo a tu sombrero principal. Descartás toda tu mano y tu máximo de cartas se reduce en 1 (a {Math.max(1, human.maxHand - 1)}). ¡Este efecto es acumulable!
+            Elige un sombrero del perchero para agregarlo a tu sombrero principal. Descartás toda tu mano y tu máximo de cartas se reduce en 1 (a {Math.max(1, human.maxHand - 1)}). ¡Este efecto es acumulable! ¡Solo podrás jugar una carta de ingrediente después!
           </p>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
             {human.perchero.map(h => (

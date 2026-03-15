@@ -137,8 +137,9 @@ export const IngredientCard = ({ card, onClick, selected, small, large, playable
 };
 
 // ═══ ACTION CARD ═══
-export const ActionCard = ({ card, onClick, selected, small, large }) => {
+export const ActionCard = ({ card, onClick, selected, small, large, playable }) => {
   const info = getActionInfo(card.action);
+  const dimmed = playable === false;
   const w = large ? 105 : (small ? 64 : 86);
   const h = large ? 154 : (small ? 94 : 126);
   const mainImg = ACTION_IMG[card.action];
@@ -157,6 +158,8 @@ export const ActionCard = ({ card, onClick, selected, small, large }) => {
       transition: "all 0.2s", display: "flex", flexDirection: "column",
       alignItems: "center", justifyContent: "center",
       gap: 2, color: "#eee", fontFamily: "'Fredoka',sans-serif", padding: "4px 3px",
+      opacity: dimmed ? 0.4 : 1,
+      filter: dimmed ? "grayscale(0.5)" : "none",
     }}>
       {cornerImg && <>
         <img src={cornerImg} alt="" style={{ position:"absolute", top:3, left:3, width:cornerSize, height:cornerSize, objectFit:"contain" }} />
@@ -176,5 +179,5 @@ export const ActionCard = ({ card, onClick, selected, small, large }) => {
 export const GameCard = ({ card, playable, large, ...props }) => {
   return card.type === "ingredient"
     ? <IngredientCard card={card} playable={playable} large={large} {...props} />
-    : <ActionCard card={card} large={large} {...props} />;
+    : <ActionCard card={card} playable={playable} large={large} {...props} />;
 };
