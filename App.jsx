@@ -703,6 +703,7 @@ function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '', user }) {
 
     const timeout = setTimeout(() => {
       socket.off('roomCreated');
+      socket.off('connect', doCreate);
       setError('Tiempo de espera agotado. Intenta de nuevo.');
       setLoading(false);
     }, 10000);
@@ -713,8 +714,17 @@ function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '', user }) {
       window.history.replaceState({}, '', window.location.pathname);
       onCreated(name.trim(), code, pub, rn);
     });
-    socket.connect();
-    socket.emit('createRoom', { playerName: name.trim(), isPublic, roomName: roomName.trim() });
+
+    function doCreate() {
+      socket.emit('createRoom', { playerName: name.trim(), isPublic, roomName: roomName.trim() });
+    }
+
+    if (socket.connected) {
+      doCreate();
+    } else {
+      socket.once('connect', doCreate);
+      socket.connect();
+    }
   }
 
   function handleJoin() {
@@ -724,6 +734,7 @@ function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '', user }) {
     const timeout = setTimeout(() => {
       socket.off('roomJoined');
       socket.off('joinError');
+      socket.off('connect', doJoin);
       setError('Tiempo de espera agotado. Intenta de nuevo.');
       setLoading(false);
     }, 10000);
@@ -735,8 +746,17 @@ function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '', user }) {
       window.history.replaceState({}, '', window.location.pathname);
       onJoined(joinName.trim(), joinCode.trim().toUpperCase(), myIdx, pub, rn);
     });
-    socket.connect();
-    socket.emit('joinRoom', { playerName: joinName.trim(), code: joinCode.trim().toUpperCase() });
+
+    function doJoin() {
+      socket.emit('joinRoom', { playerName: joinName.trim(), code: joinCode.trim().toUpperCase() });
+    }
+
+    if (socket.connected) {
+      doJoin();
+    } else {
+      socket.once('connect', doJoin);
+      socket.connect();
+    }
   }
 
   function handleLobbyJoin(roomCode) {
