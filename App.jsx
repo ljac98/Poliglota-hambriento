@@ -700,26 +700,56 @@ function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '', user }) {
     if (!name.trim()) return;
     if (isPublic && !roomName.trim()) return;
     setLoading(true); setError('');
-    socket.connect();
-    socket.once('roomCreated', ({ code, isPublic: pub, roomName: rn }) => {
+
+    const doCreate = () => {
+      socket.once('roomCreated', ({ code, isPublic: pub, roomName: rn }) => {
+        setLoading(false);
+        window.history.replaceState({}, '', window.location.pathname);
+        onCreated(name.trim(), code, pub, rn);
+      });
+      socket.emit('createRoom', { playerName: name.trim(), isPublic, roomName: roomName.trim() });
+    };
+
+    const onError = (err) => {
+      setError('Error de conexión al servidor');
       setLoading(false);
-      window.history.replaceState({}, '', window.location.pathname);
-      onCreated(name.trim(), code, pub, rn);
-    });
-    socket.emit('createRoom', { playerName: name.trim(), isPublic, roomName: roomName.trim() });
+    };
+
+    socket.once('connect_error', onError);
+    if (socket.connected) {
+      doCreate();
+    } else {
+      socket.once('connect', () => { socket.off('connect_error', onError); doCreate(); });
+      socket.connect();
+    }
   }
 
   function handleJoin() {
     if (!joinName.trim() || !joinCode.trim()) return;
     setLoading(true); setError('');
-    socket.connect();
-    socket.once('joinError', msg => { setError(msg); setLoading(false); socket.disconnect(); });
-    socket.once('roomJoined', ({ myIdx, isPublic: pub, roomName: rn }) => {
+
+    const doJoin = () => {
+      socket.once('joinError', msg => { setError(msg); setLoading(false); socket.disconnect(); });
+      socket.once('roomJoined', ({ myIdx, isPublic: pub, roomName: rn }) => {
+        setLoading(false);
+        window.history.replaceState({}, '', window.location.pathname);
+        onJoined(joinName.trim(), joinCode.trim().toUpperCase(), myIdx, pub, rn);
+      });
+      socket.emit('joinRoom', { playerName: joinName.trim(), code: joinCode.trim().toUpperCase() });
+    };
+
+    const onError = (err) => {
+      setError('Error de conexión al servidor');
       setLoading(false);
-      window.history.replaceState({}, '', window.location.pathname);
-      onJoined(joinName.trim(), joinCode.trim().toUpperCase(), myIdx, pub, rn);
-    });
-    socket.emit('joinRoom', { playerName: joinName.trim(), code: joinCode.trim().toUpperCase() });
+    };
+
+    socket.once('connect_error', onError);
+    if (socket.connected) {
+      doJoin();
+    } else {
+      socket.once('connect', () => { socket.off('connect_error', onError); doJoin(); });
+      socket.connect();
+    }
   }
 
   function handleLobbyJoin(roomCode) {
