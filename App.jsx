@@ -440,6 +440,7 @@ function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '' }) {
   const [lobbyRooms, setLobbyRooms] = useState([]);
   const [lobbyLoading, setLobbyLoading] = useState(false);
   const [lobbyName, setLobbyName] = useState('');
+  const joinedRoomRef = useRef(false);
 
   // ── Lobby browser: fetch & subscribe to public rooms ──
   useEffect(() => {
@@ -456,8 +457,7 @@ function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '' }) {
     return () => {
       socket.emit('leaveLobbyBrowser');
       socket.off('lobbyListUpdate', handleUpdate);
-      // Only disconnect if we haven't joined a room
-      if (!socket.data?.roomCode) socket.disconnect();
+      if (!joinedRoomRef.current) socket.disconnect();
     };
   }, [tab]);
 
@@ -494,6 +494,7 @@ function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '' }) {
     socket.once('joinError', msg => { setError(msg); setLoading(false); });
     socket.once('roomJoined', ({ code, myIdx, isPublic: pub, roomName: rn }) => {
       setLoading(false);
+      joinedRoomRef.current = true;
       window.history.replaceState({}, '', window.location.pathname);
       onJoined(lobbyName.trim(), roomCode, myIdx, pub, rn);
     });
