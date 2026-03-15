@@ -7,7 +7,7 @@ const SOCKET_URL = import.meta.env.DEV
 
 const socket = io(SOCKET_URL, {
   autoConnect: false,
-  transports: ['polling', 'websocket'],
+  transports: ['websocket'],
   auth: () => {
     const token = getToken();
     return token ? { token } : {};
