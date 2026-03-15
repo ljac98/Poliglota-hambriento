@@ -817,7 +817,7 @@ export default function App() {
       setLog(state.log);
       setExtraPlay(state.extraPlay || false);
       setModal(currentModal => {
-        const privateModals = ['manual_cambiar', 'manual_cambiar_discard', 'manual_agregar', 'wildcard', 'basurero', 'pickHatReplace', 'ingredientInfo'];
+        const privateModals = ['manual_cambiar', 'manual_cambiar_discard', 'manual_agregar', 'wildcard', 'basurero', 'pickHatReplace', 'pickHatExchange', 'ingredientInfo'];
         if (state.modal) return state.modal;
         if (currentModal && privateModals.includes(currentModal.type)) return currentModal;
         return null;
@@ -835,7 +835,7 @@ export default function App() {
     if (!isOnline || !isHost || phase !== 'playing') return;
     clearTimeout(syncRef.current);
     syncRef.current = setTimeout(() => {
-      const privateModals = ['manual_cambiar', 'manual_cambiar_discard', 'manual_agregar', 'wildcard', 'basurero', 'pickHatReplace', 'ingredientInfo'];
+      const privateModals = ['manual_cambiar', 'manual_cambiar_discard', 'manual_agregar', 'wildcard', 'basurero', 'pickHatReplace', 'pickHatExchange', 'ingredientInfo'];
       const syncModal = modal && privateModals.includes(modal.type) ? null : modal;
       socket.emit('syncState', {
         code: roomCode,
@@ -1019,11 +1019,6 @@ export default function App() {
       filterTable(pls[actingIdx], di);
       filterTable(pls[ti], di);
       endTurnFromRemote(pls, dk, di, actingIdx);
-    } else if (card.action === 'cambio_sombrero') {
-      const tmp = [...pls[actingIdx].mainHats];
-      pls[actingIdx].mainHats = [...pls[ti].mainHats];
-      pls[ti].mainHats = tmp;
-      setPlayers(pls); setDiscard(di); setExtraPlay(true);
     }
   }
 
@@ -1316,22 +1311,6 @@ export default function App() {
         filterTable(newPls[idx], newDiscard);
         filterTable(newPls[richest], newDiscard);
         addLog(idx, `intercambió mesa con ${pls[richest].name}`, newPls);
-      } else if (card.action === 'cambio_sombrero') {
-        const tmp = [...newPls[idx].mainHats];
-        newPls[idx].mainHats = [...newPls[richest].mainHats];
-        newPls[richest].mainHats = tmp;
-        addLog(idx, `intercambió todos los sombreros con ${pls[richest].name}`, newPls);
-        // Extra play: try to play an ingredient with the new hats
-        const pi2 = newPls[idx].hand.findIndex(c => c.type === 'ingredient' && canPlayCard(newPls[idx], c));
-        if (pi2 !== -1) {
-          const c2 = newPls[idx].hand[pi2];
-          addLog(idx, `jugó ${getIngName(c2.ingredient, c2.language)} ${ING_EMOJI[c2.ingredient]}`, newPls);
-          newPls[idx].hand.splice(pi2, 1);
-          newPls[idx].table.push(c2.ingredient);
-          const { player: up3, freed: fr3, done: dn3 } = advanceBurger(newPls[idx]);
-          newPls[idx] = up3;
-          if (dn3) { fr3.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `c${Date.now()}${Math.random()}` })); addLog(idx, '¡completó una hamburguesa! 🎉', newPls); }
-        }
       }
 
       setTimeout(() => { aiRunning.current = false; endTurn(newPls, deckArr, newDiscard, idx); }, 900);
@@ -1465,8 +1444,6 @@ export default function App() {
     if (mass.includes(card.action)) {
       socket.emit('playerAction', { code: roomCode, action: { type: 'playMass', cardIdx } });
       setSelectedIdx(null);
-    } else if (card.action === 'cambio_sombrero') {
-      setModal({ type: 'pickTarget', cardIdx, action: card.action });
     } else if (card.action === 'basurero') {
       const ingCards = discard.filter(c => c.type === 'ingredient');
       if (ingCards.length === 0) { alert('El basurero está vacío'); return; }
@@ -1481,7 +1458,7 @@ export default function App() {
   function humanPlayAction(card, cardIdx) {
     const info = getActionInfo(card.action);
     const mass = ['milanesa', 'ensalada', 'pizza', 'parrilla', 'comecomodines'];
-    const targeted = ['tenedor', 'ladron', 'intercambio_sombreros', 'intercambio_hamburguesa', 'gloton', 'cambio_sombrero'];
+    const targeted = ['tenedor', 'ladron', 'intercambio_sombreros', 'intercambio_hamburguesa', 'gloton'];
 
     if (card.action === 'negacion') {
       alert('Negación se juega automáticamente cuando un oponente juega una acción.');
@@ -1648,11 +1625,6 @@ export default function App() {
         filterTable(newPls[targetIdx], newDiscard);
         endTurn(newPls, dk, newDiscard, HI);
 
-      } else if (action === 'cambio_sombrero') {
-        const tmp = [...newPls[HI].mainHats];
-        newPls[HI].mainHats = [...newPls[targetIdx].mainHats];
-        newPls[targetIdx].mainHats = tmp;
-        setPlayers(newPls); setDiscard(newDiscard); setExtraPlay(true);
       }
     }, [targetIdx]);
   }

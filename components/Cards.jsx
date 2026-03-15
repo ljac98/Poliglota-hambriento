@@ -24,7 +24,6 @@ import imgTenedor         from '../imagenes/acciones/tenedor.png';
 import imgLadron          from '../imagenes/acciones/ladron.png';
 import imgIntercambioSomb from '../imagenes/acciones/intercambio de sombreros.png';
 import imgIntercambioHamb from '../imagenes/acciones/intercambio de hamburguesar.png';
-import imgCambioSombrero  from '../imagenes/acciones/intercambio3.png';
 import imgBasurero        from '../imagenes/acciones/robar descarte.png';
 import imgGloton          from '../imagenes/acciones/comer.png';
 import imgNegacion        from '../imagenes/acciones/cancel.png';
@@ -47,14 +46,14 @@ const ACTION_IMG = {
   milanesa: imgMilanesa, ensalada: imgEnsalada, pizza: imgPizza,
   parrilla: imgParrilla, tenedor: imgTenedor, ladron: imgLadron,
   intercambio_sombreros: imgIntercambioSomb, intercambio_hamburguesa: imgIntercambioHamb,
-  cambio_sombrero: imgCambioSombrero, basurero: imgBasurero,
+  basurero: imgBasurero,
   gloton: imgGloton, negacion: imgNegacion, comecomodines: imgComeComodines,
 };
 const ACTION_CORNER_IMG = {
   milanesa: eqMilanesa, ensalada: eqEnsalada, pizza: eqPizza,
   parrilla: eqParrilla, tenedor: eqTenedor, ladron: eqLadron,
   intercambio_sombreros: eqIntercambioSomb, intercambio_hamburguesa: eqIntercambioHamb,
-  cambio_sombrero: eqIntercambioSomb, basurero: eqBasurero,
+  basurero: eqBasurero,
   gloton: eqGloton, negacion: eqNegacion, comecomodines: eqComeComodines,
 };
 
