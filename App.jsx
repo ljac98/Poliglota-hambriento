@@ -2911,7 +2911,7 @@ export default function App() {
       {modal?.type === 'manual_agregar' && (
         <Modal title="➕ Agregar Sombrero — descartás toda tu mano">
           <p style={{ color: '#888', fontSize: 12, marginBottom: 12 }}>
-            Elige un sombrero del perchero para agregarlo a tu sombrero principal. Descartás toda tu mano y tu máximo de cartas se reduce a {Math.max(1, human.maxHand - 1)}.
+            Elige un sombrero del perchero para agregarlo a tu sombrero principal. Descartás toda tu mano y tu máximo de cartas se reduce en 1 (a {Math.max(1, human.maxHand - 1)}). ¡Este efecto es acumulable!
           </p>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
             {human.perchero.map(h => (
