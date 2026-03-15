@@ -759,18 +759,6 @@ function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack, isPub
                 {roomDisplayName}
               </div>
               <div style={{ fontSize: 11, color: '#555', marginTop: 6 }}>Código: {roomCode}</div>
-            </>
-          ) : (
-            <>
-              <div style={{ fontSize: 13, color: '#888', fontWeight: 700, letterSpacing: 1, marginBottom: 6 }}>🔒 CÓDIGO DE SALA</div>
-              <div style={{
-                fontSize: 36, fontWeight: 900, color: '#FFD700', letterSpacing: 8,
-                background: 'rgba(255,215,0,.08)', borderRadius: 12, padding: '10px 20px',
-                border: '2px dashed rgba(255,215,0,.3)',
-              }}>
-                {roomCode}
-              </div>
-              <div style={{ fontSize: 12, color: '#555', marginTop: 8 }}>Comparte este código con tus amigos</div>
               <button
                 onClick={handleCopyLink}
                 style={{
@@ -782,7 +770,32 @@ function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack, isPub
                   cursor: 'pointer', transition: 'all .2s',
                 }}
               >
-                {copied ? '✅ ¡Enlace copiado!' : '🔗 Copiar enlace'}
+                {copied ? '✅ ¡Enlace copiado!' : '🔗 Invitar con enlace'}
+              </button>
+            </>
+          ) : (
+            <>
+              <div style={{ fontSize: 13, color: '#888', fontWeight: 700, letterSpacing: 1, marginBottom: 6 }}>🔒 CÓDIGO DE SALA</div>
+              <div style={{
+                fontSize: 36, fontWeight: 900, color: '#FFD700', letterSpacing: 8,
+                background: 'rgba(255,215,0,.08)', borderRadius: 12, padding: '10px 20px',
+                border: '2px dashed rgba(255,215,0,.3)',
+              }}>
+                {roomCode}
+              </div>
+              <div style={{ fontSize: 12, color: '#555', marginTop: 8 }}>Comparte este código o enlace con tus amigos</div>
+              <button
+                onClick={handleCopyLink}
+                style={{
+                  marginTop: 10, padding: '7px 18px', borderRadius: 10,
+                  border: '1px solid rgba(255,215,0,.35)',
+                  background: copied ? 'rgba(76,175,80,.18)' : 'rgba(255,215,0,.08)',
+                  color: copied ? '#81C784' : '#FFD700',
+                  fontFamily: "'Fredoka',sans-serif", fontWeight: 700, fontSize: 13,
+                  cursor: 'pointer', transition: 'all .2s',
+                }}
+              >
+                {copied ? '✅ ¡Enlace copiado!' : '🔗 Invitar con enlace'}
               </button>
             </>
           )}
