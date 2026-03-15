@@ -1358,8 +1358,8 @@ export default function App() {
   // ── Turn timer (60s) ──
   useEffect(() => {
     clearInterval(turnTimerRef.current);
-    const isHuman = players[cp] && !players[cp].isAI && !players[cp].isRemote;
-    if (phase !== 'playing' || !isHuman) { setTurnTime(60); return; }
+    const isTimedPlayer = players[cp] && !players[cp].isAI;
+    if (phase !== 'playing' || !isTimedPlayer) { setTurnTime(60); return; }
     setTurnTime(60);
     turnTimerRef.current = setInterval(() => {
       setTurnTime(prev => {
@@ -1385,7 +1385,7 @@ export default function App() {
     if (turnTime !== 0) return;
     if (phase !== 'playing') return;
     const p = players[cp];
-    if (!p || p.isAI || p.isRemote) return;
+    if (!p || p.isAI) return;
     if (p.hand.length === 0) return;
     // Timeout: discard random card and end turn
     const randIdx = Math.floor(Math.random() * p.hand.length);
@@ -1868,7 +1868,7 @@ export default function App() {
           {extraPlay && <span style={{ color: '#FFD700', marginLeft: 8 }}>⚡ Turno extra!</span>}
         </div>
       </div>
-      {isHumanTurn && (
+      {phase === 'playing' && players[cp] && !players[cp].isAI && (
         <div style={{
           minWidth: 44, height: 44, borderRadius: '50%',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
