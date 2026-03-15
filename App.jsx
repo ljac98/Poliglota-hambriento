@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import socket from './src/socket.js';
+import { login, register, clearAuth, getSavedUser, getHistory } from './src/api.js';
 import {
   LANGUAGES, LANG_BORDER, LANG_BG, LANG_TEXT, LANG_SHORT,
   ING_EMOJI, ING_BG, FRUITS_VEGS, AI_NAMES, getIngName, getActionInfo,
@@ -129,9 +130,215 @@ const Btn = ({ onClick, children, color = '#FFD700', disabled, style = {} }) => 
   </button>
 );
 
+// ── Auth Screen (full page) ──────────────────────────────────────────────────
+function AuthScreen({ onAuth, onGuest }) {
+  const [tab, setTab] = useState('login');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit() {
+    setError(''); setLoading(true);
+    try {
+      const user = tab === 'login'
+        ? await login(username, password)
+        : await register(username, password, displayName || username);
+      onAuth(user);
+    } catch (err) {
+      setError(err.message);
+    }
+    setLoading(false);
+  }
+
+  const inputStyle = {
+    width: '100%', padding: '10px 14px', borderRadius: 10, border: '2px solid #2a2a4a',
+    background: '#0f1117', color: '#eee', fontFamily: "'Fredoka',sans-serif", fontSize: 14, outline: 'none',
+    marginBottom: 12, boxSizing: 'border-box',
+  };
+
+  return (
+    <div style={{
+      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: 'linear-gradient(135deg,#0f1117 0%,#1a1a2e 100%)',
+      fontFamily: "'Fredoka',sans-serif", padding: '20px 0',
+    }}>
+      <div style={{
+        background: '#16213e', borderRadius: 20, padding: 'clamp(20px, 5vw, 36px) clamp(16px, 5vw, 40px)',
+        maxWidth: 420, width: '92vw',
+        boxShadow: '0 8px 40px rgba(0,0,0,.6)', border: '2px solid #2a2a4a',
+      }}>
+        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+          <img src={hamImg} alt="hamburguesa" style={{ width: 80, height: 80, objectFit: 'contain' }} />
+          <h1 style={{ fontSize: 28, fontWeight: 900, color: '#FFD700', letterSpacing: 1 }}>HUNGRY POLY</h1>
+          <p style={{ color: '#888', fontSize: 12, marginTop: 4 }}>Aprende vocabulario armando hamburguesas</p>
+        </div>
+
+        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+          {['login', 'register'].map(t => (
+            <button key={t} onClick={() => { setTab(t); setError(''); }} style={{
+              flex: 1, padding: '10px 0', borderRadius: 10, border: 'none',
+              background: tab === t ? '#FFD700' : '#2a2a4a', color: tab === t ? '#111' : '#888',
+              fontFamily: "'Fredoka',sans-serif", fontWeight: 700, fontSize: 14, cursor: 'pointer',
+              transition: 'all .15s',
+            }}>
+              {t === 'login' ? 'Iniciar Sesión' : 'Registrarse'}
+            </button>
+          ))}
+        </div>
+
+        <input value={username} onChange={e => setUsername(e.target.value)} placeholder="Usuario" maxLength={20} style={inputStyle} />
+        <input value={password} onChange={e => setPassword(e.target.value)} placeholder="Contraseña" type="password" style={inputStyle} />
+        {tab === 'register' && (
+          <input value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Nombre para mostrar" maxLength={20} style={inputStyle} />
+        )}
+
+        {error && <div style={{ color: '#ff6b6b', fontSize: 12, marginBottom: 10, textAlign: 'center' }}>{error}</div>}
+
+        <Btn onClick={handleSubmit} disabled={loading || !username || !password} color="#FFD700" style={{ width: '100%', fontSize: 16, padding: '12px 0', marginBottom: 10 }}>
+          {loading ? 'Cargando...' : tab === 'login' ? 'Entrar' : 'Crear cuenta'}
+        </Btn>
+
+        <div style={{ textAlign: 'center', margin: '16px 0 0' }}>
+          <button onClick={onGuest} style={{
+            background: 'none', border: 'none', color: '#888', fontSize: 14,
+            cursor: 'pointer', fontFamily: "'Fredoka',sans-serif",
+            textDecoration: 'underline', padding: '8px 16px',
+          }}>
+            Jugar como invitado
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── History Screen ───────────────────────────────────────────────────────────
+function HistoryScreen({ user, onBack }) {
+  const [history, setHistory] = useState(null);
+  const [filter, setFilter] = useState('all');
+
+  useEffect(() => {
+    getHistory(user.id).then(setHistory).catch(() => setHistory([]));
+  }, [user.id]);
+
+  const wins = history ? history.filter(g => g.winnerName === user.displayName).length : 0;
+  const losses = history ? history.filter(g => g.winnerName !== user.displayName).length : 0;
+  const total = history ? history.length : 0;
+  const winRate = total > 0 ? Math.round((wins / total) * 100) : 0;
+
+  const filtered = history ? history.filter(g => {
+    if (filter === 'wins') return g.winnerName === user.displayName;
+    if (filter === 'losses') return g.winnerName !== user.displayName;
+    return true;
+  }) : [];
+
+  const filters = [
+    { id: 'all', label: 'Todas', count: total },
+    { id: 'wins', label: 'Victorias', count: wins },
+    { id: 'losses', label: 'Derrotas', count: losses },
+  ];
+
+  return (
+    <div style={{
+      minHeight: '100vh', display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+      background: 'linear-gradient(135deg,#0f1117 0%,#1a1a2e 100%)',
+      fontFamily: "'Fredoka',sans-serif", padding: '40px 0',
+    }}>
+      <div style={{
+        background: '#16213e', borderRadius: 20, padding: 'clamp(20px, 5vw, 36px) clamp(16px, 5vw, 40px)',
+        maxWidth: 520, width: '92vw',
+        boxShadow: '0 8px 40px rgba(0,0,0,.6)', border: '2px solid #2a2a4a',
+      }}>
+        <button onClick={onBack} style={{
+          background: 'none', border: 'none', color: '#888', fontSize: 14,
+          cursor: 'pointer', fontFamily: "'Fredoka',sans-serif", marginBottom: 12, padding: 0,
+        }}>
+          ← Volver
+        </button>
+
+        <h2 style={{ fontSize: 22, fontWeight: 900, color: '#FFD700', marginBottom: 6, textAlign: 'center' }}>
+          Historial de Partidas
+        </h2>
+        <p style={{ color: '#4ecdc4', fontSize: 14, fontWeight: 700, textAlign: 'center', marginBottom: 20 }}>
+          {user.displayName}
+        </p>
+
+        {/* Stats bar */}
+        <div style={{
+          display: 'flex', justifyContent: 'center', gap: 20, marginBottom: 20,
+          background: 'rgba(255,255,255,.03)', borderRadius: 12, padding: '12px 16px',
+        }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 22, fontWeight: 900, color: '#FFD700' }}>{total}</div>
+            <div style={{ fontSize: 10, color: '#777', fontWeight: 700 }}>PARTIDAS</div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 22, fontWeight: 900, color: '#66BB6A' }}>{wins}</div>
+            <div style={{ fontSize: 10, color: '#777', fontWeight: 700 }}>VICTORIAS</div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 22, fontWeight: 900, color: '#FF7043' }}>{losses}</div>
+            <div style={{ fontSize: 10, color: '#777', fontWeight: 700 }}>DERROTAS</div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 22, fontWeight: 900, color: '#CE93D8' }}>{winRate}%</div>
+            <div style={{ fontSize: 10, color: '#777', fontWeight: 700 }}>WINRATE</div>
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+          {filters.map(f => (
+            <button key={f.id} onClick={() => setFilter(f.id)} style={{
+              flex: 1, padding: '8px 0', borderRadius: 10, border: 'none',
+              background: filter === f.id ? (f.id === 'wins' ? '#66BB6A' : f.id === 'losses' ? '#FF7043' : '#FFD700') : '#2a2a4a',
+              color: filter === f.id ? '#111' : '#888',
+              fontFamily: "'Fredoka',sans-serif", fontWeight: 700, fontSize: 12, cursor: 'pointer',
+              transition: 'all .15s',
+            }}>
+              {f.label} ({f.count})
+            </button>
+          ))}
+        </div>
+
+        {/* Game list */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: '50vh', overflowY: 'auto' }}>
+          {!history ? (
+            <p style={{ color: '#666', fontSize: 13, textAlign: 'center', padding: 20 }}>Cargando...</p>
+          ) : filtered.length === 0 ? (
+            <p style={{ color: '#666', fontSize: 13, textAlign: 'center', padding: 20 }}>Sin partidas registradas</p>
+          ) : filtered.map(g => {
+            const isWin = g.winnerName === user.displayName;
+            return (
+              <div key={g.id} style={{
+                background: isWin ? 'rgba(102,187,106,.08)' : 'rgba(255,112,67,.08)',
+                border: `1px solid ${isWin ? 'rgba(102,187,106,.25)' : 'rgba(255,112,67,.25)'}`,
+                borderRadius: 10, padding: '10px 14px',
+                display: 'flex', alignItems: 'center', gap: 10,
+              }}>
+                <span style={{ fontSize: 20 }}>{isWin ? '🏆' : '❌'}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: isWin ? '#66BB6A' : '#FF7043' }}>
+                    {isWin ? 'Victoria' : `Derrota — Ganó ${g.winnerName}`}
+                  </div>
+                  <div style={{ fontSize: 11, color: '#777' }}>
+                    {g.playerCount} jugadores · {g.difficulty} · {new Date(g.finishedAt).toLocaleDateString()}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Setup Screen ──────────────────────────────────────────────────────────────
-function SetupScreen({ onStart, onOnline }) {
-  const [name, setName] = useState('');
+function SetupScreen({ onStart, onOnline, user, onLogout, onHistory }) {
+  const [name, setName] = useState(user?.displayName || '');
   const [hat, setHat] = useState(null);
   const [diff, setDiff] = useState('medio');
   const [aiCount, setAiCount] = useState(2);
@@ -159,6 +366,23 @@ function SetupScreen({ onStart, onOnline }) {
           <img src={hamImg} alt="hamburguesa" style={{ width: 90, height: 90, objectFit: 'contain' }} />
           <h1 style={{ fontSize: 30, fontWeight: 900, color: '#FFD700', letterSpacing: 1 }}>HUNGRY POLY</h1>
           <p style={{ color: '#888', fontSize: 13, marginTop: 4 }}>Aprende vocabulario armando hamburguesas</p>
+          {user && (
+            <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <span style={{ color: '#4ecdc4', fontSize: 13, fontWeight: 700 }}>
+                {user.displayName} — {user.wins}W / {user.gamesPlayed}G
+              </span>
+              <button onClick={onHistory} style={{
+                background: 'none', border: '1px solid #4ecdc4', borderRadius: 8,
+                color: '#4ecdc4', fontSize: 11, padding: '3px 10px', cursor: 'pointer',
+                fontFamily: "'Fredoka',sans-serif", fontWeight: 700,
+              }}>Historial</button>
+              <button onClick={onLogout} style={{
+                background: 'none', border: '1px solid #555', borderRadius: 8,
+                color: '#888', fontSize: 11, padding: '3px 10px', cursor: 'pointer',
+                fontFamily: "'Fredoka',sans-serif",
+              }}>Salir</button>
+            </div>
+          )}
         </div>
 
         {/* Name */}
@@ -301,7 +525,7 @@ function TransitionScreen({ player, onContinue, isExtraPlay }) {
 }
 
 // ── Game Over Screen ──────────────────────────────────────────────────────────
-function GameOverScreen({ winner, players, onRestart }) {
+function GameOverScreen({ winner, players, onRestart, user, onHistory }) {
   return (
     <div style={{
       minHeight: '100vh', display: 'flex', flexDirection: 'column',
@@ -328,9 +552,16 @@ function GameOverScreen({ winner, players, onRestart }) {
           </div>
         ))}
       </div>
-      <Btn onClick={onRestart} color="#FFD700" style={{ fontSize: 16, padding: '12px 32px' }}>
-        🔄 Jugar de nuevo
-      </Btn>
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
+        <Btn onClick={onRestart} color="#FFD700" style={{ fontSize: 16, padding: '12px 32px' }}>
+          🔄 Jugar de nuevo
+        </Btn>
+        {user && (
+          <Btn onClick={onHistory} color="#4ecdc4" style={{ fontSize: 14, padding: '12px 24px' }}>
+            📊 Historial
+          </Btn>
+        )}
+      </div>
     </div>
   );
 }
@@ -928,7 +1159,7 @@ function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack, isPub
 // ── Main App ──────────────────────────────────────────────────────────────────
 export default function App() {
   const initialSalaCode = new URLSearchParams(window.location.search).get('sala') || '';
-  const [phase, setPhase] = useState(initialSalaCode ? 'onlineMenu' : 'setup');
+  const [phase, setPhase] = useState(initialSalaCode ? 'onlineMenu' : (getSavedUser() ? 'setup' : 'auth'));
   const [players, setPlayers] = useState([]);
   const [deck, setDeck] = useState([]);
   const [discard, setDiscard] = useState([]);
@@ -964,6 +1195,8 @@ export default function App() {
   // Human index: 0 for local/AI mode, myPlayerIdx for online
   const HI = isOnline ? myPlayerIdx : 0;
 
+  // ── Auth state ──
+  const [user, setUser] = useState(() => getSavedUser());
   // ── Negación state ──
   // pendingNeg: null | { actingIdx, cardInfo, eligibleIdxs, responses: {i: bool} }
   const [pendingNeg, setPendingNeg] = useState(null);
@@ -1963,10 +2196,24 @@ export default function App() {
   }
 
   // ── Render phases ──
+  if (phase === 'auth') return (
+    <AuthScreen
+      onAuth={(u) => { setUser(u); setPhase('setup'); }}
+      onGuest={() => setPhase('setup')}
+    />
+  );
+
+  if (phase === 'history' && user) return (
+    <HistoryScreen user={user} onBack={() => setPhase('setup')} />
+  );
+
   if (phase === 'setup') return (
     <SetupScreen
       onStart={startGame}
       onOnline={() => setPhase('onlineMenu')}
+      user={user}
+      onLogout={() => { clearAuth(); setUser(null); setPhase('auth'); }}
+      onHistory={() => setPhase('history')}
     />
   );
 
@@ -2020,10 +2267,12 @@ export default function App() {
     <GameOverScreen
       winner={winner}
       players={players}
+      user={user}
       onRestart={() => {
         if (isOnline) { socket.disconnect(); setIsOnline(false); setIsHost(false); setMyPlayerIdx(0); setRoomCode(''); setRoomIsPublic(false); setRoomDisplayName(''); setLobbyPlayers([]); }
         setPhase('setup');
       }}
+      onHistory={() => setPhase('history')}
     />
   );
   if (!players.length) return null;
