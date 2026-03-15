@@ -262,7 +262,7 @@ function SetupScreen({ onStart, onOnline }) {
 }
 
 // ── Transition Screen ─────────────────────────────────────────────────────────
-function TransitionScreen({ player, onContinue }) {
+function TransitionScreen({ player, onContinue, isExtraPlay }) {
   return (
     <div
       onClick={onContinue}
@@ -287,7 +287,9 @@ function TransitionScreen({ player, onContinue }) {
       }}>
         <img src={imgGlotonHead} alt="El Glotón" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
       </div>
-      <h2 style={{ fontSize: 28, fontWeight: 900, color: '#FFD700', marginBottom: 8 }}>Tu turno</h2>
+      <h2 style={{ fontSize: 28, fontWeight: 900, color: '#FFD700', marginBottom: 8 }}>
+        {isExtraPlay ? '¡Puedes jugar un ingrediente!' : 'Tu turno'}
+      </h2>
       <div style={{ fontSize: 22, color: '#eee', marginBottom: 6 }}>
         {player?.name}
       </div>
@@ -2000,7 +2002,7 @@ export default function App() {
     />
   );
 
-  if (phase === 'transition') return <TransitionScreen player={players[HI]} onContinue={() => setPhase('playing')} />;
+  if (phase === 'transition') return <TransitionScreen player={players[HI]} onContinue={() => setPhase('playing')} isExtraPlay={extraPlay} />;
   if (phase === 'gameover') return (
     <GameOverScreen
       winner={winner}
