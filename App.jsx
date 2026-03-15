@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import socket from './src/socket.js';
+import { login, register, clearAuth, getSavedUser, getHistory } from './src/api.js';
 import {
   LANGUAGES, LANG_BORDER, LANG_BG, LANG_TEXT, LANG_SHORT,
   ING_EMOJI, ING_BG, FRUITS_VEGS, AI_NAMES, getIngName, getActionInfo,
@@ -129,9 +130,82 @@ const Btn = ({ onClick, children, color = '#FFD700', disabled, style = {} }) => 
   </button>
 );
 
+// ── Auth Modal ───────────────────────────────────────────────────────────────
+function AuthModal({ onClose, onAuth }) {
+  const [tab, setTab] = useState('login');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit() {
+    setError(''); setLoading(true);
+    try {
+      const user = tab === 'login'
+        ? await login(username, password)
+        : await register(username, password, displayName || username);
+      onAuth(user);
+    } catch (err) {
+      setError(err.message);
+    }
+    setLoading(false);
+  }
+
+  const inputStyle = {
+    width: '100%', padding: '10px 14px', borderRadius: 10, border: '2px solid #2a2a4a',
+    background: '#0f1117', color: '#eee', fontFamily: "'Fredoka',sans-serif", fontSize: 14, outline: 'none',
+    marginBottom: 12, boxSizing: 'border-box',
+  };
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,.75)', zIndex: 1000,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <div style={{
+        background: '#16213e', borderRadius: 16, padding: '24px 28px',
+        maxWidth: 380, width: '90vw', border: '2px solid #2a2a4a',
+        boxShadow: '0 8px 40px rgba(0,0,0,.7)',
+      }}>
+        <h3 style={{ fontSize: 18, fontWeight: 900, color: '#FFD700', marginBottom: 16, textAlign: 'center' }}>
+          {tab === 'login' ? 'Iniciar Sesión' : 'Registrarse'}
+        </h3>
+
+        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+          {['login', 'register'].map(t => (
+            <button key={t} onClick={() => { setTab(t); setError(''); }} style={{
+              flex: 1, padding: '8px 0', borderRadius: 10, border: 'none',
+              background: tab === t ? '#FFD700' : '#2a2a4a', color: tab === t ? '#111' : '#888',
+              fontFamily: "'Fredoka',sans-serif", fontWeight: 700, fontSize: 13, cursor: 'pointer',
+            }}>
+              {t === 'login' ? 'Iniciar Sesión' : 'Registrarse'}
+            </button>
+          ))}
+        </div>
+
+        <input value={username} onChange={e => setUsername(e.target.value)} placeholder="Usuario" maxLength={20} style={inputStyle} />
+        <input value={password} onChange={e => setPassword(e.target.value)} placeholder="Contraseña" type="password" style={inputStyle} />
+        {tab === 'register' && (
+          <input value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Nombre para mostrar" maxLength={20} style={inputStyle} />
+        )}
+
+        {error && <div style={{ color: '#ff6b6b', fontSize: 12, marginBottom: 10, textAlign: 'center' }}>{error}</div>}
+
+        <Btn onClick={handleSubmit} disabled={loading || !username || !password} color="#FFD700" style={{ width: '100%', fontSize: 15, padding: '10px 0', marginBottom: 8 }}>
+          {loading ? 'Cargando...' : tab === 'login' ? 'Entrar' : 'Crear cuenta'}
+        </Btn>
+        <Btn onClick={onClose} color="#555" style={{ width: '100%', fontSize: 13, padding: '8px 0' }}>
+          Cancelar
+        </Btn>
+      </div>
+    </div>
+  );
+}
+
 // ── Setup Screen ──────────────────────────────────────────────────────────────
-function SetupScreen({ onStart, onOnline }) {
-  const [name, setName] = useState('');
+function SetupScreen({ onStart, onOnline, user, onLogin, onLogout }) {
+  const [name, setName] = useState(user?.displayName || '');
   const [hat, setHat] = useState(null);
   const [diff, setDiff] = useState('medio');
   const [aiCount, setAiCount] = useState(2);
@@ -159,6 +233,24 @@ function SetupScreen({ onStart, onOnline }) {
           <img src={hamImg} alt="hamburguesa" style={{ width: 90, height: 90, objectFit: 'contain' }} />
           <h1 style={{ fontSize: 30, fontWeight: 900, color: '#FFD700', letterSpacing: 1 }}>HUNGRY POLY</h1>
           <p style={{ color: '#888', fontSize: 13, marginTop: 4 }}>Aprende vocabulario armando hamburguesas</p>
+          {user ? (
+            <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+              <span style={{ color: '#4ecdc4', fontSize: 13, fontWeight: 700 }}>
+                {user.displayName} — {user.wins}W / {user.gamesPlayed}G
+              </span>
+              <button onClick={onLogout} style={{
+                background: 'none', border: '1px solid #555', borderRadius: 8,
+                color: '#888', fontSize: 11, padding: '3px 10px', cursor: 'pointer',
+                fontFamily: "'Fredoka',sans-serif",
+              }}>Salir</button>
+            </div>
+          ) : (
+            <button onClick={onLogin} style={{
+              marginTop: 10, background: 'none', border: '1px solid #4ecdc4', borderRadius: 8,
+              color: '#4ecdc4', fontSize: 12, padding: '5px 16px', cursor: 'pointer',
+              fontFamily: "'Fredoka',sans-serif", fontWeight: 700,
+            }}>Iniciar Sesión / Registrarse</button>
+          )}
         </div>
 
         {/* Name */}
@@ -301,7 +393,16 @@ function TransitionScreen({ player, onContinue, isExtraPlay }) {
 }
 
 // ── Game Over Screen ──────────────────────────────────────────────────────────
-function GameOverScreen({ winner, players, onRestart }) {
+function GameOverScreen({ winner, players, onRestart, user }) {
+  const [history, setHistory] = useState(null);
+  const [showHistory, setShowHistory] = useState(false);
+
+  useEffect(() => {
+    if (user && showHistory && !history) {
+      getHistory(user.id).then(setHistory).catch(() => setHistory([]));
+    }
+  }, [user, showHistory, history]);
+
   return (
     <div style={{
       minHeight: '100vh', display: 'flex', flexDirection: 'column',
@@ -328,9 +429,34 @@ function GameOverScreen({ winner, players, onRestart }) {
           </div>
         ))}
       </div>
-      <Btn onClick={onRestart} color="#FFD700" style={{ fontSize: 16, padding: '12px 32px' }}>
-        🔄 Jugar de nuevo
-      </Btn>
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
+        <Btn onClick={onRestart} color="#FFD700" style={{ fontSize: 16, padding: '12px 32px' }}>
+          🔄 Jugar de nuevo
+        </Btn>
+        {user && (
+          <Btn onClick={() => setShowHistory(!showHistory)} color="#4ecdc4" style={{ fontSize: 14, padding: '12px 24px' }}>
+            📊 Historial
+          </Btn>
+        )}
+      </div>
+      {showHistory && history && (
+        <div style={{ marginTop: 20, maxWidth: 400, width: '90vw' }}>
+          <h4 style={{ color: '#FFD700', fontSize: 14, fontWeight: 800, marginBottom: 8 }}>Últimas partidas</h4>
+          {history.length === 0 ? (
+            <p style={{ color: '#666', fontSize: 13 }}>Sin partidas registradas</p>
+          ) : history.map(g => (
+            <div key={g.id} style={{
+              background: 'rgba(255,255,255,.05)', borderRadius: 8, padding: '8px 12px', marginBottom: 6,
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            }}>
+              <span style={{ color: '#eee', fontSize: 13, fontWeight: 700 }}>🏆 {g.winnerName}</span>
+              <span style={{ color: '#777', fontSize: 11 }}>
+                {g.playerCount}P · {g.difficulty} · {new Date(g.finishedAt).toLocaleDateString()}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -963,6 +1089,10 @@ export default function App() {
   const lastExtraPlayRef = useRef(false);
   // Human index: 0 for local/AI mode, myPlayerIdx for online
   const HI = isOnline ? myPlayerIdx : 0;
+
+  // ── Auth state ──
+  const [user, setUser] = useState(() => getSavedUser());
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   // ── Negación state ──
   // pendingNeg: null | { actingIdx, cardInfo, eligibleIdxs, responses: {i: bool} }
@@ -1964,10 +2094,21 @@ export default function App() {
 
   // ── Render phases ──
   if (phase === 'setup') return (
-    <SetupScreen
-      onStart={startGame}
-      onOnline={() => setPhase('onlineMenu')}
-    />
+    <>
+      <SetupScreen
+        onStart={startGame}
+        onOnline={() => setPhase('onlineMenu')}
+        user={user}
+        onLogin={() => setShowAuthModal(true)}
+        onLogout={() => { clearAuth(); setUser(null); }}
+      />
+      {showAuthModal && (
+        <AuthModal
+          onClose={() => setShowAuthModal(false)}
+          onAuth={(u) => { setUser(u); setShowAuthModal(false); }}
+        />
+      )}
+    </>
   );
 
   if (phase === 'onlineMenu') return (
@@ -2020,6 +2161,7 @@ export default function App() {
     <GameOverScreen
       winner={winner}
       players={players}
+      user={user}
       onRestart={() => {
         if (isOnline) { socket.disconnect(); setIsOnline(false); setIsHost(false); setMyPlayerIdx(0); setRoomCode(''); setRoomIsPublic(false); setRoomDisplayName(''); setLobbyPlayers([]); }
         setPhase('setup');
