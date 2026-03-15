@@ -2313,7 +2313,7 @@ export default function App() {
       WebkitOverflowScrolling: 'touch',
     }}>
       {human.hand.map((card, i) => {
-        const playable = card.type === 'ingredient' ? canPlayCard(human, card) : null;
+        const playable = card.type === 'ingredient' ? canPlayCard(human, card) : (extraPlay ? false : null);
         const angle = handN > 1 ? -MAX_ANGLE + i * (2 * MAX_ANGLE / (handN - 1)) : 0;
         const isSelected = selectedIdx === i;
         return (
@@ -2808,7 +2808,7 @@ export default function App() {
       {/* Mobile: Card detail modal */}
       {isMobile && isHumanTurn && selectedIdx !== null && human.hand[selectedIdx] && (() => {
         const card = human.hand[selectedIdx];
-        const playable = card.type === 'ingredient' ? canPlayCard(human, card) : null;
+        const playable = card.type === 'ingredient' ? canPlayCard(human, card) : (extraPlay ? false : null);
         return (
           <Modal title={card.type === 'ingredient' ? '🃏 Carta de Ingrediente' : '⚡ Carta de Acción'}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
