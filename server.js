@@ -159,8 +159,14 @@ function broadcastLobbyList() {
 }
 
 io.on('connection', socket => {
+  console.log(`🔌 Socket connected: ${socket.id} (userId: ${socket.data.userId || 'guest'})`);
+  socket.on('disconnect', reason => {
+    console.log(`❌ Socket disconnected: ${socket.id} reason: ${reason}`);
+  });
+
   // ── Create room ──
   socket.on('createRoom', ({ playerName, isPublic, roomName }) => {
+    console.log(`📦 createRoom from ${socket.id}: playerName=${playerName}, isPublic=${isPublic}, roomName=${roomName}`);
     const code = genCode();
     rooms.set(code, {
       hostId: socket.id,
