@@ -1219,7 +1219,19 @@ export default function App() {
       addLog(idx, `jugó ${getIngName(card.ingredient, card.language)} ${ING_EMOJI[card.ingredient]}`, pls);
       const newPls = clone(pls);
       newPls[idx].hand.splice(playableIdx, 1);
-      newPls[idx].table.push(card.ingredient);
+      if (card.ingredient === 'perrito') {
+        const burger = newPls[idx].burgers[newPls[idx].currentBurger] || [];
+        const remaining = [...burger];
+        const tableCopy = newPls[idx].table.map(t => t.startsWith('perrito|') ? t.split('|')[1] : t);
+        for (let r = remaining.length - 1; r >= 0; r--) {
+          const ti = tableCopy.indexOf(remaining[r]);
+          if (ti !== -1) { remaining.splice(r, 1); tableCopy.splice(ti, 1); }
+        }
+        const pick = remaining.length > 0 ? remaining[0] : 'lechuga';
+        newPls[idx].table.push('perrito|' + pick);
+      } else {
+        newPls[idx].table.push(card.ingredient);
+      }
       const { player: up, freed, done } = advanceBurger(newPls[idx]);
       newPls[idx] = up;
       let newDiscard = [...discardArr, card];
