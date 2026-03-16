@@ -230,16 +230,26 @@ io.on('connection', socket => {
   socket.on('rejoinRoom', ({ reconnectId, roomCode: code }) => {
     const room = rooms.get(code);
     if (!room) return socket.emit('rejoinError', 'Sala no encontrada');
-    const player = room.players.find(p => p.reconnectId === reconnectId && p.disconnected);
+    // Find player by reconnectId — may or may not be marked disconnected yet
+    // (polling transport can delay disconnect detection by several seconds)
+    const player = room.players.find(p => p.reconnectId === reconnectId);
     if (!player) return socket.emit('rejoinError', 'No se puede reconectar');
-    // Cancel grace period timer
+    // Cancel grace period timer if any
     const timerKey = `${code}:${reconnectId}`;
     if (disconnectTimers.has(timerKey)) {
       clearTimeout(disconnectTimers.get(timerKey));
       disconnectTimers.delete(timerKey);
     }
-    // Restore player connection
+    // Disconnect the old socket if it's still lingering
     const oldSocketId = player.id;
+    if (oldSocketId !== socket.id) {
+      const oldSocket = io.sockets.sockets.get(oldSocketId);
+      if (oldSocket) {
+        oldSocket.data.roomCode = null; // prevent disconnect handler cleanup
+        oldSocket.disconnect(true);
+      }
+    }
+    // Restore player connection
     player.id = socket.id;
     player.disconnected = false;
     socket.join(code);
@@ -248,6 +258,10 @@ io.on('connection', socket => {
     if (player.wasHost) {
       room.hostId = socket.id;
       player.wasHost = false;
+    }
+    // Also restore host if the old socket was still the hostId
+    if (room.hostId === oldSocketId) {
+      room.hostId = socket.id;
     }
     const isHost = room.hostId === socket.id;
     socket.emit('rejoinSuccess', {
