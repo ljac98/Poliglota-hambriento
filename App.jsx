@@ -2889,6 +2889,47 @@ export default function App() {
     </div>
   );
 
+  const turnActionIndicators = (
+    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', flexShrink: 0, alignItems: 'center' }}>
+      <span style={{ fontSize: 11, color: '#555', fontWeight: 700, letterSpacing: 1 }}>
+        {T('turnActionsLabel')}
+      </span>
+      {[
+        { key: 'playIngredient', emoji: '🃏', label: T('ingredientCard') },
+        { key: 'playAction',     emoji: '⚡', label: T('actionCard')    },
+        { key: 'discard',        emoji: '🗑️', label: T('discard')       },
+        { key: 'changeHat',      emoji: '🎩', label: T('changeHat')     },
+        { key: 'addHat',         emoji: '➕', label: T('addHat')        },
+      ].map(({ key, emoji, label }) => (
+        <button
+          key={key}
+          onClick={() => setModal({ type: 'turnActionInfo', action: key })}
+          style={{
+            background: 'rgba(255,255,255,0.06)',
+            border: '1px solid rgba(255,255,255,0.15)',
+            borderRadius: 20, padding: '4px 10px', cursor: 'pointer',
+            color: isHumanTurn ? '#ddd' : '#555',
+            fontSize: 12, display: 'flex', gap: 4, alignItems: 'center',
+            fontFamily: 'inherit', fontWeight: 600, transition: 'all .15s',
+          }}
+          onMouseOver={e => {
+            e.currentTarget.style.background = 'rgba(78,205,196,0.2)';
+            e.currentTarget.style.borderColor = '#4ecdc4';
+            e.currentTarget.style.color = '#fff';
+          }}
+          onMouseOut={e => {
+            e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
+            e.currentTarget.style.color = isHumanTurn ? '#ddd' : '#555';
+          }}
+        >
+          <span>{emoji}</span>
+          <span>{label}</span>
+        </button>
+      ))}
+    </div>
+  );
+
   const handFan = (
     <div style={{
       display: 'flex', justifyContent: isMobile ? 'flex-start' : 'center', alignItems: isMobile ? 'center' : 'flex-end',
@@ -3028,6 +3069,7 @@ export default function App() {
   const mesaPanel = (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', padding: '12px 16px', gap: 10 }}>
       {playerHeader}
+      {turnActionIndicators}
       {isMobile ? (
         <>
           {burgersSection}
@@ -3728,6 +3770,105 @@ export default function App() {
                 );
               })}
             </div>
+            <Btn onClick={() => setModal(null)} color="#333" style={{ color: '#aaa' }}>{T('close')}</Btn>
+          </Modal>
+        );
+      })()}
+
+      {/* Turn Action Info modal */}
+      {modal?.type === 'turnActionInfo' && (() => {
+        const actionKey = modal.action;
+        const infos = {
+          playIngredient: {
+            emoji: '🃏',
+            title: T('ingredientCard'),
+            desc: T('tiPlayIngDesc'),
+            example: (
+              <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '12px 14px', marginBottom: 12 }}>
+                <div style={{ fontSize: 12, color: '#888', marginBottom: 8 }}>Ej:</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', fontSize: 13 }}>
+                  <span style={{ background: 'rgba(255,215,0,.2)', border: '1px solid #FFD700', borderRadius: 8, padding: '3px 8px' }}>🎩 ESP</span>
+                  <span style={{ color: '#888' }}>+</span>
+                  <span style={{ background: 'rgba(255,255,255,.08)', borderRadius: 8, padding: '3px 8px' }}>🥩 Carne <small style={{ color: '#aaa' }}>(ESP)</small></span>
+                  <span style={{ color: '#888' }}>+</span>
+                  <span style={{ background: 'rgba(76,175,80,.15)', border: '1px solid #4CAF50', borderRadius: 8, padding: '3px 8px' }}>🍔 necesita 🥩</span>
+                  <span style={{ color: '#888' }}>→</span>
+                  <span style={{ color: '#4CAF50', fontWeight: 700 }}>✅ ¡Jugá!</span>
+                </div>
+              </div>
+            ),
+          },
+          playAction: {
+            emoji: '⚡',
+            title: T('actionCard'),
+            desc: T('tiPlayCardDesc'),
+            example: (
+              <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '12px 14px', marginBottom: 12 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 10px' }}>
+                  {ACTION_CARDS.map(a => (
+                    <div key={a.id} style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 12 }}>
+                      <span>{a.emoji}</span>
+                      <span style={{ color: '#ccc' }}>{a.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ),
+          },
+          discard: {
+            emoji: '🗑️',
+            title: T('discard'),
+            desc: T('tiDiscardDesc'),
+            example: (
+              <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '12px 14px', marginBottom: 12, textAlign: 'center' }}>
+                <div style={{ fontSize: 28 }}>🃏 → 🗑️</div>
+                <div style={{ fontSize: 12, color: '#888', marginTop: 6 }}>→ {T('yourTurnLabel')}</div>
+              </div>
+            ),
+          },
+          changeHat: {
+            emoji: '🎩',
+            title: T('changeHat'),
+            desc: T('changeHatTooltip'),
+            example: (
+              <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '12px 14px', marginBottom: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', fontSize: 13 }}>
+                  <span style={{ background: 'rgba(255,215,0,.15)', border: '1px solid #FFD700', borderRadius: 8, padding: '3px 8px' }}>🎩 ESP</span>
+                  <span style={{ color: '#888' }}>↔</span>
+                  <span style={{ background: 'rgba(0,188,212,.15)', border: '1px solid #00BCD4', borderRadius: 8, padding: '3px 8px' }}>🎩 ENG</span>
+                  <span style={{ color: '#888' }}>→</span>
+                  <span style={{ color: '#FF7043' }}>✂️ -3 cartas</span>
+                  <span style={{ color: '#888' }}>→</span>
+                  <span style={{ color: '#4ecdc4' }}>+1 🥩</span>
+                </div>
+              </div>
+            ),
+          },
+          addHat: {
+            emoji: '➕',
+            title: T('addHat'),
+            desc: T('addHatTooltip'),
+            example: (
+              <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '12px 14px', marginBottom: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', fontSize: 13 }}>
+                  <span style={{ background: 'rgba(255,215,0,.15)', border: '1px solid #FFD700', borderRadius: 8, padding: '3px 8px' }}>🎩 ESP</span>
+                  <span style={{ color: '#888' }}>+</span>
+                  <span style={{ background: 'rgba(0,188,212,.15)', border: '1px solid #00BCD4', borderRadius: 8, padding: '3px 8px' }}>🎩 ENG</span>
+                  <span style={{ color: '#888' }}>→</span>
+                  <span style={{ color: '#FF7043' }}>🗑️ toda la mano</span>
+                  <span style={{ color: '#888' }}>→</span>
+                  <span style={{ color: '#4ecdc4' }}>+1 🥩</span>
+                </div>
+              </div>
+            ),
+          },
+        };
+        const info = infos[actionKey];
+        if (!info) return null;
+        return (
+          <Modal title={`${info.emoji} ${info.title}`}>
+            <p style={{ color: '#ccc', fontSize: 13, marginBottom: 14 }}>{info.desc}</p>
+            {info.example}
             <Btn onClick={() => setModal(null)} color="#333" style={{ color: '#aaa' }}>{T('close')}</Btn>
           </Modal>
         );
