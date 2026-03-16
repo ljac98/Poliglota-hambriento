@@ -274,8 +274,14 @@ io.on('connection', socket => {
       gameState: (isHost && room.started && room.lastGameState) ? room.lastGameState : null,
     });
     // Notify others that player reconnected
+    const activePlayers = room.players.filter(p => !p.disconnected);
     io.to(code).emit('lobbyUpdate', {
-      players: room.players.filter(p => !p.disconnected).map(p => ({ name: p.name, idx: p.idx })),
+      players: activePlayers.map(p => ({ name: p.name, idx: p.idx })),
+    });
+    io.to(code).emit('playerRejoined', {
+      playerName: player.name,
+      playerIdx: player.idx,
+      activeCount: activePlayers.length,
     });
   });
 
@@ -344,6 +350,65 @@ io.on('connection', socket => {
   // ── Intentional leave (skip grace period) ──
   socket.on('leaveRoom', () => {
     socket.data.intentionalLeave = true;
+  });
+
+  // ── Voluntary leave during game (player wants to leave but may rejoin) ──
+  socket.on('voluntaryLeave', ({ code }) => {
+    const room = rooms.get(code);
+    if (!room) return;
+    const player = room.players.find(p => p.id === socket.id);
+    if (!player) return;
+
+    // Mark as disconnected with grace period (like a refresh)
+    player.disconnected = true;
+    player.voluntaryLeft = true;
+    const timerKey = `${code}:${player.reconnectId}`;
+
+    // Transfer host if needed
+    if (room.hostId === socket.id) {
+      player.wasHost = true;
+      const connectedPlayer = room.players.find(p => !p.disconnected);
+      if (connectedPlayer) {
+        room.hostId = connectedPlayer.id;
+        io.to(connectedPlayer.id).emit('becameHost');
+      }
+    }
+
+    // Count active (non-disconnected) players
+    const activePlayers = room.players.filter(p => !p.disconnected);
+
+    // Notify others
+    io.to(code).emit('playerVoluntaryLeft', {
+      playerName: player.name,
+      playerIdx: player.idx,
+      activePlayers: activePlayers.map(p => ({ name: p.name, idx: p.idx })),
+      activeCount: activePlayers.length,
+      gameStarted: room.started,
+    });
+
+    // Leave the socket.io room but keep player in array for potential rejoin
+    socket.leave(code);
+    socket.data.roomCode = null;
+
+    // Start grace period (longer for voluntary leave — 120 seconds)
+    const timer = setTimeout(() => {
+      disconnectTimers.delete(timerKey);
+      const currentRoom = rooms.get(code);
+      if (!currentRoom) return;
+      const pi = currentRoom.players.findIndex(p => p.reconnectId === player.reconnectId);
+      if (pi === -1) return;
+      currentRoom.players.splice(pi, 1);
+      if (currentRoom.players.length === 0) {
+        rooms.delete(code);
+        savedGames.delete(code);
+      } else {
+        io.to(code).emit('playerLeft', {
+          players: currentRoom.players.filter(p => !p.disconnected).map(p => ({ name: p.name, idx: p.idx })),
+        });
+      }
+      if (currentRoom.isPublic) broadcastLobbyList();
+    }, 120000);
+    disconnectTimers.set(timerKey, timer);
   });
 
   // ── Disconnect cleanup with grace period for reconnection ──
