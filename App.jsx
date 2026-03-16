@@ -1409,7 +1409,7 @@ export default function App() {
       setLog(state.log);
       setExtraPlay(state.extraPlay || false);
       setModal(currentModal => {
-        const privateModals = ['manual_cambiar', 'manual_cambiar_discard', 'manual_agregar', 'wildcard', 'basurero', 'pickHatReplace', 'pickHatExchange', 'ingredientInfo'];
+        const privateModals = ['manual_cambiar', 'manual_cambiar_discard', 'manual_agregar', 'wildcard', 'basurero', 'pickHatReplace', 'pickHatExchange', 'ingredientInfo', 'pickTarget', 'pickIngredient', 'pickIngredientRemote'];
         if (state.modal) return state.modal;
         if (currentModal && privateModals.includes(currentModal.type)) return currentModal;
         return null;
@@ -1436,7 +1436,7 @@ export default function App() {
     clearTimeout(syncRef.current);
     if (!isOnline || !isHost || phase !== 'playing') return;
     syncRef.current = setTimeout(() => {
-      const privateModals = ['manual_cambiar', 'manual_cambiar_discard', 'manual_agregar', 'wildcard', 'basurero', 'pickHatReplace', 'pickHatExchange', 'ingredientInfo'];
+      const privateModals = ['manual_cambiar', 'manual_cambiar_discard', 'manual_agregar', 'wildcard', 'basurero', 'pickHatReplace', 'pickHatExchange', 'ingredientInfo', 'pickTarget', 'pickIngredient', 'pickIngredientRemote'];
       const syncModal = modal && privateModals.includes(modal.type) ? null : modal;
       socket.emit('syncState', {
         code: roomCode,
