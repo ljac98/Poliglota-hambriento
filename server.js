@@ -257,6 +257,7 @@ io.on('connection', socket => {
       players: room.players.filter(p => !p.disconnected).map(p => ({ name: p.name, idx: p.idx })),
       roomIsPublic: room.isPublic,
       roomDisplayName: room.roomName,
+      gameState: (isHost && room.started && room.lastGameState) ? room.lastGameState : null,
     });
     // Notify others that player reconnected
     io.to(code).emit('lobbyUpdate', {
@@ -296,6 +297,7 @@ io.on('connection', socket => {
   socket.on('syncState', ({ code, state }) => {
     const room = rooms.get(code);
     if (!room || room.hostId !== socket.id) return;
+    room.lastGameState = state;  // Cache for host reconnection
     socket.to(code).emit('stateUpdate', { state });
 
     // Save game history when a winner is declared
@@ -325,6 +327,11 @@ io.on('connection', socket => {
     io.to(code).emit('chatMessage', { playerName, text, timestamp: Date.now() });
   });
 
+  // ── Intentional leave (skip grace period) ──
+  socket.on('leaveRoom', () => {
+    socket.data.intentionalLeave = true;
+  });
+
   // ── Disconnect cleanup with grace period for reconnection ──
   socket.on('disconnect', () => {
     const code = socket.data?.roomCode;
@@ -335,8 +342,8 @@ io.on('connection', socket => {
     const player = room.players.find(p => p.id === socket.id);
     if (!player) return;
 
-    // If player has a reconnectId, give them a grace period to reconnect
-    if (player.reconnectId) {
+    // If player has a reconnectId and didn't leave intentionally, give grace period
+    if (player.reconnectId && !socket.data.intentionalLeave) {
       player.disconnected = true;
       const timerKey = `${code}:${player.reconnectId}`;
 

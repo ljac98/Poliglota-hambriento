@@ -1280,7 +1280,7 @@ export default function App() {
       setPhase(getSavedUser() ? 'setup' : 'auth');
     }, 10000);
 
-    socket.once('rejoinSuccess', ({ myIdx, isHost: host, phase: serverPhase, players: pls, roomIsPublic: pub, roomDisplayName: rn }) => {
+    socket.once('rejoinSuccess', ({ myIdx, isHost: host, phase: serverPhase, players: pls, roomIsPublic: pub, roomDisplayName: rn, gameState }) => {
       clearTimeout(timeout);
       setIsOnline(true);
       setIsHost(host);
@@ -1290,14 +1290,24 @@ export default function App() {
       setRoomDisplayName(rn || '');
       setLobbyPlayers(pls);
       if (serverPhase === 'playing') {
-        // For non-host: stateUpdate will arrive from host and set game state
-        // For host: we need the host to re-initialize — but host game state is lost on refresh
-        // so non-host reconnects seamlessly, host reconnects to lobby-like state
-        if (host) {
-          // Host lost game state on refresh — rejoin as lobby to restart
-          setPhase('onlineLobby');
-        } else {
+        if (host && gameState) {
+          // Host reconnecting: restore cached game state from server
+          setPlayers(gameState.players);
+          setDeck(gameState.deck);
+          setDiscard(gameState.discard);
+          setCp(gameState.cp);
+          setLog(gameState.log || []);
+          setExtraPlay(gameState.extraPlay || false);
+          setModal(null);
+          setPendingNeg(gameState.pendingNeg || null);
+          if (gameState.winner) { setWinner(gameState.winner); clearRoomSession(); setPhase('gameover'); }
+          else setPhase('playing');
+        } else if (!host) {
+          // Non-host: stateUpdate will arrive from host within 80ms
           setPhase('playing');
+        } else {
+          // Host but no cached state (edge case) — go to lobby
+          setPhase('onlineLobby');
         }
       } else {
         setPhase('onlineLobby');
@@ -2390,6 +2400,7 @@ export default function App() {
         }
       }}
       onBack={() => {
+        socket.emit('leaveRoom');
         socket.disconnect();
         setIsOnline(false); setIsHost(false); setMyPlayerIdx(0); setRoomCode('');
         setRoomIsPublic(false); setRoomDisplayName('');
@@ -2407,7 +2418,7 @@ export default function App() {
       players={players}
       user={user}
       onRestart={() => {
-        if (isOnline) { socket.disconnect(); setIsOnline(false); setIsHost(false); setMyPlayerIdx(0); setRoomCode(''); setRoomIsPublic(false); setRoomDisplayName(''); setLobbyPlayers([]); }
+        if (isOnline) { socket.emit('leaveRoom'); socket.disconnect(); setIsOnline(false); setIsHost(false); setMyPlayerIdx(0); setRoomCode(''); setRoomIsPublic(false); setRoomDisplayName(''); setLobbyPlayers([]); }
         clearRoomSession();
         setPhase('setup');
       }}
