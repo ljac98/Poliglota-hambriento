@@ -681,15 +681,23 @@ function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '', user }) {
   useEffect(() => {
     if (tab !== 'lobby') return;
     setLobbyLoading(true);
+
+    function fetchRooms() {
+      socket.emit('listRooms', (rooms) => {
+        if (rooms) setLobbyRooms(rooms);
+        setLobbyLoading(false);
+      });
+    }
+
     socket.connect();
-    socket.emit('listRooms', (rooms) => {
-      setLobbyRooms(rooms);
-      setLobbyLoading(false);
-    });
+    fetchRooms();
     socket.emit('joinLobbyBrowser');
     const handleUpdate = (rooms) => setLobbyRooms(rooms);
     socket.on('lobbyListUpdate', handleUpdate);
+    // Poll every 3 seconds as fallback for missed events
+    const pollInterval = setInterval(fetchRooms, 3000);
     return () => {
+      clearInterval(pollInterval);
       socket.emit('leaveLobbyBrowser');
       socket.off('lobbyListUpdate', handleUpdate);
       if (!joinedRoomRef.current) socket.disconnect();
