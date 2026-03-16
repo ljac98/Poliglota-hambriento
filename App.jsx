@@ -1253,6 +1253,10 @@ export default function App() {
   // Host-only ref that stores the resolve callback (not serializable over socket)
   const pendingNegRef = useRef(null);
 
+  // ── Voluntary leave state ──
+  const [gamePaused, setGamePaused] = useState(false);
+  const [pausedMessage, setPausedMessage] = useState('');
+
   // ── Room session persistence for reconnection ──
   function saveRoomSession(data) {
     sessionStorage.setItem('hp_room_session', JSON.stringify(data));
@@ -1263,6 +1267,14 @@ export default function App() {
   function getRoomSession() {
     try { return JSON.parse(sessionStorage.getItem('hp_room_session')); }
     catch { return null; }
+  }
+
+  // ── Handle voluntary leave from room ──
+  function handleVoluntaryLeave() {
+    if (!isOnline || !roomCode) return;
+    socket.emit('voluntaryLeave', { code: roomCode });
+    // Don't disconnect socket — keep it alive for potential rejoin
+    setPhase('leftRoom');
   }
 
   // ── Auto-rejoin on page load ──
@@ -1357,11 +1369,27 @@ export default function App() {
       setChatMessages(prev => [...prev, msg]);
       if (!showChatRef.current) setUnreadChat(prev => prev + 1);
     });
+    socket.on('playerVoluntaryLeft', ({ playerName, activeCount, gameStarted }) => {
+      // Add a chat-like message so everyone sees who left
+      setChatMessages(prev => [...prev, { playerName: 'Sistema', text: `${playerName} se ha salido del juego`, timestamp: Date.now() }]);
+      // If game in progress and only 1 active player left (was 2-player game), pause
+      if (gameStarted && activeCount <= 1) {
+        setGamePaused(true);
+        setPausedMessage(`${playerName} se ha salido. Esperando a que vuelva...`);
+      }
+    });
+    socket.on('playerRejoined', ({ playerName }) => {
+      setChatMessages(prev => [...prev, { playerName: 'Sistema', text: `${playerName} ha vuelto al juego`, timestamp: Date.now() }]);
+      setGamePaused(false);
+      setPausedMessage('');
+    });
     return () => {
       socket.off('lobbyUpdate');
       socket.off('lobbyHatPick');
       socket.off('playerLeft');
       socket.off('chatMessage');
+      socket.off('playerVoluntaryLeft');
+      socket.off('playerRejoined');
     };
   }, [isOnline]);
 
@@ -2337,6 +2365,98 @@ export default function App() {
     </div>
   );
 
+  if (phase === 'leftRoom') return (
+    <div style={{
+      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: 'linear-gradient(135deg,#0f1117 0%,#1a1a2e 100%)', fontFamily: "'Fredoka',sans-serif",
+    }}>
+      <div style={{ textAlign: 'center', padding: 32 }}>
+        <div style={{ fontSize: 56, marginBottom: 16 }}>🚪</div>
+        <h2 style={{ color: '#FFD700', fontSize: 24, fontWeight: 900, marginBottom: 8 }}>
+          Te has salido de la sala
+        </h2>
+        <p style={{ color: '#aaa', fontSize: 15, marginBottom: 32 }}>
+          Sala: {roomCode}
+        </p>
+        <p style={{ color: '#ccc', fontSize: 17, marginBottom: 28 }}>
+          ¿Deseas volver a la sala?
+        </p>
+        <div style={{ display: 'flex', gap: 16, justifyContent: 'center' }}>
+          <Btn onClick={() => {
+            // Rejoin the room
+            const reconnectId = sessionStorage.getItem('hp_reconnect_id');
+            const timeout = setTimeout(() => {
+              socket.off('rejoinSuccess');
+              socket.off('rejoinError');
+              clearRoomSession();
+              setIsOnline(false); setIsHost(false); setMyPlayerIdx(0); setRoomCode('');
+              setPhase(getSavedUser() ? 'setup' : 'auth');
+            }, 10000);
+
+            socket.once('rejoinSuccess', ({ myIdx, isHost: host, phase: serverPhase, players: pls, roomIsPublic: pub, roomDisplayName: rn, gameState }) => {
+              clearTimeout(timeout);
+              setIsHost(host);
+              setMyPlayerIdx(myIdx);
+              setRoomIsPublic(!!pub);
+              setRoomDisplayName(rn || '');
+              setLobbyPlayers(pls);
+              if (serverPhase === 'playing') {
+                if (host && gameState) {
+                  setPlayers(gameState.players);
+                  setDeck(gameState.deck);
+                  setDiscard(gameState.discard);
+                  setCp(gameState.cp);
+                  setLog(gameState.log || []);
+                  setExtraPlay(gameState.extraPlay || false);
+                  setModal(null);
+                  setPendingNeg(gameState.pendingNeg || null);
+                  if (gameState.winner) { setWinner(gameState.winner); clearRoomSession(); setPhase('gameover'); }
+                  else setPhase('playing');
+                } else {
+                  setPhase('playing');
+                }
+              } else {
+                setPhase('onlineLobby');
+                socket.once('gameStarted', () => setPhase('playing'));
+              }
+              setGamePaused(false);
+              setPausedMessage('');
+            });
+
+            socket.once('rejoinError', () => {
+              clearTimeout(timeout);
+              clearRoomSession();
+              setIsOnline(false); setIsHost(false); setMyPlayerIdx(0); setRoomCode('');
+              setPhase(getSavedUser() ? 'setup' : 'auth');
+            });
+
+            if (socket.connected) {
+              socket.emit('rejoinRoom', { reconnectId, roomCode });
+            } else {
+              socket.once('connect', () => socket.emit('rejoinRoom', { reconnectId, roomCode }));
+              socket.connect();
+            }
+          }} color="#4ecdc4" style={{ fontSize: 16, padding: '12px 32px' }}>
+            Volver a la sala
+          </Btn>
+          <Btn onClick={() => {
+            socket.emit('leaveRoom');
+            socket.disconnect();
+            setIsOnline(false); setIsHost(false); setMyPlayerIdx(0); setRoomCode('');
+            setRoomIsPublic(false); setRoomDisplayName('');
+            setLobbyPlayers([]);
+            clearRoomSession();
+            setGamePaused(false);
+            setPausedMessage('');
+            setPhase('setup');
+          }} color="#ff4444" style={{ fontSize: 16, padding: '12px 32px', color: '#fff' }}>
+            No, ir al lobby
+          </Btn>
+        </div>
+      </div>
+    </div>
+  );
+
   if (phase === 'auth') return (
     <AuthScreen
       onAuth={(u) => { setUser(u); setPhase('setup'); }}
@@ -2864,7 +2984,7 @@ export default function App() {
   return (
     <div style={{
       height: '100vh', display: 'flex', flexDirection: 'column',
-      background: '#0f1117', fontFamily: "'Fredoka',sans-serif", overflow: 'hidden',
+      background: '#0f1117', fontFamily: "'Fredoka',sans-serif", overflow: 'hidden', position: 'relative',
     }}>
 
       {/* ── Header ── */}
@@ -2894,19 +3014,50 @@ export default function App() {
             📋 Log
           </Btn>
           {isOnline && (
-            <Btn onClick={() => { setShowChat(s => !s); setUnreadChat(0); }} color="#2a2a4a" style={{ color: '#aaa', fontSize: 12, padding: '4px 10px', position: 'relative' }}>
-              💬 Chat
-              {unreadChat > 0 && (
-                <span style={{
-                  position: 'absolute', top: -4, right: -4, minWidth: 16, height: 16,
-                  borderRadius: '50%', background: '#ff4444', color: '#fff',
-                  fontSize: 10, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>{unreadChat}</span>
-              )}
-            </Btn>
+            <>
+              <Btn onClick={() => { setShowChat(s => !s); setUnreadChat(0); }} color="#2a2a4a" style={{ color: '#aaa', fontSize: 12, padding: '4px 10px', position: 'relative' }}>
+                💬 Chat
+                {unreadChat > 0 && (
+                  <span style={{
+                    position: 'absolute', top: -4, right: -4, minWidth: 16, height: 16,
+                    borderRadius: '50%', background: '#ff4444', color: '#fff',
+                    fontSize: 10, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>{unreadChat}</span>
+                )}
+              </Btn>
+              <Btn onClick={handleVoluntaryLeave} color="#ff4444" style={{ color: '#fff', fontSize: 12, padding: '4px 10px' }}>
+                🚪 Salir
+              </Btn>
+            </>
           )}
         </div>
       </div>
+
+      {/* ── Game paused overlay (2-player game, opponent left) ── */}
+      {gamePaused && (
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999,
+          background: 'rgba(0,0,0,.85)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontFamily: "'Fredoka',sans-serif",
+        }}>
+          <div style={{ textAlign: 'center', padding: 32 }}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>⏸️</div>
+            <h2 style={{ color: '#FFD700', fontSize: 22, fontWeight: 900, marginBottom: 12 }}>Juego en pausa</h2>
+            <p style={{ color: '#aaa', fontSize: 15, marginBottom: 24 }}>{pausedMessage}</p>
+            <Btn onClick={() => {
+              socket.emit('leaveRoom');
+              socket.disconnect();
+              setIsOnline(false); setIsHost(false); setMyPlayerIdx(0); setRoomCode('');
+              setRoomIsPublic(false); setRoomDisplayName('');
+              setLobbyPlayers([]); clearRoomSession();
+              setGamePaused(false); setPausedMessage('');
+              setPhase('setup');
+            }} color="#ff4444" style={{ color: '#fff', fontSize: 14, padding: '10px 24px' }}>
+              Salir al lobby
+            </Btn>
+          </div>
+        </div>
+      )}
 
       {/* ── Main area ── */}
       {isMobile ? (
