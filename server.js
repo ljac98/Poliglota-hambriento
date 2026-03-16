@@ -166,12 +166,13 @@ const GRACE_PERIOD_MS = 30000;
 function getPublicRoomsList() {
   const list = [];
   for (const [code, room] of rooms) {
-    if (room.isPublic && !room.started && room.players.length < 4) {
+    const activePlayers = room.players.filter(p => !p.disconnected);
+    if (room.isPublic && !room.started && activePlayers.length < 4) {
       list.push({
         code,
         roomName: room.roomName,
-        playerCount: room.players.length,
-        hostName: room.players[0]?.name || '',
+        playerCount: activePlayers.length,
+        hostName: activePlayers[0]?.name || '',
       });
     }
   }
