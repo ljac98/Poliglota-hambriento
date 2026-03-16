@@ -365,13 +365,15 @@ function HistoryScreen({ user, onBack, T }) {
 function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, T }) {
   const [name, setName] = useState(user?.displayName || '');
   const [hat, setHat] = useState(null);
-  const [diff, setDiff] = useState('medio');
+  const [gameMode, setGameMode] = useState('clon');
+  const [burgerCount, setBurgerCount] = useState(2);
+  const [ingredientCount, setIngredientCount] = useState(5);
   const [aiCount, setAiCount] = useState(2);
 
-  const diffs = [
-    { id: 'facil', label: T('easy'), desc: T('burger1') },
-    { id: 'medio', label: T('medium'), desc: T('burgers2') },
-    { id: 'dificil', label: T('hard'), desc: T('burgers3') },
+  const gameModes = [
+    { id: 'clon', label: T('modeClon'), desc: T('modeClonDesc') },
+    { id: 'escalera', label: T('modeEscalera'), desc: T('modeEscaleraDesc') },
+    { id: 'caotico', label: T('modeCaotico'), desc: T('modeCaoticoDesc') },
   ];
 
   return (
@@ -453,27 +455,61 @@ function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, T }) {
           </div>
         </div>
 
-        {/* Difficulty */}
-        <div style={{ marginBottom: 20 }}>
-          <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 8 }}>{T('difficulty')}</label>
+        {/* Game Mode */}
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 8 }}>{T('gameMode')}</label>
           <div style={{ display: 'flex', gap: 8 }}>
-            {diffs.map(d => (
+            {gameModes.map(m => (
               <div
-                key={d.id}
-                onClick={() => setDiff(d.id)}
+                key={m.id}
+                onClick={() => setGameMode(m.id)}
                 style={{
                   flex: 1, padding: '8px 6px', borderRadius: 10, cursor: 'pointer', textAlign: 'center',
-                  border: diff === d.id ? '2px solid #FFD700' : '2px solid #2a2a4a',
-                  background: diff === d.id ? 'rgba(255,215,0,.08)' : 'rgba(255,255,255,.02)',
+                  border: gameMode === m.id ? '2px solid #FFD700' : '2px solid #2a2a4a',
+                  background: gameMode === m.id ? 'rgba(255,215,0,.08)' : 'rgba(255,255,255,.02)',
                   transition: 'all .15s',
                 }}
               >
-                <div style={{ fontSize: 13, fontWeight: 700, color: diff === d.id ? '#FFD700' : '#ccc' }}>{d.label}</div>
-                <div style={{ fontSize: 9, color: '#666', marginTop: 2 }}>{d.desc}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: gameMode === m.id ? '#FFD700' : '#ccc' }}>{m.label}</div>
+                <div style={{ fontSize: 9, color: '#666', marginTop: 2 }}>{m.desc}</div>
               </div>
             ))}
           </div>
         </div>
+
+        {/* Burger count (clon & escalera) */}
+        {gameMode !== 'caotico' && (
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 8 }}>
+              {T('burgerCount')}: <span style={{ color: '#FFD700' }}>{burgerCount}</span>
+            </label>
+            <input
+              type="range" min={1} max={4} value={burgerCount}
+              onChange={e => setBurgerCount(+e.target.value)}
+              style={{ width: '100%', accentColor: '#FFD700' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#555', marginTop: 2 }}>
+              <span>1</span><span>4</span>
+            </div>
+          </div>
+        )}
+
+        {/* Ingredient count (clon only) */}
+        {gameMode === 'clon' && (
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 8 }}>
+              {T('ingredientCount')}: <span style={{ color: '#FFD700' }}>{ingredientCount}</span>
+            </label>
+            <input
+              type="range" min={2} max={8} value={ingredientCount}
+              onChange={e => setIngredientCount(+e.target.value)}
+              style={{ width: '100%', accentColor: '#FFD700' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#555', marginTop: 2 }}>
+              <span>2</span><span>8</span>
+            </div>
+          </div>
+        )}
 
         {/* AI count */}
         <div style={{ marginBottom: 28 }}>
@@ -492,7 +528,7 @@ function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, T }) {
 
         <div style={{ display: 'flex', gap: 10 }}>
           <Btn
-            onClick={() => onStart(name.trim(), hat, diff, aiCount)}
+            onClick={() => onStart(name.trim(), hat, { mode: gameMode, burgerCount, ingredientCount }, aiCount)}
             disabled={!name.trim() || !hat}
             color="#FFD700"
             style={{ flex: 1, fontSize: 16, padding: '12px 0' }}
@@ -1003,7 +1039,9 @@ function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '', user, T }) 
 
 // ── Online Lobby (waiting room before game starts) ────────────────────────────
 function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack, isPublic, roomDisplayName, T }) {
-  const [diff, setDiff] = useState('medio');
+  const [gameMode, setGameMode] = useState('clon');
+  const [burgerCount, setBurgerCount] = useState(2);
+  const [ingredientCount, setIngredientCount] = useState(5);
   const [hatPicks, setHatPicks] = useState({});
   const [copied, setCopied] = useState(false);
 
@@ -1025,10 +1063,10 @@ function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack, isPub
     return () => socket.off('lobbyHatPick', handleHatPick);
   }, []);
 
-  const diffs = [
-    { id: 'facil', label: T('easy'), desc: T('burger1') },
-    { id: 'medio', label: T('medium'), desc: T('burgers2') },
-    { id: 'dificil', label: T('hard'), desc: T('burgers3') },
+  const gameModes = [
+    { id: 'clon', label: T('modeClon'), desc: T('modeClonDesc') },
+    { id: 'escalera', label: T('modeEscalera'), desc: T('modeEscaleraDesc') },
+    { id: 'caotico', label: T('modeCaotico'), desc: T('modeCaoticoDesc') },
   ];
 
   function pickHat(lang) {
@@ -1040,8 +1078,9 @@ function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack, isPub
 
   function handleStart() {
     if (!myHat) return;
-    socket.emit('startGame', { code: roomCode, hatPicks, difficulty: diff });
-    onStart(hatPicks, diff);
+    const gameConfig = { mode: gameMode, burgerCount, ingredientCount };
+    socket.emit('startGame', { code: roomCode, hatPicks, gameConfig });
+    onStart(hatPicks, gameConfig);
   }
 
   return (
@@ -1180,27 +1219,61 @@ function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack, isPub
           </div>
         </div>
 
-        {/* Difficulty (host only) */}
+        {/* Game Mode (host only) */}
         {isHost && (
-          <div style={{ marginBottom: 20 }}>
-            <label style={{ color: '#aaa', fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 8 }}>{T('difficulty')}</label>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ color: '#aaa', fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 8 }}>{T('gameMode')}</label>
             <div style={{ display: 'flex', gap: 8 }}>
-              {diffs.map(d => (
+              {gameModes.map(m => (
                 <div
-                  key={d.id}
-                  onClick={() => setDiff(d.id)}
+                  key={m.id}
+                  onClick={() => setGameMode(m.id)}
                   style={{
                     flex: 1, padding: '7px 4px', borderRadius: 8, cursor: 'pointer', textAlign: 'center',
-                    border: diff === d.id ? '2px solid #FFD700' : '2px solid #2a2a4a',
-                    background: diff === d.id ? 'rgba(255,215,0,.08)' : 'rgba(255,255,255,.02)',
+                    border: gameMode === m.id ? '2px solid #FFD700' : '2px solid #2a2a4a',
+                    background: gameMode === m.id ? 'rgba(255,215,0,.08)' : 'rgba(255,255,255,.02)',
                     transition: 'all .15s',
                   }}
                 >
-                  <div style={{ fontSize: 12, fontWeight: 700, color: diff === d.id ? '#FFD700' : '#ccc' }}>{d.label}</div>
-                  <div style={{ fontSize: 9, color: '#666', marginTop: 2 }}>{d.desc}</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: gameMode === m.id ? '#FFD700' : '#ccc' }}>{m.label}</div>
+                  <div style={{ fontSize: 9, color: '#666', marginTop: 2 }}>{m.desc}</div>
                 </div>
               ))}
             </div>
+
+            {/* Burger count (clon & escalera) */}
+            {gameMode !== 'caotico' && (
+              <div style={{ marginTop: 12 }}>
+                <label style={{ color: '#aaa', fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 6 }}>
+                  {T('burgerCount')}: <span style={{ color: '#FFD700' }}>{burgerCount}</span>
+                </label>
+                <input
+                  type="range" min={1} max={4} value={burgerCount}
+                  onChange={e => setBurgerCount(+e.target.value)}
+                  style={{ width: '100%', accentColor: '#FFD700' }}
+                />
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#555', marginTop: 2 }}>
+                  <span>1</span><span>4</span>
+                </div>
+              </div>
+            )}
+
+            {/* Ingredient count (clon only) */}
+            {gameMode === 'clon' && (
+              <div style={{ marginTop: 12 }}>
+                <label style={{ color: '#aaa', fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 6 }}>
+                  {T('ingredientCount')}: <span style={{ color: '#FFD700' }}>{ingredientCount}</span>
+                </label>
+                <input
+                  type="range" min={2} max={8} value={ingredientCount}
+                  onChange={e => setIngredientCount(+e.target.value)}
+                  style={{ width: '100%', accentColor: '#FFD700' }}
+                />
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#555', marginTop: 2 }}>
+                  <span>2</span><span>8</span>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -1600,18 +1673,18 @@ export default function App() {
   }
 
   // ── Start game (local / vs AI) ──
-  function startGame(name, hat, diff, aiCount) {
+  function startGame(name, hat, gameConfig, aiCount) {
     const rawDeck = generateDeck();
     const deckArr = [...rawDeck];
     const ps = [];
-    ps.push(initPlayer(name, deckArr, hat, diff, false));
+    ps.push(initPlayer(name, deckArr, hat, gameConfig, false));
     const usedHats = [hat];
     const aiNames = shuffle([...AI_NAMES, 'Maestro Cocinero', 'Hambre Total', 'Chef Políglota']);
     for (let i = 0; i < aiCount; i++) {
       const avail = LANGUAGES.filter(l => !usedHats.includes(l));
       const aiHat = avail.length ? shuffle(avail)[0] : shuffle(LANGUAGES)[0];
       usedHats.push(aiHat);
-      ps.push(initPlayer(aiNames[i % aiNames.length], deckArr, aiHat, diff, true));
+      ps.push(initPlayer(aiNames[i % aiNames.length], deckArr, aiHat, gameConfig, true));
     }
     setPlayers(ps); setDeck(deckArr); setDiscard([]);
     setCp(0); setLog([]); setSelectedIdx(null); setModal(null);
@@ -1621,10 +1694,10 @@ export default function App() {
   }
 
   // ── Start game (online host) ──
-  function startOnlineGame(hatPicks, diff, onlinePls) {
+  function startOnlineGame(hatPicks, gameConfig, onlinePls) {
     const rawDeck = generateDeck();
     const deckArr = [...rawDeck];
-    const ps = onlinePls.map(p => initPlayer(p.name, deckArr, hatPicks[p.name], diff, false));
+    const ps = onlinePls.map(p => initPlayer(p.name, deckArr, hatPicks[p.name], gameConfig, false));
     // Mark non-host players as remote
     ps.forEach((p, i) => { if (i !== 0) p.isRemote = true; });
     setPlayers(ps); setDeck(deckArr); setDiscard([]);
@@ -2581,9 +2654,9 @@ export default function App() {
       isPublic={roomIsPublic}
       roomDisplayName={roomDisplayName}
       T={T}
-      onStart={(hatPicks, diff) => {
+      onStart={(hatPicks, gameConfig) => {
         if (isHost) {
-          startOnlineGame(hatPicks, diff, lobbyPlayers);
+          startOnlineGame(hatPicks, gameConfig, lobbyPlayers);
         }
       }}
       onBack={() => {

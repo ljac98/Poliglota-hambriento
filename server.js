@@ -199,7 +199,7 @@ io.on('connection', socket => {
       started: false,
       isPublic: !!isPublic,
       roomName: roomName || '',
-      difficulty: 'medio',
+      gameConfig: { mode: 'clon', burgerCount: 2, ingredientCount: 5 },
     });
     socket.join(code);
     socket.data.roomCode = code;
@@ -301,14 +301,14 @@ io.on('connection', socket => {
   });
 
   // ── Host starts the game ──
-  socket.on('startGame', ({ code, hatPicks, difficulty }) => {
+  socket.on('startGame', ({ code, hatPicks, gameConfig }) => {
     const room = rooms.get(code);
     if (!room || room.hostId !== socket.id) return;
     room.started = true;
-    room.difficulty = difficulty || 'medio';
+    room.gameConfig = gameConfig || { mode: 'clon', burgerCount: 2, ingredientCount: 5 };
     io.to(code).emit('gameStarted', {
       hatPicks,
-      difficulty,
+      gameConfig,
       players: room.players.map(p => ({ name: p.name, idx: p.idx })),
     });
     if (room.isPublic) broadcastLobbyList();
@@ -541,7 +541,7 @@ async function saveGameHistory(code, winner, room, playersData) {
     await pool.query(
       `INSERT INTO game_history (room_code, winner_id, winner_name, player_count, difficulty, players)
        VALUES ($1, $2, $3, $4, $5, $6)`,
-      [code, winnerId, winner.name, room.players.length, room.difficulty, JSON.stringify(playersData)]
+      [code, winnerId, winner.name, room.players.length, room.gameConfig?.mode || 'clon', JSON.stringify(playersData)]
     );
 
     // Update stats for registered players
