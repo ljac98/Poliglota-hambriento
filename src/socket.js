@@ -8,9 +8,9 @@ const SOCKET_URL = import.meta.env.DEV
 const socket = io(SOCKET_URL, {
   autoConnect: false,
   transports: ['polling'],
-  auth: () => {
+  auth: (cb) => {
     const token = getToken();
-    return token ? { token } : {};
+    cb(token ? { token } : {});
   },
 });
 
