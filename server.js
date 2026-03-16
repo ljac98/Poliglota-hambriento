@@ -353,6 +353,52 @@ io.on('connection', socket => {
     socket.data.intentionalLeave = true;
   });
 
+  // ── Permanent leave: player chose to leave for good (from leftRoom screen) ──
+  socket.on('permanentLeave', ({ code, reconnectId }) => {
+    const room = rooms.get(code);
+    if (!room) return;
+    const pi = room.players.findIndex(p => p.reconnectId === reconnectId);
+    if (pi === -1) return;
+    const player = room.players[pi];
+    const wasPublic = room.isPublic;
+
+    // Cancel grace period timer
+    const timerKey = `${code}:${reconnectId}`;
+    if (disconnectTimers.has(timerKey)) {
+      clearTimeout(disconnectTimers.get(timerKey));
+      disconnectTimers.delete(timerKey);
+    }
+
+    // Transfer host if needed
+    if (room.hostId === player.id || player.wasHost) {
+      const newHost = room.players.find(p => !p.disconnected && p.reconnectId !== reconnectId);
+      if (newHost) {
+        room.hostId = newHost.id;
+        io.to(newHost.id).emit('becameHost');
+      }
+    }
+
+    room.players.splice(pi, 1);
+    const activePlayers = room.players.filter(p => !p.disconnected);
+
+    if (room.players.length === 0) {
+      rooms.delete(code);
+      savedGames.delete(code);
+    } else {
+      // Notify remaining players to remove this player from game
+      io.to(code).emit('playerRemovedFromGame', {
+        playerIdx: player.idx,
+        playerName: player.name,
+        activePlayers: activePlayers.map(p => ({ name: p.name, idx: p.idx })),
+        activeCount: activePlayers.length,
+      });
+      io.to(code).emit('lobbyUpdate', {
+        players: activePlayers.map(p => ({ name: p.name, idx: p.idx })),
+      });
+    }
+    if (wasPublic) broadcastLobbyList();
+  });
+
   // ── Voluntary leave during game (player wants to leave but may rejoin) ──
   socket.on('voluntaryLeave', ({ code }) => {
     const room = rooms.get(code);

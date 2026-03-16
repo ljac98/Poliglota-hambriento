@@ -1391,6 +1391,30 @@ export default function App() {
       setGamePaused(false);
       setPausedMessage('');
     });
+    socket.on('playerRemovedFromGame', ({ playerIdx, playerName, activeCount }) => {
+      setChatMessages(prev => [...prev, { playerName: 'Sistema', text: `${playerName} ha abandonado la partida`, timestamp: Date.now() }]);
+      // Remove player from game state (host removes, non-host gets via stateUpdate)
+      setPlayers(prev => {
+        const updated = prev.filter((_, i) => i !== playerIdx);
+        return updated;
+      });
+      // Adjust current player index if needed
+      setCp(prev => {
+        if (playerIdx < prev) return prev - 1;
+        if (prev >= activeCount) return 0;
+        return prev;
+      });
+      // Adjust myPlayerIdx if our index shifted
+      setMyPlayerIdx(prev => playerIdx < prev ? prev - 1 : prev);
+      // If only 1 active player left, show alone screen
+      if (activeCount <= 1) {
+        setGamePaused(true);
+        setPausedMessage('alone');
+      } else {
+        setGamePaused(false);
+        setPausedMessage('');
+      }
+    });
     return () => {
       socket.off('lobbyUpdate');
       socket.off('lobbyHatPick');
@@ -1398,6 +1422,7 @@ export default function App() {
       socket.off('chatMessage');
       socket.off('playerVoluntaryLeft');
       socket.off('playerRejoined');
+      socket.off('playerRemovedFromGame');
     };
   }, [isOnline]);
 
@@ -2448,7 +2473,8 @@ export default function App() {
             Volver a la sala
           </Btn>
           <Btn onClick={() => {
-            socket.emit('leaveRoom');
+            const reconnectId = sessionStorage.getItem('hp_reconnect_id');
+            socket.emit('permanentLeave', { code: roomCode, reconnectId });
             socket.disconnect();
             setIsOnline(false); setIsHost(false); setMyPlayerIdx(0); setRoomCode('');
             setRoomIsPublic(false); setRoomDisplayName('');
@@ -3041,7 +3067,7 @@ export default function App() {
         </div>
       </div>
 
-      {/* ── Game paused overlay (2-player game, opponent left) ── */}
+      {/* ── Game paused overlay (opponent left or alone) ── */}
       {gamePaused && (
         <div style={{
           position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999,
@@ -3049,9 +3075,19 @@ export default function App() {
           fontFamily: "'Fredoka',sans-serif",
         }}>
           <div style={{ textAlign: 'center', padding: 32 }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>⏸️</div>
-            <h2 style={{ color: '#FFD700', fontSize: 22, fontWeight: 900, marginBottom: 12 }}>Juego en pausa</h2>
-            <p style={{ color: '#aaa', fontSize: 15, marginBottom: 24 }}>{pausedMessage}</p>
+            {pausedMessage === 'alone' ? (
+              <>
+                <div style={{ fontSize: 48, marginBottom: 16 }}>😔</div>
+                <h2 style={{ color: '#FFD700', fontSize: 22, fontWeight: 900, marginBottom: 12 }}>Eres el único en la sala</h2>
+                <p style={{ color: '#aaa', fontSize: 15, marginBottom: 24 }}>Todos los demás jugadores se han ido</p>
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize: 48, marginBottom: 16 }}>⏸️</div>
+                <h2 style={{ color: '#FFD700', fontSize: 22, fontWeight: 900, marginBottom: 12 }}>Juego en pausa</h2>
+                <p style={{ color: '#aaa', fontSize: 15, marginBottom: 24 }}>{pausedMessage}</p>
+              </>
+            )}
             <Btn onClick={() => {
               socket.emit('leaveRoom');
               socket.disconnect();
@@ -3061,7 +3097,7 @@ export default function App() {
               setGamePaused(false); setPausedMessage('');
               setPhase('setup');
             }} color="#ff4444" style={{ color: '#fff', fontSize: 14, padding: '10px 24px' }}>
-              Salir al lobby
+              Volver al lobby
             </Btn>
           </div>
         </div>
