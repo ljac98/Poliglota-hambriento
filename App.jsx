@@ -8,6 +8,7 @@ import {
 } from './constants';
 import { generateDeck, initPlayer, canPlayCard, checkBurgerComplete } from './game';
 import { shuffle, randInt, uid } from './game/utils';
+import { t, getUILang, setUILang } from './src/translations.js';
 import { GameCard } from './components/Cards';
 import { BurgerTarget, LogEntry } from './components/GameUI';
 import ingPan    from './imagenes/hamburguesas/objetivos/pan.png';
@@ -130,8 +131,18 @@ const Btn = ({ onClick, children, color = '#FFD700', disabled, style = {} }) => 
   </button>
 );
 
+// ── Language selector names (in their own language) ──
+const UI_LANG_OPTIONS = [
+  { key: 'es', label: 'Español' },
+  { key: 'en', label: 'English' },
+  { key: 'fr', label: 'Français' },
+  { key: 'it', label: 'Italiano' },
+  { key: 'de', label: 'Deutsch' },
+  { key: 'pt', label: 'Português' },
+];
+
 // ── Auth Screen (full page) ──────────────────────────────────────────────────
-function AuthScreen({ onAuth, onGuest }) {
+function AuthScreen({ onAuth, onGuest, T, uiLang, onLangChange }) {
   const [tab, setTab] = useState('login');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -169,35 +180,49 @@ function AuthScreen({ onAuth, onGuest }) {
         maxWidth: 420, width: '92vw',
         boxShadow: '0 8px 40px rgba(0,0,0,.6)', border: '2px solid #2a2a4a',
       }}>
-        <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <img src={hamImg} alt="hamburguesa" style={{ width: 80, height: 80, objectFit: 'contain' }} />
-          <h1 style={{ fontSize: 28, fontWeight: 900, color: '#FFD700', letterSpacing: 1 }}>HUNGRY POLY</h1>
-          <p style={{ color: '#888', fontSize: 12, marginTop: 4 }}>Aprende vocabulario armando hamburguesas</p>
-        </div>
-
-        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-          {['login', 'register'].map(t => (
-            <button key={t} onClick={() => { setTab(t); setError(''); }} style={{
-              flex: 1, padding: '10px 0', borderRadius: 10, border: 'none',
-              background: tab === t ? '#FFD700' : '#2a2a4a', color: tab === t ? '#111' : '#888',
-              fontFamily: "'Fredoka',sans-serif", fontWeight: 700, fontSize: 14, cursor: 'pointer',
-              transition: 'all .15s',
+        {/* Language selector */}
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 4, marginBottom: 16, flexWrap: 'wrap' }}>
+          {UI_LANG_OPTIONS.map(opt => (
+            <button key={opt.key} onClick={() => onLangChange(opt.key)} style={{
+              padding: '4px 10px', borderRadius: 8, border: uiLang === opt.key ? '2px solid #FFD700' : '2px solid #2a2a4a',
+              background: uiLang === opt.key ? 'rgba(255,215,0,.12)' : 'transparent',
+              color: uiLang === opt.key ? '#FFD700' : '#888', fontSize: 11, fontWeight: 700,
+              cursor: 'pointer', fontFamily: "'Fredoka',sans-serif", transition: 'all .15s',
             }}>
-              {t === 'login' ? 'Iniciar Sesión' : 'Registrarse'}
+              {opt.label}
             </button>
           ))}
         </div>
 
-        <input value={username} onChange={e => setUsername(e.target.value)} placeholder="Usuario" maxLength={20} style={inputStyle} />
-        <input value={password} onChange={e => setPassword(e.target.value)} placeholder="Contraseña" type="password" style={inputStyle} />
+        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+          <img src={hamImg} alt="hamburguesa" style={{ width: 80, height: 80, objectFit: 'contain' }} />
+          <h1 style={{ fontSize: 28, fontWeight: 900, color: '#FFD700', letterSpacing: 1 }}>{T('appTitle')}</h1>
+          <p style={{ color: '#888', fontSize: 12, marginTop: 4 }}>{T('tagline')}</p>
+        </div>
+
+        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+          {['login', 'register'].map(tb => (
+            <button key={tb} onClick={() => { setTab(tb); setError(''); }} style={{
+              flex: 1, padding: '10px 0', borderRadius: 10, border: 'none',
+              background: tab === tb ? '#FFD700' : '#2a2a4a', color: tab === tb ? '#111' : '#888',
+              fontFamily: "'Fredoka',sans-serif", fontWeight: 700, fontSize: 14, cursor: 'pointer',
+              transition: 'all .15s',
+            }}>
+              {tb === 'login' ? T('login') : T('register')}
+            </button>
+          ))}
+        </div>
+
+        <input value={username} onChange={e => setUsername(e.target.value)} placeholder={T('username')} maxLength={20} style={inputStyle} />
+        <input value={password} onChange={e => setPassword(e.target.value)} placeholder={T('password')} type="password" style={inputStyle} />
         {tab === 'register' && (
-          <input value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Nombre para mostrar" maxLength={20} style={inputStyle} />
+          <input value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder={T('displayName')} maxLength={20} style={inputStyle} />
         )}
 
         {error && <div style={{ color: '#ff6b6b', fontSize: 12, marginBottom: 10, textAlign: 'center' }}>{error}</div>}
 
         <Btn onClick={handleSubmit} disabled={loading || !username || !password} color="#FFD700" style={{ width: '100%', fontSize: 16, padding: '12px 0', marginBottom: 10 }}>
-          {loading ? 'Cargando...' : tab === 'login' ? 'Entrar' : 'Crear cuenta'}
+          {loading ? T('loading') : tab === 'login' ? T('enter') : T('createAccount')}
         </Btn>
 
         <div style={{ textAlign: 'center', margin: '16px 0 0' }}>
@@ -206,7 +231,7 @@ function AuthScreen({ onAuth, onGuest }) {
             cursor: 'pointer', fontFamily: "'Fredoka',sans-serif",
             textDecoration: 'underline', padding: '8px 16px',
           }}>
-            Jugar como invitado
+            {T('playAsGuest')}
           </button>
         </div>
       </div>
@@ -215,7 +240,7 @@ function AuthScreen({ onAuth, onGuest }) {
 }
 
 // ── History Screen ───────────────────────────────────────────────────────────
-function HistoryScreen({ user, onBack }) {
+function HistoryScreen({ user, onBack, T }) {
   const [history, setHistory] = useState(null);
   const [filter, setFilter] = useState('all');
 
@@ -235,9 +260,9 @@ function HistoryScreen({ user, onBack }) {
   }) : [];
 
   const filters = [
-    { id: 'all', label: 'Todas', count: total },
-    { id: 'wins', label: 'Victorias', count: wins },
-    { id: 'losses', label: 'Derrotas', count: losses },
+    { id: 'all', label: T('all'), count: total },
+    { id: 'wins', label: T('winsFilter'), count: wins },
+    { id: 'losses', label: T('lossesFilter'), count: losses },
   ];
 
   return (
@@ -255,11 +280,11 @@ function HistoryScreen({ user, onBack }) {
           background: 'none', border: 'none', color: '#888', fontSize: 14,
           cursor: 'pointer', fontFamily: "'Fredoka',sans-serif", marginBottom: 12, padding: 0,
         }}>
-          ← Volver
+          {T('back')}
         </button>
 
         <h2 style={{ fontSize: 22, fontWeight: 900, color: '#FFD700', marginBottom: 6, textAlign: 'center' }}>
-          Historial de Partidas
+          {T('gameHistory')}
         </h2>
         <p style={{ color: '#4ecdc4', fontSize: 14, fontWeight: 700, textAlign: 'center', marginBottom: 20 }}>
           {user.displayName}
@@ -272,19 +297,19 @@ function HistoryScreen({ user, onBack }) {
         }}>
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: 22, fontWeight: 900, color: '#FFD700' }}>{total}</div>
-            <div style={{ fontSize: 10, color: '#777', fontWeight: 700 }}>PARTIDAS</div>
+            <div style={{ fontSize: 10, color: '#777', fontWeight: 700 }}>{T('games')}</div>
           </div>
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: 22, fontWeight: 900, color: '#66BB6A' }}>{wins}</div>
-            <div style={{ fontSize: 10, color: '#777', fontWeight: 700 }}>VICTORIAS</div>
+            <div style={{ fontSize: 10, color: '#777', fontWeight: 700 }}>{T('wins')}</div>
           </div>
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: 22, fontWeight: 900, color: '#FF7043' }}>{losses}</div>
-            <div style={{ fontSize: 10, color: '#777', fontWeight: 700 }}>DERROTAS</div>
+            <div style={{ fontSize: 10, color: '#777', fontWeight: 700 }}>{T('losses')}</div>
           </div>
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: 22, fontWeight: 900, color: '#CE93D8' }}>{winRate}%</div>
-            <div style={{ fontSize: 10, color: '#777', fontWeight: 700 }}>WINRATE</div>
+            <div style={{ fontSize: 10, color: '#777', fontWeight: 700 }}>{T('winrate')}</div>
           </div>
         </div>
 
@@ -306,9 +331,9 @@ function HistoryScreen({ user, onBack }) {
         {/* Game list */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: '50vh', overflowY: 'auto' }}>
           {!history ? (
-            <p style={{ color: '#666', fontSize: 13, textAlign: 'center', padding: 20 }}>Cargando...</p>
+            <p style={{ color: '#666', fontSize: 13, textAlign: 'center', padding: 20 }}>{T('loading')}</p>
           ) : filtered.length === 0 ? (
-            <p style={{ color: '#666', fontSize: 13, textAlign: 'center', padding: 20 }}>Sin partidas registradas</p>
+            <p style={{ color: '#666', fontSize: 13, textAlign: 'center', padding: 20 }}>{T('noGames')}</p>
           ) : filtered.map(g => {
             const isWin = g.winnerName === user.displayName;
             return (
@@ -321,10 +346,10 @@ function HistoryScreen({ user, onBack }) {
                 <span style={{ fontSize: 20 }}>{isWin ? '🏆' : '❌'}</span>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: isWin ? '#66BB6A' : '#FF7043' }}>
-                    {isWin ? 'Victoria' : `Derrota — Ganó ${g.winnerName}`}
+                    {isWin ? T('victory') : (typeof T('defeatBy') === 'function' ? T('defeatBy')(g.winnerName) : T('defeatBy'))}
                   </div>
                   <div style={{ fontSize: 11, color: '#777' }}>
-                    {g.playerCount} jugadores · {g.difficulty} · {new Date(g.finishedAt).toLocaleDateString()}
+                    {g.playerCount} {T('players')} · {g.difficulty} · {new Date(g.finishedAt).toLocaleDateString()}
                   </div>
                 </div>
               </div>
@@ -337,16 +362,16 @@ function HistoryScreen({ user, onBack }) {
 }
 
 // ── Setup Screen ──────────────────────────────────────────────────────────────
-function SetupScreen({ onStart, onOnline, user, onLogout, onHistory }) {
+function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, T }) {
   const [name, setName] = useState(user?.displayName || '');
   const [hat, setHat] = useState(null);
   const [diff, setDiff] = useState('medio');
   const [aiCount, setAiCount] = useState(2);
 
   const diffs = [
-    { id: 'facil', label: 'Fácil', desc: '1 hamburguesa (4-6 ing.)' },
-    { id: 'medio', label: 'Medio', desc: '2 hamburguesas (5-6 ing.)' },
-    { id: 'dificil', label: 'Difícil', desc: '3 hamburguesas (5-7 ing.)' },
+    { id: 'facil', label: T('easy'), desc: T('burger1') },
+    { id: 'medio', label: T('medium'), desc: T('burgers2') },
+    { id: 'dificil', label: T('hard'), desc: T('burgers3') },
   ];
 
   return (
@@ -364,8 +389,8 @@ function SetupScreen({ onStart, onOnline, user, onLogout, onHistory }) {
       }}>
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
           <img src={hamImg} alt="hamburguesa" style={{ width: 90, height: 90, objectFit: 'contain' }} />
-          <h1 style={{ fontSize: 30, fontWeight: 900, color: '#FFD700', letterSpacing: 1 }}>HUNGRY POLY</h1>
-          <p style={{ color: '#888', fontSize: 13, marginTop: 4 }}>Aprende vocabulario armando hamburguesas</p>
+          <h1 style={{ fontSize: 30, fontWeight: 900, color: '#FFD700', letterSpacing: 1 }}>{T('appTitle')}</h1>
+          <p style={{ color: '#888', fontSize: 13, marginTop: 4 }}>{T('tagline')}</p>
           {user && (
             <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, flexWrap: 'wrap' }}>
               <span style={{ color: '#4ecdc4', fontSize: 13, fontWeight: 700 }}>
@@ -375,12 +400,12 @@ function SetupScreen({ onStart, onOnline, user, onLogout, onHistory }) {
                 background: 'none', border: '1px solid #4ecdc4', borderRadius: 8,
                 color: '#4ecdc4', fontSize: 11, padding: '3px 10px', cursor: 'pointer',
                 fontFamily: "'Fredoka',sans-serif", fontWeight: 700,
-              }}>Historial</button>
+              }}>{T('history')}</button>
               <button onClick={onLogout} style={{
                 background: 'none', border: '1px solid #555', borderRadius: 8,
                 color: '#888', fontSize: 11, padding: '3px 10px', cursor: 'pointer',
                 fontFamily: "'Fredoka',sans-serif",
-              }}>Salir</button>
+              }}>{T('logout')}</button>
             </div>
           )}
         </div>
@@ -388,10 +413,10 @@ function SetupScreen({ onStart, onOnline, user, onLogout, onHistory }) {
         {/* Name – only show input if not logged in */}
         {!user && (
           <div style={{ marginBottom: 20 }}>
-            <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 6 }}>TU NOMBRE</label>
+            <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 6 }}>{T('yourName')}</label>
             <input
               value={name} onChange={e => setName(e.target.value)}
-              placeholder="Ingresa tu nombre..."
+              placeholder={T('enterName')}
               maxLength={20}
               style={{
                 width: '100%', padding: '10px 14px', borderRadius: 10, border: '2px solid #2a2a4a',
@@ -404,7 +429,7 @@ function SetupScreen({ onStart, onOnline, user, onLogout, onHistory }) {
 
         {/* Hat selection */}
         <div style={{ marginBottom: 20 }}>
-          <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 8 }}>ELIGE TU IDIOMA</label>
+          <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 8 }}>{T('chooseLanguage')}</label>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {LANGUAGES.map(lang => (
               <div
@@ -430,7 +455,7 @@ function SetupScreen({ onStart, onOnline, user, onLogout, onHistory }) {
 
         {/* Difficulty */}
         <div style={{ marginBottom: 20 }}>
-          <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 8 }}>DIFICULTAD</label>
+          <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 8 }}>{T('difficulty')}</label>
           <div style={{ display: 'flex', gap: 8 }}>
             {diffs.map(d => (
               <div
@@ -453,7 +478,7 @@ function SetupScreen({ onStart, onOnline, user, onLogout, onHistory }) {
         {/* AI count */}
         <div style={{ marginBottom: 28 }}>
           <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 8 }}>
-            OPONENTES IA: <span style={{ color: '#FFD700' }}>{aiCount}</span>
+            {T('aiOpponents')}: <span style={{ color: '#FFD700' }}>{aiCount}</span>
           </label>
           <input
             type="range" min={1} max={3} value={aiCount}
@@ -461,7 +486,7 @@ function SetupScreen({ onStart, onOnline, user, onLogout, onHistory }) {
             style={{ width: '100%', accentColor: '#FFD700' }}
           />
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#555', marginTop: 2 }}>
-            <span>1 oponente</span><span>3 oponentes</span>
+            <span>{T('opponent1')}</span><span>{T('opponents3')}</span>
           </div>
         </div>
 
@@ -472,14 +497,14 @@ function SetupScreen({ onStart, onOnline, user, onLogout, onHistory }) {
             color="#FFD700"
             style={{ flex: 1, fontSize: 16, padding: '12px 0' }}
           >
-            🎮 vs IA
+            {T('vsAI')}
           </Btn>
           <Btn
             onClick={onOnline}
             color="#00BCD4"
             style={{ flex: 1, fontSize: 16, padding: '12px 0' }}
           >
-            🌐 Online
+            {T('online')}
           </Btn>
         </div>
       </div>
@@ -488,7 +513,7 @@ function SetupScreen({ onStart, onOnline, user, onLogout, onHistory }) {
 }
 
 // ── Transition Screen ─────────────────────────────────────────────────────────
-function TransitionScreen({ player, onContinue, isExtraPlay }) {
+function TransitionScreen({ player, onContinue, isExtraPlay, T }) {
   return (
     <div
       onClick={onContinue}
@@ -514,20 +539,20 @@ function TransitionScreen({ player, onContinue, isExtraPlay }) {
         <img src={imgGlotonHead} alt="El Glotón" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
       </div>
       <h2 style={{ fontSize: 28, fontWeight: 900, color: '#FFD700', marginBottom: 8 }}>
-        {isExtraPlay ? '¡Puedes jugar un ingrediente!' : 'Tu turno'}
+        {isExtraPlay ? T('extraPlayMsg') : T('yourTurn')}
       </h2>
       <div style={{ fontSize: 22, color: '#eee', marginBottom: 6 }}>
         {player?.name}
       </div>
       <div style={{ fontSize: 13, color: '#555', marginTop: 20 }}>
-        Toca para continuar...
+        {T('tapContinue')}
       </div>
     </div>
   );
 }
 
 // ── Game Over Screen ──────────────────────────────────────────────────────────
-function GameOverScreen({ winner, players, onRestart, user, onHistory }) {
+function GameOverScreen({ winner, players, onRestart, user, onHistory, T }) {
   return (
     <div style={{
       minHeight: '100vh', display: 'flex', flexDirection: 'column',
@@ -535,9 +560,9 @@ function GameOverScreen({ winner, players, onRestart, user, onHistory }) {
       background: 'linear-gradient(135deg,#0f1117 0%,#1a1a2e 100%)',
     }}>
       <div style={{ fontSize: 72, marginBottom: 12 }}>🏆</div>
-      <h1 style={{ fontSize: 34, fontWeight: 900, color: '#FFD700', marginBottom: 6 }}>¡{winner.name} ganó!</h1>
+      <h1 style={{ fontSize: 34, fontWeight: 900, color: '#FFD700', marginBottom: 6 }}>{typeof T('playerWon') === 'function' ? T('playerWon')(winner.name) : T('playerWon')}</h1>
       <p style={{ color: '#888', fontSize: 14, marginBottom: 32 }}>
-        Completó todas sus hamburguesas primero
+        {T('completedBurgers')}
       </p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 32, minWidth: 220 }}>
         {players.map((p, i) => (
@@ -556,11 +581,11 @@ function GameOverScreen({ winner, players, onRestart, user, onHistory }) {
       </div>
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
         <Btn onClick={onRestart} color="#FFD700" style={{ fontSize: 16, padding: '12px 32px' }}>
-          🔄 Jugar de nuevo
+          {T('playAgain')}
         </Btn>
         {user && (
           <Btn onClick={onHistory} color="#4ecdc4" style={{ fontSize: 14, padding: '12px 24px' }}>
-            📊 Historial
+            {T('historyBtn')}
           </Btn>
         )}
       </div>
@@ -588,7 +613,7 @@ function Modal({ title, children }) {
 }
 
 // ── Opponent Card (compact) ───────────────────────────────────────────────────
-function OpponentCard({ player, index, color, isActive, onIngredientClick }) {
+function OpponentCard({ player, index, color, isActive, onIngredientClick, T }) {
   const burger = player.burgers[player.currentBurger];
   return (
     <div style={{
@@ -599,7 +624,7 @@ function OpponentCard({ player, index, color, isActive, onIngredientClick }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
         <HatSVG lang={player.mainHats[0] || LANGUAGES[0]} size={22} />
         <span style={{ fontWeight: 800, color, fontSize: 13 }}>{player.name}</span>
-        {isActive && <span style={{ fontSize: 10, color: '#FFD700', marginLeft: 'auto' }}>⟵ turno</span>}
+        {isActive && <span style={{ fontSize: 10, color: '#FFD700', marginLeft: 'auto' }}>{T('turn')}</span>}
         <span style={{ marginLeft: isActive ? 0 : 'auto', fontSize: 11, color: '#777' }}>
           🍔 {player.currentBurger}/{player.totalBurgers}
         </span>
@@ -656,14 +681,14 @@ function OpponentCard({ player, index, color, isActive, onIngredientClick }) {
 
       {/* Hand count */}
       <div style={{ fontSize: 10, color: '#555', marginTop: 4 }}>
-        🃏 {player.hand.length} cartas en mano
+        {typeof T('cardsInHand') === 'function' ? T('cardsInHand')(player.hand.length) : `🃏 ${player.hand.length}`}
       </div>
     </div>
   );
 }
 
 // ── Online Menu (create / join / lobby) ──────────────────────────────────────
-function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '', user }) {
+function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '', user, T }) {
   const [tab, setTab] = useState(initialCode ? 'join' : 'create');
   const [name, setName] = useState(user?.displayName || '');
   const [isPublic, setIsPublic] = useState(false);
@@ -712,7 +737,7 @@ function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '', user }) {
     const timeout = setTimeout(() => {
       socket.off('roomCreated');
       socket.off('connect', doCreate);
-      setError('Tiempo de espera agotado. Intenta de nuevo.');
+      setError(T('timeout'));
       setLoading(false);
     }, 10000);
 
@@ -743,7 +768,7 @@ function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '', user }) {
       socket.off('roomJoined');
       socket.off('joinError');
       socket.off('connect', doJoin);
-      setError('Tiempo de espera agotado. Intenta de nuevo.');
+      setError(T('timeout'));
       setLoading(false);
     }, 10000);
 
@@ -768,7 +793,7 @@ function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '', user }) {
   }
 
   function handleLobbyJoin(roomCode) {
-    if (!lobbyName.trim()) { setError('Ingresa tu nombre primero'); return; }
+    if (!lobbyName.trim()) { setError(T('enterNameFirst')); return; }
     setLoading(true); setError('');
     // Socket is already connected from lobby tab
     socket.once('joinError', msg => { setError(msg); setLoading(false); });
@@ -814,54 +839,54 @@ function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '', user }) {
       }}>
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
           <div style={{ fontSize: 50, marginBottom: 8 }}>🌐</div>
-          <h1 style={{ fontSize: 26, fontWeight: 900, color: '#FFD700' }}>Multijugador Online</h1>
-          <p style={{ color: '#888', fontSize: 13, marginTop: 4 }}>Juega con amigos en tiempo real</p>
+          <h1 style={{ fontSize: 26, fontWeight: 900, color: '#FFD700' }}>{T('multiplayerOnline')}</h1>
+          <p style={{ color: '#888', fontSize: 13, marginTop: 4 }}>{T('playWithFriends')}</p>
         </div>
 
         {/* Tabs */}
         <div style={{ display: 'flex', gap: 6, marginBottom: 24 }}>
           <button style={tabStyle(tab === 'create')} onClick={() => { setTab('create'); setError(''); }}>
-            ➕ Crear sala
+            {T('createRoom')}
           </button>
           <button style={tabStyle(tab === 'lobby')} onClick={() => { setTab('lobby'); setError(''); }}>
-            🏠 Lobby
+            {T('lobby')}
           </button>
           <button style={tabStyle(tab === 'join')} onClick={() => { setTab('join'); setError(''); }}>
-            🔑 Código
+            {T('code')}
           </button>
         </div>
 
         {tab === 'create' && (
           <div>
             {!user && (<>
-              <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 6 }}>TU NOMBRE</label>
+              <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 6 }}>{T('yourName')}</label>
               <input
                 value={name} onChange={e => setName(e.target.value)}
-                placeholder="Ingresa tu nombre..."
+                placeholder={T('enterName')}
                 maxLength={20} style={inputStyle}
                 onKeyDown={e => e.key === 'Enter' && handleCreate()}
               />
             </>)}
 
             {/* Public / Private toggle */}
-            <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 6, marginTop: 16 }}>TIPO DE SALA</label>
+            <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 6, marginTop: 16 }}>{T('roomType')}</label>
             <div style={{ display: 'flex', gap: 8, marginBottom: isPublic ? 14 : 0 }}>
               <div onClick={() => setIsPublic(false)} style={toggleStyle(!isPublic)}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: !isPublic ? '#FFD700' : '#ccc' }}>🔒 Privada</div>
-                <div style={{ fontSize: 10, color: '#666', marginTop: 2 }}>Solo con código</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: !isPublic ? '#FFD700' : '#ccc' }}>{T('private')}</div>
+                <div style={{ fontSize: 10, color: '#666', marginTop: 2 }}>{T('codeOnly')}</div>
               </div>
               <div onClick={() => setIsPublic(true)} style={toggleStyle(isPublic)}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: isPublic ? '#FFD700' : '#ccc' }}>🌐 Pública</div>
-                <div style={{ fontSize: 10, color: '#666', marginTop: 2 }}>Visible en lobby</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: isPublic ? '#FFD700' : '#ccc' }}>{T('public')}</div>
+                <div style={{ fontSize: 10, color: '#666', marginTop: 2 }}>{T('visibleInLobby')}</div>
               </div>
             </div>
 
             {isPublic && (
               <div>
-                <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 6 }}>NOMBRE DE SALA</label>
+                <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 6 }}>{T('roomName')}</label>
                 <input
                   value={roomName} onChange={e => setRoomName(e.target.value)}
-                  placeholder="Ej: Partida rápida"
+                  placeholder={T('roomNamePlaceholder')}
                   maxLength={30} style={inputStyle}
                 />
               </div>
@@ -873,7 +898,7 @@ function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '', user }) {
               color="#FFD700"
               style={{ width: '100%', fontSize: 16, padding: '12px 0', marginTop: 20 }}
             >
-              {loading ? '⏳ Creando...' : '🎮 Crear sala'}
+              {loading ? T('creating') : T('createRoomBtn')}
             </Btn>
           </div>
         )}
@@ -881,22 +906,22 @@ function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '', user }) {
         {tab === 'lobby' && (
           <div>
             {!user && (<>
-              <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 6 }}>TU NOMBRE</label>
+              <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 6 }}>{T('yourName')}</label>
               <input
                 value={lobbyName} onChange={e => setLobbyName(e.target.value)}
-                placeholder="Ingresa tu nombre..."
+                placeholder={T('enterName')}
                 maxLength={20} style={{ ...inputStyle, marginBottom: 16 }}
               />
             </>)}
 
-            <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 8 }}>SALAS PÚBLICAS</label>
+            <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 8 }}>{T('publicRooms')}</label>
             {lobbyLoading ? (
               <div style={{ textAlign: 'center', padding: 20, color: '#888', fontSize: 13 }}>
-                ⏳ Cargando salas...
+                {T('loadingRooms')}
               </div>
             ) : lobbyRooms.length === 0 ? (
               <div style={{ textAlign: 'center', padding: 30, color: '#555', fontSize: 13 }}>
-                No hay salas públicas disponibles
+                {T('noPublicRooms')}
               </div>
             ) : (
               <div style={{ maxHeight: 280, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -909,7 +934,7 @@ function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '', user }) {
                     <div>
                       <div style={{ fontWeight: 700, color: '#eee', fontSize: 14 }}>{room.roomName}</div>
                       <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>
-                        👑 {room.hostName} · {room.playerCount}/4 jugadores
+                        👑 {room.hostName} · {room.playerCount}/4 {T('players')}
                       </div>
                     </div>
                     <Btn
@@ -918,7 +943,7 @@ function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '', user }) {
                       color="#00BCD4"
                       style={{ fontSize: 13, padding: '8px 16px' }}
                     >
-                      Unirse
+                      {T('join')}
                     </Btn>
                   </div>
                 ))}
@@ -931,18 +956,18 @@ function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '', user }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {!user && (
               <div>
-                <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 6 }}>TU NOMBRE</label>
+                <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 6 }}>{T('yourName')}</label>
                 <input
                   value={joinName} onChange={e => setJoinName(e.target.value)}
-                  placeholder="Ingresa tu nombre..." maxLength={20} style={inputStyle}
+                  placeholder={T('enterName')} maxLength={20} style={inputStyle}
                 />
               </div>
             )}
             <div>
-              <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 6 }}>CÓDIGO DE SALA</label>
+              <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 6 }}>{T('roomCode')}</label>
               <input
                 value={joinCode} onChange={e => setJoinCode(e.target.value.toUpperCase())}
-                placeholder="Ej: ABCD1" maxLength={7} style={{ ...inputStyle, letterSpacing: 4, textTransform: 'uppercase' }}
+                placeholder={T('roomCodePlaceholder')} maxLength={7} style={{ ...inputStyle, letterSpacing: 4, textTransform: 'uppercase' }}
                 onKeyDown={e => e.key === 'Enter' && handleJoin()}
               />
             </div>
@@ -952,7 +977,7 @@ function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '', user }) {
               color="#00BCD4"
               style={{ width: '100%', fontSize: 16, padding: '12px 0' }}
             >
-              {loading ? '⏳ Uniéndose...' : '🔗 Unirse'}
+              {loading ? T('joining') : T('joinBtn')}
             </Btn>
           </div>
         )}
@@ -968,7 +993,7 @@ function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '', user }) {
             background: 'none', border: 'none', color: '#555', cursor: 'pointer',
             fontFamily: "'Fredoka',sans-serif", fontSize: 13,
           }}>
-            ← Volver al menú
+            {T('backToMenu')}
           </button>
         </div>
       </div>
@@ -977,7 +1002,7 @@ function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '', user }) {
 }
 
 // ── Online Lobby (waiting room before game starts) ────────────────────────────
-function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack, isPublic, roomDisplayName }) {
+function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack, isPublic, roomDisplayName, T }) {
   const [diff, setDiff] = useState('medio');
   const [hatPicks, setHatPicks] = useState({});
   const [copied, setCopied] = useState(false);
@@ -1001,9 +1026,9 @@ function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack, isPub
   }, []);
 
   const diffs = [
-    { id: 'facil', label: 'Fácil', desc: '1 hamburguesa' },
-    { id: 'medio', label: 'Medio', desc: '2 hamburguesas' },
-    { id: 'dificil', label: 'Difícil', desc: '3 hamburguesas' },
+    { id: 'facil', label: T('easy'), desc: T('burger1') },
+    { id: 'medio', label: T('medium'), desc: T('burgers2') },
+    { id: 'dificil', label: T('hard'), desc: T('burgers3') },
   ];
 
   function pickHat(lang) {
@@ -1036,7 +1061,7 @@ function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack, isPub
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
           {isPublic ? (
             <>
-              <div style={{ fontSize: 13, color: '#888', fontWeight: 700, letterSpacing: 1, marginBottom: 6 }}>🌐 SALA PÚBLICA</div>
+              <div style={{ fontSize: 13, color: '#888', fontWeight: 700, letterSpacing: 1, marginBottom: 6 }}>{T('publicRoom')}</div>
               <div style={{
                 fontSize: 24, fontWeight: 900, color: '#FFD700',
                 background: 'rgba(255,215,0,.08)', borderRadius: 12, padding: '10px 20px',
@@ -1044,7 +1069,7 @@ function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack, isPub
               }}>
                 {roomDisplayName}
               </div>
-              <div style={{ fontSize: 11, color: '#555', marginTop: 6 }}>Código: {roomCode}</div>
+              <div style={{ fontSize: 11, color: '#555', marginTop: 6 }}>{T('codeLabel')}: {roomCode}</div>
               <button
                 onClick={handleCopyLink}
                 style={{
@@ -1056,12 +1081,12 @@ function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack, isPub
                   cursor: 'pointer', transition: 'all .2s',
                 }}
               >
-                {copied ? '✅ ¡Enlace copiado!' : '🔗 Invitar con enlace'}
+                {copied ? T('linkCopied') : T('inviteLink')}
               </button>
             </>
           ) : (
             <>
-              <div style={{ fontSize: 13, color: '#888', fontWeight: 700, letterSpacing: 1, marginBottom: 6 }}>🔒 CÓDIGO DE SALA</div>
+              <div style={{ fontSize: 13, color: '#888', fontWeight: 700, letterSpacing: 1, marginBottom: 6 }}>{T('privateRoom')}</div>
               <div style={{
                 fontSize: 36, fontWeight: 900, color: '#FFD700', letterSpacing: 8,
                 background: 'rgba(255,215,0,.08)', borderRadius: 12, padding: '10px 20px',
@@ -1069,7 +1094,7 @@ function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack, isPub
               }}>
                 {roomCode}
               </div>
-              <div style={{ fontSize: 12, color: '#555', marginTop: 8 }}>Comparte este código o enlace con tus amigos</div>
+              <div style={{ fontSize: 12, color: '#555', marginTop: 8 }}>{T('shareCode')}</div>
               <button
                 onClick={handleCopyLink}
                 style={{
@@ -1081,7 +1106,7 @@ function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack, isPub
                   cursor: 'pointer', transition: 'all .2s',
                 }}
               >
-                {copied ? '✅ ¡Enlace copiado!' : '🔗 Invitar con enlace'}
+                {copied ? T('linkCopied') : T('inviteLink')}
               </button>
             </>
           )}
@@ -1090,7 +1115,7 @@ function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack, isPub
         {/* Players */}
         <div style={{ marginBottom: 20 }}>
           <div style={{ fontSize: 12, fontWeight: 800, color: '#555', letterSpacing: 1, marginBottom: 10 }}>
-            JUGADORES ({players.length}/4)
+            {typeof T('playersCount') === 'function' ? T('playersCount')(players.length) : `PLAYERS (${players.length}/4)`}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {players.map((p, i) => (
@@ -1108,8 +1133,8 @@ function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack, isPub
                   {i + 1}
                 </div>
                 <span style={{ fontWeight: 700, color: '#eee' }}>{p.name}</span>
-                {p.name === myName && <span style={{ fontSize: 11, color: '#888' }}>(tú)</span>}
-                {i === 0 && <span style={{ fontSize: 11, color: '#FFD700', marginLeft: 'auto' }}>👑 Host</span>}
+                {p.name === myName && <span style={{ fontSize: 11, color: '#888' }}>{T('you')}</span>}
+                {i === 0 && <span style={{ fontSize: 11, color: '#FFD700', marginLeft: 'auto' }}>{T('host')}</span>}
                 {hatPicks[p.name] && (
                   <HatSVG lang={hatPicks[p.name]} size={24} />
                 )}
@@ -1117,7 +1142,7 @@ function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack, isPub
             ))}
             {players.length < 2 && (
               <div style={{ fontSize: 12, color: '#555', textAlign: 'center', padding: 8 }}>
-                ⏳ Esperando más jugadores...
+                {T('waitingPlayers')}
               </div>
             )}
           </div>
@@ -1126,7 +1151,7 @@ function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack, isPub
         {/* Hat selection for current player */}
         <div style={{ marginBottom: 16 }}>
           <label style={{ color: '#aaa', fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 8 }}>
-            TU IDIOMA {myHat ? '✅' : '(elige uno)'}
+            {T('yourLanguage')} {myHat ? '✅' : T('chooseOne')}
           </label>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {LANGUAGES.map(lang => {
@@ -1158,7 +1183,7 @@ function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack, isPub
         {/* Difficulty (host only) */}
         {isHost && (
           <div style={{ marginBottom: 20 }}>
-            <label style={{ color: '#aaa', fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 8 }}>DIFICULTAD</label>
+            <label style={{ color: '#aaa', fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 8 }}>{T('difficulty')}</label>
             <div style={{ display: 'flex', gap: 8 }}>
               {diffs.map(d => (
                 <div
@@ -1187,12 +1212,12 @@ function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack, isPub
             style={{ width: '100%', fontSize: 15, padding: '12px 0' }}
           >
             {Object.keys(hatPicks).length < players.length
-              ? `⏳ Esperando sombreros (${Object.keys(hatPicks).length}/${players.length})`
-              : '🚀 ¡Iniciar partida!'}
+              ? (typeof T('waitingHats') === 'function' ? T('waitingHats')(Object.keys(hatPicks).length, players.length) : T('waitingHats'))
+              : T('startGame')}
           </Btn>
         ) : (
           <div style={{ textAlign: 'center', padding: 12, color: '#888', fontSize: 13 }}>
-            {!myHat ? '👆 Elige tu sombrero de idioma' : '⏳ Esperando que el host inicie...'}
+            {!myHat ? T('chooseHat') : T('waitingHost')}
           </div>
         )}
 
@@ -1201,7 +1226,7 @@ function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack, isPub
             background: 'none', border: 'none', color: '#555', cursor: 'pointer',
             fontFamily: "'Fredoka',sans-serif", fontSize: 12,
           }}>
-            ← Salir de la sala
+            {T('leaveRoom')}
           </button>
         </div>
       </div>
@@ -1255,6 +1280,10 @@ export default function App() {
 
   // ── Auth state ──
   const [user, setUser] = useState(() => getSavedUser());
+  // ── UI language state ──
+  const [uiLang, setUiLangState] = useState(() => getUILang());
+  const T = useCallback((key) => t(key, uiLang), [uiLang]);
+  const handleSetLang = (lang) => { setUILang(lang); setUiLangState(lang); };
   // ── Negación state ──
   // pendingNeg: null | { actingIdx, cardInfo, eligibleIdxs, responses: {i: bool} }
   const [pendingNeg, setPendingNeg] = useState(null);
@@ -2394,7 +2423,7 @@ export default function App() {
   // ── Render phases ──
   if (phase === 'reconnecting') return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0e1a', color: '#FFD700', fontFamily: "'Fredoka',sans-serif", fontSize: 22 }}>
-      Reconectando a la sala...
+      {T('reconnecting')}
     </div>
   );
 
@@ -2406,13 +2435,13 @@ export default function App() {
       <div style={{ textAlign: 'center', padding: 32 }}>
         <div style={{ fontSize: 56, marginBottom: 16 }}>🚪</div>
         <h2 style={{ color: '#FFD700', fontSize: 24, fontWeight: 900, marginBottom: 8 }}>
-          Te has salido de la sala
+          {T('leftRoom')}
         </h2>
         <p style={{ color: '#aaa', fontSize: 15, marginBottom: 32 }}>
-          Sala: {roomCode}
+          {T('roomLabel')}: {roomCode}
         </p>
         <p style={{ color: '#ccc', fontSize: 17, marginBottom: 28 }}>
-          ¿Deseas volver a la sala?
+          {T('wantToReturn')}
         </p>
         <div style={{ display: 'flex', gap: 16, justifyContent: 'center' }}>
           <Btn onClick={() => {
@@ -2470,7 +2499,7 @@ export default function App() {
               socket.connect();
             }
           }} color="#4ecdc4" style={{ fontSize: 16, padding: '12px 32px' }}>
-            Volver a la sala
+            {T('returnToRoom')}
           </Btn>
           <Btn onClick={() => {
             const reconnectId = sessionStorage.getItem('hp_reconnect_id');
@@ -2484,7 +2513,7 @@ export default function App() {
             setPausedMessage('');
             setPhase('setup');
           }} color="#ff4444" style={{ fontSize: 16, padding: '12px 32px', color: '#fff' }}>
-            No, ir al lobby
+            {T('noGoLobby')}
           </Btn>
         </div>
       </div>
@@ -2495,11 +2524,12 @@ export default function App() {
     <AuthScreen
       onAuth={(u) => { setUser(u); setPhase('setup'); }}
       onGuest={() => setPhase('setup')}
+      T={T} uiLang={uiLang} onLangChange={handleSetLang}
     />
   );
 
   if (phase === 'history' && user) return (
-    <HistoryScreen user={user} onBack={() => setPhase('setup')} />
+    <HistoryScreen user={user} onBack={() => setPhase('setup')} T={T} />
   );
 
   if (phase === 'setup') return (
@@ -2509,6 +2539,7 @@ export default function App() {
       user={user}
       onLogout={() => { clearAuth(); setUser(null); setPhase('auth'); }}
       onHistory={() => setPhase('history')}
+      T={T}
     />
   );
 
@@ -2517,6 +2548,7 @@ export default function App() {
       user={user}
       initialCode={initialSalaCode}
       onBack={() => setPhase('setup')}
+      T={T}
       onCreated={(name, code, pub, rn) => {
         setIsOnline(true); setIsHost(true); setMyPlayerIdx(0); setRoomCode(code);
         setRoomIsPublic(!!pub); setRoomDisplayName(rn || '');
@@ -2548,6 +2580,7 @@ export default function App() {
       players={lobbyPlayers}
       isPublic={roomIsPublic}
       roomDisplayName={roomDisplayName}
+      T={T}
       onStart={(hatPicks, diff) => {
         if (isHost) {
           startOnlineGame(hatPicks, diff, lobbyPlayers);
@@ -2565,12 +2598,13 @@ export default function App() {
     />
   );
 
-  if (phase === 'transition') return <TransitionScreen player={players[HI]} onContinue={() => setPhase('playing')} isExtraPlay={extraPlay} />;
+  if (phase === 'transition') return <TransitionScreen player={players[HI]} onContinue={() => setPhase('playing')} isExtraPlay={extraPlay} T={T} />;
   if (phase === 'gameover') return (
     <GameOverScreen
       winner={winner}
       players={players}
       user={user}
+      T={T}
       onRestart={() => {
         if (isOnline) { socket.emit('leaveRoom'); socket.disconnect(); setIsOnline(false); setIsHost(false); setMyPlayerIdx(0); setRoomCode(''); setRoomIsPublic(false); setRoomDisplayName(''); setLobbyPlayers([]); }
         clearRoomSession();
@@ -2610,7 +2644,7 @@ export default function App() {
         : { width: 220, flexShrink: 0, background: '#12192e', borderRight: '2px solid #1e2a45', overflowY: 'auto', padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }
       ),
     }}>
-      <div style={{ fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1, marginBottom: 4 }}>OPONENTES</div>
+      <div style={{ fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1, marginBottom: 4 }}>{T('opponents')}</div>
       {opponents.map((opp, i) => {
         const realIdx = players.indexOf(opp);
         return (
@@ -2621,6 +2655,7 @@ export default function App() {
             color={PLAYER_COLORS[realIdx % PLAYER_COLORS.length]}
             isActive={cp === realIdx}
             onIngredientClick={(ing) => setModal({ type: 'ingredientInfo', ingredient: ing })}
+            T={T}
           />
         );
       })}
@@ -2628,8 +2663,8 @@ export default function App() {
       {/* Log panel */}
       {showLog && (
         <div style={{ marginTop: 8 }}>
-          <div style={{ fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1, marginBottom: 6 }}>HISTORIAL</div>
-          {log.length === 0 && <div style={{ fontSize: 11, color: '#444' }}>Sin eventos aún</div>}
+          <div style={{ fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1, marginBottom: 6 }}>{T('historyLog')}</div>
+          {log.length === 0 && <div style={{ fontSize: 11, color: '#444' }}>{T('noEvents')}</div>}
           {log.map((e, i) => <LogEntry key={i} e={e} />)}
         </div>
       )}
@@ -2648,7 +2683,7 @@ export default function App() {
         <div style={{ fontWeight: 900, fontSize: 16, color: humanColor }}>{human.name}</div>
         <div style={{ fontSize: 11, color: '#777' }}>
           🍔 {human.currentBurger}/{human.totalBurgers} hamburguesas
-          {extraPlay && <span style={{ color: '#FFD700', marginLeft: 8 }}>🍔 Puedes agregar un ingrediente</span>}
+          {extraPlay && <span style={{ color: '#FFD700', marginLeft: 8 }}>{T('extraPlayLabel')}</span>}
         </div>
       </div>
       {phase === 'playing' && players[cp] && !players[cp].isAI && (
@@ -2671,7 +2706,7 @@ export default function App() {
       background: 'rgba(255,255,255,.03)', borderRadius: 10, padding: '8px 10px',
       border: '2px solid #1e2a45', flexShrink: 0,
     }}>
-      <div style={{ fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1, marginBottom: 6 }}>HAMBURGUESAS</div>
+      <div style={{ fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1, marginBottom: 6 }}>{T('burgers')}</div>
       <div style={{ display: 'flex', flexDirection: isMobile ? 'row' : 'column', gap: 4, flexWrap: 'wrap' }}>
         {human.burgers.map((b, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -2695,10 +2730,10 @@ export default function App() {
       border: '2px solid #1e2a45', flexShrink: 0,
     }}>
       <div style={{ fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1, marginBottom: 6 }}>
-        MESA ({human.table.length} ingredientes)
+        {typeof T('tableCount') === 'function' ? T('tableCount')(human.table.length) : T('table')}
       </div>
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', minHeight: 32 }}>
-        {human.table.length === 0 && <span style={{ fontSize: 12, color: '#333' }}>Mesa vacía</span>}
+        {human.table.length === 0 && <span style={{ fontSize: 12, color: '#333' }}>{T('emptyTable')}</span>}
         {human.table.map((ing, i) => {
           const base = ingKey(ing);
           const chosen = ingChosen(ing);
@@ -2746,7 +2781,7 @@ export default function App() {
     ];
     return (
       <div>
-        <div style={{ fontSize: 9, color: '#555', fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>PERCHERO</div>
+        <div style={{ fontSize: 9, color: '#555', fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>{T('closet')}</div>
         <div style={{ position: 'relative', width: 180, height: 220 }}>
           <img src={percheroImg} alt="Perchero" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           {human.perchero.map((h, i) => {
@@ -2775,26 +2810,26 @@ export default function App() {
     <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
       <button
         onClick={() => { setShowPercheroModal(false); setModal({ type: 'manual_cambiar' }); }}
-        title="Cambia tu sombrero principal (cuesta descartar la mitad de tu mano)"
+        title={T('changeHatTooltip')}
         style={{
           padding: '8px 16px', borderRadius: 8, border: '1px solid rgba(156,39,176,0.3)',
           background: 'rgba(156,39,176,0.12)', color: '#BA68C8', fontSize: 14,
           fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
         }}
       >
-        🎩 Cambiar
+        {T('changeHat')}
       </button>
       {human.hand.length > 0 && (
         <button
           onClick={() => { setShowPercheroModal(false); setModal({ type: 'manual_agregar' }); }}
-          title="Agrega un sombrero extra (descarta toda tu mano, mano máx se reduce)"
+          title={T('addHatTooltip')}
           style={{
             padding: '8px 16px', borderRadius: 8, border: '1px solid rgba(156,39,176,0.3)',
             background: 'rgba(156,39,176,0.12)', color: '#BA68C8', fontSize: 14,
             fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
           }}
         >
-          ➕ Agregar
+          {T('addHat')}
         </button>
       )}
     </div>
@@ -2808,7 +2843,7 @@ export default function App() {
       <div style={{ display: 'flex', gap: 10, alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }}>
         {/* Sombrero(s) principal(es) */}
         <div>
-          <div style={{ fontSize: 9, color: '#555', fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>PRINCIPAL</div>
+          <div style={{ fontSize: 9, color: '#555', fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>{T('mainHat')}</div>
           <div style={isMobile
             ? { display: 'flex', gap: 4, flexWrap: 'wrap' }
             : { display: 'grid', gridTemplateRows: 'repeat(3, auto)', gridAutoFlow: 'column', gap: 4 }
@@ -2825,7 +2860,7 @@ export default function App() {
               background: 'rgba(255,255,255,.05)', color: '#aaa',
               fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
             }}>
-              🧥 Ver perchero ({human.perchero.length})
+              {typeof T('viewCloset') === 'function' ? T('viewCloset')(human.perchero.length) : T('viewCloset')}
             </button>
           )
         ) : (
@@ -2843,10 +2878,10 @@ export default function App() {
 
   const handLabel = (
     <div style={{ fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1, flexShrink: 0, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 4 }}>
-      MANO ({human.hand.length}/{human.maxHand})
+      {T('hand')} ({human.hand.length}/{human.maxHand})
       {isReduced && (
         <span style={{ color: '#FF7043', display: 'inline-flex', alignItems: 'center', gap: 2 }}>
-          ⚠ Máx reducido por agregar: {addedHats.map(h => (
+          ⚠ {T('maxReduced')}: {addedHats.map(h => (
             <HatBadge key={h} lang={h} isMain size="sm" />
           ))}
         </span>
@@ -2909,11 +2944,11 @@ export default function App() {
                   {card.type === 'ingredient' ? (<>
                     <span style={{ fontWeight: 700, fontSize: 14 }}>{getIngName(card.ingredient, card.language)}</span>
                     {card.ingredient === 'perrito' && (
-                      <span style={{ fontSize: 12, color: '#ccc' }}>Escoge el ingrediente que necesites</span>
+                      <span style={{ fontSize: 12, color: '#ccc' }}>{T('wildcardChoose')}</span>
                     )}
                     {canPlayCard(human, card)
-                      ? <span style={{ color: '#4CAF50', fontSize: 12 }}>✅ Puedes jugar</span>
-                      : <span style={{ color: '#FF7043', fontSize: 12 }}>❌ No puedes jugar</span>}
+                      ? <span style={{ color: '#4CAF50', fontSize: 12 }}>{T('canPlay')}</span>
+                      : <span style={{ color: '#FF7043', fontSize: 12 }}>{T('cantPlay')}</span>}
                   </>) : (<>
                     <span style={{ fontWeight: 700, fontSize: 14, color: '#FFD700' }}>{getActionInfo(card.action)?.name}</span>
                     <span style={{ fontSize: 12, color: '#ccc' }}>{getActionInfo(card.action)?.desc}</span>
@@ -2921,10 +2956,10 @@ export default function App() {
                 </div>
                 <div style={{ display: 'flex', gap: 4 }}>
                   <Btn onClick={humanPlay} disabled={extraPlay && card.type !== 'ingredient'} color="#4CAF50" style={{ fontSize: 11, padding: '6px 12px' }}>
-                    ▶ Jugar
+                    {T('play')}
                   </Btn>
                   <Btn onClick={humanDiscard} disabled={extraPlay} color="#FF7043" style={{ fontSize: 11, padding: '6px 12px' }}>
-                    🗑 Descartar
+                    {T('discard')}
                   </Btn>
                 </div>
               </div>
@@ -2949,8 +2984,8 @@ export default function App() {
     }}>
       {human.hand[selectedIdx]?.type === 'ingredient' ? (
         canPlayCard(human, human.hand[selectedIdx])
-          ? <span style={{ color: '#4CAF50' }}>✅ Puedes jugar esta carta</span>
-          : <span style={{ color: '#FF7043' }}>❌ No puedes jugar esta carta ahora (sombrero o ingrediente no necesario)</span>
+          ? <span style={{ color: '#4CAF50' }}>{T('canPlayThis')}</span>
+          : <span style={{ color: '#FF7043' }}>{T('cantPlayNow')}</span>
       ) : (
         <span style={{ color: '#FFD700' }}>⚡ {getActionInfo(human.hand[selectedIdx]?.action)?.desc}</span>
       )}
@@ -2968,7 +3003,7 @@ export default function App() {
           setExtraPlay(false); endTurn(players, deck, discard, HI);
         }
       }} color="#888" style={{ flex: 1 }}>
-        ⏭ Pasar turno
+        {T('skipTurn')}
       </Btn>
     </div>
   );
@@ -2977,7 +3012,9 @@ export default function App() {
     <div style={{
       textAlign: 'center', color: '#555', fontSize: 13, padding: '8px 0', flexShrink: 0,
     }}>
-      {players[cp]?.isRemote ? `🌐 Esperando la jugada de ${players[cp]?.name}...` : `⏳ Esperando a ${players[cp]?.name}...`}
+      {players[cp]?.isRemote
+        ? (typeof T('waitingOnline') === 'function' ? T('waitingOnline')(players[cp]?.name) : T('waitingOnline'))
+        : (typeof T('waitingLocal') === 'function' ? T('waitingLocal')(players[cp]?.name) : T('waitingLocal'))}
     </div>
   );
 
@@ -3037,20 +3074,20 @@ export default function App() {
             borderRadius: 8, padding: isMobile ? '3px 6px' : '3px 10px', fontSize: isMobile ? 11 : 12, fontWeight: 700,
             color: isHumanTurn ? '#FFD700' : '#00BCD4',
           }}>
-            {isHumanTurn ? (extraPlay ? '🍔 Puedes agregar un ingrediente' : '🎴 Tu turno') : `⏳ ${players[cp]?.name}`}
+            {isHumanTurn ? (extraPlay ? T('extraPlayLabel') : T('yourTurnLabel')) : (typeof T('waitingPlayer') === 'function' ? T('waitingPlayer')(players[cp]?.name) : `⏳ ${players[cp]?.name}`)}
           </div>
           {isOnline && !isMobile && (
             <div style={{ fontSize: 11, color: '#555', padding: '3px 8px', borderRadius: 6, background: 'rgba(0,188,212,.08)', border: '1px solid rgba(0,188,212,.2)' }}>
-              🌐 Sala: {roomCode}
+              🌐 {T('room')}: {roomCode}
             </div>
           )}
           <Btn onClick={() => setShowLog(l => !l)} color="#2a2a4a" style={{ color: '#aaa', fontSize: 12, padding: '4px 10px' }}>
-            📋 Log
+            {T('log')}
           </Btn>
           {isOnline && (
             <>
               <Btn onClick={() => { setShowChat(s => !s); setUnreadChat(0); }} color="#2a2a4a" style={{ color: '#aaa', fontSize: 12, padding: '4px 10px', position: 'relative' }}>
-                💬 Chat
+                {T('chat')}
                 {unreadChat > 0 && (
                   <span style={{
                     position: 'absolute', top: -4, right: -4, minWidth: 16, height: 16,
@@ -3060,7 +3097,7 @@ export default function App() {
                 )}
               </Btn>
               <Btn onClick={handleVoluntaryLeave} color="#ff4444" style={{ color: '#fff', fontSize: 12, padding: '4px 10px' }}>
-                🚪 Salir
+                {T('leave')}
               </Btn>
             </>
           )}
@@ -3078,13 +3115,13 @@ export default function App() {
             {pausedMessage === 'alone' ? (
               <>
                 <div style={{ fontSize: 48, marginBottom: 16 }}>😔</div>
-                <h2 style={{ color: '#FFD700', fontSize: 22, fontWeight: 900, marginBottom: 12 }}>Eres el único en la sala</h2>
-                <p style={{ color: '#aaa', fontSize: 15, marginBottom: 24 }}>Todos los demás jugadores se han ido</p>
+                <h2 style={{ color: '#FFD700', fontSize: 22, fontWeight: 900, marginBottom: 12 }}>{T('aloneTitle')}</h2>
+                <p style={{ color: '#aaa', fontSize: 15, marginBottom: 24 }}>{T('aloneDesc')}</p>
               </>
             ) : (
               <>
                 <div style={{ fontSize: 48, marginBottom: 16 }}>⏸️</div>
-                <h2 style={{ color: '#FFD700', fontSize: 22, fontWeight: 900, marginBottom: 12 }}>Juego en pausa</h2>
+                <h2 style={{ color: '#FFD700', fontSize: 22, fontWeight: 900, marginBottom: 12 }}>{T('gamePaused')}</h2>
                 <p style={{ color: '#aaa', fontSize: 15, marginBottom: 24 }}>{pausedMessage}</p>
               </>
             )}
@@ -3097,7 +3134,7 @@ export default function App() {
               setGamePaused(false); setPausedMessage('');
               setPhase('setup');
             }} color="#ff4444" style={{ color: '#fff', fontSize: 14, padding: '10px 24px' }}>
-              Volver al lobby
+              {T('backToLobby')}
             </Btn>
           </div>
         </div>
@@ -3112,7 +3149,7 @@ export default function App() {
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <div style={{ flex: 1, overflowY: 'auto', padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {chatMessages.length === 0 && (
-                  <div style={{ color: '#444', fontSize: 12, textAlign: 'center', marginTop: 40 }}>Sin mensajes aún</div>
+                  <div style={{ color: '#444', fontSize: 12, textAlign: 'center', marginTop: 40 }}>{T('noMessages')}</div>
                 )}
                 {chatMessages.map((msg, i) => (
                   <div key={i} style={{ fontSize: 13 }}>
@@ -3127,7 +3164,7 @@ export default function App() {
                   value={chatInput}
                   onChange={e => setChatInput(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && sendChatMessage()}
-                  placeholder="Escribe un mensaje..."
+                  placeholder={T('typeMessage')}
                   style={{
                     flex: 1, background: 'rgba(255,255,255,.06)', border: '1px solid #2a2a4a',
                     borderRadius: 8, padding: '8px 10px', color: '#ccc', fontSize: 13,
@@ -3135,7 +3172,7 @@ export default function App() {
                   }}
                 />
                 <Btn onClick={sendChatMessage} color="#4ecdc4" style={{ padding: '8px 14px', fontSize: 13 }}>
-                  Enviar
+                  {T('send')}
                 </Btn>
               </div>
             </div>
@@ -3144,9 +3181,9 @@ export default function App() {
           {/* Mobile tab bar */}
           <div style={{ display: 'flex', flexShrink: 0, background: '#16213e', borderTop: '2px solid #2a2a4a' }}>
             {[
-              { id: 'mesa', label: '🍔 Mesa', notify: isHumanTurn },
-              { id: 'rivales', label: '👥 Rivales' },
-              ...(isOnline ? [{ id: 'chat', label: '💬 Chat', notify: unreadChat > 0 }] : []),
+              { id: 'mesa', label: T('tableTab'), notify: isHumanTurn },
+              { id: 'rivales', label: T('rivalsTab') },
+              ...(isOnline ? [{ id: 'chat', label: T('chatTab'), notify: unreadChat > 0 }] : []),
             ].map(tab => (
               <button key={tab.id} onClick={() => { setMobileTab(tab.id); if (tab.id === 'chat') setUnreadChat(0); }} style={{
                 flex: 1, padding: '10px 4px', border: 'none', cursor: 'pointer',
@@ -3179,7 +3216,7 @@ export default function App() {
 
       {/* Pick Target */}
       {modal?.type === 'pickTarget' && (
-        <Modal title={`${getActionInfo(modal.action)?.emoji} ${getActionInfo(modal.action)?.name} — Elige oponente`}>
+        <Modal title={`${getActionInfo(modal.action)?.emoji} ${getActionInfo(modal.action)?.name} — ${T('chooseOpponent')}`}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {players.map((p, i) => {
               if (i === HI) return null;
@@ -3200,15 +3237,15 @@ export default function App() {
                   <div>
                     <div style={{ fontWeight: 800, color: PLAYER_COLORS[i % PLAYER_COLORS.length] }}>{p.name}</div>
                     <div style={{ fontSize: 11, color: '#777' }}>
-                      Mesa: {p.table.map(ing => ING_EMOJI[ingKey(ing)]).join(' ') || 'vacía'} •
-                      Hambres: {p.currentBurger}/{p.totalBurgers}
+                      {T('tableLabel')}: {p.table.map(ing => ING_EMOJI[ingKey(ing)]).join(' ') || T('empty')} •
+                      {T('burgersLabel')}: {p.currentBurger}/{p.totalBurgers}
                     </div>
                   </div>
                 </div>
               );
             })}
             <Btn onClick={() => setModal(null)} color="#333" style={{ color: '#aaa', marginTop: 8 }}>
-              Cancelar
+              {T('cancel')}
             </Btn>
           </div>
         </Modal>
@@ -3216,7 +3253,7 @@ export default function App() {
 
       {/* Pick Ingredient (Tenedor) */}
       {modal?.type === 'pickIngredient' && (
-        <Modal title="🍴 El Tenedor — Elige ingrediente a robar">
+        <Modal title={T('forkSteal')}>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
             {modal.newPls[modal.targetIdx].table.map((ing, i) => {
               const base = ingKey(ing);
@@ -3240,13 +3277,13 @@ export default function App() {
               );
             })}
           </div>
-          <Btn onClick={() => setModal(null)} color="#333" style={{ color: '#aaa' }}>Cancelar</Btn>
+          <Btn onClick={() => setModal(null)} color="#333" style={{ color: '#aaa' }}>{T('cancel')}</Btn>
         </Modal>
       )}
 
       {/* Pick Ingredient (Tenedor) - non-host remote version */}
       {modal?.type === 'pickIngredientRemote' && (
-        <Modal title="🍴 El Tenedor — Elige ingrediente a robar">
+        <Modal title={T('forkSteal')}>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
             {modal.newPls[modal.targetIdx].table.map((ing, i) => {
               const base = ingKey(ing);
@@ -3270,17 +3307,17 @@ export default function App() {
               );
             })}
           </div>
-          <Btn onClick={() => setModal(null)} color="#333" style={{ color: '#aaa' }}>Cancelar</Btn>
+          <Btn onClick={() => setModal(null)} color="#333" style={{ color: '#aaa' }}>{T('cancel')}</Btn>
         </Modal>
       )}
 
       {/* Pick Hat Replace (after Ladrón steals last hat) */}
       {modal?.type === 'pickHatReplace' && (!isOnline || !isHost || modal.victimIdx === HI) && (
-        <Modal title="🎩 Elige nuevo sombrero principal">
+        <Modal title={T('chooseNewHat')}>
           <p style={{ color: '#888', fontSize: 12, marginBottom: 12 }}>
             {isOnline && isHost && modal.victimIdx !== HI
-              ? `⏳ Esperando que ${players[modal.victimIdx]?.name} elija su sombrero...`
-              : 'Tu sombrero principal fue robado. Elige uno del perchero.'}
+              ? (typeof T('waitingHatChoice') === 'function' ? T('waitingHatChoice')(players[modal.victimIdx]?.name) : T('waitingHatChoice'))
+              : T('hatStolen')}
           </p>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
             {modal.newPls[modal.victimIdx].perchero.map(h => (
@@ -3311,12 +3348,12 @@ export default function App() {
         const theirHats = modal.isRemote ? players[modal.targetIdx].mainHats : modal.newPls[modal.targetIdx].mainHats;
         const targetName = players[modal.targetIdx]?.name || 'Oponente';
         return (
-          <Modal title="🔄 Intercambio de Sombreros">
+          <Modal title={T('hatExchange')}>
             <p style={{ color: '#888', fontSize: 12, marginBottom: 12 }}>
-              Elige el sombrero que quieres dar y el que quieres recibir de {targetName}.
+              {typeof T('hatExchangeDesc') === 'function' ? T('hatExchangeDesc')(targetName) : T('hatExchangeDesc')}
             </p>
             <div style={{ marginBottom: 14 }}>
-              <div style={{ fontWeight: 800, fontSize: 13, color: '#4ecdc4', marginBottom: 8 }}>Tu sombrero a dar:</div>
+              <div style={{ fontWeight: 800, fontSize: 13, color: '#4ecdc4', marginBottom: 8 }}>{T('yourHatToGive')}</div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {myHats.map(h => (
                   <div
@@ -3341,7 +3378,7 @@ export default function App() {
               </div>
             </div>
             <div style={{ marginBottom: 14 }}>
-              <div style={{ fontWeight: 800, fontSize: 13, color: '#ff6b6b', marginBottom: 8 }}>Sombrero que quieres de {targetName}:</div>
+              <div style={{ fontWeight: 800, fontSize: 13, color: '#ff6b6b', marginBottom: 8 }}>{typeof T('hatToReceive') === 'function' ? T('hatToReceive')(targetName) : T('hatToReceive')}</div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {theirHats.map(h => (
                   <div
@@ -3377,7 +3414,7 @@ export default function App() {
                 transition: 'all .2s',
               }}
             >
-              Intercambiar
+              {T('exchange')}
             </button>
           </Modal>
         );
@@ -3393,7 +3430,7 @@ export default function App() {
               background: 'rgba(255,255,255,.08)', color: '#aaa',
               fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
             }}>
-              Cerrar
+              {T('close')}
             </button>
           </div>
         </Modal>
@@ -3404,7 +3441,7 @@ export default function App() {
         const card = human.hand[selectedIdx];
         const playable = card.type === 'ingredient' ? canPlayCard(human, card) : (extraPlay ? false : null);
         return (
-          <Modal title={card.type === 'ingredient' ? '🃏 Carta de Ingrediente' : '⚡ Carta de Acción'}>
+          <Modal title={card.type === 'ingredient' ? T('ingredientCard') : T('actionCard')}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
               <GameCard card={card} selected playable={playable} large />
               <div style={{
@@ -3415,11 +3452,11 @@ export default function App() {
                 {card.type === 'ingredient' ? (<>
                   <span style={{ fontWeight: 700, fontSize: 16 }}>{getIngName(card.ingredient, card.language)}</span>
                   {card.ingredient === 'perrito' && (
-                    <span style={{ fontSize: 13, color: '#ccc' }}>Escoge el ingrediente que necesites</span>
+                    <span style={{ fontSize: 13, color: '#ccc' }}>{T('wildcardChoose')}</span>
                   )}
                   {canPlayCard(human, card)
-                    ? <span style={{ color: '#4CAF50', fontSize: 13 }}>✅ Puedes jugar</span>
-                    : <span style={{ color: '#FF7043', fontSize: 13 }}>❌ No puedes jugar</span>}
+                    ? <span style={{ color: '#4CAF50', fontSize: 13 }}>{T('canPlay')}</span>
+                    : <span style={{ color: '#FF7043', fontSize: 13 }}>{T('cantPlay')}</span>}
                 </>) : (<>
                   <span style={{ fontWeight: 700, fontSize: 16, color: '#FFD700' }}>{getActionInfo(card.action)?.name}</span>
                   <span style={{ fontSize: 13, color: '#ccc' }}>{getActionInfo(card.action)?.desc}</span>
@@ -3427,10 +3464,10 @@ export default function App() {
               </div>
               <div style={{ display: 'flex', gap: 8, width: '100%' }}>
                 <Btn onClick={() => { humanPlay(); }} disabled={extraPlay && card.type !== 'ingredient'} color="#4CAF50" style={{ flex: 1, fontSize: 14, padding: '10px 16px' }}>
-                  ▶ Jugar
+                  {T('play')}
                 </Btn>
                 <Btn onClick={() => { humanDiscard(); }} disabled={extraPlay} color="#FF7043" style={{ flex: 1, fontSize: 14, padding: '10px 16px' }}>
-                  🗑 Descartar
+                  {T('discard')}
                 </Btn>
               </div>
               <button onClick={() => setSelectedIdx(null)} style={{
@@ -3438,7 +3475,7 @@ export default function App() {
                 background: 'rgba(255,255,255,.08)', color: '#aaa',
                 fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
               }}>
-                Cerrar
+                {T('close')}
               </button>
             </div>
           </Modal>
@@ -3447,9 +3484,9 @@ export default function App() {
 
       {/* Manual: Cambiar sombrero — paso 1: elegir sombrero */}
       {modal?.type === 'manual_cambiar' && (
-        <Modal title="🎩 Cambiar Sombrero — paso 1: elegir sombrero">
+        <Modal title={T('changeHatStep1')}>
           <p style={{ color: '#888', fontSize: 12, marginBottom: 12 }}>
-            Elige un sombrero del perchero. Luego elegirás qué {Math.ceil(human.hand.length / 2)} carta{Math.ceil(human.hand.length / 2) !== 1 ? 's' : ''} descartar. ¡Solo podrás jugar una carta de ingrediente después!
+            {typeof T('changeHatStep1Desc') === 'function' ? T('changeHatStep1Desc')(Math.ceil(human.hand.length / 2)) : T('changeHatStep1Desc')}
           </p>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
             {human.perchero.map(h => (
@@ -3472,7 +3509,7 @@ export default function App() {
               </div>
             ))}
           </div>
-          <Btn onClick={() => setModal(null)} color="#333" style={{ color: '#aaa' }}>Cancelar</Btn>
+          <Btn onClick={() => setModal(null)} color="#333" style={{ color: '#aaa' }}>{T('cancel')}</Btn>
         </Modal>
       )}
 
@@ -3482,11 +3519,11 @@ export default function App() {
         const sel = modal.selected;
         const remaining = cost - sel.length;
         return (
-          <Modal title={`🎩 Cambiar a ${modal.hatLang.charAt(0).toUpperCase() + modal.hatLang.slice(1)} — paso 2: elegir cartas`}>
+          <Modal title={typeof T('changeHatStep2') === 'function' ? T('changeHatStep2')(modal.hatLang.charAt(0).toUpperCase() + modal.hatLang.slice(1)) : T('changeHatStep2')}>
             <p style={{ color: '#888', fontSize: 12, marginBottom: 8 }}>
-              Elegí <strong style={{ color: remaining > 0 ? '#FFD700' : '#4CAF50' }}>
-                {remaining > 0 ? `${remaining} carta${remaining !== 1 ? 's' : ''} más` : '¡Listo!'}
-              </strong> para descartar ({sel.length}/{cost})
+              <strong style={{ color: remaining > 0 ? '#FFD700' : '#4CAF50' }}>
+                {remaining > 0 ? (typeof T('moreCards') === 'function' ? T('moreCards')(remaining) : T('moreCards')) : T('ready')}
+              </strong> ({sel.length}/{cost})
             </p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12, justifyContent: 'center' }}>
               {human.hand.map((card, i) => {
@@ -3514,14 +3551,14 @@ export default function App() {
               })}
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <Btn onClick={() => setModal({ type: 'manual_cambiar' })} color="#333" style={{ color: '#aaa' }}>← Volver</Btn>
+              <Btn onClick={() => setModal({ type: 'manual_cambiar' })} color="#333" style={{ color: '#aaa' }}>{T('goBack')}</Btn>
               <Btn
                 onClick={() => resolveManualCambiar(modal.hatLang, modal.selected)}
                 disabled={sel.length !== cost}
                 color="#9C27B0"
                 style={{ flex: 1 }}
               >
-                Confirmar descarte
+                {T('confirmDiscard')}
               </Btn>
             </div>
           </Modal>
@@ -3530,9 +3567,9 @@ export default function App() {
 
       {/* Manual: Agregar sombrero */}
       {modal?.type === 'manual_agregar' && (
-        <Modal title="➕ Agregar Sombrero — descartás toda tu mano">
+        <Modal title={T('addHatModal')}>
           <p style={{ color: '#888', fontSize: 12, marginBottom: 12 }}>
-            Elige un sombrero del perchero para agregarlo a tu sombrero principal. Descartás toda tu mano y tu máximo de cartas se reduce en 1 (a {Math.max(1, human.maxHand - 1)}). ¡Este efecto es acumulable! ¡Solo podrás jugar una carta de ingrediente después!
+            {typeof T('addHatDesc') === 'function' ? T('addHatDesc')(Math.max(1, human.maxHand - 1)) : T('addHatDesc')}
           </p>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
             {human.perchero.map(h => (
@@ -3555,15 +3592,15 @@ export default function App() {
               </div>
             ))}
           </div>
-          <Btn onClick={() => setModal(null)} color="#333" style={{ color: '#aaa' }}>Cancelar</Btn>
+          <Btn onClick={() => setModal(null)} color="#333" style={{ color: '#aaa' }}>{T('cancel')}</Btn>
         </Modal>
       )}
 
       {/* Basurero */}
       {modal?.type === 'basurero' && (
-        <Modal title="🗑️ El Basurero — Elige una carta del descarte">
+        <Modal title={T('trashBin')}>
           <p style={{ color: '#888', fontSize: 12, marginBottom: 12 }}>
-            Rescata un ingrediente del montón de descarte.
+            {T('trashBinDesc')}
           </p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12, maxHeight: 280, overflowY: 'auto' }}>
             {modal.cards.map(card => (
@@ -3576,7 +3613,7 @@ export default function App() {
               </div>
             ))}
           </div>
-          <Btn onClick={() => setModal(null)} color="#333" style={{ color: '#aaa' }}>Cancelar</Btn>
+          <Btn onClick={() => setModal(null)} color="#333" style={{ color: '#aaa' }}>{T('cancel')}</Btn>
         </Modal>
       )}
 
@@ -3598,9 +3635,9 @@ export default function App() {
         })();
         const choices = needed.length > 0 ? [...new Set(needed)] : Object.keys(ING_EMOJI).filter(i => i !== 'perrito');
         return (
-          <Modal title="🌭 Comodín — Elige ingrediente">
+          <Modal title={T('wildcard')}>
             <p style={{ color: '#888', fontSize: 12, marginBottom: 12 }}>
-              {needed.length > 0 ? 'Estos son los ingredientes que te faltan:' : 'Elige el ingrediente que representa el comodín:'}
+              {needed.length > 0 ? T('wildcardNeeded') : T('wildcardAny')}
             </p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
               {choices.map(ing => (
@@ -3623,7 +3660,7 @@ export default function App() {
                 </div>
               ))}
             </div>
-            <Btn onClick={() => setModal(null)} color="#333" style={{ color: '#aaa' }}>Cancelar</Btn>
+            <Btn onClick={() => setModal(null)} color="#333" style={{ color: '#aaa' }}>{T('cancel')}</Btn>
           </Modal>
         );
       })()}
@@ -3642,12 +3679,12 @@ export default function App() {
           <Modal title={`${ING_EMOJI[displayIng]} ${ING_NAMES[displayIng]?.español || displayIng}`}>
             {isWildcard && chosen && (
               <p style={{ color: '#ccc', fontSize: 13, marginBottom: 12 }}>
-                Comodín actuando como: {ING_EMOJI[chosen]} {ING_NAMES[chosen]?.español || chosen}
+                {typeof T('wildcardActingAs') === 'function' ? T('wildcardActingAs')(`${ING_EMOJI[chosen]} ${ING_NAMES[chosen]?.español || chosen}`) : T('wildcardActingAs')}
               </p>
             )}
             {isWildcard && !chosen && (
               <p style={{ color: '#ccc', fontSize: 13, marginBottom: 12 }}>
-                Puede representar cualquier ingrediente
+                {T('wildcardCanBe')}
               </p>
             )}
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
@@ -3660,7 +3697,7 @@ export default function App() {
                   : <span style={{ fontSize: 32 }}>{ING_EMOJI[displayIng]}</span>}
               </div>
             </div>
-            <h4 style={{ fontSize: 14, fontWeight: 800, color: '#FFD700', marginBottom: 8 }}>Nombres</h4>
+            <h4 style={{ fontSize: 14, fontWeight: 800, color: '#FFD700', marginBottom: 8 }}>{T('names')}</h4>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 12px', marginBottom: 16 }}>
               {LANGUAGES.map(lang => (
                 <div key={lang} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
@@ -3672,7 +3709,7 @@ export default function App() {
                 </div>
               ))}
             </div>
-            <h4 style={{ fontSize: 14, fontWeight: 800, color: '#FFD700', marginBottom: 8 }}>Cartas que lo afectan</h4>
+            <h4 style={{ fontSize: 14, fontWeight: 800, color: '#FFD700', marginBottom: 8 }}>{T('affectingCards')}</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
               {allActionIds.map(id => {
                 const info = getActionInfo(id);
@@ -3691,24 +3728,21 @@ export default function App() {
                 );
               })}
             </div>
-            <Btn onClick={() => setModal(null)} color="#333" style={{ color: '#aaa' }}>Cerrar</Btn>
+            <Btn onClick={() => setModal(null)} color="#333" style={{ color: '#aaa' }}>{T('close')}</Btn>
           </Modal>
         );
       })()}
 
       {/* Negación window modal */}
       {pendingNeg && pendingNeg.eligibleIdxs.includes(HI) && !(HI in (pendingNeg.responses || {})) && (
-        <Modal title="🚫 ¿Negación?">
-          <p style={{ marginBottom: 8, fontSize: 14 }}>
-            <strong>{players[pendingNeg.actingIdx]?.name}</strong> jugó{' '}
-            <strong>{pendingNeg.cardInfo?.emoji} {pendingNeg.cardInfo?.name}</strong>
-          </p>
+        <Modal title={T('negation')}>
+          <p style={{ marginBottom: 8, fontSize: 14 }} dangerouslySetInnerHTML={{ __html: typeof T('negationPlayed') === 'function' ? T('negationPlayed')(players[pendingNeg.actingIdx]?.name, `${pendingNeg.cardInfo?.emoji} ${pendingNeg.cardInfo?.name}`) : T('negationPlayed') }} />
           <p style={{ color: '#aaa', fontSize: 12, marginBottom: 16 }}>
-            ¿Quieres gastar una carta de Negación para cancelar esta acción?
+            {T('negationQuestion')}
           </p>
           <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
-            <Btn onClick={() => respondNegation(true)} color="#c0392b">🚫 Negar</Btn>
-            <Btn onClick={() => respondNegation(false)} color="#27ae60">✅ Dejar pasar</Btn>
+            <Btn onClick={() => respondNegation(true)} color="#c0392b">{T('deny')}</Btn>
+            <Btn onClick={() => respondNegation(false)} color="#27ae60">{T('allow')}</Btn>
           </div>
         </Modal>
       )}
@@ -3735,7 +3769,7 @@ export default function App() {
             minHeight: 120, maxHeight: isMobile ? '40vh' : '35vh',
           }}>
             {chatMessages.length === 0 && (
-              <div style={{ color: '#444', fontSize: 12, textAlign: 'center', marginTop: 20 }}>Sin mensajes aún</div>
+              <div style={{ color: '#444', fontSize: 12, textAlign: 'center', marginTop: 20 }}>{T('noMessages')}</div>
             )}
             {chatMessages.map((msg, i) => (
               <div key={i} style={{ fontSize: 12 }}>
@@ -3753,7 +3787,7 @@ export default function App() {
               value={chatInput}
               onChange={e => setChatInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && sendChatMessage()}
-              placeholder="Escribe un mensaje..."
+              placeholder={T('typeMessage')}
               style={{
                 flex: 1, background: 'rgba(255,255,255,.06)', border: '1px solid #2a2a4a',
                 borderRadius: 8, padding: '6px 10px', color: '#ccc', fontSize: 12,
@@ -3761,7 +3795,7 @@ export default function App() {
               }}
             />
             <Btn onClick={sendChatMessage} color="#4ecdc4" style={{ padding: '6px 12px', fontSize: 12 }}>
-              Enviar
+              {T('send')}
             </Btn>
           </div>
         </div>
