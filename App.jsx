@@ -1204,7 +1204,12 @@ function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack, isPub
 // ── Main App ──────────────────────────────────────────────────────────────────
 export default function App() {
   const initialSalaCode = new URLSearchParams(window.location.search).get('sala') || '';
-  const [phase, setPhase] = useState(initialSalaCode ? 'onlineMenu' : (getSavedUser() ? 'setup' : 'auth'));
+  const hasRoomSession = !!sessionStorage.getItem('hp_room_session');
+  const [phase, setPhase] = useState(
+    hasRoomSession ? 'reconnecting'
+    : initialSalaCode ? 'onlineMenu'
+    : (getSavedUser() ? 'setup' : 'auth')
+  );
   const [players, setPlayers] = useState([]);
   const [deck, setDeck] = useState([]);
   const [discard, setDiscard] = useState([]);
@@ -1247,6 +1252,88 @@ export default function App() {
   const [pendingNeg, setPendingNeg] = useState(null);
   // Host-only ref that stores the resolve callback (not serializable over socket)
   const pendingNegRef = useRef(null);
+
+  // ── Room session persistence for reconnection ──
+  function saveRoomSession(data) {
+    sessionStorage.setItem('hp_room_session', JSON.stringify(data));
+  }
+  function clearRoomSession() {
+    sessionStorage.removeItem('hp_room_session');
+  }
+  function getRoomSession() {
+    try { return JSON.parse(sessionStorage.getItem('hp_room_session')); }
+    catch { return null; }
+  }
+
+  // ── Auto-rejoin on page load ──
+  const rejoinAttempted = useRef(false);
+  useEffect(() => {
+    if (rejoinAttempted.current) return;
+    rejoinAttempted.current = true;
+    const session = getRoomSession();
+    if (!session) return;
+
+    const timeout = setTimeout(() => {
+      socket.off('rejoinSuccess');
+      socket.off('rejoinError');
+      clearRoomSession();
+      setPhase(getSavedUser() ? 'setup' : 'auth');
+    }, 10000);
+
+    socket.once('rejoinSuccess', ({ myIdx, isHost: host, phase: serverPhase, players: pls, roomIsPublic: pub, roomDisplayName: rn, gameState }) => {
+      clearTimeout(timeout);
+      setIsOnline(true);
+      setIsHost(host);
+      setMyPlayerIdx(myIdx);
+      setRoomCode(session.roomCode);
+      setRoomIsPublic(!!pub);
+      setRoomDisplayName(rn || '');
+      setLobbyPlayers(pls);
+      if (serverPhase === 'playing') {
+        if (host && gameState) {
+          // Host reconnecting: restore cached game state from server
+          setPlayers(gameState.players);
+          setDeck(gameState.deck);
+          setDiscard(gameState.discard);
+          setCp(gameState.cp);
+          setLog(gameState.log || []);
+          setExtraPlay(gameState.extraPlay || false);
+          setModal(null);
+          setPendingNeg(gameState.pendingNeg || null);
+          if (gameState.winner) { setWinner(gameState.winner); clearRoomSession(); setPhase('gameover'); }
+          else setPhase('playing');
+        } else if (!host) {
+          // Non-host: stateUpdate will arrive from host within 80ms
+          setPhase('playing');
+        } else {
+          // Host but no cached state (edge case) — go to lobby
+          setPhase('onlineLobby');
+        }
+      } else {
+        setPhase('onlineLobby');
+      }
+      // Listen for gameStarted if in lobby
+      socket.once('gameStarted', () => setPhase('playing'));
+    });
+
+    socket.once('rejoinError', () => {
+      clearTimeout(timeout);
+      clearRoomSession();
+      setPhase(getSavedUser() ? 'setup' : 'auth');
+    });
+
+    function doRejoin() {
+      const reconnectId = sessionStorage.getItem('hp_reconnect_id');
+      socket.emit('rejoinRoom', { reconnectId, roomCode: session.roomCode });
+    }
+
+    if (socket.connected) {
+      doRejoin();
+    } else {
+      socket.once('connect', doRejoin);
+      socket.connect();
+    }
+  }, []);
 
   function addLog(playerIdx, text, pls) {
     const p = pls ? pls[playerIdx] : null;
@@ -1300,7 +1387,7 @@ export default function App() {
         return null;
       });
       setPendingNeg(state.pendingNeg || null);
-      if (state.winner) { setWinner(state.winner); setPhase('gameover'); }
+      if (state.winner) { setWinner(state.winner); clearRoomSession(); setPhase('gameover'); }
       else if (state.cp === myPlayerIdx && lastSyncCpRef.current !== myPlayerIdx) {
         // Only show transition when cp just changed to this player's turn
         setPhase('transition');
@@ -1454,6 +1541,9 @@ export default function App() {
     setCp(0); setLog([]); setSelectedIdx(null); setModal(null);
     setWinner(null); setExtraPlay(false);
     aiRunning.current = false;
+    // Update session to reflect game started
+    const session = getRoomSession();
+    if (session) saveRoomSession({ ...session, phase: 'playing' });
     setPhase('playing');
   }
 
@@ -1697,7 +1787,7 @@ export default function App() {
     const w = checkWin(newPls);
     if (w) {
       setPlayers(newPls); setDeck(newDeck); setDiscard(newDiscard);
-      setWinner(w); setPhase('gameover');
+      setWinner(w); clearRoomSession(); setPhase('gameover');
       return;
     }
     const nextIdx = (fromIdx + 1) % newPls.length;
@@ -2241,6 +2331,12 @@ export default function App() {
   }
 
   // ── Render phases ──
+  if (phase === 'reconnecting') return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0e1a', color: '#FFD700', fontFamily: "'Fredoka',sans-serif", fontSize: 22 }}>
+      Reconectando a la sala...
+    </div>
+  );
+
   if (phase === 'auth') return (
     <AuthScreen
       onAuth={(u) => { setUser(u); setPhase('setup'); }}
@@ -2271,15 +2367,20 @@ export default function App() {
         setIsOnline(true); setIsHost(true); setMyPlayerIdx(0); setRoomCode(code);
         setRoomIsPublic(!!pub); setRoomDisplayName(rn || '');
         setLobbyPlayers([{ name, idx: 0 }]);
+        saveRoomSession({ roomCode: code, playerName: name, myPlayerIdx: 0, isHost: true, phase: 'onlineLobby' });
         setPhase('onlineLobby');
       }}
       onJoined={(name, code, myIdx, pub, rn) => {
         setIsOnline(true); setIsHost(false); setMyPlayerIdx(myIdx); setRoomCode(code);
         setRoomIsPublic(!!pub); setRoomDisplayName(rn || '');
         setLobbyPlayers([]);
+        saveRoomSession({ roomCode: code, playerName: name, myPlayerIdx: myIdx, isHost: false, phase: 'onlineLobby' });
         socket.once('lobbyUpdate', ({ players: pls }) => setLobbyPlayers(pls));
         // gameStarted event will trigger stateUpdate which sets phase to 'playing'
-        socket.once('gameStarted', () => setPhase('playing'));
+        socket.once('gameStarted', () => {
+          saveRoomSession({ roomCode: code, playerName: name, myPlayerIdx: myIdx, isHost: false, phase: 'playing' });
+          setPhase('playing');
+        });
         setPhase('onlineLobby');
       }}
     />
@@ -2299,10 +2400,12 @@ export default function App() {
         }
       }}
       onBack={() => {
+        socket.emit('leaveRoom');
         socket.disconnect();
         setIsOnline(false); setIsHost(false); setMyPlayerIdx(0); setRoomCode('');
         setRoomIsPublic(false); setRoomDisplayName('');
         setLobbyPlayers([]);
+        clearRoomSession();
         setPhase('setup');
       }}
     />
@@ -2315,7 +2418,8 @@ export default function App() {
       players={players}
       user={user}
       onRestart={() => {
-        if (isOnline) { socket.disconnect(); setIsOnline(false); setIsHost(false); setMyPlayerIdx(0); setRoomCode(''); setRoomIsPublic(false); setRoomDisplayName(''); setLobbyPlayers([]); }
+        if (isOnline) { socket.emit('leaveRoom'); socket.disconnect(); setIsOnline(false); setIsHost(false); setMyPlayerIdx(0); setRoomCode(''); setRoomIsPublic(false); setRoomDisplayName(''); setLobbyPlayers([]); }
+        clearRoomSession();
         setPhase('setup');
       }}
       onHistory={() => setPhase('history')}

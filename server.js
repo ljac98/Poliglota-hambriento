@@ -138,6 +138,7 @@ io.use((socket, next) => {
         socket.data.username = decoded.username;
       }
     }
+    socket.data.reconnectId = socket.handshake.auth?.reconnectId || null;
     next();
   } catch (err) {
     console.error('⚠️ Socket middleware error:', err);
@@ -156,6 +157,10 @@ const genCode = () => Math.random().toString(36).substring(2, 7).toUpperCase();
 
 // Track which rooms already saved history (prevent duplicates)
 const savedGames = new Set();
+
+// Grace period timers for disconnected players (reconnectId → timeoutId)
+const disconnectTimers = new Map();
+const GRACE_PERIOD_MS = 30000;
 
 // ── Helper: get public rooms list for lobby browser ──
 function getPublicRoomsList() {
@@ -189,7 +194,7 @@ io.on('connection', socket => {
     const code = genCode();
     rooms.set(code, {
       hostId: socket.id,
-      players: [{ id: socket.id, name: playerName, idx: 0, userId: socket.data.userId || null }],
+      players: [{ id: socket.id, name: playerName, idx: 0, userId: socket.data.userId || null, reconnectId: socket.data.reconnectId }],
       started: false,
       isPublic: !!isPublic,
       roomName: roomName || '',
@@ -211,7 +216,7 @@ io.on('connection', socket => {
     if (room.started) return socket.emit('joinError', 'El juego ya comenzó');
     if (room.players.length >= 4) return socket.emit('joinError', 'Sala llena (máximo 4 jugadores)');
     const idx = room.players.length;
-    room.players.push({ id: socket.id, name: playerName, idx, userId: socket.data.userId || null });
+    room.players.push({ id: socket.id, name: playerName, idx, userId: socket.data.userId || null, reconnectId: socket.data.reconnectId });
     socket.join(code);
     socket.data.roomCode = code;
     socket.emit('roomJoined', { code, myIdx: idx, isPublic: room.isPublic, roomName: room.roomName });
@@ -219,6 +224,45 @@ io.on('connection', socket => {
       players: room.players.map(p => ({ name: p.name, idx: p.idx })),
     });
     if (room.isPublic) broadcastLobbyList();
+  });
+
+  // ── Rejoin room after refresh ──
+  socket.on('rejoinRoom', ({ reconnectId, roomCode: code }) => {
+    const room = rooms.get(code);
+    if (!room) return socket.emit('rejoinError', 'Sala no encontrada');
+    const player = room.players.find(p => p.reconnectId === reconnectId && p.disconnected);
+    if (!player) return socket.emit('rejoinError', 'No se puede reconectar');
+    // Cancel grace period timer
+    const timerKey = `${code}:${reconnectId}`;
+    if (disconnectTimers.has(timerKey)) {
+      clearTimeout(disconnectTimers.get(timerKey));
+      disconnectTimers.delete(timerKey);
+    }
+    // Restore player connection
+    const oldSocketId = player.id;
+    player.id = socket.id;
+    player.disconnected = false;
+    socket.join(code);
+    socket.data.roomCode = code;
+    // Restore host if this player was originally the host
+    if (player.wasHost) {
+      room.hostId = socket.id;
+      player.wasHost = false;
+    }
+    const isHost = room.hostId === socket.id;
+    socket.emit('rejoinSuccess', {
+      myIdx: player.idx,
+      isHost,
+      phase: room.started ? 'playing' : 'onlineLobby',
+      players: room.players.filter(p => !p.disconnected).map(p => ({ name: p.name, idx: p.idx })),
+      roomIsPublic: room.isPublic,
+      roomDisplayName: room.roomName,
+      gameState: (isHost && room.started && room.lastGameState) ? room.lastGameState : null,
+    });
+    // Notify others that player reconnected
+    io.to(code).emit('lobbyUpdate', {
+      players: room.players.filter(p => !p.disconnected).map(p => ({ name: p.name, idx: p.idx })),
+    });
   });
 
   // ── List public rooms (lobby browser) ──
@@ -253,6 +297,7 @@ io.on('connection', socket => {
   socket.on('syncState', ({ code, state }) => {
     const room = rooms.get(code);
     if (!room || room.hostId !== socket.id) return;
+    room.lastGameState = state;  // Cache for host reconnection
     socket.to(code).emit('stateUpdate', { state });
 
     // Save game history when a winner is declared
@@ -282,13 +327,66 @@ io.on('connection', socket => {
     io.to(code).emit('chatMessage', { playerName, text, timestamp: Date.now() });
   });
 
-  // ── Disconnect cleanup ──
+  // ── Intentional leave (skip grace period) ──
+  socket.on('leaveRoom', () => {
+    socket.data.intentionalLeave = true;
+  });
+
+  // ── Disconnect cleanup with grace period for reconnection ──
   socket.on('disconnect', () => {
     const code = socket.data?.roomCode;
     if (!code) return;
     const room = rooms.get(code);
     if (!room) return;
     const wasPublic = room.isPublic;
+    const player = room.players.find(p => p.id === socket.id);
+    if (!player) return;
+
+    // If player has a reconnectId and didn't leave intentionally, give grace period
+    if (player.reconnectId && !socket.data.intentionalLeave) {
+      player.disconnected = true;
+      const timerKey = `${code}:${player.reconnectId}`;
+
+      // Transfer host temporarily to a connected player if needed
+      if (room.hostId === socket.id) {
+        player.wasHost = true;
+        const connectedPlayer = room.players.find(p => !p.disconnected);
+        if (connectedPlayer) {
+          room.hostId = connectedPlayer.id;
+          io.to(connectedPlayer.id).emit('becameHost');
+        }
+      }
+
+      // Notify others that player is temporarily disconnected
+      io.to(code).emit('lobbyUpdate', {
+        players: room.players.filter(p => !p.disconnected).map(p => ({ name: p.name, idx: p.idx })),
+      });
+
+      // Start grace period timer
+      const timer = setTimeout(() => {
+        disconnectTimers.delete(timerKey);
+        const currentRoom = rooms.get(code);
+        if (!currentRoom) return;
+        const pi = currentRoom.players.findIndex(p => p.reconnectId === player.reconnectId);
+        if (pi === -1) return;
+        currentRoom.players.splice(pi, 1);
+        if (currentRoom.players.length === 0) {
+          rooms.delete(code);
+          savedGames.delete(code);
+        } else {
+          io.to(code).emit('playerLeft', {
+            players: currentRoom.players.filter(p => !p.disconnected).map(p => ({ name: p.name, idx: p.idx })),
+          });
+        }
+        if (wasPublic) broadcastLobbyList();
+      }, GRACE_PERIOD_MS);
+      disconnectTimers.set(timerKey, timer);
+
+      if (wasPublic) broadcastLobbyList();
+      return;
+    }
+
+    // No reconnectId — remove immediately (legacy behavior)
     const pi = room.players.findIndex(p => p.id === socket.id);
     if (pi === -1) return;
     room.players.splice(pi, 1);
