@@ -59,17 +59,23 @@ export function genBurger(size) {
 }
 
 // ═══ PLAYER INITIALIZATION ═══
-export function initPlayer(name, deck, chosenHat, diff, isAI = false) {
+export function initPlayer(name, deck, chosenHat, gameConfig, isAI = false) {
   const hand = deck.splice(0, 6);
   const perchero = LANGUAGES.filter(l => l !== chosenHat);
-  
-  const burgerSets = {
-    facil:   [genBurger(randInt(4, 6))],
-    medio:   [genBurger(randInt(5, 6)), genBurger(randInt(5, 6))],
-    dificil: [genBurger(randInt(5, 7)), genBurger(randInt(5, 7)), genBurger(randInt(5, 7))],
-  };
-  
-  const burgers = burgerSets[diff] || burgerSets.medio;
+
+  const { mode = 'clon', burgerCount = 2, ingredientCount = 5 } = gameConfig || {};
+
+  let burgers;
+  if (mode === 'escalera') {
+    burgers = Array.from({ length: burgerCount }, (_, i) => genBurger(4 + i));
+  } else if (mode === 'caotico') {
+    const count = randInt(2, 4);
+    burgers = Array.from({ length: count }, () => genBurger(randInt(3, 8)));
+  } else {
+    // clon (default)
+    burgers = Array.from({ length: burgerCount }, () => genBurger(ingredientCount));
+  }
+
   const totalBurgers = burgers.length;
   
   return {
