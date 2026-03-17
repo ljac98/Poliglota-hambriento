@@ -2409,6 +2409,14 @@ export default function App() {
     const w = checkWin(newPls);
     if (w) {
       setPlayers(newPls); setDeck(newDeck); setDiscard(newDiscard);
+      // Emit final sync with winner BEFORE changing phase (the useEffect guard
+      // blocks sync when phase !== 'playing', so we must emit directly here)
+      if (isOnline && isHost) {
+        socket.emit('syncState', {
+          code: roomCode,
+          state: { players: newPls, deck: newDeck, discard: newDiscard, cp, log, extraPlay, modal: null, pendingNeg: null, winner: w, phase: 'playing' },
+        });
+      }
       setWinner(w); clearRoomSession(); setPhase('gameover');
       return;
     }
