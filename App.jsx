@@ -480,7 +480,7 @@ function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFriends, 
                   transition: 'all .15s',
                 }}
               >
-                          <img src={m.img} alt="hamburguesa" style={{ width: 90, height: 90, objectFit: 'contain' }} />
+                          <img src={m.img} alt="hamburguesa" style={{ width: 90, height: 90, objectFit: 'fill',borderRadius:'15px'}} />
 
                 <div style={{ fontSize: 13, fontWeight: 700, color: gameMode === m.id ? '#FFD700' : '#ccc' }}>{m.label}</div>
                 <div style={{ fontSize: 9, color: '#666', marginTop: 2 }}>{m.desc}</div>
