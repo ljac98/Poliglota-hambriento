@@ -1309,6 +1309,38 @@ function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack, isPub
   const [inviteFriends, setInviteFriends] = useState([]);
   const [inviteSentTo, setInviteSentTo] = useState(new Set());
   const [friendReqSent, setFriendReqSent] = useState(new Set());
+  const [existingFriends, setExistingFriends] = useState(new Set());
+  const [lobbyChat, setLobbyChat] = useState([]);
+  const [lobbyChatInput, setLobbyChatInput] = useState('');
+  const [showLobbyChat, setShowLobbyChat] = useState(false);
+  const lobbyChatEndRef = useRef(null);
+
+  // Load existing friends on mount to hide "Add" button for them
+  useEffect(() => {
+    if (!user) return;
+    getFriends().then(friends => {
+      setExistingFriends(new Set(friends.map(f => f.username)));
+    }).catch(() => {});
+  }, [user]);
+
+  // Lobby chat listener
+  useEffect(() => {
+    const handleChat = (msg) => setLobbyChat(prev => [...prev, msg]);
+    socket.on('chatMessage', handleChat);
+    return () => socket.off('chatMessage', handleChat);
+  }, []);
+
+  useEffect(() => {
+    if (showLobbyChat && lobbyChatEndRef.current) {
+      lobbyChatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [lobbyChat, showLobbyChat]);
+
+  function sendLobbyChat() {
+    if (!lobbyChatInput.trim()) return;
+    socket.emit('chatMessage', { code: roomCode, playerName: myName, text: lobbyChatInput.trim() });
+    setLobbyChatInput('');
+  }
 
   function handleCopyLink() {
     const link = window.location.origin + '/?sala=' + roomCode;
@@ -1511,7 +1543,7 @@ function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack, isPub
                 {hatPicks[p.name] && (
                   <HatSVG lang={hatPicks[p.name]} size={24} />
                 )}
-                {user && p.username && p.name !== myName && (
+                {user && p.username && p.name !== myName && !existingFriends.has(p.username) && (
                   <button
                     onClick={() => handleAddFriendFromLobby(p.username)}
                     disabled={friendReqSent.has(p.username)}
@@ -1643,6 +1675,59 @@ function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack, isPub
             {!myHat ? T('chooseHat') : T('waitingHost')}
           </div>
         )}
+
+        {/* Lobby Chat */}
+        <div style={{ marginTop: 16 }}>
+          <button onClick={() => setShowLobbyChat(s => !s)} style={{
+            background: 'none', border: '1px solid #2a2a4a', borderRadius: 10,
+            color: showLobbyChat ? '#FFD700' : '#888', fontFamily: "'Fredoka',sans-serif",
+            fontWeight: 700, fontSize: 12, padding: '6px 16px', cursor: 'pointer',
+            width: '100%', transition: 'all .2s',
+          }}>
+            {T('chat')} {!showLobbyChat && lobbyChat.length > 0 ? `(${lobbyChat.length})` : ''}
+          </button>
+          {showLobbyChat && (
+            <div style={{
+              marginTop: 8, background: 'rgba(0,0,0,.2)', borderRadius: 12,
+              border: '1px solid #2a2a4a', overflow: 'hidden',
+            }}>
+              <div style={{
+                maxHeight: 160, overflowY: 'auto', padding: '8px 12px',
+              }}>
+                {lobbyChat.length === 0 && (
+                  <p style={{ color: '#555', fontSize: 12, textAlign: 'center', margin: '8px 0' }}>{T('noMessages')}</p>
+                )}
+                {lobbyChat.map((msg, i) => (
+                  <div key={i} style={{ marginBottom: 4 }}>
+                    <span style={{ color: '#4ecdc4', fontSize: 12, fontWeight: 700 }}>{msg.playerName}: </span>
+                    <span style={{ color: '#ccc', fontSize: 12 }}>{msg.text}</span>
+                  </div>
+                ))}
+                <div ref={lobbyChatEndRef} />
+              </div>
+              <div style={{ display: 'flex', borderTop: '1px solid #2a2a4a' }}>
+                <input
+                  value={lobbyChatInput}
+                  onChange={e => setLobbyChatInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && sendLobbyChat()}
+                  placeholder={T('typeMessage')}
+                  maxLength={200}
+                  style={{
+                    flex: 1, padding: '8px 12px', border: 'none', background: 'transparent',
+                    color: '#eee', fontSize: 13, fontFamily: "'Fredoka',sans-serif", outline: 'none',
+                  }}
+                />
+                <button onClick={sendLobbyChat} style={{
+                  padding: '8px 14px', border: 'none', background: 'rgba(255,215,0,.1)',
+                  color: '#FFD700', fontFamily: "'Fredoka',sans-serif", fontWeight: 700,
+                  fontSize: 12, cursor: 'pointer',
+                }}>
+                  {T('send')}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
 
         <div style={{ marginTop: 14, textAlign: 'center' }}>
           <button onClick={onBack} style={{
