@@ -108,6 +108,239 @@ app.get('/api/history/:userId', requireDB, async (req, res) => {
   }
 });
 
+// ── Online user tracking (userId → socketId) ──
+const onlineUsers = new Map();
+
+// ── Auth middleware for protected routes ──
+function requireAuth(req, res, next) {
+  const token = req.headers.authorization?.split(' ')[1];
+  const payload = verifyToken(token);
+  if (!payload) return res.status(401).json({ error: 'No autorizado' });
+  req.userId = payload.id;
+  next();
+}
+
+// ── Search users by username ──
+app.get('/api/users/search', requireDB, requireAuth, async (req, res) => {
+  try {
+    const q = (req.query.q || '').toLowerCase().trim();
+    if (!q || q.length < 2) return res.json([]);
+    const result = await pool.query(
+      `SELECT id, username, display_name FROM users
+       WHERE username LIKE $1 AND id != $2 LIMIT 10`,
+      [`%${q}%`, req.userId]
+    );
+    res.json(result.rows.map(u => ({ id: u.id, username: u.username, displayName: u.display_name })));
+  } catch {
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
+// ── Friends list ──
+app.get('/api/friends', requireDB, requireAuth, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT u.id, u.username, u.display_name, u.wins, u.games_played
+       FROM friendships f JOIN users u ON u.id = f.friend_id
+       WHERE f.user_id = $1 ORDER BY u.display_name`,
+      [req.userId]
+    );
+    res.json(result.rows.map(u => ({
+      id: u.id, username: u.username, displayName: u.display_name,
+      wins: u.wins, gamesPlayed: u.games_played,
+      online: onlineUsers.has(u.id),
+    })));
+  } catch {
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
+// ── Send friend request ──
+app.post('/api/friends/request', requireDB, requireAuth, async (req, res) => {
+  try {
+    const { username } = req.body;
+    if (!username) return res.status(400).json({ error: 'Falta username' });
+
+    const target = await pool.query('SELECT id FROM users WHERE username = $1', [username.toLowerCase()]);
+    if (!target.rows[0]) return res.status(404).json({ error: 'Usuario no encontrado' });
+    const toId = target.rows[0].id;
+    if (toId === req.userId) return res.status(400).json({ error: 'No puedes agregarte a ti mismo' });
+
+    // Check if blocked
+    const blocked = await pool.query(
+      'SELECT 1 FROM blocked_users WHERE (user_id=$1 AND blocked_id=$2) OR (user_id=$2 AND blocked_id=$1)',
+      [req.userId, toId]
+    );
+    if (blocked.rows.length > 0) return res.status(400).json({ error: 'No se puede enviar solicitud' });
+
+    // Check if already friends
+    const existing = await pool.query(
+      'SELECT 1 FROM friendships WHERE user_id=$1 AND friend_id=$2',
+      [req.userId, toId]
+    );
+    if (existing.rows.length > 0) return res.status(400).json({ error: 'Ya son amigos' });
+
+    // Check if request already exists in either direction
+    const reqExists = await pool.query(
+      'SELECT id FROM friend_requests WHERE (from_user_id=$1 AND to_user_id=$2) OR (from_user_id=$2 AND to_user_id=$1)',
+      [req.userId, toId]
+    );
+    if (reqExists.rows.length > 0) {
+      // If reverse request exists, auto-accept
+      const reverse = reqExists.rows.find(r => true);
+      const reverseCheck = await pool.query(
+        'SELECT id FROM friend_requests WHERE from_user_id=$1 AND to_user_id=$2',
+        [toId, req.userId]
+      );
+      if (reverseCheck.rows.length > 0) {
+        // Auto-accept: they already sent us a request
+        await pool.query('DELETE FROM friend_requests WHERE id=$1', [reverseCheck.rows[0].id]);
+        await pool.query('INSERT INTO friendships (user_id, friend_id) VALUES ($1,$2),($2,$1) ON CONFLICT DO NOTHING', [req.userId, toId]);
+        // Notify via socket
+        const friendSocket = onlineUsers.get(toId);
+        if (friendSocket) io.to(friendSocket).emit('friendRequestAccepted', { userId: req.userId });
+        return res.json({ status: 'accepted', message: 'Solicitud aceptada automáticamente' });
+      }
+      return res.status(400).json({ error: 'Solicitud ya enviada' });
+    }
+
+    await pool.query(
+      'INSERT INTO friend_requests (from_user_id, to_user_id) VALUES ($1, $2)',
+      [req.userId, toId]
+    );
+
+    // Real-time notification
+    const friendSocket = onlineUsers.get(toId);
+    if (friendSocket) {
+      const fromUser = await pool.query('SELECT display_name FROM users WHERE id=$1', [req.userId]);
+      io.to(friendSocket).emit('friendRequestReceived', {
+        fromUserId: req.userId,
+        fromDisplayName: fromUser.rows[0]?.display_name || 'Unknown',
+      });
+    }
+
+    res.json({ status: 'sent' });
+  } catch (err) {
+    if (err.code === '23505') return res.status(400).json({ error: 'Solicitud ya enviada' });
+    console.error('Friend request error:', err.message);
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
+// ── Get pending friend requests ──
+app.get('/api/friends/requests', requireDB, requireAuth, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT fr.id, fr.from_user_id, u.username, u.display_name, fr.created_at
+       FROM friend_requests fr JOIN users u ON u.id = fr.from_user_id
+       WHERE fr.to_user_id = $1 ORDER BY fr.created_at DESC`,
+      [req.userId]
+    );
+    res.json(result.rows.map(r => ({
+      id: r.id, fromUserId: r.from_user_id, username: r.username,
+      displayName: r.display_name, createdAt: r.created_at,
+    })));
+  } catch {
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
+// ── Accept friend request ──
+app.post('/api/friends/accept/:requestId', requireDB, requireAuth, async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT * FROM friend_requests WHERE id=$1 AND to_user_id=$2',
+      [req.params.requestId, req.userId]
+    );
+    if (!result.rows[0]) return res.status(404).json({ error: 'Solicitud no encontrada' });
+    const fromId = result.rows[0].from_user_id;
+    await pool.query('DELETE FROM friend_requests WHERE id=$1', [req.params.requestId]);
+    await pool.query(
+      'INSERT INTO friendships (user_id, friend_id) VALUES ($1,$2),($2,$1) ON CONFLICT DO NOTHING',
+      [req.userId, fromId]
+    );
+    // Notify the sender
+    const senderSocket = onlineUsers.get(fromId);
+    if (senderSocket) io.to(senderSocket).emit('friendRequestAccepted', { userId: req.userId });
+    res.json({ status: 'accepted' });
+  } catch {
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
+// ── Decline friend request ──
+app.post('/api/friends/decline/:requestId', requireDB, requireAuth, async (req, res) => {
+  try {
+    await pool.query('DELETE FROM friend_requests WHERE id=$1 AND to_user_id=$2', [req.params.requestId, req.userId]);
+    res.json({ status: 'declined' });
+  } catch {
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
+// ── Remove friend ──
+app.delete('/api/friends/:friendId', requireDB, requireAuth, async (req, res) => {
+  try {
+    await pool.query(
+      'DELETE FROM friendships WHERE (user_id=$1 AND friend_id=$2) OR (user_id=$2 AND friend_id=$1)',
+      [req.userId, parseInt(req.params.friendId)]
+    );
+    res.json({ status: 'removed' });
+  } catch {
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
+// ── Block user ──
+app.post('/api/users/block', requireDB, requireAuth, async (req, res) => {
+  try {
+    const { userId: blockedId } = req.body;
+    if (!blockedId || blockedId === req.userId) return res.status(400).json({ error: 'ID inválido' });
+    // Remove friendship if exists
+    await pool.query(
+      'DELETE FROM friendships WHERE (user_id=$1 AND friend_id=$2) OR (user_id=$2 AND friend_id=$1)',
+      [req.userId, blockedId]
+    );
+    // Remove pending requests in both directions
+    await pool.query(
+      'DELETE FROM friend_requests WHERE (from_user_id=$1 AND to_user_id=$2) OR (from_user_id=$2 AND to_user_id=$1)',
+      [req.userId, blockedId]
+    );
+    await pool.query(
+      'INSERT INTO blocked_users (user_id, blocked_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+      [req.userId, blockedId]
+    );
+    res.json({ status: 'blocked' });
+  } catch {
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
+// ── Unblock user ──
+app.delete('/api/users/unblock/:userId', requireDB, requireAuth, async (req, res) => {
+  try {
+    await pool.query('DELETE FROM blocked_users WHERE user_id=$1 AND blocked_id=$2', [req.userId, parseInt(req.params.userId)]);
+    res.json({ status: 'unblocked' });
+  } catch {
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
+// ── Get blocked users ──
+app.get('/api/users/blocked', requireDB, requireAuth, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT u.id, u.username, u.display_name
+       FROM blocked_users b JOIN users u ON u.id = b.blocked_id
+       WHERE b.user_id = $1 ORDER BY u.display_name`,
+      [req.userId]
+    );
+    res.json(result.rows.map(u => ({ id: u.id, username: u.username, displayName: u.display_name })));
+  } catch {
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
 // ── Health check ──
 app.get('/api/health', (req, res) => res.json({ status: 'ok', time: Date.now() }));
 
@@ -183,10 +416,35 @@ function broadcastLobbyList() {
   io.to('lobby-browser').emit('lobbyListUpdate', getPublicRoomsList());
 }
 
+// ── Notify friends when a user goes online/offline ──
+async function notifyFriendsStatus(userId, isOnline) {
+  if (!dbAvailable) return;
+  try {
+    const result = await pool.query('SELECT friend_id FROM friendships WHERE user_id=$1', [userId]);
+    for (const row of result.rows) {
+      const friendSocketId = onlineUsers.get(row.friend_id);
+      if (friendSocketId) {
+        io.to(friendSocketId).emit(isOnline ? 'friendOnline' : 'friendOffline', { userId });
+      }
+    }
+  } catch {}
+}
+
 io.on('connection', socket => {
   console.log(`🔌 Socket connected: ${socket.id} (userId: ${socket.data.userId || 'guest'})`);
+
+  // ── Track online users & notify friends ──
+  if (socket.data.userId) {
+    onlineUsers.set(socket.data.userId, socket.id);
+    notifyFriendsStatus(socket.data.userId, true);
+  }
+
   socket.on('disconnect', reason => {
     console.log(`❌ Socket disconnected: ${socket.id} reason: ${reason}`);
+    if (socket.data.userId && onlineUsers.get(socket.data.userId) === socket.id) {
+      onlineUsers.delete(socket.data.userId);
+      notifyFriendsStatus(socket.data.userId, false);
+    }
   });
 
   // ── Create room ──
@@ -294,6 +552,25 @@ io.on('connection', socket => {
   // ── Join/leave lobby browser channel ──
   socket.on('joinLobbyBrowser', () => socket.join('lobby-browser'));
   socket.on('leaveLobbyBrowser', () => socket.leave('lobby-browser'));
+
+  // ── Room invite: invite a friend to your current room ──
+  socket.on('roomInvite', async ({ friendUserId }) => {
+    if (!socket.data.userId || !socket.data.roomCode) return;
+    const room = rooms.get(socket.data.roomCode);
+    if (!room || room.started) return;
+    if (room.players.filter(p => !p.disconnected).length >= 4) return;
+    const friendSocketId = onlineUsers.get(friendUserId);
+    if (!friendSocketId) return;
+    try {
+      const fromUser = await pool.query('SELECT display_name FROM users WHERE id=$1', [socket.data.userId]);
+      io.to(friendSocketId).emit('roomInviteReceived', {
+        fromUserId: socket.data.userId,
+        fromDisplayName: fromUser.rows[0]?.display_name || 'Unknown',
+        roomCode: socket.data.roomCode,
+        roomName: room.roomName || '',
+      });
+    } catch {}
+  });
 
   // ── Relay hat pick in lobby ──
   socket.on('lobbyHatPick', ({ code, playerName, hat }) => {
