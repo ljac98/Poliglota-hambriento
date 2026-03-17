@@ -1388,9 +1388,9 @@ function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack, isPub
   }, []);
 
   const gameModes = [
-    { id: 'clon', label: T('modeClon'), desc: T('modeClonDesc') },
-    { id: 'escalera', label: T('modeEscalera'), desc: T('modeEscaleraDesc') },
-    { id: 'caotico', label: T('modeCaotico'), desc: T('modeCaoticoDesc') },
+    { id: 'clon', label: T('modeClon'), desc: T('modeClonDesc'),img:modoclon },
+    { id: 'escalera', label: T('modeEscalera'), desc: T('modeEscaleraDesc'),img:modoescalera },
+    { id: 'caotico', label: T('modeCaotico'), desc: T('modeCaoticoDesc'),img:modocaotico },
   ];
 
   function pickHat(lang) {
@@ -1624,6 +1624,8 @@ function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack, isPub
                     transition: 'all .15s',
                   }}
                 >
+                                            <img src={m.img} alt="hamburguesa" style={{ width: 90, height: 90, objectFit: 'fill',borderRadius:'15px'}} />
+
                   <div style={{ fontSize: 12, fontWeight: 700, color: gameMode === m.id ? '#FFD700' : '#ccc' }}>{m.label}</div>
                   <div style={{ fontSize: 9, color: '#666', marginTop: 2 }}>{m.desc}</div>
                 </div>
