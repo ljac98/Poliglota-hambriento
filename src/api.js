@@ -67,4 +67,45 @@ export async function getHistory(userId) {
   return request(`/api/history/${userId}`);
 }
 
+// ── Friends API ──
+export async function searchUsers(query) {
+  return request(`/api/users/search?q=${encodeURIComponent(query)}`);
+}
+
+export async function getFriends() {
+  return request('/api/friends');
+}
+
+export async function sendFriendRequest(username) {
+  return request('/api/friends/request', { method: 'POST', body: JSON.stringify({ username }) });
+}
+
+export async function getFriendRequests() {
+  return request('/api/friends/requests');
+}
+
+export async function acceptFriendRequest(requestId) {
+  return request(`/api/friends/accept/${requestId}`, { method: 'POST' });
+}
+
+export async function declineFriendRequest(requestId) {
+  return request(`/api/friends/decline/${requestId}`, { method: 'POST' });
+}
+
+export async function removeFriend(friendId) {
+  return request(`/api/friends/${friendId}`, { method: 'DELETE' });
+}
+
+export async function blockUser(userId) {
+  return request('/api/users/block', { method: 'POST', body: JSON.stringify({ userId }) });
+}
+
+export async function unblockUser(userId) {
+  return request(`/api/users/unblock/${userId}`, { method: 'DELETE' });
+}
+
+export async function getBlockedUsers() {
+  return request('/api/users/blocked');
+}
+
 export { getToken };
