@@ -1878,6 +1878,7 @@ export default function App() {
               if (hi === -1) return;
               p.perchero.splice(hi, 1);
               p.mainHats.push(action.hatLang);
+              p.manuallyAddedHats = [...(p.manuallyAddedHats || []), action.hatLang];
               di = [...di, ...p.hand];
               p.hand = [];
               p.maxHand = Math.max(1, p.maxHand - 1);
@@ -2464,6 +2465,7 @@ export default function App() {
     const hi = p.perchero.indexOf(hatLang);
     p.perchero.splice(hi, 1);
     p.mainHats.push(hatLang);
+    p.manuallyAddedHats = [...(p.manuallyAddedHats || []), hatLang];
     let newDiscard = [...discard, ...p.hand];
     p.hand = [];
     p.maxHand = Math.max(1, p.maxHand - 1);
@@ -2946,7 +2948,7 @@ export default function App() {
     </div>
   );
 
-  const addedHats = human.mainHats.slice(1);
+  const addedHats = human.manuallyAddedHats || [];
   const isReduced = human.maxHand < 6;
 
   const handLabel = (
