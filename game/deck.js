@@ -82,6 +82,7 @@ export function initPlayer(name, deck, chosenHat, gameConfig, isAI = false) {
     name,
     hand,
     mainHats: [chosenHat],
+    manuallyAddedHats: [],
     perchero,
     table: [],
     burgers,
