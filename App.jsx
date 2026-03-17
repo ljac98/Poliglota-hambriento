@@ -1308,6 +1308,7 @@ function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack, isPub
   const [showInvite, setShowInvite] = useState(false);
   const [inviteFriends, setInviteFriends] = useState([]);
   const [inviteSentTo, setInviteSentTo] = useState(new Set());
+  const [friendReqSent, setFriendReqSent] = useState(new Set());
 
   function handleCopyLink() {
     const link = window.location.origin + '/?sala=' + roomCode;
@@ -1329,6 +1330,11 @@ function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack, isPub
   function handleInvite(friendId) {
     socket.emit('roomInvite', { friendUserId: friendId });
     setInviteSentTo(prev => new Set([...prev, friendId]));
+  }
+
+  async function handleAddFriendFromLobby(username) {
+    setFriendReqSent(prev => new Set([...prev, username]));
+    try { await sendFriendRequest(username); } catch {}
   }
 
   const myHat = hatPicks[myName];
@@ -1504,6 +1510,22 @@ function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack, isPub
                 {i === 0 && <span style={{ fontSize: 11, color: '#FFD700', marginLeft: 'auto' }}>{T('host')}</span>}
                 {hatPicks[p.name] && (
                   <HatSVG lang={hatPicks[p.name]} size={24} />
+                )}
+                {user && p.username && p.name !== myName && (
+                  <button
+                    onClick={() => handleAddFriendFromLobby(p.username)}
+                    disabled={friendReqSent.has(p.username)}
+                    style={{
+                      marginLeft: i === 0 ? 0 : 'auto', padding: '3px 10px', borderRadius: 8,
+                      border: 'none', fontFamily: "'Fredoka',sans-serif", fontWeight: 700,
+                      fontSize: 11, cursor: friendReqSent.has(p.username) ? 'default' : 'pointer',
+                      background: friendReqSent.has(p.username) ? 'rgba(76,175,80,.15)' : 'rgba(78,205,196,.15)',
+                      color: friendReqSent.has(p.username) ? '#81C784' : '#4ecdc4',
+                      transition: 'all .2s',
+                    }}
+                  >
+                    {friendReqSent.has(p.username) ? '✓' : T('addFriendShort')}
+                  </button>
                 )}
               </div>
             ))}

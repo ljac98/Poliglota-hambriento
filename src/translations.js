@@ -237,6 +237,7 @@ const translations = {
     noBlocked: 'Sin usuarios bloqueados',
     inviteToRoom: 'Invitar a sala',
     friendAccepted: 'aceptó tu solicitud',
+    addFriendShort: 'Agregar',
   },
 
   en: {
@@ -463,6 +464,7 @@ const translations = {
     noBlocked: 'No blocked users',
     inviteToRoom: 'Invite to room',
     friendAccepted: 'accepted your request',
+    addFriendShort: 'Add',
   },
 
   fr: {
@@ -689,6 +691,7 @@ const translations = {
     noBlocked: 'Aucun utilisateur bloqué',
     inviteToRoom: 'Inviter dans la salle',
     friendAccepted: 'a accepté ta demande',
+    addFriendShort: 'Ajouter',
   },
 
   it: {
@@ -915,6 +918,7 @@ const translations = {
     noBlocked: 'Nessun utente bloccato',
     inviteToRoom: 'Invita nella stanza',
     friendAccepted: 'ha accettato la tua richiesta',
+    addFriendShort: 'Aggiungi',
   },
 
   de: {
@@ -1141,6 +1145,7 @@ const translations = {
     noBlocked: 'Keine blockierten Benutzer',
     inviteToRoom: 'In Raum einladen',
     friendAccepted: 'hat deine Anfrage akzeptiert',
+    addFriendShort: 'Hinzufügen',
   },
 
   pt: {
@@ -1367,6 +1372,7 @@ const translations = {
     noBlocked: 'Sem utilizadores bloqueados',
     inviteToRoom: 'Convidar para a sala',
     friendAccepted: 'aceitou o teu pedido',
+    addFriendShort: 'Adicionar',
   },
 };
 

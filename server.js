@@ -453,7 +453,7 @@ io.on('connection', socket => {
     const code = genCode();
     rooms.set(code, {
       hostId: socket.id,
-      players: [{ id: socket.id, name: playerName, idx: 0, userId: socket.data.userId || null, reconnectId: socket.data.reconnectId }],
+      players: [{ id: socket.id, name: playerName, idx: 0, userId: socket.data.userId || null, username: socket.data.username || null, reconnectId: socket.data.reconnectId }],
       started: false,
       isPublic: !!isPublic,
       roomName: roomName || '',
@@ -463,7 +463,7 @@ io.on('connection', socket => {
     socket.data.roomCode = code;
     socket.emit('roomCreated', { code, isPublic: !!isPublic, roomName: roomName || '' });
     io.to(code).emit('lobbyUpdate', {
-      players: rooms.get(code).players.map(p => ({ name: p.name, idx: p.idx })),
+      players: rooms.get(code).players.map(p => ({ name: p.name, idx: p.idx, userId: p.userId || null, username: p.username || null })),
     });
     if (isPublic) broadcastLobbyList();
   });
@@ -475,12 +475,12 @@ io.on('connection', socket => {
     if (room.started) return socket.emit('joinError', 'El juego ya comenzó');
     if (room.players.length >= 4) return socket.emit('joinError', 'Sala llena (máximo 4 jugadores)');
     const idx = room.players.length;
-    room.players.push({ id: socket.id, name: playerName, idx, userId: socket.data.userId || null, reconnectId: socket.data.reconnectId });
+    room.players.push({ id: socket.id, name: playerName, idx, userId: socket.data.userId || null, username: socket.data.username || null, reconnectId: socket.data.reconnectId });
     socket.join(code);
     socket.data.roomCode = code;
     socket.emit('roomJoined', { code, myIdx: idx, isPublic: room.isPublic, roomName: room.roomName });
     io.to(code).emit('lobbyUpdate', {
-      players: room.players.map(p => ({ name: p.name, idx: p.idx })),
+      players: room.players.map(p => ({ name: p.name, idx: p.idx, userId: p.userId || null, username: p.username || null })),
     });
     if (room.isPublic) broadcastLobbyList();
   });
@@ -527,7 +527,7 @@ io.on('connection', socket => {
       myIdx: player.idx,
       isHost,
       phase: room.started ? 'playing' : 'onlineLobby',
-      players: room.players.filter(p => !p.disconnected).map(p => ({ name: p.name, idx: p.idx })),
+      players: room.players.filter(p => !p.disconnected).map(p => ({ name: p.name, idx: p.idx, userId: p.userId || null, username: p.username || null })),
       roomIsPublic: room.isPublic,
       roomDisplayName: room.roomName,
       gameState: (isHost && room.started && room.lastGameState) ? room.lastGameState : null,
@@ -535,7 +535,7 @@ io.on('connection', socket => {
     // Notify others that player reconnected
     const activePlayers = room.players.filter(p => !p.disconnected);
     io.to(code).emit('lobbyUpdate', {
-      players: activePlayers.map(p => ({ name: p.name, idx: p.idx })),
+      players: activePlayers.map(p => ({ name: p.name, idx: p.idx, userId: p.userId || null, username: p.username || null })),
     });
     io.to(code).emit('playerRejoined', {
       playerName: player.name,
@@ -586,7 +586,7 @@ io.on('connection', socket => {
     io.to(code).emit('gameStarted', {
       hatPicks,
       gameConfig,
-      players: room.players.map(p => ({ name: p.name, idx: p.idx })),
+      players: room.players.map(p => ({ name: p.name, idx: p.idx, userId: p.userId || null, username: p.username || null })),
     });
     if (room.isPublic) broadcastLobbyList();
   });
@@ -666,11 +666,11 @@ io.on('connection', socket => {
       io.to(code).emit('playerRemovedFromGame', {
         playerIdx: player.idx,
         playerName: player.name,
-        activePlayers: activePlayers.map(p => ({ name: p.name, idx: p.idx })),
+        activePlayers: activePlayers.map(p => ({ name: p.name, idx: p.idx, userId: p.userId || null, username: p.username || null })),
         activeCount: activePlayers.length,
       });
       io.to(code).emit('lobbyUpdate', {
-        players: activePlayers.map(p => ({ name: p.name, idx: p.idx })),
+        players: activePlayers.map(p => ({ name: p.name, idx: p.idx, userId: p.userId || null, username: p.username || null })),
       });
     }
     if (wasPublic) broadcastLobbyList();
@@ -705,7 +705,7 @@ io.on('connection', socket => {
     io.to(code).emit('playerVoluntaryLeft', {
       playerName: player.name,
       playerIdx: player.idx,
-      activePlayers: activePlayers.map(p => ({ name: p.name, idx: p.idx })),
+      activePlayers: activePlayers.map(p => ({ name: p.name, idx: p.idx, userId: p.userId || null, username: p.username || null })),
       activeCount: activePlayers.length,
       gameStarted: room.started,
     });
@@ -727,7 +727,7 @@ io.on('connection', socket => {
         savedGames.delete(code);
       } else {
         io.to(code).emit('playerLeft', {
-          players: currentRoom.players.filter(p => !p.disconnected).map(p => ({ name: p.name, idx: p.idx })),
+          players: currentRoom.players.filter(p => !p.disconnected).map(p => ({ name: p.name, idx: p.idx, userId: p.userId || null, username: p.username || null })),
         });
       }
       if (currentRoom.isPublic) broadcastLobbyList();
@@ -762,7 +762,7 @@ io.on('connection', socket => {
 
       // Notify others that player is temporarily disconnected
       io.to(code).emit('lobbyUpdate', {
-        players: room.players.filter(p => !p.disconnected).map(p => ({ name: p.name, idx: p.idx })),
+        players: room.players.filter(p => !p.disconnected).map(p => ({ name: p.name, idx: p.idx, userId: p.userId || null, username: p.username || null })),
       });
 
       // Start grace period timer
@@ -778,7 +778,7 @@ io.on('connection', socket => {
           savedGames.delete(code);
         } else {
           io.to(code).emit('playerLeft', {
-            players: currentRoom.players.filter(p => !p.disconnected).map(p => ({ name: p.name, idx: p.idx })),
+            players: currentRoom.players.filter(p => !p.disconnected).map(p => ({ name: p.name, idx: p.idx, userId: p.userId || null, username: p.username || null })),
           });
         }
         if (wasPublic) broadcastLobbyList();
@@ -802,7 +802,7 @@ io.on('connection', socket => {
         io.to(room.hostId).emit('becameHost');
       }
       io.to(code).emit('playerLeft', {
-        players: room.players.map(p => ({ name: p.name, idx: p.idx })),
+        players: room.players.map(p => ({ name: p.name, idx: p.idx, userId: p.userId || null, username: p.username || null })),
       });
     }
     if (wasPublic) broadcastLobbyList();
