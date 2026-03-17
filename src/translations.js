@@ -237,6 +237,8 @@ const translations = {
     noBlocked: 'Sin usuarios bloqueados',
     inviteToRoom: 'Invitar a sala',
     friendAccepted: 'aceptó tu solicitud',
+    friendRequestNotif: 'te envió solicitud de amistad',
+    viewRequest: 'Ver',
     addFriendShort: 'Agregar',
   },
 
@@ -464,6 +466,8 @@ const translations = {
     noBlocked: 'No blocked users',
     inviteToRoom: 'Invite to room',
     friendAccepted: 'accepted your request',
+    friendRequestNotif: 'sent you a friend request',
+    viewRequest: 'View',
     addFriendShort: 'Add',
   },
 
@@ -691,6 +695,8 @@ const translations = {
     noBlocked: 'Aucun utilisateur bloqué',
     inviteToRoom: 'Inviter dans la salle',
     friendAccepted: 'a accepté ta demande',
+    friendRequestNotif: "t'a envoyé une demande d'ami",
+    viewRequest: 'Voir',
     addFriendShort: 'Ajouter',
   },
 
@@ -918,6 +924,8 @@ const translations = {
     noBlocked: 'Nessun utente bloccato',
     inviteToRoom: 'Invita nella stanza',
     friendAccepted: 'ha accettato la tua richiesta',
+    friendRequestNotif: 'ti ha inviato una richiesta di amicizia',
+    viewRequest: 'Vedi',
     addFriendShort: 'Aggiungi',
   },
 
@@ -1145,6 +1153,8 @@ const translations = {
     noBlocked: 'Keine blockierten Benutzer',
     inviteToRoom: 'In Raum einladen',
     friendAccepted: 'hat deine Anfrage akzeptiert',
+    friendRequestNotif: 'hat dir eine Freundschaftsanfrage geschickt',
+    viewRequest: 'Ansehen',
     addFriendShort: 'Hinzufügen',
   },
 
@@ -1372,6 +1382,8 @@ const translations = {
     noBlocked: 'Sem utilizadores bloqueados',
     inviteToRoom: 'Convidar para a sala',
     friendAccepted: 'aceitou o teu pedido',
+    friendRequestNotif: 'enviou-te um pedido de amizade',
+    viewRequest: 'Ver',
     addFriendShort: 'Adicionar',
   },
 };

@@ -1806,6 +1806,9 @@ export default function App() {
   const [roomInvite, setRoomInvite] = useState(null);
   const [inviteJoinCode, setInviteJoinCode] = useState('');
 
+  // ── Friend request notification state ──
+  const [friendReqNotif, setFriendReqNotif] = useState(null);
+
   // ── Room invite listener (global) ──
   useEffect(() => {
     const handleRoomInvite = (data) => {
@@ -1815,6 +1818,16 @@ export default function App() {
     };
     socket.on('roomInviteReceived', handleRoomInvite);
     return () => socket.off('roomInviteReceived', handleRoomInvite);
+  }, []);
+
+  // ── Friend request notification listener (global) ──
+  useEffect(() => {
+    const handleFriendReq = (data) => {
+      setFriendReqNotif(data);
+      setTimeout(() => setFriendReqNotif(prev => prev === data ? null : prev), 10000);
+    };
+    socket.on('friendRequestReceived', handleFriendReq);
+    return () => socket.off('friendRequestReceived', handleFriendReq);
   }, []);
 
   function acceptRoomInvite() {
@@ -2992,6 +3005,33 @@ export default function App() {
     </div>
   );
 
+  // ── Friend request toast overlay (shown on any screen) ──
+  const friendReqToast = friendReqNotif && (
+    <div style={{
+      position: 'fixed', bottom: roomInvite ? 90 : 20, left: '50%', transform: 'translateX(-50%)',
+      background: '#1a2744', borderRadius: 16, padding: '14px 20px',
+      border: '2px solid #FFD700', boxShadow: '0 8px 32px rgba(0,0,0,.6)',
+      zIndex: 9999, display: 'flex', alignItems: 'center', gap: 14,
+      fontFamily: "'Fredoka',sans-serif", maxWidth: '90vw',
+    }}>
+      <div>
+        <div style={{ color: '#eee', fontSize: 14, fontWeight: 700 }}>
+          🤝 {friendReqNotif.fromDisplayName} {T('friendRequestNotif')}
+        </div>
+      </div>
+      <button onClick={() => { setFriendReqNotif(null); setPhase('friends'); }} style={{
+        padding: '7px 16px', borderRadius: 10, border: 'none',
+        background: '#FFD700', color: '#000', fontFamily: "'Fredoka',sans-serif",
+        fontWeight: 700, fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap',
+      }}>{T('viewRequest')}</button>
+      <button onClick={() => setFriendReqNotif(null)} style={{
+        padding: '7px 12px', borderRadius: 10, border: '1px solid #555',
+        background: 'transparent', color: '#888', fontFamily: "'Fredoka',sans-serif",
+        fontWeight: 700, fontSize: 13, cursor: 'pointer',
+      }}>✕</button>
+    </div>
+  );
+
   if (phase === 'reconnecting') return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0e1a', color: '#FFD700', fontFamily: "'Fredoka',sans-serif", fontSize: 22 }}>
       {T('reconnecting')}
@@ -3100,15 +3140,15 @@ export default function App() {
   );
 
   if (phase === 'history' && user) return (
-    <>{inviteToast}<HistoryScreen user={user} onBack={() => setPhase('setup')} T={T} /></>
+    <>{inviteToast}{friendReqToast}<HistoryScreen user={user} onBack={() => setPhase('setup')} T={T} /></>
   );
 
   if (phase === 'friends' && user) return (
-    <>{inviteToast}<FriendsScreen user={user} onBack={() => setPhase('setup')} T={T} /></>
+    <>{inviteToast}{friendReqToast}<FriendsScreen user={user} onBack={() => setPhase('setup')} T={T} /></>
   );
 
   if (phase === 'setup') return (
-    <>{inviteToast}
+    <>{inviteToast}{friendReqToast}
     <SetupScreen
       onStart={startGame}
       onOnline={() => setPhase('onlineMenu')}
@@ -3121,6 +3161,7 @@ export default function App() {
   );
 
   if (phase === 'onlineMenu') return (
+    <>{friendReqToast}
     <OnlineMenu
       user={user}
       initialCode={inviteJoinCode || initialSalaCode}
@@ -3147,9 +3188,11 @@ export default function App() {
         setPhase('onlineLobby');
       }}
     />
+    </>
   );
 
   if (phase === 'onlineLobby') return (
+    <>{friendReqToast}
     <OnlineLobby
       roomCode={roomCode}
       myName={lobbyPlayers[myPlayerIdx]?.name || ''}
@@ -3174,6 +3217,7 @@ export default function App() {
         setPhase('setup');
       }}
     />
+    </>
   );
 
   if (phase === 'transition') return <TransitionScreen player={players[HI]} onContinue={() => setPhase('playing')} isExtraPlay={extraPlay} T={T} />;
