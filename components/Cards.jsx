@@ -34,7 +34,7 @@ import eqEnsalada        from '../imagenes/acciones/esquina/ensalada2.png';
 import eqPizza           from '../imagenes/acciones/esquina/pizza2.png';
 import eqParrilla        from '../imagenes/acciones/esquina/parrilla.png';
 import eqTenedor         from '../imagenes/acciones/esquina/tenedor2.png';
-import eqLadron          from '../imagenes/acciones/esquina/sombrerogenerico2.png';
+import eqLadron          from '../imagenes/acciones/esquina/robo.png';
 import eqIntercambioSomb from '../imagenes/acciones/esquina/intercambiosomb.png';
 import eqIntercambioHamb from '../imagenes/acciones/esquina/intercam.png';
 import eqBasurero        from '../imagenes/acciones/esquina/9-trash-can-drawing-tutorial.png';
