@@ -21,6 +21,11 @@ import ingHuevo   from './imagenes/hamburguesas/objetivos/huevo.png';
 import ingCebolla from './imagenes/hamburguesas/objetivos/cebolla.png';
 import ingPalta   from './imagenes/hamburguesas/objetivos/palta.png';
 import comodinImg from './imagenes/ingredientes/comodines/comodin.png';
+import modoclon from './imagenes/modos/clones.png';
+import modoescalera from './imagenes/modos/escalera.png';
+import modocaotico from './imagenes/modos/caotico.png';
+
+
 const ING_IMG = {
   pan: ingPan, lechuga: ingLechuga, tomate: ingTomate, carne: ingCarne,
   queso: ingQueso, pollo: ingPollo, huevo: ingHuevo, cebolla: ingCebolla,
@@ -371,9 +376,9 @@ function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFriends, 
   const [aiCount, setAiCount] = useState(2);
 
   const gameModes = [
-    { id: 'clon', label: T('modeClon'), desc: T('modeClonDesc') },
-    { id: 'escalera', label: T('modeEscalera'), desc: T('modeEscaleraDesc') },
-    { id: 'caotico', label: T('modeCaotico'), desc: T('modeCaoticoDesc') },
+    { id: 'clon', label: T('modeClon'), desc: T('modeClonDesc') ,img:modoclon },
+    { id: 'escalera', label: T('modeEscalera'), desc: T('modeEscaleraDesc'),img:modoescalera },
+    { id: 'caotico', label: T('modeCaotico'), desc: T('modeCaoticoDesc') ,img:modocaotico},
   ];
 
   return (
@@ -475,6 +480,8 @@ function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFriends, 
                   transition: 'all .15s',
                 }}
               >
+                          <img src={m.img} alt="hamburguesa" style={{ width: 90, height: 90, objectFit: 'contain' }} />
+
                 <div style={{ fontSize: 13, fontWeight: 700, color: gameMode === m.id ? '#FFD700' : '#ccc' }}>{m.label}</div>
                 <div style={{ fontSize: 9, color: '#666', marginTop: 2 }}>{m.desc}</div>
               </div>
