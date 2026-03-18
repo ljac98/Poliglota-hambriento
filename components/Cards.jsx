@@ -46,6 +46,7 @@ import eqComeComodines   from '../imagenes/acciones/esquina/pancho.png';
 import eqaccionesg   from '../imagenes/acciones/esquina derecha/global.png';
 import eqaccioness   from '../imagenes/acciones/esquina derecha/singular.png';
 import eqdescarte   from '../imagenes/acciones/esquina derecha/descarte.png';
+import eqnegacion   from '../imagenes/acciones/esquina derecha/negacion.png';
 
 const ACTION_IMG = {
   milanesa: imgMilanesa, ensalada: imgEnsalada, pizza: imgPizza,
@@ -65,8 +66,7 @@ const ACTION_CORNER_DER_IMG = {
   milanesa: eqaccionesg  , ensalada:  eqaccionesg , pizza:  eqaccionesg ,
   parrilla:  eqaccionesg , tenedor:  eqaccioness , ladron:  eqaccioness ,
   intercambio_sombreros:  eqaccioness, intercambio_hamburguesa:  eqaccioness ,
-  basurero: eqdescarte,
-  gloton:  eqaccioness ,comecomodines:  eqaccionesg,
+  basurero: eqdescarte, gloton:  eqaccioness ,negacion: eqnegacion, comecomodines:  eqaccionesg,
 };
 const ING_IMG = {
   pan: ingPan, lechuga: ingLechuga, tomate: ingTomate, carne: ingCarne,
