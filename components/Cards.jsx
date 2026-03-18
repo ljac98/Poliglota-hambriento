@@ -28,6 +28,8 @@ import imgBasurero        from '../imagenes/acciones/robar descarte.png';
 import imgGloton          from '../imagenes/acciones/comer.png';
 import imgNegacion        from '../imagenes/acciones/cancel.png';
 import imgComeComodines   from '../imagenes/acciones/comecomodines.png';
+import eqingredientes from '../imagenes/hamburguesas/ham.png';
+
 // ── Esquinas de cartas de acción ──
 import eqMilanesa        from '../imagenes/acciones/esquina/milanga.png';
 import eqEnsalada        from '../imagenes/acciones/esquina/ensalada2.png';
@@ -111,6 +113,8 @@ export const IngredientCard = ({ card, onClick, selected, small, large, playable
           : ING_IMG[ing]
             ? <img src={ING_IMG[ing]} alt={ing} style={{ width: large ? 16 : (small ? 10 : 14), height: large ? 16 : (small ? 10 : 14), objectFit: 'contain' }} />
             : ING_EMOJI[ing]}
+                  <img src={eqingredientes} alt="" style={{ position:"absolute", top:3, right:3, width:cornerSize, height:cornerSize, objectFit:"contain" }} />
+
       </div>
       {/* Language label */}
       <div style={{
