@@ -39,7 +39,7 @@ import eqTenedor         from '../imagenes/acciones/esquina/tenedor2.png';
 import eqLadron          from '../imagenes/acciones/esquina/robo.png';
 import eqIntercambioSomb from '../imagenes/acciones/esquina/intercambiosomb.png';
 import eqIntercambioHamb from '../imagenes/acciones/esquina/intercam.png';
-import eqBasurero        from '../imagenes/acciones/esquina/9-trash-can-drawing-tutorial.png';
+import eqBasurero        from '../imagenes/acciones/esquina/basurero.png';
 import eqGloton          from '../imagenes/acciones/esquina/comelona.png';
 import eqNegacion        from '../imagenes/acciones/esquina/cancelh.png';
 import eqComeComodines   from '../imagenes/acciones/esquina/pancho.png';
