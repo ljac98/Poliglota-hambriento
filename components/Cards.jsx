@@ -41,6 +41,9 @@ import eqBasurero        from '../imagenes/acciones/esquina/9-trash-can-drawing-
 import eqGloton          from '../imagenes/acciones/esquina/comelona.png';
 import eqNegacion        from '../imagenes/acciones/esquina/cancelh.png';
 import eqComeComodines   from '../imagenes/acciones/esquina/pancho.png';
+import eqaccionesg   from '../imagenes/acciones/esquina derecha/global.png';
+import eqaccioness   from '../imagenes/acciones/esquina derecha/singular.png';
+import eqdescarte   from '../imagenes/acciones/esquina derecha/descarte.png';
 
 const ACTION_IMG = {
   milanesa: imgMilanesa, ensalada: imgEnsalada, pizza: imgPizza,
@@ -56,7 +59,13 @@ const ACTION_CORNER_IMG = {
   basurero: eqBasurero,
   gloton: eqGloton, negacion: eqNegacion, comecomodines: eqComeComodines,
 };
-
+const ACTION_CORNER_DER_IMG = {
+  milanesa: eqaccionesg  , ensalada:  eqaccionesg , pizza:  eqaccionesg ,
+  parrilla:  eqaccionesg , tenedor:  eqaccioness , ladron:  eqaccioness ,
+  intercambio_sombreros:  eqaccioness, intercambio_hamburguesa:  eqaccioness ,
+  basurero: eqdescarte,
+  gloton:  eqaccioness ,comecomodines:  eqaccionesg,
+};
 const ING_IMG = {
   pan: ingPan, lechuga: ingLechuga, tomate: ingTomate, carne: ingCarne,
   queso: ingQueso, pollo: ingPollo, huevo: ingHuevo, cebolla: ingCebolla,
@@ -144,6 +153,7 @@ export const ActionCard = ({ card, onClick, selected, small, large, playable }) 
   const h = large ? 154 : (small ? 94 : 126);
   const mainImg = ACTION_IMG[card.action];
   const cornerImg = ACTION_CORNER_IMG[card.action];
+    const cornerImgDer = ACTION_CORNER_DER_IMG[card.action];
   const cornerSize = large ? 22 : (small ? 14 : 18);
   const mainSize = large ? 64 : (small ? 36 : 52);
 
@@ -163,6 +173,7 @@ export const ActionCard = ({ card, onClick, selected, small, large, playable }) 
     }}>
       {cornerImg && <>
         <img src={cornerImg} alt="" style={{ position:"absolute", top:3, left:3, width:cornerSize, height:cornerSize, objectFit:"contain" }} />
+          <img src={cornerImgDer} alt="" style={{ position:"absolute", top:3, right:3, width:cornerSize, height:cornerSize, objectFit:"contain" }} />
         <img src={cornerImg} alt="" style={{ position:"absolute", bottom:3, right:3, width:cornerSize, height:cornerSize, objectFit:"contain", transform:"rotate(180deg)" }} />
       </>}
       {mainImg
