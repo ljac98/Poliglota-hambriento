@@ -153,8 +153,8 @@ export const IngredientCard = ({ card, onClick, selected, small, large, playable
 export const ActionCard = ({ card, onClick, selected, small, large, playable }) => {
   const info = getActionInfo(card.action);
   const dimmed = playable === false;
-  const w = large ? 105 : (small ? 64 : 86);
-  const h = large ? 154 : (small ? 94 : 126);
+  const w = large ? 150 : (small ? 64 : 86);
+  const h = large ? 200 : (small ? 94 : 126);
   const mainImg = ACTION_IMG[card.action];
   const cornerImg = ACTION_CORNER_IMG[card.action];
     const cornerImgDer = ACTION_CORNER_DER_IMG[card.action];
