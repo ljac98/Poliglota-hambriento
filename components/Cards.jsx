@@ -113,7 +113,7 @@ export const IngredientCard = ({ card, onClick, selected, small, large, playable
           : ING_IMG[ing]
             ? <img src={ING_IMG[ing]} alt={ing} style={{ width: large ? 16 : (small ? 10 : 14), height: large ? 16 : (small ? 10 : 14), objectFit: 'contain' }} />
             : ING_EMOJI[ing]}
-                  <img src={eqingredientes} alt="" style={{ position:"absolute", top:3, right:3, width:cornerSize, height:cornerSize, objectFit:"contain" }} />
+                  <img src={eqingredientes} alt="" style={{ position:"absolute", top:3, right:3, width:large ? 16 : (small ? 10 : 14), height: large ? 16 : (small ? 10 : 14), objectFit:"contain" }} />
 
       </div>
       {/* Language label */}
