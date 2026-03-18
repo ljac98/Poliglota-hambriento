@@ -82,8 +82,8 @@ export const IngredientCard = ({ card, onClick, selected, small, large, playable
   const bg = LANG_BG[lang];
   const txtColor = LANG_TEXT[lang];
   const isDark = lang === "inglés";
-  const w = large ? 105 : (small ? 64 : 86);
-  const h = large ? 154 : (small ? 94 : 126);
+  const w = large ? 150 : (small ? 64 : 86);
+  const h = large ? 200 : (small ? 94 : 126);
   const dimmed = playable === false;
 
   return (
