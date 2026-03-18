@@ -26,6 +26,7 @@ import modoescalera from './imagenes/modos/escalera.png';
 import modocaotico from './imagenes/modos/caotico.png';
 import ganador from './imagenes/campeon.png';
 import perdedor from './imagenes/perdedor.png';
+import accion from './imagenes/acciones/acciones.png';
 
 
 const ING_IMG = {
