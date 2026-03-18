@@ -609,7 +609,7 @@ function GameOverScreen({ winner, players, onRestart, user, onHistory, T }) {
       alignItems: 'center', justifyContent: 'center',
       background: 'linear-gradient(135deg,#0f1117 0%,#1a1a2e 100%)',
     }}>
-      <div style={{ fontSize: 72, marginBottom: 12 }}>        <img src={ganador} alt="El Glotón" style={{ width: '10%', height: '10%', objectFit: 'cover' }} />
+      <div style={{ fontSize: 72, marginBottom: 12 }}>        <img src={ganador} alt="El Glotón" style={{ width: '25%', height: '25%', objectFit: 'cover',marginLeft:'50%' }} />
 </div>
       <h1 style={{ fontSize: 34, fontWeight: 900, color: '#FFD700', marginBottom: 6 }}>{typeof T('playerWon') === 'function' ? T('playerWon')(winner.name) : T('playerWon')}</h1>
       <p style={{ color: '#888', fontSize: 14, marginBottom: 32 }}>
