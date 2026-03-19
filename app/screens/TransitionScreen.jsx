@@ -2,6 +2,7 @@ import React from 'react';
 import { HatBadge } from '../../components/HatComponents.jsx';
 import { BurgerTarget } from '../../components/GameUI.jsx';
 import { Btn } from '../components/Btn.jsx';
+import imgGlotonHead from '../../imagenes/acciones/comer.png';
 
 export function TransitionScreen({ player, onContinue, isExtraPlay, T }) {
   return (
