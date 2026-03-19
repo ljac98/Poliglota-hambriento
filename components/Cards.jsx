@@ -131,9 +131,9 @@ export const IngredientCard = ({ card, onClick, selected, small, large, playable
         </div>
         <div style={{ position: "relative", display: "inline-block" }}>
           {isWild
-            ? <img src={comodinImg} alt="comodín" style={{ width: large ? 44 : (small ? 26 : 36), height: large ? 44 : (small ? 26 : 36), objectFit: 'contain', filter: "drop-shadow(0 2px 3px rgba(0,0,0,0.15))", display: 'block' }} />
+            ? <img src={comodinImg} alt="comodín" style={{ width: large ? 60 : (small ? 26 : 36), height: large ? 44 : (small ? 26 : 36), objectFit: 'contain', filter: "drop-shadow(0 2px 3px rgba(0,0,0,0.15))", display: 'block' }} />
             : ING_IMG[ing]
-              ? <img src={ING_IMG[ing]} alt={ing} style={{ width: large ? 44 : (small ? 26 : 36), height: large ? 44 : (small ? 26 : 36), objectFit: 'contain', filter: "drop-shadow(0 2px 3px rgba(0,0,0,0.15))", display: 'block' }} />
+              ? <img src={ING_IMG[ing]} alt={ing} style={{ width: large ? 60 : (small ? 26 : 36), height: large ? 44 : (small ? 26 : 36), objectFit: 'contain', filter: "drop-shadow(0 2px 3px rgba(0,0,0,0.15))", display: 'block' }} />
               : <span style={{ fontSize: large ? 44 : (small ? 26 : 36), lineHeight: 1, filter: "drop-shadow(0 2px 3px rgba(0,0,0,0.15))" }}>{ING_EMOJI[ing]}</span>
           }
         </div>
@@ -159,7 +159,7 @@ export const ActionCard = ({ card, onClick, selected, small, large, playable }) 
   const cornerImg = ACTION_CORNER_IMG[card.action];
     const cornerImgDer = ACTION_CORNER_DER_IMG[card.action];
   const cornerSize = large ? 22 : (small ? 14 : 18);
-  const mainSize = large ? 64 : (small ? 36 : 52);
+  const mainSize = large ? 80 : (small ? 36 : 52);
 
   return (
     <div onClick={onClick} style={{
