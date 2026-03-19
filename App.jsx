@@ -11,6 +11,7 @@ import { shuffle, randInt, uid } from './game/utils';
 import { t, getUILang, setUILang } from './src/translations.js';
 import { GameCard } from './components/Cards';
 import { BurgerTarget, LogEntry } from './components/GameUI';
+import { HatBadge } from './components/HatComponents.jsx';
 import HatSVG from './components/HatSVG.jsx';
 import percheroImg from './imagenes/sombreros/perchero/percherofinal.png';
 
