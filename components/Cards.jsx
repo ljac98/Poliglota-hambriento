@@ -140,7 +140,7 @@ export const IngredientCard = ({ card, onClick, selected, small, large, playable
       </div>
       {/* Name in language */}
       <div style={{
-        marginBottom: small ? 3 : 6, fontSize: large ? 12 : (small ? 7 : 10), fontWeight: 700,
+        marginBottom: small ? 3 : 2, fontSize: large ? 20 : (small ? 7 : 10), fontWeight: 700,
         color: isDark ? "#ccc" : "#444", fontFamily: "'Fredoka',sans-serif"
       }}>
         {getIngName(ing, lang)}
