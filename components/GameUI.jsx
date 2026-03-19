@@ -138,7 +138,7 @@ export const BurgerTarget = ({ ingredients, table, isCurrent }) => {
               opacity: filled ? 1 : 0.35, transition: "all 0.3s",
             }}>
               {ING_IMG[ing]
-                ? <img src={ING_IMG[ing]} alt={ing} style={{ width: 28, height: 28, objectFit: 'contain' }} />
+                ? <img src={ING_IMG[ing]} alt={ing} style={{ width: 35, height: 35, objectFit: 'contain' }} />
                 : ING_EMOJI[ing]}
               {isDupe && (
                 <div style={{
@@ -155,7 +155,7 @@ export const BurgerTarget = ({ ingredients, table, isCurrent }) => {
         }) : ingredients.map((_, i) => (
           <div key={i} style={{
             width: 36, height: 36, borderRadius: 6,
-            background: "rgba(155,205,155,0.06)",
+            background: "rgba(255,255,255,0.06)",
             display: "flex", alignItems: "center", justifyContent: "center",
             border: "2px dashed rgba(255,255,255,0.15)",
             fontSize: 14, color: "rgba(255,255,255,0.3)",
