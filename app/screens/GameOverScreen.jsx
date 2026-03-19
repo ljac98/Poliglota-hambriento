@@ -1,5 +1,6 @@
 import React from 'react';
 import { Btn } from '../components/Btn.jsx';
+import HatSVG from '../../components/HatSVG.jsx';
 import ganador from '../../imagenes/campeon.png';
 import perdedor from '../../imagenes/perdedor.png';
 
