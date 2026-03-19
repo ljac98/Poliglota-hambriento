@@ -1558,7 +1558,7 @@ export default function App() {
     return (
       <div>
         <div style={{ fontSize: 9, color: '#555', fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>{T('closet')}</div>
-        <div style={{ position: 'relative', width: 180, height: 220 }}>
+        <div style={{ position: 'relative', width: 130, height: 165 }}>
           <img src={percheroImg} alt="Perchero" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           {human.perchero.map((h, i) => {
             if (i >= branchPositions.length) return null;
@@ -1570,7 +1570,7 @@ export default function App() {
                 display: 'flex', flexDirection: 'column', alignItems: 'center',
                 filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
               }}>
-                <HatSVG lang={h} size={32} />
+                <HatSVG lang={h} size={24} />
                 <span style={{ fontSize: 7, fontWeight: 800, color: LANG_TEXT[h], letterSpacing: 0.5, marginTop: -2 }}>
                   {LANG_SHORT[h]}
                 </span>
@@ -1588,8 +1588,8 @@ export default function App() {
         onClick={() => { setShowPercheroModal(false); setModal({ type: 'manual_cambiar' }); }}
         title={T('changeHatTooltip')}
         style={{
-          padding: '8px 16px', borderRadius: 8, border: '1px solid rgba(156,39,176,0.3)',
-          background: 'rgba(156,39,176,0.12)', color: '#BA68C8', fontSize: 14,
+          padding: '7px 12px', borderRadius: 8, border: '1px solid rgba(156,39,176,0.3)',
+          background: 'rgba(156,39,176,0.12)', color: '#BA68C8', fontSize: 13,
           fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
         }}
       >
@@ -1600,8 +1600,8 @@ export default function App() {
           onClick={() => { setShowPercheroModal(false); setModal({ type: 'manual_agregar' }); }}
           title={T('addHatTooltip')}
           style={{
-            padding: '8px 16px', borderRadius: 8, border: '1px solid rgba(156,39,176,0.3)',
-            background: 'rgba(156,39,176,0.12)', color: '#BA68C8', fontSize: 14,
+            padding: '7px 12px', borderRadius: 8, border: '1px solid rgba(156,39,176,0.3)',
+            background: 'rgba(156,39,176,0.12)', color: '#BA68C8', fontSize: 13,
             fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
           }}
         >
