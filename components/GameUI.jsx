@@ -154,7 +154,7 @@ export const BurgerTarget = ({ ingredients, table, isCurrent }) => {
           );
         }) : ingredients.map((_, i) => (
           <div key={i} style={{
-            width: 10, height: 10, borderRadius: 6,
+            width: 20, height: 20, borderRadius: 6,
             background: "rgba(255,255,255,0.06)",
             display: "flex", alignItems: "center", justifyContent: "center",
             border: "2px dashed rgba(255,255,255,0.15)",
