@@ -1811,7 +1811,12 @@ export default function App() {
 
   const actionButtons = isHumanTurn && extraPlay && (
     <div style={{
-      display: 'flex', gap: 8, flexShrink: 0, padding: '6px 0',
+      position: 'absolute',
+      right: isMobile ? 12 : 16,
+      bottom: isMobile ? 72 : 16,
+      zIndex: 30,
+      display: 'flex',
+      gap: 8,
     }}>
       <Btn onClick={() => {
         if (isOnline && !isHost) {
@@ -1819,7 +1824,7 @@ export default function App() {
         } else {
           setExtraPlay(false); endTurn(players, deck, discard, HI);
         }
-      }} color="#888" style={{ flex: 1 }}>
+      }} color="#888" style={{ boxShadow: '0 10px 24px rgba(0,0,0,.35)' }}>
         {T('skipTurn')}
       </Btn>
     </div>
@@ -1843,7 +1848,7 @@ export default function App() {
   );
 
   const mesaPanel = (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', padding: '12px 16px', gap: 10 }}>
+    <div style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', padding: '12px 16px', gap: 10 }}>
       {playerHeader}
       {turnActionIndicators}
       {isMobile ? (
