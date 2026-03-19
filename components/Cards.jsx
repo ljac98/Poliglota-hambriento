@@ -178,7 +178,7 @@ export const ActionCard = ({ card, onClick, selected, small, large, playable }) 
       {cornerImg && <>
         <img src={cornerImg} alt="" style={{ position:"absolute", top:3, left:3, width:cornerSize, height:cornerSize, objectFit:"contain" }} />
           <img src={cornerImgDer} alt="" style={{ position:"absolute", top:3, right:3, width:20, height:20, objectFit:"contain" }} />
-        <img src={cornerImg} alt="" style={{ position:"absolute", bottom:3, right:3, width:ornerSize, height:cornerSize, objectFit:"contain", transform:"rotate(180deg)" }} />
+        <img src={cornerImg} alt="" style={{ position:"absolute", bottom:3, right:3, width:cornerSize, height:cornerSize, objectFit:"contain", transform:"rotate(180deg)" }} />
       </>}
       {mainImg
         ? <img src={mainImg} alt={info?.name} style={{ width:mainSize, height:mainSize, objectFit:"contain", filter:"drop-shadow(0 2px 4px rgba(0,0,0,0.4))" }} />
