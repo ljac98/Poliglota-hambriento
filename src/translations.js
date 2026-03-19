@@ -102,7 +102,12 @@ const translations = {
     historyBtn: '📊 Historial',
     // Playing - Header
     yourTurnLabel: '🎴 Tu turno',
-    turnActionsLabel: '¿Qué puedo hacer?',
+    turnActionsLabel: 'Cómo jugar',
+    howToPlayDesc: 'Guía rápida del turno: usa cartas de ingredientes para completar tu hamburguesa y cartas de acción para afectar la partida.',
+    howToPlayIngredientTitle: 'Carta de Ingrediente',
+    howToPlayIngredientDesc: 'La carta de ingrediente debe coincidir con tu sombrero principal y ser un ingrediente que tu hamburguesa todavía necesite.',
+    howToPlayActionTitle: 'Carta de Acción',
+    howToPlayActionDesc: 'Las cartas de acción te permiten robar, intercambiar o bloquear jugadas según el ícono de cada carta.',
     tiPlayIngDesc: 'Jugá una carta de ingrediente que coincida con tu sombrero principal y que tu hamburguesa necesite.',
     tiPlayCardDesc: 'Jugá una carta de acción (⚡) para afectar a los oponentes. ¡Pueden bloquearla con Negación 🚫!',
     tiDiscardDesc: 'Descartá cualquier carta de tu mano para terminar tu turno. Tu mano se rellena automáticamente.',

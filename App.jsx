@@ -14,6 +14,19 @@ import { BurgerTarget, LogEntry } from './components/GameUI';
 import { HatBadge } from './components/HatComponents.jsx';
 import HatSVG from './components/HatSVG.jsx';
 import percheroImg from './imagenes/sombreros/perchero/percherofinal.png';
+import ingredientCardIcon from './imagenes/hamburguesas/ham.png';
+import eqMilanesa from './imagenes/acciones/esquina/milanga.png';
+import eqEnsalada from './imagenes/acciones/esquina/ensalada2.png';
+import eqPizza from './imagenes/acciones/esquina/pizza2.png';
+import eqParrilla from './imagenes/acciones/esquina/parrilla.png';
+import eqTenedor from './imagenes/acciones/esquina/tenedor2.png';
+import eqLadron from './imagenes/acciones/esquina/robo.png';
+import eqIntercambioSomb from './imagenes/acciones/esquina/intercambiosomb.png';
+import eqIntercambioHamb from './imagenes/acciones/esquina/intercam.png';
+import eqBasurero from './imagenes/acciones/esquina/basurero.png';
+import eqGloton from './imagenes/acciones/esquina/comelona.png';
+import eqNegacion from './imagenes/acciones/esquina/cancelh.png';
+import eqComeComodines from './imagenes/acciones/esquina/pancho.png';
 
 import { Btn, Modal, OpponentCard } from './app/components/index.js';
 import { AppPhaseRouter } from './app/screens/index.js';
@@ -1667,9 +1680,24 @@ export default function App() {
 
   const turnActionIndicators = (
     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', flexShrink: 0, alignItems: 'center' }}>
-      <span style={{ fontSize: 11, color: '#555', fontWeight: 700, letterSpacing: 1 }}>
+      <button
+        onClick={() => setModal({ type: 'howToPlay' })}
+        style={{
+          fontSize: 11,
+          color: '#4ecdc4',
+          fontWeight: 800,
+          letterSpacing: 1,
+          background: 'transparent',
+          border: 'none',
+          padding: 0,
+          cursor: 'pointer',
+          textDecoration: 'underline',
+          textUnderlineOffset: 3,
+          fontFamily: 'inherit',
+        }}
+      >
         {T('turnActionsLabel')}
-      </span>
+      </button>
       {[
         { key: 'playIngredient', emoji: '🃏', label: T('ingredientCard') },
         { key: 'playAction',     emoji: '⚡', label: T('actionCard')    },
@@ -2549,6 +2577,63 @@ export default function App() {
                 );
               })}
             </div>
+            <Btn onClick={() => setModal(null)} color="#333" style={{ color: '#aaa' }}>{T('close')}</Btn>
+          </Modal>
+        );
+      })()}
+
+      {/* How to play modal */}
+      {modal?.type === 'howToPlay' && (() => {
+        const actionIcons = {
+          milanesa: eqMilanesa,
+          ensalada: eqEnsalada,
+          pizza: eqPizza,
+          parrilla: eqParrilla,
+          tenedor: eqTenedor,
+          ladron: eqLadron,
+          intercambio_sombreros: eqIntercambioSomb,
+          intercambio_hamburguesa: eqIntercambioHamb,
+          basurero: eqBasurero,
+          gloton: eqGloton,
+          negacion: eqNegacion,
+          comecomodines: eqComeComodines,
+        };
+
+        return (
+          <Modal title={T('turnActionsLabel')}>
+            <p style={{ color: '#ccc', fontSize: 13, marginBottom: 14 }}>
+              {T('howToPlayDesc')}
+            </p>
+
+            <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '12px 14px', marginBottom: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                <img src={ingredientCardIcon} alt={T('ingredientCard')} style={{ width: 22, height: 22, objectFit: 'contain' }} />
+                <div style={{ color: '#FFD700', fontWeight: 800, fontSize: 14 }}>{T('howToPlayIngredientTitle')}</div>
+              </div>
+              <div style={{ color: '#ddd', fontSize: 12, lineHeight: 1.35 }}>
+                {T('howToPlayIngredientDesc')}
+              </div>
+            </div>
+
+            <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '12px 14px', marginBottom: 14 }}>
+              <div style={{ color: '#FFD700', fontWeight: 800, fontSize: 14, marginBottom: 8 }}>
+                {T('howToPlayActionTitle')}
+              </div>
+              <div style={{ color: '#ddd', fontSize: 12, lineHeight: 1.35, marginBottom: 10 }}>
+                {T('howToPlayActionDesc')}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 10px' }}>
+                {ACTION_CARDS.map((a) => (
+                  <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#ddd' }}>
+                    {actionIcons[a.id]
+                      ? <img src={actionIcons[a.id]} alt={a.name} style={{ width: 18, height: 18, objectFit: 'contain' }} />
+                      : <span>{a.emoji}</span>}
+                    <span>{a.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             <Btn onClick={() => setModal(null)} color="#333" style={{ color: '#aaa' }}>{T('close')}</Btn>
           </Modal>
         );
