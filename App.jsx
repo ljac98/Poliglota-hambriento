@@ -1528,9 +1528,9 @@ export default function App() {
       background: 'rgba(255,255,255,.03)', borderRadius: 10, padding: '8px 10px',
       border: '2px solid #1e2a45', flexShrink: 0,
     }}>
-      <div style={{ fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1, marginBottom: 6 }}>{T('burgers')}</div>
+      <div style={{ fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1, marginBottom: 6 }}>{T('table')}</div>
       <div style={{ display: 'flex', flexDirection: isMobile ? 'row' : 'column', gap: 4, flexWrap: 'wrap' }}>
-        {human.burgers.map((b, i) => (
+        {human.burgers.slice(0, human.currentBurger + 1).map((b, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ fontSize: 11, color: i === human.currentBurger ? '#FFD700' : '#555', width: 14, fontWeight: 700 }}>
               {i < human.currentBurger ? '✅' : i === human.currentBurger ? '▶' : '○'}
@@ -1542,52 +1542,6 @@ export default function App() {
             />
           </div>
         ))}
-      </div>
-    </div>
-  );
-
-  const tableSection = (
-    <div style={{
-      background: 'rgba(255,255,255,.03)', borderRadius: 10, padding: '8px 10px',
-      border: '2px solid #1e2a45', flexShrink: 0,
-    }}>
-      <div style={{ fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1, marginBottom: 6 }}>
-        {typeof T('tableCount') === 'function' ? T('tableCount')(human.table.length) : T('table')}
-      </div>
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', minHeight: 32 }}>
-        {human.table.length === 0 && <span style={{ fontSize: 12, color: '#333' }}>{T('emptyTable')}</span>}
-        {human.table.map((ing, i) => {
-          const base = ingKey(ing);
-          const chosen = ingChosen(ing);
-          return (
-            <div key={i} onClick={() => setModal({ type: 'ingredientInfo', ingredient: ing })} style={{
-              width: 36, height: 36, borderRadius: 8,
-              background: chosen
-                ? `linear-gradient(to right, ${ING_BG.perrito || '#9b59b6'} 50%, ${ING_BG[chosen]} 50%)`
-                : ING_BG[base],
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 20, boxShadow: '0 2px 6px rgba(0,0,0,.3)',
-              overflow: 'hidden', position: 'relative', cursor: 'pointer',
-            }}>
-              {chosen ? (
-                <>
-                  <div style={{ position: 'absolute', left: 0, top: 0, width: '50%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <img src={ING_IMG.perrito} alt="comodín" style={{ width: 22, height: 22, objectFit: 'contain' }} />
-                  </div>
-                  <div style={{ position: 'absolute', right: 0, top: 0, width: '50%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {ING_IMG[chosen]
-                      ? <img src={ING_IMG[chosen]} alt={chosen} style={{ width: 22, height: 22, objectFit: 'contain' }} />
-                      : <span style={{ fontSize: 14 }}>{ING_EMOJI[chosen]}</span>}
-                  </div>
-                </>
-              ) : (
-                ING_IMG[base]
-                  ? <img src={ING_IMG[base]} alt={base} style={{ width: 26, height: 26, objectFit: 'contain' }} />
-                  : ING_EMOJI[base]
-              )}
-            </div>
-          );
-        })}
       </div>
     </div>
   );
@@ -1895,7 +1849,6 @@ export default function App() {
       {isMobile ? (
         <>
           {burgersSection}
-          {tableSection}
           {hatsSection}
           {handLabel}
           {handFan}
@@ -1905,7 +1858,6 @@ export default function App() {
       ) : (
         <>
           {burgersAndHatsRow}
-          {tableSection}
           {actionButtons}
           {handLabel}
           {handFan}
