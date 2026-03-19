@@ -1,4 +1,5 @@
 import React from 'react';
+import { HatBadge } from '../../components/HatComponents.jsx';
 import { BurgerTarget } from '../../components/GameUI.jsx';
 import { Btn } from '../components/Btn.jsx';
 
