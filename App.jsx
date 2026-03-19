@@ -11,6 +11,7 @@ import { shuffle, randInt, uid } from './game/utils';
 import { t, getUILang, setUILang } from './src/translations.js';
 import { GameCard } from './components/Cards';
 import { BurgerTarget, LogEntry } from './components/GameUI';
+import percheroImg from './imagenes/sombreros/perchero/percherofinal.png';
 
 import { Btn, Modal, OpponentCard } from './app/components/index.js';
 import { AppPhaseRouter } from './app/screens/index.js';
