@@ -184,8 +184,8 @@ export const ActionCard = ({ card, onClick, selected, small, large, playable }) 
         ? <img src={mainImg} alt={info?.name} style={{ width:mainSize, height:mainSize, objectFit:"contain", filter:"drop-shadow(0 2px 4px rgba(0,0,0,0.4))" }} />
         : <span style={{ fontSize: small ? 22 : 32 }}>{info?.emoji}</span>
       }
-      <span style={{ fontSize: large ? 11 : (small ? 7 : 9), fontWeight: 700, textAlign: "center", lineHeight: 1.1 }}>{info?.name}</span>
-      <span style={{ fontSize: large ? 8 : (small ? 5 : 7), color: "#777", textAlign: "center", lineHeight: 1.1 }}>{info?.desc}</span>
+      <span style={{ fontSize: large ? 15 : (small ? 7 : 9), fontWeight: 700, textAlign: "center", lineHeight: 1.1 }}>{info?.name}</span>
+      <span style={{ fontSize: large ? 12 : (small ? 5 : 7), color: "#777", textAlign: "center", lineHeight: 1.1 }}>{info?.desc}</span>
     </div>
   );
 };
