@@ -2634,6 +2634,40 @@ export default function App() {
               </div>
             </div>
 
+            <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '12px 14px', marginBottom: 12 }}>
+              <div style={{ color: '#FFD700', fontWeight: 800, fontSize: 14, marginBottom: 6 }}>
+                {T('howToPlayGoalTitle')}
+              </div>
+              <div style={{ color: '#ddd', fontSize: 12, lineHeight: 1.35 }}>
+                {T('howToPlayGoalDesc')}
+              </div>
+            </div>
+
+            <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '12px 14px', marginBottom: 12 }}>
+              <div style={{ color: '#FFD700', fontWeight: 800, fontSize: 14, marginBottom: 8 }}>
+                {T('howToPlayMainHatsTitle')}
+              </div>
+              <div style={{ color: '#ddd', fontSize: 12, lineHeight: 1.35, marginBottom: 8 }}>
+                {T('howToPlayMainHatsDesc')}
+              </div>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {human.mainHats.map((h) => <HatBadge key={`help-main-${h}`} lang={h} isMain size="sm" />)}
+              </div>
+            </div>
+
+            <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '12px 14px', marginBottom: 14 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <img src={percheroImg} alt={T('closet')} style={{ width: 22, height: 22, objectFit: 'contain' }} />
+                <div style={{ color: '#FFD700', fontWeight: 800, fontSize: 14 }}>{T('howToPlayClosetTitle')}</div>
+              </div>
+              <div style={{ color: '#ddd', fontSize: 12, lineHeight: 1.35, marginBottom: 8 }}>
+                {typeof T('howToPlayClosetDesc') === 'function' ? T('howToPlayClosetDesc')(human.perchero.length) : T('howToPlayClosetDesc')}
+              </div>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {human.perchero.map((h, i) => <HatBadge key={`help-closet-${h}-${i}`} lang={h} size="sm" />)}
+              </div>
+            </div>
+
             <Btn onClick={() => setModal(null)} color="#333" style={{ color: '#aaa' }}>{T('close')}</Btn>
           </Modal>
         );
