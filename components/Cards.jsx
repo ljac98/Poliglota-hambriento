@@ -126,7 +126,7 @@ export const IngredientCard = ({ card, onClick, selected, small, large, playable
       </div>
       {/* Center: hat on ingredient with eyes */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", marginTop: 0 }}>
-        <div style={{ transform: large ? "scale(0.8)" : (small ? "scale(0.38)" : "scale(0.48)"), transformOrigin: "bottom center", lineHeight: 0, marginBottom: large ? 0 : (small ? -6 : -4) }}>
+        <div style={{ transform: large ? "scale(0.8)" : (small ? "scale(0.38)" : "scale(0.48)"), transformOrigin: "bottom center", lineHeight: 0, marginBottom: large ? -10 : (small ? -6 : -4) }}>
           <HatSVG lang={lang} size={36} />
         </div>
         <div style={{ position: "relative", display: "inline-block" }}>
