@@ -112,15 +112,6 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
     }
     return { burgers: String(burgerCount), ingredients: String(ingredientCount) };
   })();
-  const previewCardStyle = {
-    flex: 1,
-    minWidth: 0,
-    borderRadius: 12,
-    padding: '10px 8px',
-    background: 'rgba(255,255,255,0.04)',
-    border: '1px solid rgba(255,255,255,0.09)',
-    textAlign: 'center',
-  };
   const markerStyle = {
     minWidth: 54,
     textAlign: 'center',
@@ -501,21 +492,68 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
                 <div style={{ color: '#9ea4be', fontSize: 11 }}>{selectedMode.desc}</div>
               </div>
             </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <div style={previewCardStyle}>
-                <div style={{ fontSize: 20, marginBottom: 2 }}>🍔</div>
-                <div style={{ color: '#FFD700', fontSize: 18, fontWeight: 900 }}>{modePreview.burgers}</div>
-                <div style={{ color: '#888', fontSize: 10, fontWeight: 700 }}>{T('burgerCount')}</div>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 12,
+              padding: '10px 12px',
+              borderRadius: 12,
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.08)',
+            }}>
+              <div style={{ position: 'relative', width: 72, height: 56, flexShrink: 0 }}>
+                {[0, 1, 2].map((layer) => (
+                  <div
+                    key={layer}
+                    style={{
+                      position: 'absolute',
+                      left: layer * 8,
+                      top: layer * 6,
+                      width: 42,
+                      height: 42,
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: layer === 2 ? 'rgba(255,215,0,0.18)' : 'rgba(255,255,255,0.06)',
+                      border: layer === 2 ? '1px solid rgba(255,215,0,0.35)' : '1px solid rgba(255,255,255,0.08)',
+                      fontSize: 20,
+                      boxShadow: '0 6px 14px rgba(0,0,0,0.18)',
+                    }}
+                  >
+                    🍔
+                  </div>
+                ))}
+                <div style={{
+                  position: 'absolute',
+                  right: -2,
+                  bottom: -2,
+                  minWidth: 28,
+                  height: 28,
+                  borderRadius: 999,
+                  padding: '0 8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: '#FFD700',
+                  color: '#1b1730',
+                  fontSize: 13,
+                  fontWeight: 900,
+                }}>
+                  {modePreview.burgers}
+                </div>
               </div>
-              <div style={previewCardStyle}>
-                <div style={{ fontSize: 20, marginBottom: 2 }}>🥬</div>
-                <div style={{ color: '#FFD700', fontSize: 18, fontWeight: 900 }}>{modePreview.ingredients}</div>
-                <div style={{ color: '#888', fontSize: 10, fontWeight: 700 }}>{T('ingredientsLabelShort')}</div>
-              </div>
-              <div style={previewCardStyle}>
-                <div style={{ fontSize: 20, marginBottom: 2 }}>👤</div>
-                <div style={{ color: '#FFD700', fontSize: 13, fontWeight: 900, lineHeight: 1.2 }}>{T('perPlayerLabel')}</div>
-                <div style={{ color: '#888', fontSize: 10, fontWeight: 700 }}>{selectedMode.label}</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ color: '#FFD700', fontSize: 12, fontWeight: 800, letterSpacing: 0.3, marginBottom: 4 }}>
+                  {T('burgerCount')}
+                </div>
+                <div style={{ color: '#9ea4be', fontSize: 11, lineHeight: 1.35 }}>
+                  {T('ingredientsLabelShort')}: <span style={{ color: '#fff1b3', fontWeight: 900 }}>{modePreview.ingredients}</span>
+                </div>
+                <div style={{ color: '#9ea4be', fontSize: 11, lineHeight: 1.35 }}>
+                  {T('perPlayerLabel')}
+                </div>
               </div>
             </div>
           </div>
