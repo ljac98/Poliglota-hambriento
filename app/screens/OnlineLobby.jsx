@@ -320,7 +320,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
   };
   const renderDesktopSidebar = () => (
     <div style={{ ...floatingCardStyle, marginTop: 0 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, alignItems: 'stretch', marginBottom: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 14 }}>
         <div>
           <div style={{ color: '#ffd24a', fontSize: 11, fontWeight: 900, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 8 }}>
             {T('yourLanguage')}
@@ -329,12 +329,13 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
             display: 'flex',
             alignItems: 'center',
             gap: 10,
-            minHeight: 76,
+            minHeight: 74,
             padding: '10px 12px',
             borderRadius: 14,
             background: 'linear-gradient(180deg, rgba(255,215,0,0.12), rgba(255,255,255,0.04))',
             border: '1px solid rgba(255,215,0,0.18)',
             boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)',
+            marginBottom: 10,
           }}>
             {myHat ? <HatSVG lang={myHat} size={38} /> : <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />}
             <div style={{ minWidth: 0 }}>
@@ -342,89 +343,85 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
               <div style={{ color: '#8a8fa8', fontSize: 10, fontWeight: 700, marginTop: 2 }}>{T('chooseHat')}</div>
             </div>
           </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
+            {LANGUAGES.map(lang => {
+              const takenBy = Object.entries(hatPicks).find(([n, h]) => h === lang && n !== myName);
+              const isTaken = !!takenBy;
+              return (
+                <div
+                  key={`desktop-${lang}`}
+                  onClick={() => !isTaken && pickHat(lang)}
+                  style={{
+                    minHeight: 62,
+                    padding: '7px 4px 6px',
+                    borderRadius: 10,
+                    cursor: isTaken ? 'not-allowed' : 'pointer',
+                    border: myHat === lang ? '2px solid #FFD700' : `1px solid ${LANG_BORDER[lang]}44`,
+                    background: myHat === lang ? 'linear-gradient(180deg, rgba(255,215,0,.14), rgba(255,255,255,.05))' : isTaken ? 'rgba(0,0,0,.24)' : 'rgba(255,255,255,.03)',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
+                    opacity: isTaken ? 0.4 : 1, transition: 'all .15s',
+                    boxShadow: myHat === lang ? '0 0 18px rgba(255,215,0,.18)' : 'none',
+                  }}
+                >
+                  <HatSVG lang={lang} size={28} />
+                  <span style={{ fontSize: 10, fontWeight: 800, color: myHat === lang ? '#FFD700' : LANG_TEXT[lang], textAlign: 'center', lineHeight: 1 }}>
+                    {T(lang)}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
         </div>
         <div>
           <div style={{ color: '#ffd24a', fontSize: 11, fontWeight: 900, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 8 }}>
             {T('gameMode')}
           </div>
           <div style={{
-            display: 'flex',
+            display: 'inline-flex',
             alignItems: 'flex-start',
             gap: 9,
-            minHeight: 76,
-            padding: '10px 12px',
-            borderRadius: 14,
+            padding: '8px 10px',
+            borderRadius: 12,
             background: 'rgba(255,255,255,0.04)',
             border: '1px solid rgba(255,255,255,0.08)',
+            marginBottom: 10,
+            width: 'fit-content',
+            maxWidth: '100%',
           }}>
-            <img src={selectedMode.img} alt={selectedMode.label} style={{ width: 38, height: 38, objectFit: 'cover', borderRadius: 10, flexShrink: 0 }} />
+            <img src={selectedMode.img} alt={selectedMode.label} style={{ width: 34, height: 34, objectFit: 'cover', borderRadius: 10, flexShrink: 0 }} />
             <div style={{ minWidth: 0, textAlign: 'left' }}>
-              <div style={{ color: '#FFD700', fontSize: 13, fontWeight: 900, lineHeight: 1.05 }}>{selectedMode.label}</div>
+              <div style={{ color: '#FFD700', fontSize: 12, fontWeight: 900, lineHeight: 1.05 }}>{selectedMode.label}</div>
               <div style={{ color: '#8a8fa8', fontSize: 9, fontWeight: 700, marginTop: 2 }}>{T('perPlayerLabel')}</div>
             </div>
           </div>
-        </div>
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16, alignItems: 'start' }}>
-        <div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 7, marginBottom: 0 }}>
-        {LANGUAGES.map(lang => {
-          const takenBy = Object.entries(hatPicks).find(([n, h]) => h === lang && n !== myName);
-          const isTaken = !!takenBy;
-          return (
-            <div
-              key={`desktop-${lang}`}
-              onClick={() => !isTaken && pickHat(lang)}
-              style={{
-                minHeight: 62,
-                padding: '7px 4px 6px',
-                borderRadius: 10,
-                cursor: isTaken ? 'not-allowed' : 'pointer',
-                border: myHat === lang ? '2px solid #FFD700' : `1px solid ${LANG_BORDER[lang]}44`,
-                background: myHat === lang ? 'linear-gradient(180deg, rgba(255,215,0,.14), rgba(255,255,255,.05))' : isTaken ? 'rgba(0,0,0,.24)' : 'rgba(255,255,255,.03)',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
-                opacity: isTaken ? 0.4 : 1, transition: 'all .15s',
-                boxShadow: myHat === lang ? '0 0 18px rgba(255,215,0,.18)' : 'none',
-              }}
-            >
-              <HatSVG lang={lang} size={28} />
-              <span style={{ fontSize: 10, fontWeight: 800, color: myHat === lang ? '#FFD700' : LANG_TEXT[lang], textAlign: 'center', lineHeight: 1 }}>
-                {T(lang)}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-        </div>
-        <div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8, marginBottom: 0 }}>
-          {gameModes.map((m) => (
-            <div
-              key={`sidebar-mode-${m.id}`}
-              onClick={() => { setGameMode(m.id); setShowModeConfig(true); }}
-              style={{
-                minHeight: 84,
-                padding: '7px 4px',
-                borderRadius: 12,
-                cursor: 'pointer',
-                border: gameMode === m.id ? '2px solid #FFD700' : '1px solid rgba(255,255,255,0.08)',
-                background: gameMode === m.id ? 'linear-gradient(180deg, rgba(255,215,0,0.16), rgba(255,255,255,0.05))' : 'rgba(255,255,255,0.03)',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 5,
-                boxShadow: gameMode === m.id ? '0 0 18px rgba(255,215,0,0.16)' : 'none',
-                transition: 'all .15s',
-              }}
-            >
-              <img src={m.img} alt={m.label} style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 12 }} />
-              <div style={{ color: gameMode === m.id ? '#FFD700' : '#f3f4ff', fontSize: 11, fontWeight: 900, lineHeight: 1, textAlign: 'center' }}>
-                {m.label}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
+            {gameModes.map((m) => (
+              <div
+                key={`sidebar-mode-${m.id}`}
+                onClick={() => { setGameMode(m.id); setShowModeConfig(true); }}
+                style={{
+                  minHeight: 84,
+                  padding: '7px 4px',
+                  borderRadius: 12,
+                  cursor: 'pointer',
+                  border: gameMode === m.id ? '2px solid #FFD700' : '1px solid rgba(255,255,255,0.08)',
+                  background: gameMode === m.id ? 'linear-gradient(180deg, rgba(255,215,0,0.16), rgba(255,255,255,0.05))' : 'rgba(255,255,255,0.03)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 5,
+                  boxShadow: gameMode === m.id ? '0 0 18px rgba(255,215,0,0.16)' : 'none',
+                  transition: 'all .15s',
+                }}
+              >
+                <img src={m.img} alt={m.label} style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 12 }} />
+                <div style={{ color: gameMode === m.id ? '#FFD700' : '#f3f4ff', fontSize: 11, fontWeight: 900, lineHeight: 1, textAlign: 'center' }}>
+                  {m.label}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
         </div>
       </div>
       <div style={{ height: 1, background: 'linear-gradient(90deg, rgba(255,255,255,0), rgba(255,215,0,0.22), rgba(255,255,255,0))', margin: '0 0 14px' }} />
@@ -433,9 +430,9 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
   );
   const floatingCardStyle = {
     position: isDesktopWide ? 'absolute' : 'static',
-    right: isDesktopWide ? -244 : 'auto',
+    right: isDesktopWide ? -518 : 'auto',
     top: isDesktopWide ? -324 : 0,
-    width: isDesktopWide ? 286 : 'auto',
+    width: isDesktopWide ? 560 : 'auto',
     borderRadius: 18,
     padding: '14px 14px 16px',
     background: 'linear-gradient(180deg, rgba(26,31,55,0.98), rgba(18,22,40,0.96))',
@@ -704,7 +701,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
 
         {/* Game Mode (host only) */}
         {isHost && (
-          <div style={{ marginBottom: 16, position: 'relative', paddingRight: isDesktopWide ? 286 : 0 }}>
+          <div style={{ marginBottom: 16, position: 'relative', paddingRight: isDesktopWide ? 560 : 0 }}>
             {!isDesktopWide && <label style={{ color: '#aaa', fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 8 }}>{T('gameMode')}</label>}
             <div style={{ display: 'flex', gap: 12, alignItems: 'stretch', flexWrap: 'wrap' }}>
               {!isDesktopWide && (
