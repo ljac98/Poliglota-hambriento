@@ -2275,8 +2275,30 @@ export default function App() {
       {isMobile && isHumanTurn && selectedIdx !== null && human.hand[selectedIdx] && (() => {
         const card = human.hand[selectedIdx];
         const playable = card.type === 'ingredient' ? canPlayCard(human, card) : (extraPlay ? false : null);
+        const cleanTitle = (txt) => String(txt).replace('🃏 ', '').replace('🃏', '').replace('⚡ ', '').replace('⚡', '');
+        const actionTypeIcon = (() => {
+          if (card.type !== 'action') return null;
+          if (['tenedor', 'ladron', 'intercambio_sombreros', 'intercambio_hamburguesa', 'gloton'].includes(card.action)) return eqRightSingle;
+          if (['milanesa', 'ensalada', 'pizza', 'parrilla', 'comecomodines'].includes(card.action)) return eqRightGlobal;
+          if (card.action === 'basurero') return eqRightDiscard;
+          if (card.action === 'negacion') return eqRightNegation;
+          return eqRightSingle;
+        })();
+        const mobileTitle = card.type === 'ingredient'
+          ? (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              <img src={ingredientCardIcon} alt={cleanTitle(T('ingredientCard'))} style={{ width: 22, height: 22, objectFit: 'contain' }} />
+              <span>{cleanTitle(T('ingredientCard'))}</span>
+            </span>
+          )
+          : (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              {actionTypeIcon && <img src={actionTypeIcon} alt={cleanTitle(T('actionCard'))} style={{ width: 22, height: 22, objectFit: 'contain' }} />}
+              <span>{cleanTitle(T('actionCard'))}</span>
+            </span>
+          );
         return (
-          <Modal title={card.type === 'ingredient' ? T('ingredientCard') : T('actionCard')}>
+          <Modal title={mobileTitle}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
               <GameCard card={card} selected playable={playable} large />
               <div style={{
