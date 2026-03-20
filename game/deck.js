@@ -63,10 +63,17 @@ export function initPlayer(name, deck, chosenHat, gameConfig, isAI = false) {
   const hand = deck.splice(0, 6);
   const perchero = LANGUAGES.filter(l => l !== chosenHat);
 
-  const { mode = 'clon', burgerCount = 2, ingredientCount = 5 } = gameConfig || {};
+  const {
+    mode = 'clon',
+    burgerCount = 2,
+    ingredientCount = 5,
+    sharedBurgers = null,
+  } = gameConfig || {};
 
   let burgers;
-  if (mode === 'escalera') {
+  if (Array.isArray(sharedBurgers) && sharedBurgers.length > 0) {
+    burgers = sharedBurgers.map(burger => [...burger]);
+  } else if (mode === 'escalera') {
     burgers = Array.from({ length: burgerCount }, (_, i) => genBurger(4 + i));
   } else if (mode === 'caotico') {
     const count = randInt(2, 4);
