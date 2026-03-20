@@ -6,6 +6,9 @@ import { HatBadge, PercheroSVG } from '../../components/HatComponents.jsx';
 import HatSVG from '../../components/HatSVG.jsx';
 import { Btn } from '../components/Btn.jsx';
 import { Modal } from '../components/Modal.jsx';
+import modoclon from '../../imagenes/modos/clones.png';
+import modoescalera from '../../imagenes/modos/escalera.png';
+import modocaotico from '../../imagenes/modos/caotico.png';
 import percheroImg from '../../imagenes/sombreros/perchero/percherofinal.png';
 
 export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack, isPublic, roomDisplayName, T, user }) {
