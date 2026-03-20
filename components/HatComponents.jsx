@@ -5,19 +5,43 @@ import { LANG_BORDER, LANG_TEXT, LANG_SHORT } from '../constants';
 // ═══ HAT BADGE ═══
 export const HatBadge = ({ lang, isMain, onClick, size = "md" }) => {
   const s = size === "sm" ? 22 : size === "lg" ? 42 : 32;
+  const HAT_TILE_BG = {
+    'espaÃ±ol': '#FFD978',
+    'inglÃ©s': '#2F3640',
+    'francÃ©s': '#FFDCC8',
+    italiano: '#F2E6C9',
+    'alemÃ¡n': '#CCEFCE',
+    'portuguÃ©s': '#E8D8C9',
+  };
+  const HAT_TILE_TEXT = {
+    'espaÃ±ol': '#4F2A00',
+    'inglÃ©s': '#FFFFFF',
+    'francÃ©s': '#6A2C00',
+    italiano: '#4A3A23',
+    'alemÃ¡n': '#155E1E',
+    'portuguÃ©s': '#3F2B1D',
+  };
+  const tileBg = HAT_TILE_BG[lang] || 'rgba(255,255,255,0.08)';
+  const tileText = HAT_TILE_TEXT[lang] || LANG_TEXT[lang] || '#222';
   return (
     <div onClick={onClick} style={{
       display: "inline-flex", flexDirection: "column", alignItems: "center", gap: 1,
-      padding: 4, borderRadius: 8, cursor: onClick ? "pointer" : "default",
-      border: isMain ? `2px solid #FFD700` : `2px solid ${LANG_BORDER[lang]}44`,
-      background: isMain ? "rgba(255,215,0,0.1)" : "rgba(255,255,255,0.03)",
-      boxShadow: isMain ? "0 0 8px rgba(255,215,0,0.25)" : "none",
+      minWidth: size === "sm" ? 46 : 58,
+      padding: size === "sm" ? 5 : 6,
+      borderRadius: 10,
+      cursor: onClick ? "pointer" : "default",
+      border: isMain ? `2px solid #FFD700` : `2px solid ${LANG_BORDER[lang]}99`,
+      background: tileBg,
+      boxShadow: isMain ? "0 0 10px rgba(255,215,0,0.35)" : "0 2px 6px rgba(0,0,0,0.15)",
       transition: "all 0.2s",
     }}>
       <HatSVG lang={lang} size={s} />
       <span style={{
-        fontSize: size === "sm" ? 6 : 7, fontWeight: 800,
-        color: isMain ? "#FFD700" : LANG_TEXT[lang], letterSpacing: 0.5
+        fontSize: size === "sm" ? 9 : 10,
+        fontWeight: 900,
+        color: isMain ? "#5C3A00" : tileText,
+        letterSpacing: 0.4,
+        lineHeight: 1.05,
       }}>
         {LANG_SHORT[lang]}
       </span>
