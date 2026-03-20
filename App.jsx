@@ -8,7 +8,7 @@ import {
 } from './constants';
 import { generateDeck, initPlayer, canPlayCard } from './game';
 import { shuffle, randInt, uid } from './game/utils';
-import { t, getUILang, setUILang } from './src/translations.js';
+import { t, getUILang, setUILang, KEY_TO_LANG } from './src/translations.js';
 import { GameCard } from './components/Cards';
 import { BurgerTarget, LogEntry } from './components/GameUI';
 import { HatBadge } from './components/HatComponents.jsx';
@@ -97,6 +97,7 @@ export default function App() {
   // â”€â”€ UI language state â”€â”€
   const [uiLang, setUiLangState] = useState(() => getUILang());
   const T = useCallback((key) => t(key, uiLang), [uiLang]);
+  const uiGameLang = KEY_TO_LANG[uiLang] || LANGUAGES[0];
   const handleSetLang = (lang) => { setUILang(lang); setUiLangState(lang); };
   const getActionText = useCallback((actionId) => {
     const base = getActionInfo(actionId);
@@ -2552,7 +2553,7 @@ export default function App() {
             {ING_IMG[displayIng]
               ? <img src={ING_IMG[displayIng]} alt={displayIng} style={{ width: 22, height: 22, objectFit: 'contain' }} />
               : <span>{ING_EMOJI[displayIng]}</span>}
-            <span>{getIngName(displayIng, LANGUAGES[0]) || displayIng}</span>
+            <span>{getIngName(displayIng, uiGameLang) || displayIng}</span>
           </span>
         );
         const actionCardIcons = {
@@ -2580,7 +2581,7 @@ export default function App() {
           <Modal title={ingredientTitle}>
             {isWildcard && chosen && (
               <p style={{ color: '#ccc', fontSize: 13, marginBottom: 12 }}>
-                {typeof T('wildcardActingAs') === 'function' ? T('wildcardActingAs')(`${ING_EMOJI[chosen]} ${getIngName(chosen, LANGUAGES[0]) || chosen}`) : T('wildcardActingAs')}
+                {typeof T('wildcardActingAs') === 'function' ? T('wildcardActingAs')(`${ING_EMOJI[chosen]} ${getIngName(chosen, uiGameLang) || chosen}`) : T('wildcardActingAs')}
               </p>
             )}
             {isWildcard && !chosen && (
@@ -2695,7 +2696,7 @@ export default function App() {
           },
         ];
         const actionsById = ACTION_CARDS.reduce((acc, a) => {
-          acc[a.id] = a;
+          acc[a.id] = getActionText(a.id) || a;
           return acc;
         }, {});
         const discardedIngredientsByAction = {
@@ -2837,7 +2838,7 @@ export default function App() {
                                         {ING_IMG[ing]
                                           ? <img src={ING_IMG[ing]} alt={ing} style={{ width: 18, height: 18, objectFit: 'contain' }} />
                                           : <span>{ING_EMOJI[ing]}</span>}
-                                        <span>{getIngName(ing, 'español')}</span>
+                                        <span>{getIngName(ing, uiGameLang)}</span>
                                       </span>
                                     ))}
                                   </div>
