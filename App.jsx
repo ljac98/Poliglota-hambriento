@@ -1590,7 +1590,14 @@ export default function App() {
                 filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
               }}>
                 <HatSVG lang={h} size={24} />
-                <span style={{ fontSize: 7, fontWeight: 800, color: LANG_TEXT[h], letterSpacing: 0.5, marginTop: -2 }}>
+                <span style={{
+                  fontSize: LANG_SHORT[h] === 'ING' ? 8 : 7,
+                  fontWeight: 900,
+                  color: LANG_SHORT[h] === 'ING' ? '#FFD700' : LANG_TEXT[h],
+                  letterSpacing: 0.5,
+                  marginTop: -2,
+                  textShadow: LANG_SHORT[h] === 'ING' ? '0 1px 2px rgba(0,0,0,0.6)' : 'none',
+                }}>
                   {LANG_SHORT[h]}
                 </span>
               </div>
