@@ -464,15 +464,15 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
 
   return (
     <div style={{
-      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: isDesktopWide ? 'flex-start' : 'center',
       background: 'linear-gradient(135deg,#0f1117 0%,#1a1a2e 100%)',
       fontFamily: "'Fredoka',sans-serif",
-      overflowY: 'auto', padding: '20px 0',
+      overflowY: 'auto', padding: isDesktopWide ? '20px 0 20px 28px' : '20px 0',
     }}>
       <div style={{
         background: '#16213e', borderRadius: 20,
         padding: 'clamp(18px, 4vw, 32px) clamp(14px, 4vw, 36px)',
-        maxWidth: 560, width: '94vw',
+        maxWidth: isDesktopWide ? 500 : 560, width: isDesktopWide ? 'min(500px, 78vw)' : '94vw',
         boxShadow: '0 8px 40px rgba(0,0,0,.6)', border: '2px solid #2a2a4a',
         position: 'relative',
         overflow: 'visible',
