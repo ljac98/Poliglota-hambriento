@@ -45,6 +45,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
   const [lobbyChatInput, setLobbyChatInput] = useState('');
   const [showLobbyChat, setShowLobbyChat] = useState(false);
   const lobbyChatEndRef = useRef(null);
+  const [isDesktopWide, setIsDesktopWide] = useState(() => (typeof window !== 'undefined' ? window.innerWidth >= 1280 : false));
   const uiKey = getUILang();
   const playerWord = ({
     es: 'Jugador',
@@ -54,6 +55,12 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
     de: 'Spieler',
     pt: 'Jogador',
   })[uiKey] || 'Player';
+  useEffect(() => {
+    const handleResize = () => setIsDesktopWide(window.innerWidth >= 1280);
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Load existing friends on mount to hide "Add" button for them
   useEffect(() => {
@@ -311,6 +318,67 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
       </>
     );
   };
+  const floatingCardStyle = {
+    position: isDesktopWide ? 'absolute' : 'static',
+    right: isDesktopWide ? -224 : 'auto',
+    top: 0,
+    width: isDesktopWide ? 208 : 'auto',
+    borderRadius: 14,
+    padding: '10px 10px 12px',
+    background: 'linear-gradient(180deg, rgba(255,215,0,0.08), rgba(255,255,255,0.03))',
+    border: '1px solid rgba(255,215,0,0.18)',
+    boxShadow: '0 8px 18px rgba(0,0,0,0.18)',
+  };
+  const renderHatSummary = () => {
+    const availableHats = LANGUAGES.filter((lang) => lang !== myHat);
+    return (
+      <>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+          {myHat ? <HatSVG lang={myHat} size={38} /> : <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />}
+          <div>
+            <div style={{ color: '#FFD700', fontSize: 12, fontWeight: 900 }}>{myHat ? T(myHat) : T('yourLanguage')}</div>
+            <div style={{ color: '#8a8fa8', fontSize: 10, fontWeight: 700 }}>{T('yourLanguage')}</div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
+          <div style={{
+            width: 78,
+            height: 78,
+            borderRadius: 18,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: myHat ? 'rgba(255,215,0,0.1)' : 'rgba(255,255,255,0.03)',
+            border: myHat ? '2px solid rgba(255,215,0,0.4)' : '1px solid rgba(255,255,255,0.12)',
+          }}>
+            {myHat ? <HatSVG lang={myHat} size={56} /> : <span style={{ color: '#8a8fa8', fontSize: 12, fontWeight: 700 }}>...</span>}
+          </div>
+        </div>
+        <div style={{ color: '#9ea4be', fontSize: 11, fontWeight: 700, marginBottom: 8, textAlign: 'center' }}>
+          Closet
+        </div>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
+          {availableHats.map((lang) => (
+            <span
+              key={`hat-summary-${lang}`}
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: '50%',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'rgba(255,255,255,0.06)',
+                border: `1px solid ${LANG_BORDER[lang]}66`,
+              }}
+            >
+              <HatSVG lang={lang} size={22} />
+            </span>
+          ))}
+        </div>
+      </>
+    );
+  };
 
   function pickHat(lang) {
     const taken = Object.values(hatPicks);
@@ -345,6 +413,8 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
         padding: 'clamp(18px, 4vw, 32px) clamp(14px, 4vw, 36px)',
         maxWidth: 560, width: '94vw',
         boxShadow: '0 8px 40px rgba(0,0,0,.6)', border: '2px solid #2a2a4a',
+        position: 'relative',
+        overflow: 'visible',
       }}>
         {/* Room info display */}
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
@@ -535,7 +605,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
         </div>
 
         {/* Hat selection for current player */}
-        <div style={{ marginBottom: 16 }}>
+        <div style={{ marginBottom: 16, position: 'relative', paddingRight: isDesktopWide ? 224 : 0 }}>
           <label style={{ color: '#aaa', fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 8 }}>
             {T('yourLanguage')} {myHat ? '✅' : T('chooseOne')}
           </label>
@@ -564,11 +634,14 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
               );
             })}
           </div>
+          <div style={{ ...floatingCardStyle, marginTop: isDesktopWide ? 0 : 12 }}>
+            {renderHatSummary()}
+          </div>
         </div>
 
         {/* Game Mode (host only) */}
         {isHost && (
-          <div style={{ marginBottom: 16 }}>
+          <div style={{ marginBottom: 16, position: 'relative', paddingRight: isDesktopWide ? 224 : 0 }}>
             <label style={{ color: '#aaa', fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 8 }}>{T('gameMode')}</label>
             <div style={{ display: 'flex', gap: 12, alignItems: 'stretch', flexWrap: 'wrap' }}>
               <div style={{ display: 'flex', gap: 8, flex: '1 1 320px' }}>
@@ -589,16 +662,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
                   </div>
                 ))}
               </div>
-              <div style={{
-                flex: '0 1 180px',
-                minWidth: 170,
-                borderRadius: 14,
-                padding: '10px 10px 12px',
-                background: 'linear-gradient(180deg, rgba(255,215,0,0.08), rgba(255,255,255,0.03))',
-                border: '1px solid rgba(255,215,0,0.18)',
-                boxShadow: '0 8px 18px rgba(0,0,0,0.18)',
-                alignSelf: 'stretch',
-              }}>
+              <div style={{ ...floatingCardStyle, marginTop: isDesktopWide ? 0 : 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                   <img src={selectedMode.img} alt={selectedMode.label} style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 10 }} />
                   <div>

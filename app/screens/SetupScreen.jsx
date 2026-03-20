@@ -36,6 +36,7 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
   const [chaosLevel, setChaosLevel] = useState(2);
   const [aiCount, setAiCount] = useState(2);
   const [showModeConfig, setShowModeConfig] = useState(false);
+  const [isDesktopWide, setIsDesktopWide] = useState(() => (typeof window !== 'undefined' ? window.innerWidth >= 1180 : false));
   const uiKey = getUILang();
   const playerWord = ({
     es: 'Jugador',
@@ -46,6 +47,12 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
     pt: 'Jogador',
   })[uiKey] || 'Player';
   const totalPreviewPlayers = aiCount + 1;
+  useEffect(() => {
+    const handleResize = () => setIsDesktopWide(window.innerWidth >= 1180);
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const gameModes = [
     { id: 'clon', label: T('modeClon'), desc: T('modeClonDesc') ,img:modoclon },
@@ -238,6 +245,67 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
       </>
     );
   };
+  const floatingCardStyle = {
+    position: isDesktopWide ? 'absolute' : 'static',
+    right: isDesktopWide ? -224 : 'auto',
+    top: 0,
+    width: isDesktopWide ? 208 : 'auto',
+    borderRadius: 14,
+    padding: '10px 10px 12px',
+    background: 'linear-gradient(180deg, rgba(255,215,0,0.08), rgba(255,255,255,0.03))',
+    border: '1px solid rgba(255,215,0,0.18)',
+    boxShadow: '0 8px 18px rgba(0,0,0,0.18)',
+  };
+  const renderHatSummary = () => {
+    const availableHats = LANGUAGES.filter((lang) => lang !== hat);
+    return (
+      <>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+          {hat ? <HatSVG lang={hat} size={38} /> : <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />}
+          <div>
+            <div style={{ color: '#FFD700', fontSize: 12, fontWeight: 900 }}>{hat ? T(hat) : T('chooseLanguage')}</div>
+            <div style={{ color: '#8a8fa8', fontSize: 10, fontWeight: 700 }}>{T('yourLanguage')}</div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
+          <div style={{
+            width: 78,
+            height: 78,
+            borderRadius: 18,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: hat ? 'rgba(255,215,0,0.1)' : 'rgba(255,255,255,0.03)',
+            border: hat ? '2px solid rgba(255,215,0,0.4)' : '1px solid rgba(255,255,255,0.12)',
+          }}>
+            {hat ? <HatSVG lang={hat} size={56} /> : <span style={{ color: '#8a8fa8', fontSize: 12, fontWeight: 700 }}>...</span>}
+          </div>
+        </div>
+        <div style={{ color: '#9ea4be', fontSize: 11, fontWeight: 700, marginBottom: 8, textAlign: 'center' }}>
+          Closet
+        </div>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
+          {availableHats.map((lang) => (
+            <span
+              key={`hat-summary-${lang}`}
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: '50%',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'rgba(255,255,255,0.06)',
+                border: `1px solid ${LANG_BORDER[lang]}66`,
+              }}
+            >
+              <HatSVG lang={lang} size={22} />
+            </span>
+          ))}
+        </div>
+      </>
+    );
+  };
 
   return (
     <div style={{
@@ -251,6 +319,8 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
         padding: 'clamp(20px, 5vw, 36px) clamp(16px, 5vw, 40px)',
         maxWidth: 520, width: '92vw',
         boxShadow: '0 8px 40px rgba(0,0,0,.6)', border: '2px solid #2a2a4a',
+        position: 'relative',
+        overflow: 'visible',
       }}>
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
           <img src={hamImg} alt="hamburguesa" style={{ width: 90, height: 90, objectFit: 'contain' }} />
@@ -298,7 +368,7 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
         )}
 
         {/* Hat selection */}
-        <div style={{ marginBottom: 20 }}>
+        <div style={{ marginBottom: 20, position: 'relative', paddingRight: isDesktopWide ? 224 : 0 }}>
           <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 8 }}>{T('chooseLanguage')}</label>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {LANGUAGES.map(lang => (
@@ -321,10 +391,13 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
               </div>
             ))}
           </div>
+          <div style={{ ...floatingCardStyle, marginTop: isDesktopWide ? 0 : 12 }}>
+            {renderHatSummary()}
+          </div>
         </div>
 
         {/* Game Mode */}
-        <div style={{ marginBottom: 16 }}>
+        <div style={{ marginBottom: 16, position: 'relative', paddingRight: isDesktopWide ? 224 : 0 }}>
           <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 8 }}>{T('gameMode')}</label>
           <div style={{ display: 'flex', gap: 12, alignItems: 'stretch', flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', gap: 8, flex: '1 1 320px' }}>
@@ -345,16 +418,7 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
                 </div>
               ))}
             </div>
-            <div style={{
-              flex: '0 1 180px',
-              minWidth: 170,
-              borderRadius: 14,
-              padding: '10px 10px 12px',
-              background: 'linear-gradient(180deg, rgba(255,215,0,0.08), rgba(255,255,255,0.03))',
-              border: '1px solid rgba(255,215,0,0.18)',
-              boxShadow: '0 8px 18px rgba(0,0,0,0.18)',
-              alignSelf: 'stretch',
-            }}>
+            <div style={{ ...floatingCardStyle, marginTop: isDesktopWide ? 0 : 12 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                 <img src={selectedMode.img} alt={selectedMode.label} style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 10 }} />
                 <div>
