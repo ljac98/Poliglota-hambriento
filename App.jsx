@@ -2607,9 +2607,21 @@ export default function App() {
                     display: 'flex', alignItems: 'center', gap: 8,
                     background: 'rgba(255,255,255,0.05)', borderRadius: 8, padding: '6px 10px',
                   }}>
-                    {actionCardIcons[id]
-                      ? <img src={actionCardIcons[id]} alt={info.name} style={{ width: 24, height: 24, objectFit: 'contain' }} />
-                      : <span style={{ fontSize: 18 }}>{info.emoji}</span>}
+                    <span style={{
+                      width: 30,
+                      height: 30,
+                      minWidth: 30,
+                      borderRadius: '50%',
+                      background: 'rgba(255,255,255,0.16)',
+                      border: '1px solid rgba(255,255,255,0.26)',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}>
+                      {actionCardIcons[id]
+                        ? <img src={actionCardIcons[id]} alt={info.name} style={{ width: 20, height: 20, objectFit: 'contain' }} />
+                        : <span style={{ fontSize: 16 }}>{info.emoji}</span>}
+                    </span>
                     <div>
                       <div style={{ fontSize: 13, fontWeight: 700, color: '#eee' }}>{info.name}</div>
                       <div style={{ fontSize: 11, color: '#999' }}>{info.desc}</div>
