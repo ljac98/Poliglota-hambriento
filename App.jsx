@@ -2590,18 +2590,18 @@ export default function App() {
         };
         const actionCategories = [
           {
-            key: 'single',
-            icon: eqRightSingle,
-            title: T('howToPlayActionSingleTitle'),
-            desc: T('howToPlayActionSingleDesc'),
-            actions: ['tenedor', 'ladron', 'intercambio_sombreros', 'intercambio_hamburguesa', 'gloton'],
-          },
-          {
             key: 'global',
             icon: eqRightGlobal,
             title: T('howToPlayActionGlobalTitle'),
             desc: T('howToPlayActionGlobalDesc'),
             actions: ['milanesa', 'ensalada', 'pizza', 'parrilla', 'comecomodines'],
+          },
+          {
+            key: 'single',
+            icon: eqRightSingle,
+            title: T('howToPlayActionSingleTitle'),
+            desc: T('howToPlayActionSingleDesc'),
+            actions: ['tenedor', 'ladron', 'intercambio_sombreros', 'intercambio_hamburguesa', 'gloton'],
           },
           {
             key: 'discard',
