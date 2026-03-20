@@ -2749,6 +2749,39 @@ export default function App() {
           intercambio_hamburguesa: T('howToPlayEffectIntercambioMesa'),
           gloton: T('howToPlayEffectGloton'),
         };
+        const currentModeId = currentGameConfig?.mode || 'clon';
+        const modeCards = [
+          {
+            id: 'clon',
+            label: T('modeClon'),
+            short: T('modeClonDesc'),
+            detailed: T('modeClonDetailed'),
+          },
+          {
+            id: 'escalera',
+            label: T('modeEscalera'),
+            short: T('modeEscaleraDesc'),
+            detailed: T('modeEscaleraDetailed'),
+          },
+          {
+            id: 'caotico',
+            label: T('modeCaotico'),
+            short: T('modeCaoticoDesc'),
+            detailed: T('modeCaoticoDetailed'),
+          },
+        ];
+        const currentModeSummary = (() => {
+          if (currentModeId === 'clon') {
+            const burgers = currentGameConfig?.burgerCount ?? human.totalBurgers;
+            const ingredients = currentGameConfig?.ingredientCount ?? human.burgers?.[0]?.length ?? 0;
+            return `${burgers} ${String(T('burgers')).toLowerCase()} · ${ingredients} ${String(T('ingredientCount')).toLowerCase()}`;
+          }
+          if (currentModeId === 'escalera') {
+            const burgers = currentGameConfig?.burgerCount ?? human.totalBurgers;
+            return `${burgers} ${String(T('burgers')).toLowerCase()} · 4+ ${String(T('ingredientCount')).toLowerCase()}`;
+          }
+          return `${T('modeCaotico')} · ${currentGameConfig?.chaosLevel || 2}/3`;
+        })();
         const totalHowToPlayPages = 8;
         const page = Math.max(0, Math.min(howToPlayPage, totalHowToPlayPages - 1));
         const actionCategoriesByKey = actionCategories.reduce((acc, group) => {
@@ -2804,6 +2837,71 @@ export default function App() {
                 <span>{T('howToPlayRuleOneCard')}</span>
                 <span>{T('howToPlayRuleHatButtonsBeforePlay')}</span>
                 <span>{T('howToPlayRuleHatButtonsIngredientOnly')}</span>
+              </div>
+            </div>
+
+            <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '12px 14px', marginBottom: 12, display: page === 0 ? 'block' : 'none' }}>
+              <div style={{ color: '#7A4A00', fontWeight: 800, fontSize: 14, marginBottom: 6 }}>
+                {T('gameMode')}
+              </div>
+              <div style={{ color: '#5a4635', fontSize: 11, lineHeight: 1.35, marginBottom: 10 }}>
+                {T('howToPlayModeIntro')}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {modeCards.map((mode) => {
+                  const isCurrentMode = mode.id === currentModeId;
+                  return (
+                    <div
+                      key={mode.id}
+                      style={{
+                        borderRadius: 10,
+                        padding: '10px 12px',
+                        background: isCurrentMode ? 'rgba(255,215,0,0.12)' : 'rgba(255,255,255,0.05)',
+                        border: isCurrentMode ? '1px solid rgba(255,215,0,0.45)' : '1px solid rgba(82,58,36,0.18)',
+                        boxShadow: isCurrentMode ? '0 0 0 1px rgba(255,215,0,0.18) inset' : 'none',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 4 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                          <span style={{ color: '#7A4A00', fontWeight: 800, fontSize: 13 }}>{mode.label}</span>
+                          <span style={{
+                            borderRadius: 999,
+                            padding: '2px 8px',
+                            fontSize: 10,
+                            fontWeight: 800,
+                            letterSpacing: 0.3,
+                            color: isCurrentMode ? '#7A4A00' : '#6d5a48',
+                            background: isCurrentMode ? 'rgba(255,215,0,0.25)' : 'rgba(90,70,53,0.08)',
+                          }}>
+                            {mode.short}
+                          </span>
+                        </div>
+                        {isCurrentMode && (
+                          <span style={{
+                            borderRadius: 999,
+                            padding: '2px 8px',
+                            fontSize: 10,
+                            fontWeight: 900,
+                            letterSpacing: 0.4,
+                            background: '#7A4A00',
+                            color: '#f8e8cc',
+                            textTransform: 'uppercase',
+                          }}>
+                            {T('currentModeBadge')}
+                          </span>
+                        )}
+                      </div>
+                      {isCurrentMode && (
+                        <div style={{ color: '#7A4A00', fontSize: 10, fontWeight: 700, letterSpacing: 0.2, marginBottom: 5 }}>
+                          {currentModeSummary}
+                        </div>
+                      )}
+                      <div style={{ color: '#3f3125', fontSize: 12, lineHeight: 1.4 }}>
+                        {mode.detailed}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
