@@ -403,19 +403,22 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
           ))}
         </div>
         <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-          padding: '10px 12px',
-          borderRadius: 14,
+          display: 'inline-flex',
+          alignItems: 'flex-start',
+          justifyContent: 'flex-start',
+          gap: 9,
+          padding: '8px 10px',
+          borderRadius: 12,
           background: 'rgba(255,255,255,0.04)',
           border: '1px solid rgba(255,255,255,0.08)',
           marginBottom: 12,
+          width: 'fit-content',
+          maxWidth: '100%',
         }}>
-          <img src={selectedMode.img} alt={selectedMode.label} style={{ width: 42, height: 42, objectFit: 'cover', borderRadius: 12, flexShrink: 0 }} />
-          <div style={{ minWidth: 0 }}>
-            <div style={{ color: '#FFD700', fontSize: 14, fontWeight: 900, lineHeight: 1.05 }}>{selectedMode.label}</div>
-            <div style={{ color: '#8a8fa8', fontSize: 10, fontWeight: 700, marginTop: 2 }}>{T('perPlayerLabel')}</div>
+          <img src={selectedMode.img} alt={selectedMode.label} style={{ width: 34, height: 34, objectFit: 'cover', borderRadius: 10, flexShrink: 0 }} />
+          <div style={{ minWidth: 0, textAlign: 'left' }}>
+            <div style={{ color: '#FFD700', fontSize: 12, fontWeight: 900, lineHeight: 1.05 }}>{selectedMode.label}</div>
+            <div style={{ color: '#8a8fa8', fontSize: 9, fontWeight: 700, marginTop: 2 }}>{T('perPlayerLabel')}</div>
           </div>
         </div>
       </div>
