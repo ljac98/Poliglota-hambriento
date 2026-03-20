@@ -2536,11 +2536,9 @@ export default function App() {
         const isWildcard = base === 'perrito';
         const specific = ING_AFFECTED_BY[displayIng] || [];
         const singleTarget = ['tenedor', 'gloton', 'intercambio_hamburguesa'];
-        const massActions = ['milanesa', 'ensalada', 'pizza', 'parrilla', 'comecomodines'];
         const allActionIds = [...new Set([
           ...specific,
           ...singleTarget,
-          ...massActions,
           ...(isWildcard ? ['comecomodines'] : []),
         ])];
         return (
