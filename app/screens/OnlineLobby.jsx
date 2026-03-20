@@ -374,6 +374,34 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
         <div style={{ color: '#ffd24a', fontSize: 11, fontWeight: 900, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 8 }}>
           {T('gameMode')}
         </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8, marginBottom: 12 }}>
+          {gameModes.map((m) => (
+            <div
+              key={`sidebar-mode-${m.id}`}
+              onClick={() => { setGameMode(m.id); setShowModeConfig(true); }}
+              style={{
+                minHeight: 92,
+                padding: '7px 5px',
+                borderRadius: 12,
+                cursor: 'pointer',
+                border: gameMode === m.id ? '2px solid #FFD700' : '1px solid rgba(255,255,255,0.08)',
+                background: gameMode === m.id ? 'linear-gradient(180deg, rgba(255,215,0,0.16), rgba(255,255,255,0.05))' : 'rgba(255,255,255,0.03)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 5,
+                boxShadow: gameMode === m.id ? '0 0 18px rgba(255,215,0,0.16)' : 'none',
+                transition: 'all .15s',
+              }}
+            >
+              <img src={m.img} alt={m.label} style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 12 }} />
+              <div style={{ color: gameMode === m.id ? '#FFD700' : '#f3f4ff', fontSize: 11, fontWeight: 900, lineHeight: 1, textAlign: 'center' }}>
+                {m.label}
+              </div>
+            </div>
+          ))}
+        </div>
         <div style={{
           display: 'flex',
           alignItems: 'center',
@@ -397,7 +425,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
   const floatingCardStyle = {
     position: isDesktopWide ? 'absolute' : 'static',
     right: isDesktopWide ? -248 : 'auto',
-    top: isDesktopWide ? -12 : 0,
+    top: isDesktopWide ? -178 : 0,
     width: isDesktopWide ? 232 : 'auto',
     borderRadius: 18,
     padding: '14px 14px 16px',
@@ -668,29 +696,29 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
         {/* Game Mode (host only) */}
         {isHost && (
           <div style={{ marginBottom: 16, position: 'relative', paddingRight: isDesktopWide ? 248 : 0 }}>
-            <label style={{ color: '#aaa', fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 8 }}>{T('gameMode')}</label>
+            {!isDesktopWide && <label style={{ color: '#aaa', fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 8 }}>{T('gameMode')}</label>}
             <div style={{ display: 'flex', gap: 12, alignItems: 'stretch', flexWrap: 'wrap' }}>
-              <div style={{ display: 'flex', gap: 8, flex: '1 1 320px' }}>
-                {gameModes.map(m => (
-                  <div
-                    key={m.id}
-                    onClick={() => { setGameMode(m.id); setShowModeConfig(true); }}
-                    style={{
-                      flex: 1, padding: '7px 4px', borderRadius: 8, cursor: 'pointer', textAlign: 'center',
-                      border: gameMode === m.id ? '2px solid #FFD700' : '2px solid #2a2a4a',
-                      background: gameMode === m.id ? 'rgba(255,215,0,.08)' : 'rgba(255,255,255,.02)',
-                      transition: 'all .15s',
-                    }}
-                  >
-                    <img src={m.img} alt="hamburguesa" style={{ width: 90, height: 90, objectFit: 'fill', borderRadius: '15px' }} />
-                    <div style={{ fontSize: 12, fontWeight: 700, color: gameMode === m.id ? '#FFD700' : '#ccc' }}>{m.label}</div>
-                    <div style={{ fontSize: 9, color: '#666', marginTop: 2 }}>{m.desc}</div>
-                  </div>
-                ))}
-              </div>
-              {isDesktopWide ? (
-                renderDesktopSidebar()
-              ) : (
+              {!isDesktopWide && (
+                <div style={{ display: 'flex', gap: 8, flex: '1 1 320px' }}>
+                  {gameModes.map(m => (
+                    <div
+                      key={m.id}
+                      onClick={() => { setGameMode(m.id); setShowModeConfig(true); }}
+                      style={{
+                        flex: 1, padding: '7px 4px', borderRadius: 8, cursor: 'pointer', textAlign: 'center',
+                        border: gameMode === m.id ? '2px solid #FFD700' : '2px solid #2a2a4a',
+                        background: gameMode === m.id ? 'rgba(255,215,0,.08)' : 'rgba(255,255,255,.02)',
+                        transition: 'all .15s',
+                      }}
+                    >
+                      <img src={m.img} alt="hamburguesa" style={{ width: 90, height: 90, objectFit: 'fill', borderRadius: '15px' }} />
+                      <div style={{ fontSize: 12, fontWeight: 700, color: gameMode === m.id ? '#FFD700' : '#ccc' }}>{m.label}</div>
+                      <div style={{ fontSize: 9, color: '#666', marginTop: 2 }}>{m.desc}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {isDesktopWide ? renderDesktopSidebar() : (
                 <div style={{ ...floatingCardStyle, marginTop: 12 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                     <img src={selectedMode.img} alt={selectedMode.label} style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 10 }} />
