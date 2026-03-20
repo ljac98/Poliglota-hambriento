@@ -27,6 +27,10 @@ import eqBasurero from './imagenes/acciones/esquina/basurero.png';
 import eqGloton from './imagenes/acciones/esquina/comelona.png';
 import eqNegacion from './imagenes/acciones/esquina/cancelh.png';
 import eqComeComodines from './imagenes/acciones/esquina/pancho.png';
+import eqRightGlobal from './imagenes/acciones/esquina derecha/global.png';
+import eqRightSingle from './imagenes/acciones/esquina derecha/singular.png';
+import eqRightDiscard from './imagenes/acciones/esquina derecha/descarte.png';
+import eqRightNegation from './imagenes/acciones/esquina derecha/negacion.png';
 
 import { Btn, Modal, OpponentCard } from './app/components/index.js';
 import { AppPhaseRouter } from './app/screens/index.js';
@@ -1698,39 +1702,6 @@ export default function App() {
       >
         {T('turnActionsLabel')}
       </button>
-      {[
-        { key: 'playIngredient', emoji: '🃏', label: T('ingredientCard') },
-        { key: 'playAction',     emoji: '⚡', label: T('actionCard')    },
-        { key: 'discard',        emoji: '🗑️', label: T('discard')       },
-        { key: 'changeHat',      emoji: '🎩', label: T('changeHat')     },
-        { key: 'addHat',         emoji: '➕', label: T('addHat')        },
-      ].map(({ key, emoji, label }) => (
-        <button
-          key={key}
-          onClick={() => setModal({ type: 'turnActionInfo', action: key })}
-          style={{
-            background: 'rgba(255,255,255,0.06)',
-            border: '1px solid rgba(255,255,255,0.15)',
-            borderRadius: 20, padding: '4px 10px', cursor: 'pointer',
-            color: isHumanTurn ? '#ddd' : '#555',
-            fontSize: 12, display: 'flex', gap: 4, alignItems: 'center',
-            fontFamily: 'inherit', fontWeight: 600, transition: 'all .15s',
-          }}
-          onMouseOver={e => {
-            e.currentTarget.style.background = 'rgba(78,205,196,0.2)';
-            e.currentTarget.style.borderColor = '#4ecdc4';
-            e.currentTarget.style.color = '#fff';
-          }}
-          onMouseOut={e => {
-            e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
-            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
-            e.currentTarget.style.color = isHumanTurn ? '#ddd' : '#555';
-          }}
-        >
-          <span>{emoji}</span>
-          <span>{label}</span>
-        </button>
-      ))}
     </div>
   );
 
@@ -2598,6 +2569,47 @@ export default function App() {
           negacion: eqNegacion,
           comecomodines: eqComeComodines,
         };
+        const actionCategories = [
+          {
+            key: 'single',
+            icon: eqRightSingle,
+            title: T('howToPlayActionSingleTitle'),
+            desc: T('howToPlayActionSingleDesc'),
+            actions: ['tenedor', 'ladron', 'intercambio_sombreros', 'intercambio_hamburguesa', 'gloton'],
+          },
+          {
+            key: 'global',
+            icon: eqRightGlobal,
+            title: T('howToPlayActionGlobalTitle'),
+            desc: T('howToPlayActionGlobalDesc'),
+            actions: ['milanesa', 'ensalada', 'pizza', 'parrilla', 'comecomodines'],
+          },
+          {
+            key: 'discard',
+            icon: eqRightDiscard,
+            title: T('howToPlayActionDiscardTitle'),
+            desc: T('howToPlayActionDiscardDesc'),
+            actions: ['basurero'],
+          },
+          {
+            key: 'negation',
+            icon: eqRightNegation,
+            title: T('howToPlayActionNegationTitle'),
+            desc: T('howToPlayActionNegationDesc'),
+            actions: ['negacion'],
+          },
+        ];
+        const actionsById = ACTION_CARDS.reduce((acc, a) => {
+          acc[a.id] = a;
+          return acc;
+        }, {});
+        const discardedIngredientsByAction = {
+          milanesa: ['pan', 'huevo'],
+          ensalada: ['lechuga', 'tomate', 'cebolla', 'palta'],
+          pizza: ['queso'],
+          parrilla: ['pollo', 'carne'],
+          comecomodines: ['perrito'],
+        };
 
         return (
           <Modal title={T('turnActionsLabel')}>
@@ -2622,13 +2634,41 @@ export default function App() {
               <div style={{ color: '#ddd', fontSize: 12, lineHeight: 1.35, marginBottom: 10 }}>
                 {T('howToPlayActionDesc')}
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 10px' }}>
-                {ACTION_CARDS.map((a) => (
-                  <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#ddd' }}>
-                    {actionIcons[a.id]
-                      ? <img src={actionIcons[a.id]} alt={a.name} style={{ width: 18, height: 18, objectFit: 'contain' }} />
-                      : <span>{a.emoji}</span>}
-                    <span>{a.name}</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {actionCategories.map((group) => (
+                  <div key={group.key} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: '8px 10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                      <img src={group.icon} alt={group.title} style={{ width: 18, height: 18, objectFit: 'contain' }} />
+                      <span style={{ color: '#FFD700', fontWeight: 700, fontSize: 12 }}>{group.title}</span>
+                    </div>
+                    <div style={{ color: '#bbb', fontSize: 11, lineHeight: 1.35, marginBottom: 6 }}>{group.desc}</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 10px' }}>
+                      {group.actions.map((actionId) => {
+                        const a = actionsById[actionId];
+                        if (!a) return null;
+                        const discards = discardedIngredientsByAction[a.id] || [];
+                        return (
+                          <div key={a.id} style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: '#ddd' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              {actionIcons[a.id]
+                                ? <img src={actionIcons[a.id]} alt={a.name} style={{ width: 18, height: 18, objectFit: 'contain' }} />
+                                : <span>{a.emoji}</span>}
+                              <span>{a.name}</span>
+                            </div>
+                            {discards.length > 0 && (
+                              <div style={{ fontSize: 11, color: '#bbb', display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>
+                                <span>{T('howToPlayOthersDiscardLabel')}</span>
+                                {discards.map((ing) => (
+                                  <span key={`${a.id}-${ing}`} style={{ background: 'rgba(255,255,255,0.08)', borderRadius: 999, padding: '1px 6px' }}>
+                                    {ING_EMOJI[ing]} {getIngName(ing, 'español')}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -2652,6 +2692,17 @@ export default function App() {
               </div>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {human.mainHats.map((h) => <HatBadge key={`help-main-${h}`} lang={h} isMain size="sm" />)}
+              </div>
+              <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div style={{ fontSize: 11, color: '#bbb' }}>{T('howToPlayHatButtonsTitle')}</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <div style={{ fontSize: 12, color: '#ddd' }}>
+                    <strong>{T('changeHat')}:</strong> {T('changeHatTooltip')}
+                  </div>
+                  <div style={{ fontSize: 12, color: '#ddd' }}>
+                    <strong>{T('addHat')}:</strong> {T('addHatTooltip')}
+                  </div>
+                </div>
               </div>
             </div>
 
