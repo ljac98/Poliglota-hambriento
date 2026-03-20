@@ -1702,7 +1702,7 @@ export default function App() {
           fontFamily: 'inherit',
         }}
       >
-        <span style={{ marginRight: 4 }}>ðŸ“–</span>
+        <span style={{ marginRight: 4 }}>{'\u{1F4D6}'}</span>
         {T('turnActionsLabel')}
       </button>
     </div>
@@ -2669,7 +2669,7 @@ export default function App() {
             </p>
             <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '12px 14px', marginBottom: 12, display: page === 0 ? 'block' : 'none' }}>
               <div style={{ color: '#5a4635', fontSize: 10, fontWeight: 800, letterSpacing: 1, marginBottom: 6 }}>{T('howToPlayPage')} 1</div>
-              <div style={{ color: '#FFD700', fontWeight: 800, fontSize: 14, marginBottom: 6 }}>
+              <div style={{ color: '#7A4A00', fontWeight: 800, fontSize: 14, marginBottom: 6 }}>
                 {T('howToPlayTurnRulesTitle')}
               </div>
               <div style={{ color: '#3f3125', fontSize: 12, lineHeight: 1.35, display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -2683,7 +2683,7 @@ export default function App() {
               <div style={{ color: '#5a4635', fontSize: 10, fontWeight: 800, letterSpacing: 1, marginBottom: 6 }}>{T('howToPlayPage')} 2</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
                 <img src={ingredientCardIcon} alt={T('ingredientCard')} style={{ width: 22, height: 22, objectFit: 'contain' }} />
-                <div style={{ color: '#FFD700', fontWeight: 800, fontSize: 14 }}>{T('howToPlayIngredientTitle')}</div>
+                <div style={{ color: '#7A4A00', fontWeight: 800, fontSize: 14 }}>{T('howToPlayIngredientTitle')}</div>
               </div>
               <div style={{ color: '#3f3125', fontSize: 12, lineHeight: 1.35 }}>
                 {T('howToPlayIngredientDesc')}
@@ -2692,7 +2692,7 @@ export default function App() {
 
             <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '12px 14px', marginBottom: 14, display: page === 2 ? 'block' : 'none' }}>
               <div style={{ color: '#5a4635', fontSize: 10, fontWeight: 800, letterSpacing: 1, marginBottom: 6 }}>{T('howToPlayPage')} 3</div>
-              <div style={{ color: '#FFD700', fontWeight: 800, fontSize: 14, marginBottom: 8 }}>
+              <div style={{ color: '#7A4A00', fontWeight: 800, fontSize: 14, marginBottom: 8 }}>
                 {T('howToPlayActionTitle')}
               </div>
               <div style={{ color: '#3f3125', fontSize: 12, lineHeight: 1.35, marginBottom: 10 }}>
@@ -2702,8 +2702,8 @@ export default function App() {
                 {actionCategories.map((group) => (
                   <div key={group.key} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: '8px 10px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                      <img src={group.icon} alt={group.title} style={{ width: 18, height: 18, objectFit: 'contain' }} />
-                      <span style={{ color: '#FFD700', fontWeight: 700, fontSize: 12 }}>{group.title}</span>
+                      <img src={group.icon} alt={group.title} style={{ width: 24, height: 24, objectFit: 'contain' }} />
+                      <span style={{ color: '#7A4A00', fontWeight: 700, fontSize: 12 }}>{group.title}</span>
                     </div>
                     <div style={{ color: '#5a4635', fontSize: 11, lineHeight: 1.35, marginBottom: 6 }}>{group.desc}</div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 10px' }}>
@@ -2714,9 +2714,9 @@ export default function App() {
                         return (
                           <div key={a.id} style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: '#3f3125' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              {actionIcons[a.id]
-                                ? <img src={actionIcons[a.id]} alt={a.name} style={{ width: 18, height: 18, objectFit: 'contain' }} />
-                                : <span>{a.emoji}</span>}
+                                    {actionIcons[a.id]
+                                      ? <img src={actionIcons[a.id]} alt={a.name} style={{ width: 24, height: 24, objectFit: 'contain' }} />
+                                      : <span>{a.emoji}</span>}
                               <span>{a.name}</span>
                             </div>
                             {discards.length > 0 && (
@@ -2746,7 +2746,7 @@ export default function App() {
 
             <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '12px 14px', marginBottom: 12, display: page === 3 ? 'block' : 'none' }}>
               <div style={{ color: '#5a4635', fontSize: 10, fontWeight: 800, letterSpacing: 1, marginBottom: 6 }}>{T('howToPlayPage')} 4</div>
-              <div style={{ color: '#FFD700', fontWeight: 800, fontSize: 14, marginBottom: 6 }}>
+              <div style={{ color: '#7A4A00', fontWeight: 800, fontSize: 14, marginBottom: 6 }}>
                 {T('howToPlayGoalTitle')}
               </div>
               <div style={{ color: '#3f3125', fontSize: 12, lineHeight: 1.35 }}>
@@ -2756,7 +2756,7 @@ export default function App() {
 
             <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '12px 14px', marginBottom: 12, display: page === 4 ? 'block' : 'none' }}>
               <div style={{ color: '#5a4635', fontSize: 10, fontWeight: 800, letterSpacing: 1, marginBottom: 6 }}>{T('howToPlayPage')} 5</div>
-              <div style={{ color: '#FFD700', fontWeight: 800, fontSize: 14, marginBottom: 8 }}>
+              <div style={{ color: '#7A4A00', fontWeight: 800, fontSize: 14, marginBottom: 8 }}>
                 {T('howToPlayMainHatsTitle')}
               </div>
               <div style={{ color: '#3f3125', fontSize: 12, lineHeight: 1.35, marginBottom: 8 }}>
@@ -2788,7 +2788,7 @@ export default function App() {
               <div style={{ color: '#5a4635', fontSize: 10, fontWeight: 800, letterSpacing: 1, marginBottom: 6 }}>{T('howToPlayPage')} 6</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                 <img src={percheroImg} alt={T('closet')} style={{ width: 22, height: 22, objectFit: 'contain' }} />
-                <div style={{ color: '#FFD700', fontWeight: 800, fontSize: 14 }}>{T('howToPlayClosetTitle')}</div>
+                <div style={{ color: '#7A4A00', fontWeight: 800, fontSize: 14 }}>{T('howToPlayClosetTitle')}</div>
               </div>
               <div style={{ color: '#3f3125', fontSize: 12, lineHeight: 1.35, marginBottom: 8 }}>
                 {typeof T('howToPlayClosetDesc') === 'function' ? T('howToPlayClosetDesc')(human.perchero.length) : T('howToPlayClosetDesc')}
@@ -2802,13 +2802,13 @@ export default function App() {
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, gap: 8 }}>
               <Btn onClick={() => setHowToPlayPage((p) => Math.max(0, p - 1))} color="#6b4f36" disabled={page === 0}>
-                â—€
+                Anterior
               </Btn>
               <span style={{ color: '#c9b08f', fontSize: 12 }}>
                 {T('howToPlayPage')} {page + 1}/{totalHowToPlayPages}
               </span>
               <Btn onClick={() => setHowToPlayPage((p) => Math.min(totalHowToPlayPages - 1, p + 1))} color="#6b4f36" disabled={page === totalHowToPlayPages - 1}>
-                â–¶
+                Siguiente
               </Btn>
             </div>
 
