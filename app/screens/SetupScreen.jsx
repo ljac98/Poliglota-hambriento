@@ -36,15 +36,18 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
   const previewLayers = [burgerCarne, burgerQueso, burgerLechuga, burgerCebolla];
   const modePreview = (() => {
     if (gameMode === 'caotico') {
-      if (chaosLevel === 1) return { burgers: '1-2', ingredients: '3-5' };
-      if (chaosLevel === 3) return { burgers: '3-5', ingredients: '5-8' };
-      return { burgers: '2-4', ingredients: '4-7' };
+      if (chaosLevel === 1) return { burgers: '1-2', ingredients: '3-5', layerCount: 5 };
+      if (chaosLevel === 3) return { burgers: '3-5', ingredients: '5-8', layerCount: 8 };
+      return { burgers: '2-4', ingredients: '4-7', layerCount: 7 };
     }
     if (gameMode === 'escalera') {
-      return { burgers: String(burgerCount), ingredients: `4-${3 + burgerCount}` };
+      return { burgers: String(burgerCount), ingredients: `4-${3 + burgerCount}`, layerCount: 3 + burgerCount };
     }
-    return { burgers: String(burgerCount), ingredients: String(ingredientCount) };
+    return { burgers: String(burgerCount), ingredients: String(ingredientCount), layerCount: ingredientCount };
   })();
+  const stackLayers = Array.from({ length: Math.max(1, Math.min(8, modePreview.layerCount || 4)) }, (_, index) => (
+    previewLayers[index % previewLayers.length]
+  ));
   const markerStyle = {
     minWidth: 62,
     textAlign: 'center',
@@ -222,7 +225,7 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
                   alignItems: 'center',
                 }}>
                   <img src={burgerPanArriba} alt="pan" style={{ width: 62, height: 'auto', marginBottom: -8 }} />
-                  {previewLayers.map((layerSrc, index) => (
+                  {stackLayers.map((layerSrc, index) => (
                     <img
                       key={index}
                       src={layerSrc}
@@ -258,6 +261,16 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
                 </div>
                 <div style={{ color: '#9ea4be', fontSize: 11, lineHeight: 1.35 }}>
                   {T('ingredientsLabelShort')}: <span style={{ color: '#fff1b3', fontWeight: 900 }}>{modePreview.ingredients}</span>
+                </div>
+                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', margin: '6px 0 2px' }}>
+                  {stackLayers.map((layerSrc, index) => (
+                    <img
+                      key={`mini-layer-${index}`}
+                      src={layerSrc}
+                      alt="ingrediente"
+                      style={{ width: 14, height: 14, objectFit: 'contain', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))' }}
+                    />
+                  ))}
                 </div>
                 <div style={{ color: '#9ea4be', fontSize: 11, lineHeight: 1.35 }}>
                   {T('perPlayerLabel')}
