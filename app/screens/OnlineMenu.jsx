@@ -324,7 +324,16 @@ export function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '', user
               </div>
             ) : filteredLobbyRooms.length === 0 ? (
               <div style={{ textAlign: 'center', padding: 30, color: '#555', fontSize: 13 }}>
-                {lobbyModeFilter === 'all' ? T('noPublicRooms') : T('noPublicRoomsForMode')}
+                <div style={{ marginBottom: 14 }}>
+                  {lobbyModeFilter === 'all' ? T('noPublicRooms') : T('noPublicRoomsForMode')}
+                </div>
+                <Btn
+                  onClick={() => setTab('create')}
+                  color="#FFD700"
+                  style={{ fontSize: 13, padding: '10px 16px' }}
+                >
+                  {T('createYourRoom')}
+                </Btn>
               </div>
             ) : (
               <div style={{ maxHeight: 280, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
