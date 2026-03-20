@@ -329,56 +329,6 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
     border: '1px solid rgba(255,215,0,0.18)',
     boxShadow: '0 8px 18px rgba(0,0,0,0.18)',
   };
-  const renderHatSummary = () => {
-    const availableHats = LANGUAGES.filter((lang) => lang !== myHat);
-    return (
-      <>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-          {myHat ? <HatSVG lang={myHat} size={38} /> : <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />}
-          <div>
-            <div style={{ color: '#FFD700', fontSize: 12, fontWeight: 900 }}>{myHat ? T(myHat) : T('yourLanguage')}</div>
-            <div style={{ color: '#8a8fa8', fontSize: 10, fontWeight: 700 }}>{T('yourLanguage')}</div>
-          </div>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
-          <div style={{
-            width: 78,
-            height: 78,
-            borderRadius: 18,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: myHat ? 'rgba(255,215,0,0.1)' : 'rgba(255,255,255,0.03)',
-            border: myHat ? '2px solid rgba(255,215,0,0.4)' : '1px solid rgba(255,255,255,0.12)',
-          }}>
-            {myHat ? <HatSVG lang={myHat} size={56} /> : <span style={{ color: '#8a8fa8', fontSize: 12, fontWeight: 700 }}>...</span>}
-          </div>
-        </div>
-        <div style={{ color: '#9ea4be', fontSize: 11, fontWeight: 700, marginBottom: 8, textAlign: 'center' }}>
-          Closet
-        </div>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
-          {availableHats.map((lang) => (
-            <span
-              key={`hat-summary-${lang}`}
-              style={{
-                width: 34,
-                height: 34,
-                borderRadius: '50%',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: 'rgba(255,255,255,0.06)',
-                border: `1px solid ${LANG_BORDER[lang]}66`,
-              }}
-            >
-              <HatSVG lang={lang} size={22} />
-            </span>
-          ))}
-        </div>
-      </>
-    );
-  };
 
   function pickHat(lang) {
     const taken = Object.values(hatPicks);

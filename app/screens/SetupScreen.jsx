@@ -256,57 +256,6 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
     border: '1px solid rgba(255,215,0,0.18)',
     boxShadow: '0 8px 18px rgba(0,0,0,0.18)',
   };
-  const renderHatSummary = () => {
-    const availableHats = LANGUAGES.filter((lang) => lang !== hat);
-    return (
-      <>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-          {hat ? <HatSVG lang={hat} size={38} /> : <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />}
-          <div>
-            <div style={{ color: '#FFD700', fontSize: 12, fontWeight: 900 }}>{hat ? T(hat) : T('chooseLanguage')}</div>
-            <div style={{ color: '#8a8fa8', fontSize: 10, fontWeight: 700 }}>{T('yourLanguage')}</div>
-          </div>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
-          <div style={{
-            width: 78,
-            height: 78,
-            borderRadius: 18,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: hat ? 'rgba(255,215,0,0.1)' : 'rgba(255,255,255,0.03)',
-            border: hat ? '2px solid rgba(255,215,0,0.4)' : '1px solid rgba(255,255,255,0.12)',
-          }}>
-            {hat ? <HatSVG lang={hat} size={56} /> : <span style={{ color: '#8a8fa8', fontSize: 12, fontWeight: 700 }}>...</span>}
-          </div>
-        </div>
-        <div style={{ color: '#9ea4be', fontSize: 11, fontWeight: 700, marginBottom: 8, textAlign: 'center' }}>
-          Closet
-        </div>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
-          {availableHats.map((lang) => (
-            <span
-              key={`hat-summary-${lang}`}
-              style={{
-                width: 34,
-                height: 34,
-                borderRadius: '50%',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: 'rgba(255,255,255,0.06)',
-                border: `1px solid ${LANG_BORDER[lang]}66`,
-              }}
-            >
-              <HatSVG lang={lang} size={22} />
-            </span>
-          ))}
-        </div>
-      </>
-    );
-  };
-
   return (
     <div style={{
       minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -368,32 +317,64 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
         )}
 
         {/* Hat selection */}
-        <div style={{ marginBottom: 20, position: 'relative', paddingRight: isDesktopWide ? 224 : 0 }}>
-          <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 8 }}>{T('chooseLanguage')}</label>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            {LANGUAGES.map(lang => (
-              <div
-                key={lang}
-                onClick={() => setHat(lang)}
-                style={{
-                  flex: '1 1 28%', minWidth: 80, padding: '8px 6px', borderRadius: 10, cursor: 'pointer',
-                  border: hat === lang ? `2px solid #FFD700` : `2px solid ${LANG_BORDER[lang]}44`,
-                  background: hat === lang ? 'rgba(255,215,0,.08)' : 'rgba(255,255,255,.02)',
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-                  transition: 'all .15s',
-                  boxShadow: hat === lang ? '0 0 12px rgba(255,215,0,.3)' : 'none',
-                }}
-              >
-                <HatSVG lang={lang} size={32} />
-                <span style={{ fontSize: 11, fontWeight: 800, color: hat === lang ? '#FFD700' : LANG_TEXT[lang] }}>
-                  {T(lang)}
-                </span>
+        <div style={{ marginBottom: 20, position: 'relative', paddingRight: isDesktopWide ? 224 : 0, minHeight: isDesktopWide ? 240 : 'auto' }}>
+          {!isDesktopWide && (
+            <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 8 }}>{T('chooseLanguage')}</label>
+          )}
+          {isDesktopWide ? (
+            <div style={{ ...floatingCardStyle, marginTop: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                {hat ? <HatSVG lang={hat} size={38} /> : <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />}
+                <div>
+                  <div style={{ color: '#FFD700', fontSize: 12, fontWeight: 900 }}>{hat ? T(hat) : T('chooseLanguage')}</div>
+                  <div style={{ color: '#8a8fa8', fontSize: 10, fontWeight: 700 }}>{T('chooseLanguage')}</div>
+                </div>
               </div>
-            ))}
-          </div>
-          <div style={{ ...floatingCardStyle, marginTop: isDesktopWide ? 0 : 12 }}>
-            {renderHatSummary()}
-          </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {LANGUAGES.map(lang => (
+                  <div
+                    key={lang}
+                    onClick={() => setHat(lang)}
+                    style={{
+                      flex: '1 1 28%', minWidth: 52, padding: '8px 6px', borderRadius: 10, cursor: 'pointer',
+                      border: hat === lang ? `2px solid #FFD700` : `2px solid ${LANG_BORDER[lang]}44`,
+                      background: hat === lang ? 'rgba(255,215,0,.08)' : 'rgba(255,255,255,.02)',
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                      transition: 'all .15s',
+                      boxShadow: hat === lang ? '0 0 12px rgba(255,215,0,.3)' : 'none',
+                    }}
+                  >
+                    <HatSVG lang={lang} size={32} />
+                    <span style={{ fontSize: 11, fontWeight: 800, color: hat === lang ? '#FFD700' : LANG_TEXT[lang] }}>
+                      {T(lang)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {LANGUAGES.map(lang => (
+                <div
+                  key={lang}
+                  onClick={() => setHat(lang)}
+                  style={{
+                    flex: '1 1 28%', minWidth: 80, padding: '8px 6px', borderRadius: 10, cursor: 'pointer',
+                    border: hat === lang ? `2px solid #FFD700` : `2px solid ${LANG_BORDER[lang]}44`,
+                    background: hat === lang ? 'rgba(255,215,0,.08)' : 'rgba(255,255,255,.02)',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                    transition: 'all .15s',
+                    boxShadow: hat === lang ? '0 0 12px rgba(255,215,0,.3)' : 'none',
+                  }}
+                >
+                  <HatSVG lang={lang} size={32} />
+                  <span style={{ fontSize: 11, fontWeight: 800, color: hat === lang ? '#FFD700' : LANG_TEXT[lang] }}>
+                    {T(lang)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Game Mode */}
