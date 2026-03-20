@@ -6,7 +6,7 @@ import {
   ING_EMOJI, ING_BG, AI_NAMES, getIngName, getActionInfo,
   ING_NAMES, ACTION_CARDS,
 } from './constants';
-import { generateDeck, initPlayer, canPlayCard } from './game';
+import { generateDeck, genBurger, initPlayer, canPlayCard } from './game';
 import { shuffle, randInt, uid } from './game/utils';
 import { t, getUILang, setUILang, KEY_TO_LANG, getLocalizedLangShort } from './src/translations.js';
 import { GameCard } from './components/Cards';
@@ -451,19 +451,30 @@ export default function App() {
     }
   }
 
-  // â”€â”€ Start game (local / vs AI) â”€â”€
+  // ── Start game (local / vs AI) ──
+  function buildGameConfig(gameConfig) {
+    if (!gameConfig || gameConfig.mode !== 'clon') return gameConfig;
+    return {
+      ...gameConfig,
+      sharedBurgers: Array.from(
+        { length: gameConfig.burgerCount },
+        () => genBurger(gameConfig.ingredientCount),
+      ),
+    };
+  }
   function startGame(name, hat, gameConfig, aiCount) {
     const rawDeck = generateDeck();
     const deckArr = [...rawDeck];
+    const normalizedConfig = buildGameConfig(gameConfig);
     const ps = [];
-    ps.push(initPlayer(name, deckArr, hat, gameConfig, false));
+    ps.push(initPlayer(name, deckArr, hat, normalizedConfig, false));
     const usedHats = [hat];
     const aiNames = shuffle([...AI_NAMES, 'Maestro Cocinero', 'Hambre Total', 'Chef PolÃ­glota']);
     for (let i = 0; i < aiCount; i++) {
       const avail = LANGUAGES.filter(l => !usedHats.includes(l));
       const aiHat = avail.length ? shuffle(avail)[0] : shuffle(LANGUAGES)[0];
       usedHats.push(aiHat);
-      ps.push(initPlayer(aiNames[i % aiNames.length], deckArr, aiHat, gameConfig, true));
+      ps.push(initPlayer(aiNames[i % aiNames.length], deckArr, aiHat, normalizedConfig, true));
     }
     setPlayers(ps); setDeck(deckArr); setDiscard([]);
     setCp(0); setLog([]); setSelectedIdx(null); setModal(null);
@@ -476,7 +487,8 @@ export default function App() {
   function startOnlineGame(hatPicks, gameConfig, onlinePls) {
     const rawDeck = generateDeck();
     const deckArr = [...rawDeck];
-    const ps = onlinePls.map(p => initPlayer(p.name, deckArr, hatPicks[p.name], gameConfig, false));
+    const normalizedConfig = buildGameConfig(gameConfig);
+    const ps = onlinePls.map(p => initPlayer(p.name, deckArr, hatPicks[p.name], normalizedConfig, false));
     // Mark non-host players as remote
     ps.forEach((p, i) => { if (i !== 0) p.isRemote = true; });
     setPlayers(ps); setDeck(deckArr); setDiscard([]);
