@@ -1,9 +1,9 @@
 import React from 'react';
 import HatSVG from './HatSVG';
-import { t, getUILang } from '../src/translations.js';
+import { t, getUILang, getLocalizedLangShort } from '../src/translations.js';
 import {
   ING_EMOJI, ING_BG, LANG_BORDER, LANG_BG, LANG_TEXT,
-  LANG_BADGE, LANG_SHORT, getIngName, getActionInfo
+  LANG_BADGE, getIngName, getActionInfo
 } from '../constants';
 import ingPan    from '../imagenes/hamburguesas/objetivos/pan.png';
 import ingLechuga from '../imagenes/hamburguesas/objetivos/lechuga.png';
@@ -78,6 +78,8 @@ const ING_IMG = {
 // ═══ INGREDIENT CARD (Lotería style) ═══
 export const IngredientCard = ({ card, onClick, selected, small, large, playable }) => {
   const { language: lang, ingredient: ing } = card;
+  const uiLang = getUILang();
+  const langShort = getLocalizedLangShort(lang, uiLang);
   const isWild = ing === "perrito";
   const border = LANG_BORDER[lang];
   const bg = LANG_BG[lang];
@@ -123,7 +125,7 @@ export const IngredientCard = ({ card, onClick, selected, small, large, playable
         color: txtColor, letterSpacing: 2, fontFamily: "'Fredoka',sans-serif",
         textShadow: isDark ? "none" : "0 1px 0 rgba(255,255,255,0.3)"
       }}>
-        {LANG_SHORT[lang]}
+        {langShort}
       </div>
       {/* Center: hat on ingredient with eyes */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", marginTop: 0 }}>

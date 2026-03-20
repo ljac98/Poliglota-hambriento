@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { LANGUAGES, LANG_BORDER, LANG_BG, LANG_TEXT, LANG_SHORT, AI_NAMES } from '../../constants/index.js';
+import { LANGUAGES, LANG_BORDER, LANG_BG, LANG_TEXT } from '../../constants/index.js';
 import { randInt, uid } from '../../game/utils.js';
 import { Btn } from '../components/Btn.jsx';
 import { HatBadge, PercheroSVG } from '../../components/HatComponents.jsx';
@@ -101,7 +101,7 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
               >
                 <HatSVG lang={lang} size={32} />
                 <span style={{ fontSize: 11, fontWeight: 800, color: hat === lang ? '#FFD700' : LANG_TEXT[lang] }}>
-                  {lang.charAt(0).toUpperCase() + lang.slice(1)}
+                  {T(lang)}
                 </span>
               </div>
             ))}

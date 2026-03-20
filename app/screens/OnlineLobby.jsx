@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import socket from '../../src/socket.js';
-import { LANGUAGES, LANG_SHORT, LANG_BORDER, LANG_BG, LANG_TEXT } from '../../constants/index.js';
+import { LANGUAGES, LANG_BORDER, LANG_BG, LANG_TEXT } from '../../constants/index.js';
 import { getFriends, sendFriendRequest } from '../../src/api.js';
 import { HatBadge, PercheroSVG } from '../../components/HatComponents.jsx';
 import HatSVG from '../../components/HatSVG.jsx';
@@ -301,7 +301,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
                 >
                   <HatSVG lang={lang} size={28} />
                   <span style={{ fontSize: 10, fontWeight: 800, color: myHat === lang ? '#FFD700' : LANG_TEXT[lang] }}>
-                    {lang.charAt(0).toUpperCase() + lang.slice(1)}
+                    {T(lang)}
                   </span>
                   {isTaken && <span style={{ fontSize: 9, color: '#888' }}>{takenBy[0]}</span>}
                 </div>

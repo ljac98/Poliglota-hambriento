@@ -2,13 +2,13 @@
 import socket from './src/socket.js';
 import { getSavedUser } from './src/api.js';
 import {
-  LANGUAGES, LANG_BORDER, LANG_BG, LANG_TEXT, LANG_SHORT,
+  LANGUAGES, LANG_BORDER, LANG_BG, LANG_TEXT,
   ING_EMOJI, ING_BG, AI_NAMES, getIngName, getActionInfo,
   ING_NAMES, ACTION_CARDS,
 } from './constants';
 import { generateDeck, initPlayer, canPlayCard } from './game';
 import { shuffle, randInt, uid } from './game/utils';
-import { t, getUILang, setUILang, KEY_TO_LANG } from './src/translations.js';
+import { t, getUILang, setUILang, KEY_TO_LANG, getLocalizedLangShort } from './src/translations.js';
 import { GameCard } from './components/Cards';
 import { BurgerTarget, LogEntry } from './components/GameUI';
 import { HatBadge } from './components/HatComponents.jsx';
@@ -1605,14 +1605,14 @@ export default function App() {
               }}>
                 <HatSVG lang={h} size={24} />
                 <span style={{
-                  fontSize: LANG_SHORT[h] === 'ING' ? 8 : 7,
+                  fontSize: h === 'inglés' ? 8 : 7,
                   fontWeight: 900,
-                  color: LANG_SHORT[h] === 'ING' ? '#FFD700' : LANG_TEXT[h],
+                  color: h === 'inglés' ? '#FFD700' : LANG_TEXT[h],
                   letterSpacing: 0.5,
                   marginTop: -2,
-                  textShadow: LANG_SHORT[h] === 'ING' ? '0 1px 2px rgba(0,0,0,0.6)' : 'none',
+                  textShadow: h === 'inglés' ? '0 1px 2px rgba(0,0,0,0.6)' : 'none',
                 }}>
-                  {LANG_SHORT[h]}
+                  {getLocalizedLangShort(h, uiLang)}
                 </span>
               </div>
             );
@@ -2606,7 +2606,7 @@ export default function App() {
                   <span style={{
                     background: LANG_BG[lang], color: LANG_TEXT[lang], border: `1px solid ${LANG_BORDER[lang]}`,
                     borderRadius: 4, padding: '1px 5px', fontSize: 10, fontWeight: 700, minWidth: 28, textAlign: 'center',
-                  }}>{LANG_SHORT[lang]}</span>
+                  }}>{getLocalizedLangShort(lang, uiLang)}</span>
                   <span style={{ color: '#ddd' }}>{getIngName(displayIng, lang)}</span>
                 </div>
               ))}

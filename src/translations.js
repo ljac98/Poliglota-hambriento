@@ -1795,4 +1795,72 @@ export function t(key, lang) {
   return str;
 }
 
+export function getLocalizedLangName(gameLang, uiLang) {
+  const tr = t(gameLang, uiLang);
+  return tr === gameLang ? gameLang : tr;
+}
+
+const SHORT_BY_UI = {
+  es: {
+    español: 'ESP',
+    inglés: 'ING',
+    francés: 'FRA',
+    italiano: 'ITA',
+    alemán: 'ALE',
+    portugués: 'POR',
+  },
+  en: {
+    español: 'SPA',
+    inglés: 'ENG',
+    francés: 'FRE',
+    italiano: 'ITA',
+    alemán: 'GER',
+    portugués: 'POR',
+  },
+  fr: {
+    español: 'ESP',
+    inglés: 'ANG',
+    francés: 'FRA',
+    italiano: 'ITA',
+    alemán: 'ALL',
+    portugués: 'POR',
+  },
+  it: {
+    español: 'SPA',
+    inglés: 'ING',
+    francés: 'FRA',
+    italiano: 'ITA',
+    alemán: 'TED',
+    portugués: 'POR',
+  },
+  de: {
+    español: 'SPA',
+    inglés: 'ENG',
+    francés: 'FRA',
+    italiano: 'ITA',
+    alemán: 'DEU',
+    portugués: 'POR',
+  },
+  pt: {
+    español: 'ESP',
+    inglés: 'ING',
+    francés: 'FRA',
+    italiano: 'ITA',
+    alemán: 'ALE',
+    portugués: 'POR',
+  },
+};
+
+export function getLocalizedLangShort(gameLang, uiLang) {
+  const l = uiLang || getUILang();
+  const short = SHORT_BY_UI[l]?.[gameLang];
+  if (short) return short;
+  const name = getLocalizedLangName(gameLang, l);
+  const clean = name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^A-Za-z]/g, '');
+  return (clean.slice(0, 3) || gameLang.slice(0, 3)).toUpperCase();
+}
+
 export { translations, LANG_TO_KEY, KEY_TO_LANG };

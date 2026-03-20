@@ -1,9 +1,12 @@
 import React from 'react';
 import HatSVG from './HatSVG';
-import { LANG_BG, LANG_BORDER, LANG_TEXT, LANG_SHORT } from '../constants';
+import { LANG_BG, LANG_BORDER, LANG_TEXT } from '../constants';
+import { getUILang, getLocalizedLangShort } from '../src/translations.js';
 
 // ═══ HAT BADGE ═══
 export const HatBadge = ({ lang, isMain, onClick, size = "md" }) => {
+  const uiLang = getUILang();
+  const langShort = getLocalizedLangShort(lang, uiLang);
   const s = size === "sm" ? 22 : size === "lg" ? 42 : 32;
   const HAT_TILE_BG = {
     'espaÃ±ol': '#FFD978',
@@ -21,7 +24,7 @@ export const HatBadge = ({ lang, isMain, onClick, size = "md" }) => {
     'alemÃ¡n': '#155E1E',
     'portuguÃ©s': '#3F2B1D',
   };
-  const isEnglishHat = LANG_SHORT[lang] === 'ING';
+  const isEnglishHat = lang === 'inglés';
   const tileBg = isEnglishHat
     ? '#1F2630'
     : (HAT_TILE_BG[lang] || LANG_BG[lang] || 'rgba(255,255,255,0.08)');
@@ -50,7 +53,7 @@ export const HatBadge = ({ lang, isMain, onClick, size = "md" }) => {
         letterSpacing: 0.4,
         lineHeight: 1.05,
       }}>
-        {LANG_SHORT[lang]}
+        {langShort}
       </span>
     </div>
   );
@@ -58,6 +61,7 @@ export const HatBadge = ({ lang, isMain, onClick, size = "md" }) => {
 
 // ═══ PERCHERO (Hat Rack) ═══
 export const PercheroSVG = ({ hats, onClickHat, height = 120 }) => {
+  const uiLang = getUILang();
   const branches = [
     { x: 22, y: 30, side: "left" },
     { x: 78, y: 25, side: "right" },
@@ -102,7 +106,7 @@ export const PercheroSVG = ({ hats, onClickHat, height = 120 }) => {
           >
             <HatSVG lang={lang} size={22} />
             <div style={{ textAlign: "center", fontSize: 5, fontWeight: 800, color: LANG_TEXT[lang], marginTop: -2 }}>
-              {LANG_SHORT[lang]}
+              {getLocalizedLangShort(lang, uiLang)}
             </div>
           </div>
         );
