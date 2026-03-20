@@ -36,6 +36,16 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
   const [chaosLevel, setChaosLevel] = useState(2);
   const [aiCount, setAiCount] = useState(2);
   const [showModeConfig, setShowModeConfig] = useState(false);
+  const uiKey = getUILang();
+  const playerWord = ({
+    es: 'Jugador',
+    en: 'Player',
+    fr: 'Joueur',
+    it: 'Giocatore',
+    de: 'Spieler',
+    pt: 'Jogador',
+  })[uiKey] || 'Player';
+  const totalPreviewPlayers = aiCount + 1;
 
   const gameModes = [
     { id: 'clon', label: T('modeClon'), desc: T('modeClonDesc') ,img:modoclon },
@@ -78,6 +88,13 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
         : [4, 5, 6];
     return ranges.map((size) => genBurger(size));
   }, [gameMode, burgerCount, ingredientCount, chaosLevel, ingredientPool]);
+  const staircasePreviewByPlayer = useMemo(
+    () => Array.from(
+      { length: totalPreviewPlayers },
+      () => Array.from({ length: burgerCount }, (_, index) => genBurger(4 + index)),
+    ),
+    [totalPreviewPlayers, burgerCount],
+  );
   const markerStyle = {
     minWidth: 62,
     textAlign: 'center',
@@ -88,6 +105,138 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
     borderRadius: 999,
     padding: '3px 8px',
     lineHeight: 1.2,
+  };
+  const compactBurgerWidth = 52;
+  const compactLayerWidth = 44;
+  const renderBurgerPreview = (burger, burgerIndex, opts = {}) => {
+    const { hiddenIngredients = false, compact = false } = opts;
+    const wrapperWidth = compact ? 64 : 92;
+    const minHeight = compact ? 92 : 128;
+    const topWidth = compact ? compactBurgerWidth : 70;
+    const layerWidth = compact ? compactLayerWidth : 60;
+    const badgeSize = compact ? 24 : 30;
+    const badgeTop = compact ? 24 : 38;
+    return (
+      <div key={`preview-burger-${burgerIndex}`} style={{ position: 'relative', width: wrapperWidth, minHeight }}>
+        <div style={{
+          position: 'absolute',
+          right: compact ? 0 : -2,
+          top: badgeTop,
+          minWidth: badgeSize,
+          height: badgeSize,
+          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: '#FFD700',
+          color: '#1b1730',
+          fontSize: compact ? 10 : 12,
+          fontWeight: 900,
+          boxShadow: '0 6px 16px rgba(0,0,0,0.18)',
+        }}>
+          {burgerIndex + 1}
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <img src={burgerPanArriba} alt="pan" style={{ width: topWidth, height: 'auto', marginBottom: compact ? -4 : -6 }} />
+          {burger.filter((ing) => ing !== 'pan').map((ing, index) => (
+            hiddenIngredients ? (
+              <div
+                key={`${burgerIndex}-${ing}-${index}`}
+                style={{
+                  width: compact ? 38 : 54,
+                  height: compact ? 22 : 30,
+                  marginTop: compact ? -3 : -5,
+                  marginBottom: compact ? -3 : -5,
+                  borderRadius: 999,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: 'linear-gradient(180deg, #fff7c7 0%, #ffe270 100%)',
+                  border: '2px solid #8a5b00',
+                  color: '#5c3600',
+                  fontSize: compact ? 18 : 22,
+                  fontWeight: 900,
+                  boxShadow: '0 4px 10px rgba(0,0,0,0.18)',
+                }}
+                aria-label="ingrediente oculto"
+              >
+                ?
+              </div>
+            ) : (
+              <img
+                key={`${burgerIndex}-${ing}-${index}`}
+                src={burgerLayerMap[ing]}
+                alt={ing}
+                style={{ width: layerWidth, height: 'auto', marginTop: compact ? -5 : -7, marginBottom: compact ? -5 : -7 }}
+              />
+            )
+          ))}
+          <img src={burgerPanAbajo} alt="pan" style={{ width: topWidth, height: 'auto', marginTop: compact ? -4 : -6 }} />
+        </div>
+      </div>
+    );
+  };
+  const renderEscaleraPlayers = (compact = false) => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: compact ? 8 : 12 }}>
+      {staircasePreviewByPlayer.map((playerBurgers, playerIndex) => (
+        <div
+          key={`escalera-player-${playerIndex}`}
+          style={{
+            borderRadius: 12,
+            padding: compact ? '8px 10px' : '10px 12px',
+            background: compact ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.08)',
+          }}
+        >
+          <div style={{ color: '#FFD700', fontSize: compact ? 11 : 12, fontWeight: 900, marginBottom: 6 }}>
+            {playerWord} {playerIndex + 1}
+          </div>
+          <div style={{ display: 'flex', gap: compact ? 8 : 12, flexWrap: 'wrap', alignItems: 'flex-end', justifyContent: compact ? 'flex-start' : 'center' }}>
+            {playerBurgers.map((burger, burgerIndex) => renderBurgerPreview(burger, burgerIndex, { compact }))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+  const renderModeSummary = () => {
+    if (gameMode === 'escalera') {
+      return renderEscaleraPlayers(true);
+    }
+    return (
+      <>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
+          <span style={{ color: '#FFD700', fontSize: 13, fontWeight: 900 }}>{T('burgerCount')}</span>
+          <span style={{ color: '#fff1b3', fontSize: 14, fontWeight: 900 }}>{modePreview.burgers}</span>
+        </div>
+        <div style={{ color: '#9ea4be', fontSize: 11, fontWeight: 700, marginBottom: 12 }}>
+          {T('ingredientsLabelShort')}: <span style={{ color: '#fff1b3', fontWeight: 900 }}>{modePreview.ingredients}</span>
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-end', justifyContent: 'center' }}>
+          {previewBurgers.map((burger, burgerIndex) => renderBurgerPreview(burger, burgerIndex, { hiddenIngredients: gameMode === 'caotico', compact: true }))}
+        </div>
+        {gameMode === 'clon' && (
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center', marginTop: 10 }}>
+            {ingredientPool.map((ing) => (
+              <span
+                key={`mode-summary-pool-${ing}`}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 32,
+                  height: 32,
+                  borderRadius: '50%',
+                  background: 'rgba(255,255,255,0.08)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                }}
+              >
+                <img src={ING_IMG[ing]} alt={ing} style={{ width: 20, height: 20, objectFit: 'contain' }} />
+              </span>
+            ))}
+          </div>
+        )}
+      </>
+    );
   };
 
   return (
@@ -177,24 +326,44 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
         {/* Game Mode */}
         <div style={{ marginBottom: 16 }}>
           <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 8 }}>{T('gameMode')}</label>
-          <div style={{ display: 'flex', gap: 8 }}>
-            {gameModes.map(m => (
-              <div
-                key={m.id}
-                onClick={() => { setGameMode(m.id); setShowModeConfig(true); }}
-                style={{
-                  flex: 1, padding: '8px 6px', borderRadius: 10, cursor: 'pointer', textAlign: 'center',
-                  border: gameMode === m.id ? '2px solid #FFD700' : '2px solid #2a2a4a',
-                  background: gameMode === m.id ? 'rgba(255,215,0,.08)' : 'rgba(255,255,255,.02)',
-                  transition: 'all .15s',
-                }}
-              >
-                          <img src={m.img} alt="hamburguesa" style={{ width: 90, height: 90, objectFit: 'fill',borderRadius:'15px'}} />
-
-                <div style={{ fontSize: 13, fontWeight: 700, color: gameMode === m.id ? '#FFD700' : '#ccc' }}>{m.label}</div>
-                <div style={{ fontSize: 9, color: '#666', marginTop: 2 }}>{m.desc}</div>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'stretch', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 8, flex: '1 1 320px' }}>
+              {gameModes.map(m => (
+                <div
+                  key={m.id}
+                  onClick={() => { setGameMode(m.id); setShowModeConfig(true); }}
+                  style={{
+                    flex: 1, padding: '8px 6px', borderRadius: 10, cursor: 'pointer', textAlign: 'center',
+                    border: gameMode === m.id ? '2px solid #FFD700' : '2px solid #2a2a4a',
+                    background: gameMode === m.id ? 'rgba(255,215,0,.08)' : 'rgba(255,255,255,.02)',
+                    transition: 'all .15s',
+                  }}
+                >
+                  <img src={m.img} alt="hamburguesa" style={{ width: 90, height: 90, objectFit: 'fill', borderRadius: '15px' }} />
+                  <div style={{ fontSize: 13, fontWeight: 700, color: gameMode === m.id ? '#FFD700' : '#ccc' }}>{m.label}</div>
+                  <div style={{ fontSize: 9, color: '#666', marginTop: 2 }}>{m.desc}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{
+              flex: '0 1 180px',
+              minWidth: 170,
+              borderRadius: 14,
+              padding: '10px 10px 12px',
+              background: 'linear-gradient(180deg, rgba(255,215,0,0.08), rgba(255,255,255,0.03))',
+              border: '1px solid rgba(255,215,0,0.18)',
+              boxShadow: '0 8px 18px rgba(0,0,0,0.18)',
+              alignSelf: 'stretch',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <img src={selectedMode.img} alt={selectedMode.label} style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 10 }} />
+                <div>
+                  <div style={{ color: '#FFD700', fontSize: 12, fontWeight: 900 }}>{selectedMode.label}</div>
+                  <div style={{ color: '#8a8fa8', fontSize: 10, fontWeight: 700 }}>{T('perPlayerLabel')}</div>
+                </div>
               </div>
-            ))}
+              {renderModeSummary()}
+            </div>
           </div>
         </div>
 
@@ -208,7 +377,7 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
               ingredientCount,
               chaosLevel,
               ingredientPool,
-              sharedBurgers: previewBurgers,
+              sharedBurgers: gameMode === 'clon' ? previewBurgers : null,
             }, aiCount)}
             disabled={!name.trim() || !hat}
             color="#FFD700"
@@ -258,42 +427,13 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
                   {T('ingredientsLabelShort')}: <span style={{ color: '#fff1b3', fontWeight: 900, fontSize: 18 }}>{modePreview.ingredients}</span>
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'flex-end', justifyContent: 'center' }}>
-                {previewBurgers.map((burger, burgerIndex) => (
-                  <div key={`preview-burger-${burgerIndex}`} style={{ position: 'relative', width: 92, minHeight: 128 }}>
-                    <div style={{
-                      position: 'absolute',
-                      right: -2,
-                      top: 38,
-                      minWidth: 30,
-                      height: 30,
-                      borderRadius: '50%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      background: '#FFD700',
-                      color: '#1b1730',
-                      fontSize: 12,
-                      fontWeight: 900,
-                      boxShadow: '0 6px 16px rgba(0,0,0,0.18)',
-                    }}>
-                      {burgerIndex + 1}
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                      <img src={burgerPanArriba} alt="pan" style={{ width: 70, height: 'auto', marginBottom: -6 }} />
-                      {burger.filter((ing) => ing !== 'pan').map((ing, index) => (
-                        <img
-                          key={`${burgerIndex}-${ing}-${index}`}
-                          src={burgerLayerMap[ing]}
-                          alt={ing}
-                          style={{ width: 60, height: 'auto', marginTop: -7, marginBottom: -7 }}
-                        />
-                      ))}
-                      <img src={burgerPanAbajo} alt="pan" style={{ width: 70, height: 'auto', marginTop: -6 }} />
-                    </div>
+              {gameMode === 'escalera'
+                ? renderEscaleraPlayers(false)
+                : (
+                  <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'flex-end', justifyContent: 'center' }}>
+                    {previewBurgers.map((burger, burgerIndex) => renderBurgerPreview(burger, burgerIndex, { hiddenIngredients: gameMode === 'caotico' }))}
                   </div>
-                ))}
-              </div>
+                )}
               {gameMode === 'clon' && (
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
                   {ingredientPool.map((ing) => (
