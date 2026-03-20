@@ -2184,7 +2184,7 @@ export default function App() {
               >
                 <HatSVG lang={h} size={36} />
                 <span style={{ fontSize: 11, fontWeight: 700, color: LANG_TEXT[h] }}>
-                  {h.charAt(0).toUpperCase() + h.slice(1)}
+                  {T(h)}
                 </span>
               </div>
             ))}
@@ -2220,7 +2220,7 @@ export default function App() {
                   >
                     <HatSVG lang={h} size={36} />
                     <span style={{ fontSize: 11, fontWeight: 700, color: modal.selectedMyHat === h ? '#FFD700' : LANG_TEXT[h] }}>
-                      {h.charAt(0).toUpperCase() + h.slice(1)}
+                      {T(h)}
                     </span>
                   </div>
                 ))}
@@ -2245,7 +2245,7 @@ export default function App() {
                   >
                     <HatSVG lang={h} size={36} />
                     <span style={{ fontSize: 11, fontWeight: 700, color: modal.selectedTheirHat === h ? '#FFD700' : LANG_TEXT[h] }}>
-                      {h.charAt(0).toUpperCase() + h.slice(1)}
+                      {T(h)}
                     </span>
                   </div>
                 ))}
@@ -2271,7 +2271,7 @@ export default function App() {
 
       {/* Mobile: Perchero modal */}
       {showPercheroModal && (
-        <Modal title="Perchero">
+        <Modal title={T('closet')}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
             {percheroTree}
             <button onClick={() => setShowPercheroModal(false)} style={{
@@ -2380,7 +2380,7 @@ export default function App() {
               >
                 <HatSVG lang={h} size={36} />
                 <span style={{ fontSize: 11, fontWeight: 700, color: LANG_TEXT[h] }}>
-                  {h.charAt(0).toUpperCase() + h.slice(1)}
+                  {T(h)}
                 </span>
               </div>
             ))}
@@ -2395,7 +2395,7 @@ export default function App() {
         const sel = modal.selected;
         const remaining = cost - sel.length;
         return (
-          <Modal title={typeof T('changeHatStep2') === 'function' ? T('changeHatStep2')(modal.hatLang.charAt(0).toUpperCase() + modal.hatLang.slice(1)) : T('changeHatStep2')}>
+          <Modal title={typeof T('changeHatStep2') === 'function' ? T('changeHatStep2')(T(modal.hatLang)) : T('changeHatStep2')}>
             <p style={{ color: '#888', fontSize: 12, marginBottom: 8 }}>
               <strong style={{ color: remaining > 0 ? '#FFD700' : '#4CAF50' }}>
                 {remaining > 0 ? (typeof T('moreCards') === 'function' ? T('moreCards')(remaining) : T('moreCards')) : T('ready')}
@@ -2463,7 +2463,7 @@ export default function App() {
               >
                 <HatSVG lang={h} size={36} />
                 <span style={{ fontSize: 11, fontWeight: 700, color: LANG_TEXT[h] }}>
-                  {h.charAt(0).toUpperCase() + h.slice(1)}
+                  {T(h)}
                 </span>
               </div>
             ))}
