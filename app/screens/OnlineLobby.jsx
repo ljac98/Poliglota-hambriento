@@ -100,6 +100,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
     { id: 'escalera', label: T('modeEscalera'), desc: T('modeEscaleraDesc'),img:modoescalera },
     { id: 'caotico', label: T('modeCaotico'), desc: T('modeCaoticoDesc'),img:modocaotico },
   ];
+  const selectedMode = gameModes.find((mode) => mode.id === gameMode) || gameModes[0];
   const markerStyle = {
     minWidth: 54,
     textAlign: 'center',
@@ -192,6 +193,38 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
               </button>
             </>
           )}
+          <div style={{ marginTop: 12, display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 8 }}>
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '6px 12px',
+              borderRadius: 999,
+              background: 'rgba(255,215,0,.1)',
+              border: '1px solid rgba(255,215,0,.25)',
+              color: '#FFD700',
+              fontSize: 12,
+              fontWeight: 800,
+            }}>
+              <span>{T('gameMode')}:</span>
+              <span>{selectedMode.label}</span>
+            </div>
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '6px 12px',
+              borderRadius: 999,
+              background: 'rgba(78,205,196,.1)',
+              border: '1px solid rgba(78,205,196,.25)',
+              color: '#4ecdc4',
+              fontSize: 12,
+              fontWeight: 800,
+            }}>
+              <span>{players.length}/4</span>
+              <span>{String(T('players')).toLowerCase()}</span>
+            </div>
+          </div>
           {/* Invite Friend Button */}
           {user && players.length < 4 && (
             <div style={{ marginTop: 12, position: 'relative' }}>
