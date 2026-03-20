@@ -26,6 +26,27 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
     { id: 'escalera', label: T('modeEscalera'), desc: T('modeEscaleraDesc'),img:modoescalera },
     { id: 'caotico', label: T('modeCaotico'), desc: T('modeCaoticoDesc') ,img:modocaotico},
   ];
+  const selectedMode = gameModes.find((mode) => mode.id === gameMode) || gameModes[0];
+  const modePreview = (() => {
+    if (gameMode === 'caotico') {
+      if (chaosLevel === 1) return { burgers: '1-2', ingredients: '3-5' };
+      if (chaosLevel === 3) return { burgers: '3-5', ingredients: '5-8' };
+      return { burgers: '2-4', ingredients: '4-7' };
+    }
+    if (gameMode === 'escalera') {
+      return { burgers: String(burgerCount), ingredients: `4-${3 + burgerCount}` };
+    }
+    return { burgers: String(burgerCount), ingredients: String(ingredientCount) };
+  })();
+  const previewCardStyle = {
+    flex: 1,
+    minWidth: 0,
+    borderRadius: 12,
+    padding: '10px 8px',
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.09)',
+    textAlign: 'center',
+  };
   const markerStyle = {
     minWidth: 62,
     textAlign: 'center',
@@ -168,6 +189,38 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
       </div>
       {showModeConfig && (
         <Modal title={`${T('gameMode')}: ${gameModes.find(m => m.id === gameMode)?.label || ''}`}>
+          <div style={{
+            marginBottom: 16,
+            borderRadius: 14,
+            padding: '12px 12px 10px',
+            background: 'linear-gradient(180deg, rgba(255,215,0,0.1), rgba(255,255,255,0.03))',
+            border: '1px solid rgba(255,215,0,0.16)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+              <img src={selectedMode.img} alt={selectedMode.label} style={{ width: 52, height: 52, objectFit: 'cover', borderRadius: 12 }} />
+              <div>
+                <div style={{ color: '#FFD700', fontWeight: 900, fontSize: 15 }}>{selectedMode.label}</div>
+                <div style={{ color: '#9ea4be', fontSize: 11 }}>{selectedMode.desc}</div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <div style={previewCardStyle}>
+                <div style={{ fontSize: 20, marginBottom: 2 }}>🍔</div>
+                <div style={{ color: '#FFD700', fontSize: 18, fontWeight: 900 }}>{modePreview.burgers}</div>
+                <div style={{ color: '#888', fontSize: 10, fontWeight: 700 }}>{T('burgerCount')}</div>
+              </div>
+              <div style={previewCardStyle}>
+                <div style={{ fontSize: 20, marginBottom: 2 }}>🥬</div>
+                <div style={{ color: '#FFD700', fontSize: 18, fontWeight: 900 }}>{modePreview.ingredients}</div>
+                <div style={{ color: '#888', fontSize: 10, fontWeight: 700 }}>{T('ingredientsLabelShort')}</div>
+              </div>
+              <div style={previewCardStyle}>
+                <div style={{ fontSize: 20, marginBottom: 2 }}>👤</div>
+                <div style={{ color: '#FFD700', fontSize: 13, fontWeight: 900, lineHeight: 1.2 }}>{T('perPlayerLabel')}</div>
+                <div style={{ color: '#888', fontSize: 10, fontWeight: 700 }}>{selectedMode.label}</div>
+              </div>
+            </div>
+          </div>
           {gameMode !== 'caotico' && (
             <div style={{ marginBottom: 16 }}>
               <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 8 }}>
