@@ -28,7 +28,7 @@ export const HatBadge = ({ lang, isMain, onClick, size = "md" }) => {
   const tileText = isEnglishHat
     ? '#FFFFFF'
     : (HAT_TILE_TEXT[lang] || LANG_TEXT[lang] || '#222');
-  const mainLabelColor = isEnglishHat ? '#FFD700' : '#5C3A00';
+  const mainLabelColor = '#FFD700';
   return (
     <div onClick={onClick} style={{
       display: "inline-flex", flexDirection: "column", alignItems: "center", gap: 1,
