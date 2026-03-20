@@ -2506,8 +2506,14 @@ export default function App() {
         const displayIng = chosen || base;
         const isWildcard = base === 'perrito';
         const specific = ING_AFFECTED_BY[displayIng] || [];
-        const general = ['tenedor', 'gloton', 'intercambio_hamburguesa'];
-        const allActionIds = [...specific, ...general, ...(isWildcard && !specific.includes('comecomodines') ? ['comecomodines'] : [])];
+        const singleTarget = ['tenedor', 'gloton', 'intercambio_hamburguesa'];
+        const massActions = ['milanesa', 'ensalada', 'pizza', 'parrilla', 'comecomodines'];
+        const allActionIds = [...new Set([
+          ...specific,
+          ...singleTarget,
+          ...massActions,
+          ...(isWildcard ? ['comecomodines'] : []),
+        ])];
         return (
           <Modal title={`${ING_EMOJI[displayIng]} ${getIngName(displayIng, LANGUAGES[0]) || displayIng}`}>
             {isWildcard && chosen && (
