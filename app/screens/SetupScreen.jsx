@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { LANGUAGES, LANG_BORDER, LANG_BG, LANG_TEXT } from '../../constants/index.js';
+import { LANGUAGES, LANG_BORDER, LANG_BG, LANG_TEXT, INGREDIENTS, ING_EMOJI, ING_BG, getIngName } from '../../constants/index.js';
 import { randInt, uid } from '../../game/utils.js';
 import { Btn } from '../components/Btn.jsx';
 import { Modal } from '../components/Modal.jsx';
+import { getUILang, KEY_TO_LANG } from '../../src/translations.js';
 import { HatBadge, PercheroSVG } from '../../components/HatComponents.jsx';
 import HatSVG from '../../components/HatSVG.jsx';
 import hamImg from '../../imagenes/hamburguesas/ham.png';
@@ -18,11 +19,14 @@ import burgerLechuga from '../../imagenes/hamburguesas/ingredientes/lechuga.png'
 import burgerCebolla from '../../imagenes/hamburguesas/ingredientes/cebolla.png';
 
 export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFriends, T }) {
+  const uiGameLang = KEY_TO_LANG[getUILang()] || 'español';
+  const cloneIngredients = INGREDIENTS.filter((ing) => ing !== 'pan');
   const [name, setName] = useState(user?.displayName || '');
   const [hat, setHat] = useState(null);
   const [gameMode, setGameMode] = useState('clon');
   const [burgerCount, setBurgerCount] = useState(2);
   const [ingredientCount, setIngredientCount] = useState(5);
+  const [ingredientPool, setIngredientPool] = useState(cloneIngredients);
   const [chaosLevel, setChaosLevel] = useState(2);
   const [aiCount, setAiCount] = useState(2);
   const [showModeConfig, setShowModeConfig] = useState(false);
@@ -172,7 +176,7 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
 
         <div style={{ display: 'flex', gap: 10 }}>
           <Btn
-            onClick={() => onStart(name.trim(), hat, { mode: gameMode, burgerCount, ingredientCount, chaosLevel }, aiCount)}
+            onClick={() => onStart(name.trim(), hat, { mode: gameMode, burgerCount, ingredientCount, chaosLevel, ingredientPool }, aiCount)}
             disabled={!name.trim() || !hat}
             color="#FFD700"
             style={{ flex: 1, fontSize: 16, padding: '12px 0' }}
@@ -324,6 +328,49 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
                 <span style={markerStyle}>2</span>
                 <span style={markerStyle}>8</span>
               </div>
+            </div>
+          )}
+          {gameMode === 'clon' && (
+            <div style={{ marginBottom: 18 }}>
+              <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 8 }}>
+                {T('cloneIngredientPool')}
+              </label>
+              <div style={{ color: '#8a8fa8', fontSize: 11, lineHeight: 1.35, marginBottom: 10 }}>
+                {T('cloneIngredientPoolHint')}
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+                {cloneIngredients.map((ing) => {
+                  const active = ingredientPool.includes(ing);
+                  return (
+                    <button
+                      key={ing}
+                      type="button"
+                      onClick={() => {
+                        if (active && ingredientPool.length === 1) return;
+                        setIngredientPool((prev) => active ? prev.filter((item) => item !== ing) : [...prev, ing]);
+                      }}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        padding: '7px 10px',
+                        borderRadius: 999,
+                        border: active ? `2px solid ${ING_BG[ing]}` : '1px solid rgba(255,255,255,0.12)',
+                        background: active ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)',
+                        color: active ? '#fff' : '#8a8fa8',
+                        fontFamily: "'Fredoka',sans-serif",
+                        fontSize: 12,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <span>{ING_EMOJI[ing]}</span>
+                      <span>{getIngName(ing, uiGameLang)}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <div style={{ color: '#6f7697', fontSize: 11 }}>{T('cloneIngredientPoolLocked')}</div>
             </div>
           )}
           <div style={{ marginBottom: 18 }}>

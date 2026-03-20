@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import socket from '../../src/socket.js';
-import { LANGUAGES, LANG_BORDER, LANG_BG, LANG_TEXT } from '../../constants/index.js';
+import { LANGUAGES, LANG_BORDER, LANG_BG, LANG_TEXT, INGREDIENTS, ING_EMOJI, ING_BG, getIngName } from '../../constants/index.js';
 import { getFriends, sendFriendRequest } from '../../src/api.js';
+import { getUILang, KEY_TO_LANG } from '../../src/translations.js';
 import { HatBadge, PercheroSVG } from '../../components/HatComponents.jsx';
 import HatSVG from '../../components/HatSVG.jsx';
 import { Btn } from '../components/Btn.jsx';
@@ -19,9 +20,12 @@ import burgerLechuga from '../../imagenes/hamburguesas/ingredientes/lechuga.png'
 import burgerCebolla from '../../imagenes/hamburguesas/ingredientes/cebolla.png';
 
 export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack, isPublic, roomDisplayName, T, user }) {
+  const uiGameLang = KEY_TO_LANG[getUILang()] || 'español';
+  const cloneIngredients = INGREDIENTS.filter((ing) => ing !== 'pan');
   const [gameMode, setGameMode] = useState('clon');
   const [burgerCount, setBurgerCount] = useState(2);
   const [ingredientCount, setIngredientCount] = useState(5);
+  const [ingredientPool, setIngredientPool] = useState(cloneIngredients);
   const [chaosLevel, setChaosLevel] = useState(2);
   const [showModeConfig, setShowModeConfig] = useState(false);
   const [hatPicks, setHatPicks] = useState({});
@@ -143,7 +147,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
 
   function handleStart() {
     if (!myHat) return;
-    const gameConfig = { mode: gameMode, burgerCount, ingredientCount, chaosLevel };
+    const gameConfig = { mode: gameMode, burgerCount, ingredientCount, chaosLevel, ingredientPool };
     socket.emit('startGame', { code: roomCode, hatPicks, gameConfig });
     onStart(hatPicks, gameConfig);
   }
@@ -622,6 +626,49 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
                 <span style={markerStyle}>2</span>
                 <span style={markerStyle}>8</span>
               </div>
+            </div>
+          )}
+          {gameMode === 'clon' && (
+            <div style={{ marginBottom: 18 }}>
+              <label style={{ color: '#aaa', fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 6 }}>
+                {T('cloneIngredientPool')}
+              </label>
+              <div style={{ color: '#8a8fa8', fontSize: 11, lineHeight: 1.35, marginBottom: 10 }}>
+                {T('cloneIngredientPoolHint')}
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+                {cloneIngredients.map((ing) => {
+                  const active = ingredientPool.includes(ing);
+                  return (
+                    <button
+                      key={ing}
+                      type="button"
+                      onClick={() => {
+                        if (active && ingredientPool.length === 1) return;
+                        setIngredientPool((prev) => active ? prev.filter((item) => item !== ing) : [...prev, ing]);
+                      }}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        padding: '7px 10px',
+                        borderRadius: 999,
+                        border: active ? `2px solid ${ING_BG[ing]}` : '1px solid rgba(255,255,255,0.12)',
+                        background: active ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)',
+                        color: active ? '#fff' : '#8a8fa8',
+                        fontFamily: "'Fredoka',sans-serif",
+                        fontSize: 12,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <span>{ING_EMOJI[ing]}</span>
+                      <span>{getIngName(ing, uiGameLang)}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <div style={{ color: '#6f7697', fontSize: 11 }}>{T('cloneIngredientPoolLocked')}</div>
             </div>
           )}
           <Btn onClick={() => setShowModeConfig(false)} color="#333" style={{ color: '#aaa' }}>{T('close')}</Btn>

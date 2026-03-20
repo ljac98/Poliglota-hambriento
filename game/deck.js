@@ -35,8 +35,11 @@ export function generateDeck() {
 }
 
 // ═══ BURGER GENERATION ═══
-export function genBurger(size) {
-  const others = shuffle(INGREDIENTS.filter(i => i !== "pan"));
+export function genBurger(size, ingredientPool = null) {
+  const customPool = Array.isArray(ingredientPool) && ingredientPool.length > 0
+    ? ingredientPool.filter(i => i !== "pan")
+    : null;
+  const others = shuffle(customPool && customPool.length > 0 ? customPool : INGREDIENTS.filter(i => i !== "pan"));
   
   if (size <= 4) {
     // 4 ingredients: all unique
@@ -67,6 +70,7 @@ export function initPlayer(name, deck, chosenHat, gameConfig, isAI = false) {
     mode = 'clon',
     burgerCount = 2,
     ingredientCount = 5,
+    ingredientPool = null,
     sharedBurgers = null,
     chaosLevel = 2,
   } = gameConfig || {};
@@ -95,7 +99,7 @@ export function initPlayer(name, deck, chosenHat, gameConfig, isAI = false) {
     burgers = Array.from({ length: count }, () => genBurger(randInt(ingMin, ingMax)));
   } else {
     // clon (default)
-    burgers = Array.from({ length: burgerCount }, () => genBurger(ingredientCount));
+    burgers = Array.from({ length: burgerCount }, () => genBurger(ingredientCount, ingredientPool));
   }
 
   const totalBurgers = burgers.length;
