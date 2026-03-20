@@ -117,6 +117,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
   }
 
   const myHat = hatPicks[myName];
+  const desktopLeftPanelWidth = 500;
 
   // Listen for other players' hat picks
   useEffect(() => {
@@ -463,7 +464,8 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
   }
 
   const roomHeader = (
-    <div style={{ width: '100%', maxWidth: isDesktopWide ? 1120 : 560, margin: '0 auto 18px', textAlign: 'center', paddingRight: isDesktopWide ? 590 : 0, boxSizing: 'border-box' }}>
+    <div style={{ width: '100%', maxWidth: isDesktopWide ? 1120 : 560, margin: '0 auto 18px' }}>
+      <div style={{ width: isDesktopWide ? desktopLeftPanelWidth : '100%', marginRight: isDesktopWide ? 'auto' : 0, textAlign: 'center' }}>
       {isPublic ? (
         <>
           <div style={{ fontSize: 13, color: '#888', fontWeight: 700, letterSpacing: 1, marginBottom: 6 }}>{T('publicRoom')}</div>
@@ -485,8 +487,8 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
               fontFamily: "'Fredoka',sans-serif", fontWeight: 700, fontSize: 13,
               cursor: 'pointer', transition: 'all .2s',
               display: 'block',
-              marginLeft: isDesktopWide ? 0 : 'auto',
-              marginRight: isDesktopWide ? 0 : 'auto',
+              marginLeft: 'auto',
+              marginRight: 'auto',
             }}
           >
             {copied ? T('linkCopied') : T('inviteLink')}
@@ -513,15 +515,15 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
               fontFamily: "'Fredoka',sans-serif", fontWeight: 700, fontSize: 13,
               cursor: 'pointer', transition: 'all .2s',
               display: 'block',
-              marginLeft: isDesktopWide ? 0 : 'auto',
-              marginRight: isDesktopWide ? 0 : 'auto',
+              marginLeft: 'auto',
+              marginRight: 'auto',
             }}
           >
             {copied ? T('linkCopied') : T('inviteLink')}
           </button>
         </>
       )}
-      <div style={{ marginTop: 12, display: 'flex', justifyContent: isDesktopWide ? 'flex-start' : 'center', flexWrap: 'wrap', gap: 8 }}>
+      <div style={{ marginTop: 12, display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 8 }}>
         <div style={{
           display: 'inline-flex',
           alignItems: 'center',
@@ -554,7 +556,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
         </div>
       </div>
       {user && players.length < 4 && (
-        <div style={{ marginTop: 12, position: 'relative', display: 'flex', justifyContent: isDesktopWide ? 'flex-start' : 'center' }}>
+        <div style={{ marginTop: 12, position: 'relative', display: 'flex', justifyContent: 'center' }}>
           <button onClick={toggleInvitePanel} style={{
             padding: '7px 18px', borderRadius: 10,
             border: '1px solid rgba(78,205,196,.35)',
@@ -566,7 +568,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
           </button>
           {showInvite && (
             <div style={{
-              position: 'absolute', top: '100%', left: isDesktopWide ? 0 : '50%', transform: isDesktopWide ? 'none' : 'translateX(-50%)',
+              position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)',
               marginTop: 8, background: '#1a2744', borderRadius: 12,
               border: '1px solid #2a2a4a', padding: 12, minWidth: 220,
               boxShadow: '0 8px 24px rgba(0,0,0,.5)', zIndex: 10,
@@ -601,6 +603,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
           )}
         </div>
       )}
+      </div>
     </div>
   );
 
@@ -616,7 +619,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
       <div style={{
         background: '#16213e', borderRadius: 20,
         padding: 'clamp(18px, 4vw, 32px) clamp(14px, 4vw, 36px)',
-        maxWidth: isDesktopWide ? 500 : 560, width: isDesktopWide ? 'min(500px, 78vw)' : '94vw',
+        maxWidth: isDesktopWide ? desktopLeftPanelWidth : 560, width: isDesktopWide ? `min(${desktopLeftPanelWidth}px, 78vw)` : '94vw',
         boxShadow: '0 8px 40px rgba(0,0,0,.6)', border: '2px solid #2a2a4a',
         position: 'relative',
         overflow: 'visible',
