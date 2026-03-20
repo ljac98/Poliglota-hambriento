@@ -178,6 +178,7 @@ const translations = {
     table: 'MESA',
     tableCount: (n) => `MESA (${n} ingredientes)`,
     emptyTable: 'Mesa vacía',
+    sharedGoalsLabel: 'Objetivos compartidos',
     mainHat: 'PRINCIPAL',
     closet: 'PERCHERO',
     viewCloset: (n) => `🧥 Ver perchero (${n})`,
