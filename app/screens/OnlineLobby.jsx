@@ -462,6 +462,142 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
     onStart(hatPicks, gameConfig);
   }
 
+  const roomHeader = (
+    <div style={{ width: '100%', maxWidth: isDesktopWide ? 1120 : 560, margin: '0 auto 18px', textAlign: 'center' }}>
+      {isPublic ? (
+        <>
+          <div style={{ fontSize: 13, color: '#888', fontWeight: 700, letterSpacing: 1, marginBottom: 6 }}>{T('publicRoom')}</div>
+          <div style={{
+            fontSize: 24, fontWeight: 900, color: '#FFD700',
+            background: 'rgba(255,215,0,.08)', borderRadius: 12, padding: '10px 20px',
+            border: '2px dashed rgba(255,215,0,.3)',
+          }}>
+            {roomDisplayName}
+          </div>
+          <div style={{ fontSize: 11, color: '#555', marginTop: 6 }}>{T('codeLabel')}: {roomCode}</div>
+          <button
+            onClick={handleCopyLink}
+            style={{
+              marginTop: 10, padding: '7px 18px', borderRadius: 10,
+              border: '1px solid rgba(255,215,0,.35)',
+              background: copied ? 'rgba(76,175,80,.18)' : 'rgba(255,215,0,.08)',
+              color: copied ? '#81C784' : '#FFD700',
+              fontFamily: "'Fredoka',sans-serif", fontWeight: 700, fontSize: 13,
+              cursor: 'pointer', transition: 'all .2s',
+            }}
+          >
+            {copied ? T('linkCopied') : T('inviteLink')}
+          </button>
+        </>
+      ) : (
+        <>
+          <div style={{ fontSize: 13, color: '#888', fontWeight: 700, letterSpacing: 1, marginBottom: 6 }}>{T('privateRoom')}</div>
+          <div style={{
+            fontSize: 36, fontWeight: 900, color: '#FFD700', letterSpacing: 8,
+            background: 'rgba(255,215,0,.08)', borderRadius: 12, padding: '10px 20px',
+            border: '2px dashed rgba(255,215,0,.3)',
+          }}>
+            {roomCode}
+          </div>
+          <div style={{ fontSize: 12, color: '#555', marginTop: 8 }}>{T('shareCode')}</div>
+          <button
+            onClick={handleCopyLink}
+            style={{
+              marginTop: 10, padding: '7px 18px', borderRadius: 10,
+              border: '1px solid rgba(255,215,0,.35)',
+              background: copied ? 'rgba(76,175,80,.18)' : 'rgba(255,215,0,.08)',
+              color: copied ? '#81C784' : '#FFD700',
+              fontFamily: "'Fredoka',sans-serif", fontWeight: 700, fontSize: 13,
+              cursor: 'pointer', transition: 'all .2s',
+            }}
+          >
+            {copied ? T('linkCopied') : T('inviteLink')}
+          </button>
+        </>
+      )}
+      <div style={{ marginTop: 12, display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 8 }}>
+        <div style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 6,
+          padding: '6px 12px',
+          borderRadius: 999,
+          background: 'rgba(255,215,0,.1)',
+          border: '1px solid rgba(255,215,0,.25)',
+          color: '#FFD700',
+          fontSize: 12,
+          fontWeight: 800,
+        }}>
+          <span>{T('gameMode')}:</span>
+          <span>{selectedMode.label}</span>
+        </div>
+        <div style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 6,
+          padding: '6px 12px',
+          borderRadius: 999,
+          background: 'rgba(78,205,196,.1)',
+          border: '1px solid rgba(78,205,196,.25)',
+          color: '#4ecdc4',
+          fontSize: 12,
+          fontWeight: 800,
+        }}>
+          <span>{players.length}/4</span>
+          <span>{String(T('players')).toLowerCase()}</span>
+        </div>
+      </div>
+      {user && players.length < 4 && (
+        <div style={{ marginTop: 12, position: 'relative' }}>
+          <button onClick={toggleInvitePanel} style={{
+            padding: '7px 18px', borderRadius: 10,
+            border: '1px solid rgba(78,205,196,.35)',
+            background: showInvite ? 'rgba(78,205,196,.18)' : 'rgba(78,205,196,.08)',
+            color: '#4ecdc4', fontFamily: "'Fredoka',sans-serif", fontWeight: 700,
+            fontSize: 13, cursor: 'pointer', transition: 'all .2s',
+          }}>
+            {T('inviteFriend')}
+          </button>
+          {showInvite && (
+            <div style={{
+              position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)',
+              marginTop: 8, background: '#1a2744', borderRadius: 12,
+              border: '1px solid #2a2a4a', padding: 12, minWidth: 220,
+              boxShadow: '0 8px 24px rgba(0,0,0,.5)', zIndex: 10,
+            }}>
+              {inviteFriends.length === 0 ? (
+                <p style={{ color: '#666', fontSize: 12, textAlign: 'center', margin: 0 }}>{T('noFriends')}</p>
+              ) : inviteFriends.map(f => (
+                <div key={f.id} style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '6px 8px', borderRadius: 8, marginBottom: 4,
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#4CAF50' }} />
+                    <span style={{ color: '#eee', fontSize: 13, fontWeight: 700 }}>{f.displayName}</span>
+                  </div>
+                  <button
+                    onClick={() => handleInvite(f.id)}
+                    disabled={inviteSentTo.has(f.id)}
+                    style={{
+                      padding: '3px 10px', borderRadius: 6, border: 'none',
+                      background: inviteSentTo.has(f.id) ? 'rgba(76,175,80,.15)' : 'rgba(78,205,196,.15)',
+                      color: inviteSentTo.has(f.id) ? '#81C784' : '#4ecdc4',
+                      fontFamily: "'Fredoka',sans-serif", fontWeight: 700, fontSize: 11,
+                      cursor: inviteSentTo.has(f.id) ? 'default' : 'pointer',
+                    }}
+                  >
+                    {inviteSentTo.has(f.id) ? T('inviteSent') : T('inviteToRoom')}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div style={{
       minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: isDesktopWide ? 'flex-start' : 'center',
@@ -469,6 +605,8 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
       fontFamily: "'Fredoka',sans-serif",
       overflowY: 'auto', padding: isDesktopWide ? '20px 0 20px 28px' : '20px 0',
     }}>
+      <div style={{ width: '100%' }}>
+        {roomHeader}
       <div style={{
         background: '#16213e', borderRadius: 20,
         padding: 'clamp(18px, 4vw, 32px) clamp(14px, 4vw, 36px)',
@@ -477,142 +615,6 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
         position: 'relative',
         overflow: 'visible',
       }}>
-        {/* Room info display */}
-        <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          {isPublic ? (
-            <>
-              <div style={{ fontSize: 13, color: '#888', fontWeight: 700, letterSpacing: 1, marginBottom: 6 }}>{T('publicRoom')}</div>
-              <div style={{
-                fontSize: 24, fontWeight: 900, color: '#FFD700',
-                background: 'rgba(255,215,0,.08)', borderRadius: 12, padding: '10px 20px',
-                border: '2px dashed rgba(255,215,0,.3)',
-              }}>
-                {roomDisplayName}
-              </div>
-              <div style={{ fontSize: 11, color: '#555', marginTop: 6 }}>{T('codeLabel')}: {roomCode}</div>
-              <button
-                onClick={handleCopyLink}
-                style={{
-                  marginTop: 10, padding: '7px 18px', borderRadius: 10,
-                  border: '1px solid rgba(255,215,0,.35)',
-                  background: copied ? 'rgba(76,175,80,.18)' : 'rgba(255,215,0,.08)',
-                  color: copied ? '#81C784' : '#FFD700',
-                  fontFamily: "'Fredoka',sans-serif", fontWeight: 700, fontSize: 13,
-                  cursor: 'pointer', transition: 'all .2s',
-                }}
-              >
-                {copied ? T('linkCopied') : T('inviteLink')}
-              </button>
-            </>
-          ) : (
-            <>
-              <div style={{ fontSize: 13, color: '#888', fontWeight: 700, letterSpacing: 1, marginBottom: 6 }}>{T('privateRoom')}</div>
-              <div style={{
-                fontSize: 36, fontWeight: 900, color: '#FFD700', letterSpacing: 8,
-                background: 'rgba(255,215,0,.08)', borderRadius: 12, padding: '10px 20px',
-                border: '2px dashed rgba(255,215,0,.3)',
-              }}>
-                {roomCode}
-              </div>
-              <div style={{ fontSize: 12, color: '#555', marginTop: 8 }}>{T('shareCode')}</div>
-              <button
-                onClick={handleCopyLink}
-                style={{
-                  marginTop: 10, padding: '7px 18px', borderRadius: 10,
-                  border: '1px solid rgba(255,215,0,.35)',
-                  background: copied ? 'rgba(76,175,80,.18)' : 'rgba(255,215,0,.08)',
-                  color: copied ? '#81C784' : '#FFD700',
-                  fontFamily: "'Fredoka',sans-serif", fontWeight: 700, fontSize: 13,
-                  cursor: 'pointer', transition: 'all .2s',
-                }}
-              >
-                {copied ? T('linkCopied') : T('inviteLink')}
-              </button>
-            </>
-          )}
-          <div style={{ marginTop: 12, display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 8 }}>
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '6px 12px',
-              borderRadius: 999,
-              background: 'rgba(255,215,0,.1)',
-              border: '1px solid rgba(255,215,0,.25)',
-              color: '#FFD700',
-              fontSize: 12,
-              fontWeight: 800,
-            }}>
-              <span>{T('gameMode')}:</span>
-              <span>{selectedMode.label}</span>
-            </div>
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '6px 12px',
-              borderRadius: 999,
-              background: 'rgba(78,205,196,.1)',
-              border: '1px solid rgba(78,205,196,.25)',
-              color: '#4ecdc4',
-              fontSize: 12,
-              fontWeight: 800,
-            }}>
-              <span>{players.length}/4</span>
-              <span>{String(T('players')).toLowerCase()}</span>
-            </div>
-          </div>
-          {/* Invite Friend Button */}
-          {user && players.length < 4 && (
-            <div style={{ marginTop: 12, position: 'relative' }}>
-              <button onClick={toggleInvitePanel} style={{
-                padding: '7px 18px', borderRadius: 10,
-                border: '1px solid rgba(78,205,196,.35)',
-                background: showInvite ? 'rgba(78,205,196,.18)' : 'rgba(78,205,196,.08)',
-                color: '#4ecdc4', fontFamily: "'Fredoka',sans-serif", fontWeight: 700,
-                fontSize: 13, cursor: 'pointer', transition: 'all .2s',
-              }}>
-                {T('inviteFriend')}
-              </button>
-              {showInvite && (
-                <div style={{
-                  position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)',
-                  marginTop: 8, background: '#1a2744', borderRadius: 12,
-                  border: '1px solid #2a2a4a', padding: 12, minWidth: 220,
-                  boxShadow: '0 8px 24px rgba(0,0,0,.5)', zIndex: 10,
-                }}>
-                  {inviteFriends.length === 0 ? (
-                    <p style={{ color: '#666', fontSize: 12, textAlign: 'center', margin: 0 }}>{T('noFriends')}</p>
-                  ) : inviteFriends.map(f => (
-                    <div key={f.id} style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '6px 8px', borderRadius: 8, marginBottom: 4,
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#4CAF50' }} />
-                        <span style={{ color: '#eee', fontSize: 13, fontWeight: 700 }}>{f.displayName}</span>
-                      </div>
-                      <button
-                        onClick={() => handleInvite(f.id)}
-                        disabled={inviteSentTo.has(f.id)}
-                        style={{
-                          padding: '3px 10px', borderRadius: 6, border: 'none',
-                          background: inviteSentTo.has(f.id) ? 'rgba(76,175,80,.15)' : 'rgba(78,205,196,.15)',
-                          color: inviteSentTo.has(f.id) ? '#81C784' : '#4ecdc4',
-                          fontFamily: "'Fredoka',sans-serif", fontWeight: 700, fontSize: 11,
-                          cursor: inviteSentTo.has(f.id) ? 'default' : 'pointer',
-                        }}
-                      >
-                        {inviteSentTo.has(f.id) ? T('inviteSent') : T('inviteToRoom')}
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
         {/* Players */}
         <div style={{ marginBottom: 20 }}>
           <div style={{ fontSize: 12, fontWeight: 800, color: '#555', letterSpacing: 1, marginBottom: 10 }}>
