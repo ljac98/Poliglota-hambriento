@@ -12,6 +12,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
   const [gameMode, setGameMode] = useState('clon');
   const [burgerCount, setBurgerCount] = useState(2);
   const [ingredientCount, setIngredientCount] = useState(5);
+  const [showModeConfig, setShowModeConfig] = useState(false);
   const [hatPicks, setHatPicks] = useState({});
   const [copied, setCopied] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
@@ -329,7 +330,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
               {gameModes.map(m => (
                 <div
                   key={m.id}
-                  onClick={() => setGameMode(m.id)}
+                  onClick={() => { setGameMode(m.id); setShowModeConfig(true); }}
                   style={{
                     flex: 1, padding: '7px 4px', borderRadius: 8, cursor: 'pointer', textAlign: 'center',
                     border: gameMode === m.id ? '2px solid #FFD700' : '2px solid #2a2a4a',
@@ -344,42 +345,6 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
                 </div>
               ))}
             </div>
-
-            {/* Burger count (clon & escalera) */}
-            {gameMode !== 'caotico' && (
-              <div style={{ marginTop: 12 }}>
-                <label style={{ color: '#aaa', fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 6 }}>
-                  {T('burgerCount')}: <span style={{ color: '#FFD700' }}>{burgerCount}</span>
-                </label>
-                <input
-                  type="range" min={1} max={4} value={burgerCount}
-                  onChange={e => setBurgerCount(+e.target.value)}
-                  style={{ width: '100%', accentColor: '#FFD700' }}
-                />
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 6 }}>
-                  <span style={markerStyle}>1</span>
-                  <span style={markerStyle}>4</span>
-                </div>
-              </div>
-            )}
-
-            {/* Ingredient count (clon only) */}
-            {gameMode === 'clon' && (
-              <div style={{ marginTop: 12 }}>
-                <label style={{ color: '#aaa', fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 6 }}>
-                  {T('ingredientCount')}: <span style={{ color: '#FFD700' }}>{ingredientCount}</span>
-                </label>
-                <input
-                  type="range" min={2} max={8} value={ingredientCount}
-                  onChange={e => setIngredientCount(+e.target.value)}
-                  style={{ width: '100%', accentColor: '#FFD700' }}
-                />
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 6 }}>
-                  <span style={markerStyle}>2</span>
-                  <span style={markerStyle}>8</span>
-                </div>
-              </div>
-            )}
           </div>
         )}
 
@@ -462,6 +427,43 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
           </button>
         </div>
       </div>
+      {isHost && showModeConfig && (
+        <Modal title={`${T('gameMode')}: ${gameModes.find(m => m.id === gameMode)?.label || ''}`}>
+          {gameMode !== 'caotico' && (
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ color: '#aaa', fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 6 }}>
+                {T('burgerCount')}: <span style={{ color: '#FFD700' }}>{burgerCount}</span>
+              </label>
+              <input
+                type="range" min={1} max={4} value={burgerCount}
+                onChange={e => setBurgerCount(+e.target.value)}
+                style={{ width: '100%', accentColor: '#FFD700' }}
+              />
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 6 }}>
+                <span style={markerStyle}>1</span>
+                <span style={markerStyle}>4</span>
+              </div>
+            </div>
+          )}
+          {gameMode === 'clon' && (
+            <div style={{ marginBottom: 18 }}>
+              <label style={{ color: '#aaa', fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 6 }}>
+                {T('ingredientCount')}: <span style={{ color: '#FFD700' }}>{ingredientCount}</span>
+              </label>
+              <input
+                type="range" min={2} max={8} value={ingredientCount}
+                onChange={e => setIngredientCount(+e.target.value)}
+                style={{ width: '100%', accentColor: '#FFD700' }}
+              />
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 6 }}>
+                <span style={markerStyle}>2</span>
+                <span style={markerStyle}>8</span>
+              </div>
+            </div>
+          )}
+          <Btn onClick={() => setShowModeConfig(false)} color="#333" style={{ color: '#aaa' }}>{T('close')}</Btn>
+        </Modal>
+      )}
     </div>
   );
 }
