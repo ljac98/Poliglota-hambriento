@@ -981,6 +981,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
           <Btn onClick={() => setShowModeConfig(false)} color="#333" style={{ color: '#aaa' }}>{T('close')}</Btn>
         </Modal>
       )}
+      </div>
     </div>
   );
 }
