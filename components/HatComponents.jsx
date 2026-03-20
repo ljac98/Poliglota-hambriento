@@ -37,7 +37,7 @@ export const HatBadge = ({ lang, isMain, onClick, size = "md" }) => {
       borderRadius: 10,
       cursor: onClick ? "pointer" : "default",
       border: isMain ? `2px solid #FFD700` : `2px solid ${LANG_BORDER[lang] || '#777'}99`,
-      background: tileBg,
+      background: isMain ? '#2b3545' : tileBg,
       boxShadow: isMain ? "0 0 10px rgba(255,215,0,0.35)" : "0 2px 6px rgba(0,0,0,0.15)",
       transition: "all 0.2s",
     }}>
