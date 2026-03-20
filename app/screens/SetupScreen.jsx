@@ -23,6 +23,17 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
     { id: 'escalera', label: T('modeEscalera'), desc: T('modeEscaleraDesc'),img:modoescalera },
     { id: 'caotico', label: T('modeCaotico'), desc: T('modeCaoticoDesc') ,img:modocaotico},
   ];
+  const markerStyle = {
+    minWidth: 62,
+    textAlign: 'center',
+    fontSize: 11,
+    color: '#8a8fa8',
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.12)',
+    borderRadius: 999,
+    padding: '3px 8px',
+    lineHeight: 1.2,
+  };
 
   return (
     <div style={{
@@ -143,8 +154,9 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
               onChange={e => setBurgerCount(+e.target.value)}
               style={{ width: '100%', accentColor: '#FFD700' }}
             />
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#555', marginTop: 2 }}>
-              <span>1</span><span>4</span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 6 }}>
+              <span style={markerStyle}>1</span>
+              <span style={markerStyle}>4</span>
             </div>
           </div>
         )}
@@ -160,8 +172,9 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
               onChange={e => setIngredientCount(+e.target.value)}
               style={{ width: '100%', accentColor: '#FFD700' }}
             />
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#555', marginTop: 2 }}>
-              <span>2</span><span>8</span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 6 }}>
+              <span style={markerStyle}>2</span>
+              <span style={markerStyle}>8</span>
             </div>
           </div>
         )}
@@ -176,8 +189,9 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
             onChange={e => setAiCount(+e.target.value)}
             style={{ width: '100%', accentColor: '#FFD700' }}
           />
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#555', marginTop: 2 }}>
-            <span>{T('opponent1')}</span><span>{T('opponents3')}</span>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 6 }}>
+            <span style={markerStyle}>{T('opponent1')}</span>
+            <span style={markerStyle}>{T('opponents3')}</span>
           </div>
         </div>
 
