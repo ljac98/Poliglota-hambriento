@@ -13,11 +13,12 @@ export function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '', user
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [lobbyRooms, setLobbyRooms] = useState([]);
+  const [lobbyModeFilter, setLobbyModeFilter] = useState('all');
   const [lobbyLoading, setLobbyLoading] = useState(false);
   const [lobbyName, setLobbyName] = useState(user?.displayName || '');
   const joinedRoomRef = useRef(false);
 
-  // ── Lobby browser: fetch & subscribe to public rooms ──
+  // Lobby browser: fetch & subscribe to public rooms
   useEffect(() => {
     if (tab !== 'lobby') return;
     setLobbyLoading(true);
@@ -34,7 +35,6 @@ export function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '', user
     socket.emit('joinLobbyBrowser');
     const handleUpdate = (rooms) => setLobbyRooms(rooms);
     socket.on('lobbyListUpdate', handleUpdate);
-    // Poll every 3 seconds as fallback for missed events
     const pollInterval = setInterval(fetchRooms, 3000);
     return () => {
       clearInterval(pollInterval);
@@ -47,7 +47,8 @@ export function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '', user
   function handleCreate() {
     if (!name.trim()) return;
     if (isPublic && !roomName.trim()) return;
-    setLoading(true); setError('');
+    setLoading(true);
+    setError('');
 
     const timeout = setTimeout(() => {
       socket.off('roomCreated');
@@ -77,7 +78,8 @@ export function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '', user
 
   function handleJoin() {
     if (!joinName.trim() || !joinCode.trim()) return;
-    setLoading(true); setError('');
+    setLoading(true);
+    setError('');
 
     const timeout = setTimeout(() => {
       socket.off('roomJoined');
@@ -87,7 +89,12 @@ export function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '', user
       setLoading(false);
     }, 10000);
 
-    socket.once('joinError', msg => { clearTimeout(timeout); setError(msg); setLoading(false); socket.disconnect(); });
+    socket.once('joinError', (msg) => {
+      clearTimeout(timeout);
+      setError(msg);
+      setLoading(false);
+      socket.disconnect();
+    });
     socket.once('roomJoined', ({ myIdx, isPublic: pub, roomName: rn }) => {
       clearTimeout(timeout);
       setLoading(false);
@@ -108,11 +115,17 @@ export function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '', user
   }
 
   function handleLobbyJoin(roomCode) {
-    if (!lobbyName.trim()) { setError(T('enterNameFirst')); return; }
-    setLoading(true); setError('');
-    // Socket is already connected from lobby tab
-    socket.once('joinError', msg => { setError(msg); setLoading(false); });
-    socket.once('roomJoined', ({ code, myIdx, isPublic: pub, roomName: rn }) => {
+    if (!lobbyName.trim()) {
+      setError(T('enterNameFirst'));
+      return;
+    }
+    setLoading(true);
+    setError('');
+    socket.once('joinError', (msg) => {
+      setError(msg);
+      setLoading(false);
+    });
+    socket.once('roomJoined', ({ myIdx, isPublic: pub, roomName: rn }) => {
       setLoading(false);
       joinedRoomRef.current = true;
       window.history.replaceState({}, '', window.location.pathname);
@@ -122,43 +135,85 @@ export function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '', user
   }
 
   const tabStyle = (active) => ({
-    flex: 1, padding: '10px 0', borderRadius: 10, border: 'none', cursor: 'pointer',
-    fontFamily: "'Fredoka',sans-serif", fontWeight: 700, fontSize: 13,
+    flex: 1,
+    padding: '10px 0',
+    borderRadius: 10,
+    border: 'none',
+    cursor: 'pointer',
+    fontFamily: "'Fredoka',sans-serif",
+    fontWeight: 700,
+    fontSize: 13,
     background: active ? '#FFD700' : 'rgba(255,255,255,.06)',
-    color: active ? '#111' : '#aaa', transition: 'all .15s',
+    color: active ? '#111' : '#aaa',
+    transition: 'all .15s',
   });
   const inputStyle = {
-    width: '100%', padding: '10px 14px', borderRadius: 10, border: '2px solid #2a2a4a',
-    background: '#0f1117', color: '#eee', fontFamily: "'Fredoka',sans-serif",
-    fontSize: 15, outline: 'none', boxSizing: 'border-box',
+    width: '100%',
+    padding: '10px 14px',
+    borderRadius: 10,
+    border: '2px solid #2a2a4a',
+    background: '#0f1117',
+    color: '#eee',
+    fontFamily: "'Fredoka',sans-serif",
+    fontSize: 15,
+    outline: 'none',
+    boxSizing: 'border-box',
   };
   const toggleStyle = (active) => ({
-    flex: 1, padding: '8px 4px', borderRadius: 8, cursor: 'pointer', textAlign: 'center',
+    flex: 1,
+    padding: '8px 4px',
+    borderRadius: 8,
+    cursor: 'pointer',
+    textAlign: 'center',
     border: active ? '2px solid #FFD700' : '2px solid #2a2a4a',
     background: active ? 'rgba(255,215,0,.08)' : 'rgba(255,255,255,.02)',
     transition: 'all .15s',
   });
+  const lobbyModeOptions = [
+    { id: 'all', label: T('all') },
+    { id: 'clon', label: T('modeClon') },
+    { id: 'escalera', label: T('modeEscalera') },
+    { id: 'caotico', label: T('modeCaotico') },
+  ];
+  const filteredLobbyRooms = lobbyRooms.filter((room) => (
+    lobbyModeFilter === 'all' ? true : (room.mode || 'clon') === lobbyModeFilter
+  ));
+  const getModeLabel = (mode) => {
+    if (mode === 'escalera') return T('modeEscalera');
+    if (mode === 'caotico') return T('modeCaotico');
+    return T('modeClon');
+  };
 
   return (
-    <div style={{
-      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'linear-gradient(135deg,#0f1117 0%,#1a1a2e 100%)',
-      fontFamily: "'Fredoka',sans-serif",
-      overflowY: 'auto', padding: '20px 0',
-    }}>
-      <div style={{
-        background: '#16213e', borderRadius: 20,
-        padding: 'clamp(20px, 5vw, 36px) clamp(16px, 5vw, 40px)',
-        maxWidth: 480, width: '92vw',
-        boxShadow: '0 8px 40px rgba(0,0,0,.6)', border: '2px solid #2a2a4a',
-      }}>
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'linear-gradient(135deg,#0f1117 0%,#1a1a2e 100%)',
+        fontFamily: "'Fredoka',sans-serif",
+        overflowY: 'auto',
+        padding: '20px 0',
+      }}
+    >
+      <div
+        style={{
+          background: '#16213e',
+          borderRadius: 20,
+          padding: 'clamp(20px, 5vw, 36px) clamp(16px, 5vw, 40px)',
+          maxWidth: 480,
+          width: '92vw',
+          boxShadow: '0 8px 40px rgba(0,0,0,.6)',
+          border: '2px solid #2a2a4a',
+        }}
+      >
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
           <div style={{ fontSize: 50, marginBottom: 8 }}>🌐</div>
           <h1 style={{ fontSize: 26, fontWeight: 900, color: '#FFD700' }}>{T('multiplayerOnline')}</h1>
           <p style={{ color: '#888', fontSize: 13, marginTop: 4 }}>{T('playWithFriends')}</p>
         </div>
 
-        {/* Tabs */}
         <div style={{ display: 'flex', gap: 6, marginBottom: 24 }}>
           <button style={tabStyle(tab === 'create')} onClick={() => { setTab('create'); setError(''); }}>
             {T('createRoom')}
@@ -173,17 +228,20 @@ export function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '', user
 
         {tab === 'create' && (
           <div>
-            {!user && (<>
-              <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 6 }}>{T('yourName')}</label>
-              <input
-                value={name} onChange={e => setName(e.target.value)}
-                placeholder={T('enterName')}
-                maxLength={20} style={inputStyle}
-                onKeyDown={e => e.key === 'Enter' && handleCreate()}
-              />
-            </>)}
+            {!user && (
+              <>
+                <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 6 }}>{T('yourName')}</label>
+                <input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder={T('enterName')}
+                  maxLength={20}
+                  style={inputStyle}
+                  onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+                />
+              </>
+            )}
 
-            {/* Public / Private toggle */}
             <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 6, marginTop: 16 }}>{T('roomType')}</label>
             <div style={{ display: 'flex', gap: 8, marginBottom: isPublic ? 14 : 0 }}>
               <div onClick={() => setIsPublic(false)} style={toggleStyle(!isPublic)}>
@@ -200,9 +258,11 @@ export function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '', user
               <div>
                 <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 6 }}>{T('roomName')}</label>
                 <input
-                  value={roomName} onChange={e => setRoomName(e.target.value)}
+                  value={roomName}
+                  onChange={(e) => setRoomName(e.target.value)}
                   placeholder={T('roomNamePlaceholder')}
-                  maxLength={30} style={inputStyle}
+                  maxLength={30}
+                  style={inputStyle}
                 />
               </div>
             )}
@@ -220,36 +280,98 @@ export function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '', user
 
         {tab === 'lobby' && (
           <div>
-            {!user && (<>
-              <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 6 }}>{T('yourName')}</label>
-              <input
-                value={lobbyName} onChange={e => setLobbyName(e.target.value)}
-                placeholder={T('enterName')}
-                maxLength={20} style={{ ...inputStyle, marginBottom: 16 }}
-              />
-            </>)}
+            {!user && (
+              <>
+                <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 6 }}>{T('yourName')}</label>
+                <input
+                  value={lobbyName}
+                  onChange={(e) => setLobbyName(e.target.value)}
+                  placeholder={T('enterName')}
+                  maxLength={20}
+                  style={{ ...inputStyle, marginBottom: 16 }}
+                />
+              </>
+            )}
 
             <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 8 }}>{T('publicRooms')}</label>
+            <div style={{ color: '#777', fontSize: 11, fontWeight: 700, marginBottom: 8 }}>
+              {T('filterByMode')}
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+              {lobbyModeOptions.map((option) => (
+                <button
+                  key={option.id}
+                  onClick={() => setLobbyModeFilter(option.id)}
+                  style={{
+                    padding: '7px 12px',
+                    borderRadius: 999,
+                    border: lobbyModeFilter === option.id ? '1px solid rgba(255,215,0,.45)' : '1px solid rgba(255,255,255,.12)',
+                    background: lobbyModeFilter === option.id ? 'rgba(255,215,0,.12)' : 'rgba(255,255,255,.04)',
+                    color: lobbyModeFilter === option.id ? '#FFD700' : '#aaa',
+                    fontFamily: "'Fredoka',sans-serif",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
             {lobbyLoading ? (
               <div style={{ textAlign: 'center', padding: 20, color: '#888', fontSize: 13 }}>
                 {T('loadingRooms')}
               </div>
-            ) : lobbyRooms.length === 0 ? (
+            ) : filteredLobbyRooms.length === 0 ? (
               <div style={{ textAlign: 'center', padding: 30, color: '#555', fontSize: 13 }}>
-                {T('noPublicRooms')}
+                <div style={{ marginBottom: 14 }}>
+                  {lobbyModeFilter === 'all' ? T('noPublicRooms') : T('noPublicRoomsForMode')}
+                </div>
+                <Btn
+                  onClick={() => setTab('create')}
+                  color="#FFD700"
+                  style={{ fontSize: 13, padding: '10px 16px' }}
+                >
+                  {T('createYourRoom')}
+                </Btn>
               </div>
             ) : (
               <div style={{ maxHeight: 280, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {lobbyRooms.map(room => (
-                  <div key={room.code} style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '12px 14px', borderRadius: 10,
-                    background: 'rgba(255,255,255,.04)', border: '2px solid #2a2a4a',
-                  }}>
+                {filteredLobbyRooms.map((room) => (
+                  <div
+                    key={room.code}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '12px 14px',
+                      borderRadius: 10,
+                      background: 'rgba(255,255,255,.04)',
+                      border: '2px solid #2a2a4a',
+                    }}
+                  >
                     <div>
                       <div style={{ fontWeight: 700, color: '#eee', fontSize: 14 }}>{room.roomName}</div>
                       <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>
                         👑 {room.hostName} · {room.playerCount}/4 {T('players')}
+                      </div>
+                      <div style={{ marginTop: 6 }}>
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            padding: '3px 9px',
+                            borderRadius: 999,
+                            background: 'rgba(255,215,0,.1)',
+                            border: '1px solid rgba(255,215,0,.22)',
+                            color: '#FFD700',
+                            fontSize: 10,
+                            fontWeight: 800,
+                            letterSpacing: 0.3,
+                          }}
+                        >
+                          {getModeLabel(room.mode)}
+                        </span>
                       </div>
                     </div>
                     <Btn
@@ -273,17 +395,23 @@ export function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '', user
               <div>
                 <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 6 }}>{T('yourName')}</label>
                 <input
-                  value={joinName} onChange={e => setJoinName(e.target.value)}
-                  placeholder={T('enterName')} maxLength={20} style={inputStyle}
+                  value={joinName}
+                  onChange={(e) => setJoinName(e.target.value)}
+                  placeholder={T('enterName')}
+                  maxLength={20}
+                  style={inputStyle}
                 />
               </div>
             )}
             <div>
               <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 6 }}>{T('roomCode')}</label>
               <input
-                value={joinCode} onChange={e => setJoinCode(e.target.value.toUpperCase())}
-                placeholder={T('roomCodePlaceholder')} maxLength={7} style={{ ...inputStyle, letterSpacing: 4, textTransform: 'uppercase' }}
-                onKeyDown={e => e.key === 'Enter' && handleJoin()}
+                value={joinCode}
+                onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                placeholder={T('roomCodePlaceholder')}
+                maxLength={7}
+                style={{ ...inputStyle, letterSpacing: 4, textTransform: 'uppercase' }}
+                onKeyDown={(e) => e.key === 'Enter' && handleJoin()}
               />
             </div>
             <Btn
@@ -304,10 +432,17 @@ export function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '', user
         )}
 
         <div style={{ marginTop: 20, textAlign: 'center' }}>
-          <button onClick={onBack} style={{
-            background: 'none', border: 'none', color: '#555', cursor: 'pointer',
-            fontFamily: "'Fredoka',sans-serif", fontSize: 13,
-          }}>
+          <button
+            onClick={onBack}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#555',
+              cursor: 'pointer',
+              fontFamily: "'Fredoka',sans-serif",
+              fontSize: 13,
+            }}
+          >
             {T('backToMenu')}
           </button>
         </div>
@@ -315,4 +450,3 @@ export function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '', user
     </div>
   );
 }
-

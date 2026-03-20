@@ -406,6 +406,7 @@ function getPublicRoomsList() {
         roomName: room.roomName,
         playerCount: activePlayers.length,
         hostName: activePlayers[0]?.name || '',
+        mode: room.gameConfig?.mode || 'clon',
       });
     }
   }
