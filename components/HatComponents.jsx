@@ -1,6 +1,6 @@
 import React from 'react';
 import HatSVG from './HatSVG';
-import { LANG_BORDER, LANG_TEXT, LANG_SHORT } from '../constants';
+import { LANG_BG, LANG_BORDER, LANG_TEXT, LANG_SHORT } from '../constants';
 
 // ═══ HAT BADGE ═══
 export const HatBadge = ({ lang, isMain, onClick, size = "md" }) => {
@@ -21,8 +21,13 @@ export const HatBadge = ({ lang, isMain, onClick, size = "md" }) => {
     'alemÃ¡n': '#155E1E',
     'portuguÃ©s': '#3F2B1D',
   };
-  const tileBg = HAT_TILE_BG[lang] || 'rgba(255,255,255,0.08)';
-  const tileText = HAT_TILE_TEXT[lang] || LANG_TEXT[lang] || '#222';
+  const isEnglishHat = LANG_SHORT[lang] === 'ING';
+  const tileBg = isEnglishHat
+    ? '#1F2630'
+    : (HAT_TILE_BG[lang] || LANG_BG[lang] || 'rgba(255,255,255,0.08)');
+  const tileText = isEnglishHat
+    ? '#FFFFFF'
+    : (HAT_TILE_TEXT[lang] || LANG_TEXT[lang] || '#222');
   return (
     <div onClick={onClick} style={{
       display: "inline-flex", flexDirection: "column", alignItems: "center", gap: 1,
@@ -30,7 +35,7 @@ export const HatBadge = ({ lang, isMain, onClick, size = "md" }) => {
       padding: size === "sm" ? 5 : 6,
       borderRadius: 10,
       cursor: onClick ? "pointer" : "default",
-      border: isMain ? `2px solid #FFD700` : `2px solid ${LANG_BORDER[lang]}99`,
+      border: isMain ? `2px solid #FFD700` : `2px solid ${LANG_BORDER[lang] || '#777'}99`,
       background: tileBg,
       boxShadow: isMain ? "0 0 10px rgba(255,215,0,0.35)" : "0 2px 6px rgba(0,0,0,0.15)",
       transition: "all 0.2s",
@@ -40,6 +45,7 @@ export const HatBadge = ({ lang, isMain, onClick, size = "md" }) => {
         fontSize: size === "sm" ? 9 : 10,
         fontWeight: 900,
         color: isMain ? "#5C3A00" : tileText,
+        textShadow: isMain ? 'none' : '0 1px 0 rgba(0,0,0,0.2)',
         letterSpacing: 0.4,
         lineHeight: 1.05,
       }}>
