@@ -35,42 +35,49 @@ const BURGER_STACK_IMG = {
   pollo: burgerPollo, queso: burgerQueso, tomate: burgerTomate,
 };
 
-// Resolve wildcard entries in the table to the ingredient slots they fill.
-// 'perrito|lechuga' uses the chosen ingredient; bare 'perrito' fills the first unfilled slot.
-function resolveWildcards(table, target) {
-  const resolved = [];
-  let barePerritos = 0;
-  table.forEach(t => {
-    if (t === 'perrito') { barePerritos++; }
-    else if (t.startsWith('perrito|')) { resolved.push(t.split('|')[1]); }
-    else { resolved.push(t); }
+// Build slot-by-slot coverage so we can tell if a target slot was filled by wildcard.
+function resolveTargetSlots(table, target) {
+  const normal = {};
+  const wildcardChosen = {};
+  let wildcardBare = 0;
+
+  table.forEach((t) => {
+    if (t === 'perrito') {
+      wildcardBare += 1;
+    } else if (t.startsWith('perrito|')) {
+      const chosen = t.split('|')[1];
+      wildcardChosen[chosen] = (wildcardChosen[chosen] || 0) + 1;
+    } else {
+      normal[t] = (normal[t] || 0) + 1;
+    }
   });
-  if (barePerritos === 0) return resolved;
-  const covered = {};
-  resolved.forEach(t => { covered[t] = (covered[t] || 0) + 1; });
-  let left = barePerritos;
-  for (const ing of target) {
-    if (left === 0) break;
-    if ((covered[ing] || 0) > 0) { covered[ing]--; }
-    else { resolved.push(ing); left--; }
-  }
-  return resolved;
+
+  return target.map((ing) => {
+    if ((normal[ing] || 0) > 0) {
+      normal[ing] -= 1;
+      return { filled: true, viaWildcard: false };
+    }
+    if ((wildcardChosen[ing] || 0) > 0) {
+      wildcardChosen[ing] -= 1;
+      return { filled: true, viaWildcard: true };
+    }
+    if (wildcardBare > 0) {
+      wildcardBare -= 1;
+      return { filled: true, viaWildcard: true };
+    }
+    return { filled: false, viaWildcard: false };
+  });
 }
 
 // ═══ BURGER TARGET (horizontal) with stacked burger visual ═══
-export const BurgerTarget = ({ ingredients, table, isCurrent }) => {
-  const resolvedTable = resolveWildcards(table, ingredients);
+export const BurgerTarget = ({ ingredients, table, isCurrent, onIngredientClick }) => {
+  const slotState = resolveTargetSlots(table, ingredients);
   const counts = {};
   ingredients.forEach(ing => { counts[ing] = (counts[ing] || 0) + 1; });
   const rendered = {};
 
   // Build filled status per ingredient for the stack
-  const stackRendered = {};
-  const stackFilled = ingredients.map(ing => {
-    stackRendered[ing] = (stackRendered[ing] || 0) + 1;
-    const have = resolvedTable.filter(t => t === ing).length;
-    return have >= stackRendered[ing];
-  });
+  const stackFilled = slotState.map(s => s.filled);
   const panFilled = (() => {
     const panIdx = ingredients.indexOf('pan');
     if (panIdx === -1) return true;
@@ -125,21 +132,32 @@ export const BurgerTarget = ({ ingredients, table, isCurrent }) => {
         {isCurrent ? ingredients.map((ing, i) => {
           rendered[ing] = (rendered[ing] || 0) + 1;
           const thisOccurrence = rendered[ing];
-          const have = resolvedTable.filter(t => t === ing).length;
-          const filled = have >= thisOccurrence;
+          const filled = slotState[i].filled;
+          const viaWildcard = slotState[i].viaWildcard;
           const isDupe = counts[ing] > 1;
 
           return (
-            <div key={i} style={{
+            <div key={i} onClick={() => onIngredientClick && onIngredientClick(ing)} style={{
               position: "relative", width: 36, height: 36, borderRadius: 6,
               background: filled ? ING_BG[ing] : "rgba(255,255,255,0.06)",
               display: "flex", alignItems: "center", justifyContent: "center",
               border: filled ? "none" : `2px dashed ${ING_BG[ing]}44`,
               opacity: filled ? 1 : 0.35, transition: "all 0.3s",
+              cursor: onIngredientClick ? "pointer" : "default",
             }}>
               {ING_IMG[ing]
                 ? <img src={ING_IMG[ing]} alt={ing} style={{ width: 35, height: 35, objectFit: 'contain' }} />
                 : ING_EMOJI[ing]}
+              {viaWildcard && (
+                <div style={{
+                  position: "absolute", left: -3, bottom: -4,
+                  background: "rgba(10,16,30,0.9)", color: "#fff",
+                  border: "1px solid rgba(255,255,255,0.35)", borderRadius: 8,
+                  padding: "0 3px", lineHeight: "12px", fontSize: 9,
+                }}>
+                  {ING_EMOJI.perrito}
+                </div>
+              )}
               {isDupe && (
                 <div style={{
                   position: "absolute", top: -4, right: -6, fontSize: 8, fontWeight: 900,

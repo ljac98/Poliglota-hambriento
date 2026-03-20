@@ -1556,6 +1556,7 @@ export default function App() {
               ingredients={b}
               table={i === human.currentBurger ? human.table : i < human.currentBurger ? b : []}
               isCurrent={i === human.currentBurger}
+              onIngredientClick={(ing) => setModal({ type: 'ingredientInfo', ingredient: ing })}
             />
           </div>
         ))}
