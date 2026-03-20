@@ -10,6 +10,12 @@ import modoclon from '../../imagenes/modos/clones.png';
 import modoescalera from '../../imagenes/modos/escalera.png';
 import modocaotico from '../../imagenes/modos/caotico.png';
 import percheroImg from '../../imagenes/sombreros/perchero/percherofinal.png';
+import burgerPanArriba from '../../imagenes/hamburguesas/ingredientes/pan arriba.png';
+import burgerPanAbajo from '../../imagenes/hamburguesas/ingredientes/pan abajo.png';
+import burgerCarne from '../../imagenes/hamburguesas/ingredientes/carne.png';
+import burgerQueso from '../../imagenes/hamburguesas/ingredientes/queso.png';
+import burgerLechuga from '../../imagenes/hamburguesas/ingredientes/lechuga.png';
+import burgerCebolla from '../../imagenes/hamburguesas/ingredientes/cebolla.png';
 
 export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFriends, T }) {
   const [name, setName] = useState(user?.displayName || '');
@@ -27,17 +33,21 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
     { id: 'caotico', label: T('modeCaotico'), desc: T('modeCaoticoDesc') ,img:modocaotico},
   ];
   const selectedMode = gameModes.find((mode) => mode.id === gameMode) || gameModes[0];
+  const previewLayers = [burgerCarne, burgerQueso, burgerLechuga, burgerCebolla];
   const modePreview = (() => {
     if (gameMode === 'caotico') {
-      if (chaosLevel === 1) return { burgers: '1-2', ingredients: '3-5' };
-      if (chaosLevel === 3) return { burgers: '3-5', ingredients: '5-8' };
-      return { burgers: '2-4', ingredients: '4-7' };
+      if (chaosLevel === 1) return { burgers: '1-2', ingredients: '3-5', layerCount: 5 };
+      if (chaosLevel === 3) return { burgers: '3-5', ingredients: '5-8', layerCount: 8 };
+      return { burgers: '2-4', ingredients: '4-7', layerCount: 7 };
     }
     if (gameMode === 'escalera') {
-      return { burgers: String(burgerCount), ingredients: `4-${3 + burgerCount}` };
+      return { burgers: String(burgerCount), ingredients: `4-${3 + burgerCount}`, layerCount: 3 + burgerCount };
     }
-    return { burgers: String(burgerCount), ingredients: String(ingredientCount) };
+    return { burgers: String(burgerCount), ingredients: String(ingredientCount), layerCount: ingredientCount };
   })();
+  const stackLayers = Array.from({ length: Math.max(1, Math.min(8, modePreview.layerCount || 4)) }, (_, index) => (
+    previewLayers[index % previewLayers.length]
+  ));
   const markerStyle = {
     minWidth: 62,
     textAlign: 'center',
@@ -204,35 +214,33 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
               background: 'rgba(255,255,255,0.04)',
               border: '1px solid rgba(255,255,255,0.08)',
             }}>
-              <div style={{ position: 'relative', width: 72, height: 56, flexShrink: 0 }}>
-                {[0, 1, 2].map((layer) => (
-                  <div
-                    key={layer}
-                    style={{
-                      position: 'absolute',
-                      left: layer * 8,
-                      top: layer * 6,
-                      width: 42,
-                      height: 42,
-                      borderRadius: '50%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      background: layer === 2 ? 'rgba(255,215,0,0.18)' : 'rgba(255,255,255,0.06)',
-                      border: layer === 2 ? '1px solid rgba(255,215,0,0.35)' : '1px solid rgba(255,255,255,0.08)',
-                      fontSize: 20,
-                      boxShadow: '0 6px 14px rgba(0,0,0,0.18)',
-                    }}
-                  >
-                    🍔
-                  </div>
-                ))}
+              <div style={{ position: 'relative', width: 88, height: 110, flexShrink: 0 }}>
                 <div style={{
                   position: 'absolute',
-                  right: -2,
-                  bottom: -2,
-                  minWidth: 28,
-                  height: 28,
+                  left: 6,
+                  top: 0,
+                  width: 64,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                }}>
+                  <img src={burgerPanArriba} alt="pan" style={{ width: 62, height: 'auto', marginBottom: -8 }} />
+                  {stackLayers.map((layerSrc, index) => (
+                    <img
+                      key={index}
+                      src={layerSrc}
+                      alt="ingrediente"
+                      style={{ width: 54, height: 'auto', marginTop: -9, marginBottom: -9 }}
+                    />
+                  ))}
+                  <img src={burgerPanAbajo} alt="pan" style={{ width: 62, height: 'auto', marginTop: -8 }} />
+                </div>
+                <div style={{
+                  position: 'absolute',
+                  right: 0,
+                  top: 38,
+                  minWidth: 34,
+                  height: 30,
                   borderRadius: 999,
                   padding: '0 8px',
                   display: 'flex',
@@ -242,6 +250,7 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
                   color: '#1b1730',
                   fontSize: 13,
                   fontWeight: 900,
+                  boxShadow: '0 6px 16px rgba(0,0,0,0.18)',
                 }}>
                   {modePreview.burgers}
                 </div>
@@ -252,6 +261,16 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
                 </div>
                 <div style={{ color: '#9ea4be', fontSize: 11, lineHeight: 1.35 }}>
                   {T('ingredientsLabelShort')}: <span style={{ color: '#fff1b3', fontWeight: 900 }}>{modePreview.ingredients}</span>
+                </div>
+                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', margin: '6px 0 2px' }}>
+                  {stackLayers.map((layerSrc, index) => (
+                    <img
+                      key={`mini-layer-${index}`}
+                      src={layerSrc}
+                      alt="ingrediente"
+                      style={{ width: 14, height: 14, objectFit: 'contain', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))' }}
+                    />
+                  ))}
                 </div>
                 <div style={{ color: '#9ea4be', fontSize: 11, lineHeight: 1.35 }}>
                   {T('perPlayerLabel')}
