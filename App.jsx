@@ -1295,7 +1295,7 @@ export default function App() {
         padding: '7px 12px', borderRadius: 10, border: '1px solid #555',
         background: 'transparent', color: '#888', fontFamily: "'Fredoka',sans-serif",
         fontWeight: 700, fontSize: 13, cursor: 'pointer',
-      }}>âœ•</button>
+      }}>{'\u00D7'}</button>
     </div>
   );
 
@@ -1310,7 +1310,7 @@ export default function App() {
     }}>
       <div>
         <div style={{ color: '#eee', fontSize: 14, fontWeight: 700 }}>
-          ðŸ¤ {friendReqNotif.fromDisplayName} {T('friendRequestNotif')}
+          {'\u{1F91D}'} {friendReqNotif.fromDisplayName} {T('friendRequestNotif')}
         </div>
       </div>
       <button onClick={() => { setFriendReqNotif(null); setPhase('friends'); }} style={{
@@ -1322,7 +1322,7 @@ export default function App() {
         padding: '7px 12px', borderRadius: 10, border: '1px solid #555',
         background: 'transparent', color: '#888', fontFamily: "'Fredoka',sans-serif",
         fontWeight: 700, fontSize: 13, cursor: 'pointer',
-      }}>âœ•</button>
+      }}>{'\u00D7'}</button>
     </div>
   );
 
@@ -1522,7 +1522,7 @@ export default function App() {
       <div style={{ flex: 1 }}>
         <div style={{ fontWeight: 900, fontSize: 16, color: humanColor }}>{human.name}</div>
         <div style={{ fontSize: 11, color: '#777' }}>
-          ðŸ” {human.currentBurger}/{human.totalBurgers} hamburguesas
+          {'\u{1F354}'} {human.currentBurger}/{human.totalBurgers} hamburguesas
           {extraPlay && <span style={{ color: '#FFD700', marginLeft: 8 }}>{T('extraPlayLabel')}</span>}
         </div>
       </div>
@@ -1551,7 +1551,7 @@ export default function App() {
         {human.burgers.slice(0, human.currentBurger + 1).map((b, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ fontSize: 11, color: i === human.currentBurger ? '#FFD700' : '#555', width: 14, fontWeight: 700 }}>
-              {i < human.currentBurger ? 'âœ…' : i === human.currentBurger ? 'â–¶' : 'â—‹'}
+              {i < human.currentBurger ? '\u2714' : i === human.currentBurger ? '\u25B6' : '\u25CB'}
             </span>
             <BurgerTarget
               ingredients={b}
@@ -1683,7 +1683,7 @@ export default function App() {
       {T('hand')} ({human.hand.length}/{human.maxHand})
       {isReduced && (
         <span style={{ color: '#FF7043', display: 'inline-flex', alignItems: 'center', gap: 2 }}>
-          âš  {T('maxReduced')}: {addedHats.map(h => (
+          {'\u26A0'} {T('maxReduced')}: {addedHats.map(h => (
             <HatBadge key={h} lang={h} isMain size="sm" />
           ))}
         </span>
@@ -1818,7 +1818,7 @@ export default function App() {
           ? <span style={{ color: '#4CAF50' }}>{T('canPlayThis')}</span>
           : <span style={{ color: '#FF7043' }}>{T('cantPlayNow')}</span>
       ) : (
-        <span style={{ color: '#FFD700' }}>âš¡ {getActionInfo(human.hand[selectedIdx]?.action)?.desc}</span>
+        <span style={{ color: '#FFD700' }}>{'\u26A1'} {getActionInfo(human.hand[selectedIdx]?.action)?.desc}</span>
       )}
     </div>
   );
@@ -1898,22 +1898,22 @@ export default function App() {
         display: 'flex', alignItems: 'center', gap: isMobile ? 6 : 12, padding: isMobile ? '6px 10px' : '8px 16px',
         background: '#16213e', borderBottom: '2px solid #2a2a4a', flexShrink: 0,
       }}>
-        <span style={{ fontSize: 22 }}>ðŸ”</span>
+        <span style={{ fontSize: 22 }}>{'\u{1F354}'}</span>
         {!isMobile && <span style={{ fontWeight: 900, fontSize: 16, color: '#FFD700' }}>HUNGRY POLY</span>}
         <div style={{ marginLeft: 'auto', display: 'flex', gap: isMobile ? 6 : 12, alignItems: 'center' }}>
-          <span style={{ fontSize: 12, color: '#555' }}>ðŸƒ {deck.length}</span>
-          <span style={{ fontSize: 12, color: '#555' }}>ðŸ—‘ï¸ {discard.length}</span>
+          <span style={{ fontSize: 12, color: '#555' }}>Deck: {deck.length}</span>
+          <span style={{ fontSize: 12, color: '#555' }}>Discard: {discard.length}</span>
           <div style={{
             background: isHumanTurn ? 'rgba(255,215,0,.15)' : 'rgba(0,188,212,.15)',
             border: `1px solid ${isHumanTurn ? '#FFD700' : '#00BCD4'}`,
             borderRadius: 8, padding: isMobile ? '3px 6px' : '3px 10px', fontSize: isMobile ? 11 : 12, fontWeight: 700,
             color: isHumanTurn ? '#FFD700' : '#00BCD4',
           }}>
-            {isHumanTurn ? (extraPlay ? T('extraPlayLabel') : T('yourTurnLabel')) : (typeof T('waitingPlayer') === 'function' ? T('waitingPlayer')(players[cp]?.name) : `â³ ${players[cp]?.name}`)}
+            {isHumanTurn ? (extraPlay ? T('extraPlayLabel') : T('yourTurnLabel')) : (typeof T('waitingPlayer') === 'function' ? T('waitingPlayer')(players[cp]?.name) : `${'\u23F3'} ${players[cp]?.name}`)}
           </div>
           {isOnline && !isMobile && (
             <div style={{ fontSize: 11, color: '#555', padding: '3px 8px', borderRadius: 6, background: 'rgba(0,188,212,.08)', border: '1px solid rgba(0,188,212,.2)' }}>
-              ðŸŒ {T('room')}: {roomCode}
+              {'\u{1F310}'} {T('room')}: {roomCode}
             </div>
           )}
           <Btn onClick={() => setShowLog(l => !l)} color="#2a2a4a" style={{ color: '#aaa', fontSize: 12, padding: '4px 10px' }}>
@@ -2257,7 +2257,7 @@ export default function App() {
 
       {/* Mobile: Perchero modal */}
       {showPercheroModal && (
-        <Modal title="ðŸ§¥ Perchero">
+        <Modal title="Perchero">
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
             {percheroTree}
             <button onClick={() => setShowPercheroModal(false)} style={{
@@ -2534,6 +2534,28 @@ export default function App() {
         const chosen = ingChosen(raw);
         const displayIng = chosen || base;
         const isWildcard = base === 'perrito';
+        const ingredientTitle = (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+            {ING_IMG[displayIng]
+              ? <img src={ING_IMG[displayIng]} alt={displayIng} style={{ width: 22, height: 22, objectFit: 'contain' }} />
+              : <span>{ING_EMOJI[displayIng]}</span>}
+            <span>{getIngName(displayIng, LANGUAGES[0]) || displayIng}</span>
+          </span>
+        );
+        const actionCardIcons = {
+          milanesa: eqMilanesa,
+          ensalada: eqEnsalada,
+          pizza: eqPizza,
+          parrilla: eqParrilla,
+          tenedor: eqTenedor,
+          ladron: eqLadron,
+          intercambio_sombreros: eqIntercambioSomb,
+          intercambio_hamburguesa: eqIntercambioHamb,
+          basurero: eqBasurero,
+          gloton: eqGloton,
+          negacion: eqNegacion,
+          comecomodines: eqComeComodines,
+        };
         const specific = ING_AFFECTED_BY[displayIng] || [];
         const singleTarget = ['tenedor', 'gloton', 'intercambio_hamburguesa'];
         const allActionIds = [...new Set([
@@ -2542,7 +2564,7 @@ export default function App() {
           ...(isWildcard ? ['comecomodines'] : []),
         ])];
         return (
-          <Modal title={`${ING_EMOJI[displayIng]} ${getIngName(displayIng, LANGUAGES[0]) || displayIng}`}>
+          <Modal title={ingredientTitle}>
             {isWildcard && chosen && (
               <p style={{ color: '#ccc', fontSize: 13, marginBottom: 12 }}>
                 {typeof T('wildcardActingAs') === 'function' ? T('wildcardActingAs')(`${ING_EMOJI[chosen]} ${getIngName(chosen, LANGUAGES[0]) || chosen}`) : T('wildcardActingAs')}
@@ -2585,7 +2607,9 @@ export default function App() {
                     display: 'flex', alignItems: 'center', gap: 8,
                     background: 'rgba(255,255,255,0.05)', borderRadius: 8, padding: '6px 10px',
                   }}>
-                    <span style={{ fontSize: 18 }}>{info.emoji}</span>
+                    {actionCardIcons[id]
+                      ? <img src={actionCardIcons[id]} alt={info.name} style={{ width: 24, height: 24, objectFit: 'contain' }} />
+                      : <span style={{ fontSize: 18 }}>{info.emoji}</span>}
                     <div>
                       <div style={{ fontSize: 13, fontWeight: 700, color: '#eee' }}>{info.name}</div>
                       <div style={{ fontSize: 11, color: '#999' }}>{info.desc}</div>
@@ -3006,8 +3030,8 @@ export default function App() {
             display: 'flex', alignItems: 'center', padding: '10px 14px',
             borderBottom: '1px solid #2a2a4a',
           }}>
-            <span style={{ fontWeight: 800, fontSize: 14, color: '#4ecdc4', flex: 1 }}>ðŸ’¬ Chat</span>
-            <span onClick={() => setShowChat(false)} style={{ cursor: 'pointer', color: '#666', fontSize: 18, lineHeight: 1 }}>âœ•</span>
+            <span style={{ fontWeight: 800, fontSize: 14, color: '#4ecdc4', flex: 1 }}>{'\u{1F4AC}'} Chat</span>
+            <span onClick={() => setShowChat(false)} style={{ cursor: 'pointer', color: '#666', fontSize: 18, lineHeight: 1 }}>{'\u00D7'}</span>
           </div>
           <div style={{
             flex: 1, overflowY: 'auto', padding: '8px 12px',
