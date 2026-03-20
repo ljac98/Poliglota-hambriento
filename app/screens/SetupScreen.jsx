@@ -208,39 +208,39 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              gap: 12,
-              padding: '10px 12px',
+              gap: 18,
+              padding: '14px 16px',
               borderRadius: 12,
               background: 'rgba(255,255,255,0.04)',
               border: '1px solid rgba(255,255,255,0.08)',
             }}>
-              <div style={{ position: 'relative', width: 88, height: 110, flexShrink: 0 }}>
+              <div style={{ position: 'relative', width: 96, height: 118, flexShrink: 0 }}>
                 <div style={{
                   position: 'absolute',
                   left: 6,
                   top: 0,
-                  width: 64,
+                  width: 72,
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
                 }}>
-                  <img src={burgerPanArriba} alt="pan" style={{ width: 62, height: 'auto', marginBottom: -8 }} />
+                  <img src={burgerPanArriba} alt="pan" style={{ width: 68, height: 'auto', marginBottom: -6 }} />
                   {stackLayers.map((layerSrc, index) => (
                     <img
                       key={index}
                       src={layerSrc}
                       alt="ingrediente"
-                      style={{ width: 54, height: 'auto', marginTop: -9, marginBottom: -9 }}
+                      style={{ width: 60, height: 'auto', marginTop: -7, marginBottom: -7 }}
                     />
                   ))}
-                  <img src={burgerPanAbajo} alt="pan" style={{ width: 62, height: 'auto', marginTop: -8 }} />
+                  <img src={burgerPanAbajo} alt="pan" style={{ width: 68, height: 'auto', marginTop: -6 }} />
                 </div>
                 <div style={{
                   position: 'absolute',
                   right: 0,
-                  top: 38,
-                  minWidth: 34,
-                  height: 30,
+                  top: 42,
+                  minWidth: 36,
+                  height: 32,
                   borderRadius: 999,
                   padding: '0 8px',
                   display: 'flex',
@@ -256,23 +256,23 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
                 </div>
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ color: '#FFD700', fontSize: 12, fontWeight: 800, letterSpacing: 0.3, marginBottom: 4 }}>
+                <div style={{ color: '#FFD700', fontSize: 13, fontWeight: 800, letterSpacing: 0.3, marginBottom: 6 }}>
                   {T('burgerCount')}
                 </div>
-                <div style={{ color: '#9ea4be', fontSize: 11, lineHeight: 1.35 }}>
+                <div style={{ color: '#9ea4be', fontSize: 12, lineHeight: 1.45 }}>
                   {T('ingredientsLabelShort')}: <span style={{ color: '#fff1b3', fontWeight: 900 }}>{modePreview.ingredients}</span>
                 </div>
-                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', margin: '6px 0 2px' }}>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', margin: '10px 0 6px' }}>
                   {stackLayers.map((layerSrc, index) => (
                     <img
                       key={`mini-layer-${index}`}
                       src={layerSrc}
                       alt="ingrediente"
-                      style={{ width: 14, height: 14, objectFit: 'contain', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))' }}
+                      style={{ width: 18, height: 18, objectFit: 'contain', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))' }}
                     />
                   ))}
                 </div>
-                <div style={{ color: '#9ea4be', fontSize: 11, lineHeight: 1.35 }}>
+                <div style={{ color: '#9ea4be', fontSize: 12, lineHeight: 1.45 }}>
                   {T('perPlayerLabel')}
                 </div>
               </div>
