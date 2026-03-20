@@ -457,11 +457,17 @@ export default function App() {
   // ── Start game (local / vs AI) ──
   function buildGameConfig(gameConfig) {
     if (!gameConfig || gameConfig.mode !== 'clon') return gameConfig;
+    if (Array.isArray(gameConfig.sharedBurgers) && gameConfig.sharedBurgers.length > 0) {
+      return {
+        ...gameConfig,
+        sharedBurgers: gameConfig.sharedBurgers.map((burger) => [...burger]),
+      };
+    }
     return {
       ...gameConfig,
       sharedBurgers: Array.from(
         { length: gameConfig.burgerCount },
-        () => genBurger(gameConfig.ingredientCount),
+        () => genBurger(gameConfig.ingredientCount, gameConfig.ingredientPool),
       ),
     };
   }

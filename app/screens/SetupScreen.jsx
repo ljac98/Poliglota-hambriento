@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { LANGUAGES, LANG_BORDER, LANG_BG, LANG_TEXT, INGREDIENTS, ING_EMOJI, ING_BG, getIngName } from '../../constants/index.js';
+import { LANGUAGES, LANG_BORDER, LANG_BG, LANG_TEXT, INGREDIENTS, ING_BG, getIngName } from '../../constants/index.js';
 import { randInt, uid } from '../../game/utils.js';
 import { Btn } from '../components/Btn.jsx';
 import { Modal } from '../components/Modal.jsx';
 import { getUILang, KEY_TO_LANG } from '../../src/translations.js';
+import { ING_IMG } from '../utils/gameHelpers.js';
+import { genBurger } from '../../game/deck.js';
 import { HatBadge, PercheroSVG } from '../../components/HatComponents.jsx';
 import HatSVG from '../../components/HatSVG.jsx';
 import hamImg from '../../imagenes/hamburguesas/ham.png';
@@ -17,6 +19,10 @@ import burgerCarne from '../../imagenes/hamburguesas/ingredientes/carne.png';
 import burgerQueso from '../../imagenes/hamburguesas/ingredientes/queso.png';
 import burgerLechuga from '../../imagenes/hamburguesas/ingredientes/lechuga.png';
 import burgerCebolla from '../../imagenes/hamburguesas/ingredientes/cebolla.png';
+import burgerTomate from '../../imagenes/hamburguesas/ingredientes/tomates.png';
+import burgerPollo from '../../imagenes/hamburguesas/ingredientes/pollo.png';
+import burgerHuevo from '../../imagenes/hamburguesas/ingredientes/huevo.png';
+import burgerPalta from '../../imagenes/hamburguesas/ingredientes/palta.png';
 
 export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFriends, T }) {
   const uiGameLang = KEY_TO_LANG[getUILang()] || 'español';
@@ -37,7 +43,16 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
     { id: 'caotico', label: T('modeCaotico'), desc: T('modeCaoticoDesc') ,img:modocaotico},
   ];
   const selectedMode = gameModes.find((mode) => mode.id === gameMode) || gameModes[0];
-  const previewLayers = [burgerCarne, burgerQueso, burgerLechuga, burgerCebolla];
+  const burgerLayerMap = {
+    carne: burgerCarne,
+    queso: burgerQueso,
+    lechuga: burgerLechuga,
+    cebolla: burgerCebolla,
+    tomate: burgerTomate,
+    pollo: burgerPollo,
+    huevo: burgerHuevo,
+    palta: burgerPalta,
+  };
   const modePreview = (() => {
     if (gameMode === 'caotico') {
       if (chaosLevel === 1) return { burgers: '1-2', ingredients: '3-5', layerCount: 5 };
@@ -49,9 +64,20 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
     }
     return { burgers: String(burgerCount), ingredients: String(ingredientCount), layerCount: ingredientCount };
   })();
-  const stackLayers = Array.from({ length: Math.max(1, Math.min(8, modePreview.layerCount || 4)) }, (_, index) => (
-    previewLayers[index % previewLayers.length]
-  ));
+  const previewBurgers = useMemo(() => {
+    if (gameMode === 'clon') {
+      return Array.from({ length: burgerCount }, () => genBurger(ingredientCount, ingredientPool));
+    }
+    if (gameMode === 'escalera') {
+      return Array.from({ length: burgerCount }, (_, index) => genBurger(4 + index));
+    }
+    const ranges = chaosLevel === 1
+      ? [3, 4]
+      : chaosLevel === 3
+        ? [5, 6, 7]
+        : [4, 5, 6];
+    return ranges.map((size) => genBurger(size));
+  }, [gameMode, burgerCount, ingredientCount, chaosLevel, ingredientPool]);
   const markerStyle = {
     minWidth: 62,
     textAlign: 'center',
@@ -176,7 +202,14 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
 
         <div style={{ display: 'flex', gap: 10 }}>
           <Btn
-            onClick={() => onStart(name.trim(), hat, { mode: gameMode, burgerCount, ingredientCount, chaosLevel, ingredientPool }, aiCount)}
+            onClick={() => onStart(name.trim(), hat, {
+              mode: gameMode,
+              burgerCount,
+              ingredientCount,
+              chaosLevel,
+              ingredientPool,
+              sharedBurgers: previewBurgers,
+            }, aiCount)}
             disabled={!name.trim() || !hat}
             color="#FFD700"
             style={{ flex: 1, fontSize: 16, padding: '12px 0' }}
@@ -210,75 +243,80 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
             </div>
             <div style={{
               display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 18,
+              flexDirection: 'column',
+              gap: 14,
               padding: '14px 16px',
               borderRadius: 12,
               background: 'rgba(255,255,255,0.04)',
               border: '1px solid rgba(255,255,255,0.08)',
             }}>
-              <div style={{ position: 'relative', width: 96, height: 118, flexShrink: 0 }}>
-                <div style={{
-                  position: 'absolute',
-                  left: 6,
-                  top: 0,
-                  width: 72,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                }}>
-                  <img src={burgerPanArriba} alt="pan" style={{ width: 68, height: 'auto', marginBottom: -6 }} />
-                  {stackLayers.map((layerSrc, index) => (
-                    <img
-                      key={index}
-                      src={layerSrc}
-                      alt="ingrediente"
-                      style={{ width: 60, height: 'auto', marginTop: -7, marginBottom: -7 }}
-                    />
-                  ))}
-                  <img src={burgerPanAbajo} alt="pan" style={{ width: 68, height: 'auto', marginTop: -6 }} />
-                </div>
-                <div style={{
-                  position: 'absolute',
-                  right: 0,
-                  top: 42,
-                  minWidth: 36,
-                  height: 32,
-                  borderRadius: 999,
-                  padding: '0 8px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  background: '#FFD700',
-                  color: '#1b1730',
-                  fontSize: 13,
-                  fontWeight: 900,
-                  boxShadow: '0 6px 16px rgba(0,0,0,0.18)',
-                }}>
-                  {modePreview.burgers}
-                </div>
-              </div>
-              <div style={{ flex: 1, minWidth: 0, paddingLeft: 4 }}>
-                <div style={{ color: '#FFD700', fontSize: 18, fontWeight: 900, letterSpacing: 0.3, marginBottom: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                <div style={{ color: '#FFD700', fontSize: 18, fontWeight: 900, letterSpacing: 0.3 }}>
                   {T('burgerCount')}
                 </div>
-                <div style={{ color: '#9ea4be', fontSize: 16, lineHeight: 1.45, fontWeight: 700 }}>
+                <div style={{ color: '#9ea4be', fontSize: 15, lineHeight: 1.45, fontWeight: 700 }}>
                   {T('ingredientsLabelShort')}: <span style={{ color: '#fff1b3', fontWeight: 900, fontSize: 18 }}>{modePreview.ingredients}</span>
                 </div>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '14px 0 10px' }}>
-                  {stackLayers.map((layerSrc, index) => (
-                    <img
-                      key={`mini-layer-${index}`}
-                      src={layerSrc}
-                      alt="ingrediente"
-                      style={{ width: 22, height: 22, objectFit: 'contain', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))' }}
-                    />
+              </div>
+              <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'flex-end', justifyContent: 'center' }}>
+                {previewBurgers.map((burger, burgerIndex) => (
+                  <div key={`preview-burger-${burgerIndex}`} style={{ position: 'relative', width: 92, minHeight: 128 }}>
+                    <div style={{
+                      position: 'absolute',
+                      right: -2,
+                      top: 38,
+                      minWidth: 30,
+                      height: 30,
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: '#FFD700',
+                      color: '#1b1730',
+                      fontSize: 12,
+                      fontWeight: 900,
+                      boxShadow: '0 6px 16px rgba(0,0,0,0.18)',
+                    }}>
+                      {burgerIndex + 1}
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      <img src={burgerPanArriba} alt="pan" style={{ width: 70, height: 'auto', marginBottom: -6 }} />
+                      {burger.filter((ing) => ing !== 'pan').map((ing, index) => (
+                        <img
+                          key={`${burgerIndex}-${ing}-${index}`}
+                          src={burgerLayerMap[ing]}
+                          alt={ing}
+                          style={{ width: 60, height: 'auto', marginTop: -7, marginBottom: -7 }}
+                        />
+                      ))}
+                      <img src={burgerPanAbajo} alt="pan" style={{ width: 70, height: 'auto', marginTop: -6 }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {gameMode === 'clon' && (
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+                  {ingredientPool.map((ing) => (
+                    <span
+                      key={`pool-preview-${ing}`}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        padding: '5px 10px',
+                        borderRadius: 999,
+                        background: 'rgba(255,255,255,0.06)',
+                        border: '1px solid rgba(255,255,255,0.08)',
+                      }}
+                    >
+                      <img src={ING_IMG[ing]} alt={ing} style={{ width: 20, height: 20, objectFit: 'contain' }} />
+                      <span style={{ color: '#d8ddf3', fontSize: 11, fontWeight: 700 }}>{getIngName(ing, uiGameLang)}</span>
+                    </span>
                   ))}
                 </div>
-                <div style={{ color: '#9ea4be', fontSize: 16, lineHeight: 1.45, fontWeight: 700 }}>
-                  {T('perPlayerLabel')}
-                </div>
+              )}
+              <div style={{ color: '#9ea4be', fontSize: 15, lineHeight: 1.45, fontWeight: 700, textAlign: 'center' }}>
+                {T('perPlayerLabel')}
               </div>
             </div>
           </div>
@@ -364,7 +402,7 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
                         cursor: 'pointer',
                       }}
                     >
-                      <span>{ING_EMOJI[ing]}</span>
+                      <img src={ING_IMG[ing]} alt={ing} style={{ width: 20, height: 20, objectFit: 'contain' }} />
                       <span>{getIngName(ing, uiGameLang)}</span>
                     </button>
                   );
