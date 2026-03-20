@@ -2706,9 +2706,9 @@ export default function App() {
           return acc;
         }, {});
         const actionPages = [
-          { idx: 2, pageNumber: 3, label: 'Acciones: un jugador', groups: ['single'] },
-          { idx: 3, pageNumber: 4, label: 'Acciones: los demás jugadores', groups: ['global'] },
-          { idx: 4, pageNumber: 5, label: 'Acciones: negación y basurero', groups: ['negation', 'discard'] },
+          { idx: 2, pageNumber: 3, label: T('howToPlayActionPageSingle') || 'Acciones: un jugador', groups: ['single'] },
+          { idx: 3, pageNumber: 4, label: T('howToPlayActionPageGlobal') || 'Acciones: los demas jugadores', groups: ['global'] },
+          { idx: 4, pageNumber: 5, label: T('howToPlayActionPageNegDiscard') || 'Acciones: negacion y basurero', groups: ['negation', 'discard'] },
         ];
 
         return (
@@ -2904,13 +2904,13 @@ export default function App() {
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, gap: 8 }}>
               <Btn onClick={() => setHowToPlayPage((p) => Math.max(0, p - 1))} color="#6b4f36" disabled={page === 0}>
-                Anterior
+                {T('prevPage') || 'Anterior'}
               </Btn>
               <span style={{ color: '#c9b08f', fontSize: 12 }}>
                 {T('howToPlayPage')} {page + 1}/{totalHowToPlayPages}
               </span>
               <Btn onClick={() => setHowToPlayPage((p) => Math.min(totalHowToPlayPages - 1, p + 1))} color="#6b4f36" disabled={page === totalHowToPlayPages - 1}>
-                Siguiente
+                {T('nextPage') || 'Siguiente'}
               </Btn>
             </div>
 
