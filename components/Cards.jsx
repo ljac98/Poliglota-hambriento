@@ -1,5 +1,6 @@
 import React from 'react';
 import HatSVG from './HatSVG';
+import { t, getUILang } from '../src/translations.js';
 import {
   ING_EMOJI, ING_BG, LANG_BORDER, LANG_BG, LANG_TEXT,
   LANG_BADGE, LANG_SHORT, getIngName, getActionInfo
@@ -152,6 +153,13 @@ export const IngredientCard = ({ card, onClick, selected, small, large, playable
 // ═══ ACTION CARD ═══
 export const ActionCard = ({ card, onClick, selected, small, large, playable }) => {
   const info = getActionInfo(card.action);
+  const uiLang = getUILang();
+  const nameKey = `actionName_${card.action}`;
+  const descKey = `actionDesc_${card.action}`;
+  const trName = t(nameKey, uiLang);
+  const trDesc = t(descKey, uiLang);
+  const actionName = trName === nameKey ? info?.name : trName;
+  const actionDesc = trDesc === descKey ? info?.desc : trDesc;
   const dimmed = playable === false;
   const w = large ? 150 : (small ? 64 : 86);
   const h = large ? 200 : (small ? 94 : 126);
@@ -181,11 +189,11 @@ export const ActionCard = ({ card, onClick, selected, small, large, playable }) 
         <img src={cornerImg} alt="" style={{ position:"absolute", bottom:3, right:3, width:cornerSize, height:cornerSize, objectFit:"contain", transform:"rotate(180deg)" }} />
       </>}
       {mainImg
-        ? <img src={mainImg} alt={info?.name} style={{ width:mainSize, height:mainSize, objectFit:"contain", filter:"drop-shadow(0 2px 4px rgba(0,0,0,0.4))" }} />
+        ? <img src={mainImg} alt={actionName} style={{ width:mainSize, height:mainSize, objectFit:"contain", filter:"drop-shadow(0 2px 4px rgba(0,0,0,0.4))" }} />
         : <span style={{ fontSize: small ? 22 : 32 }}>{info?.emoji}</span>
       }
-      <span style={{ fontSize: large ? 15 : (small ? 7 : 9), fontWeight: 700, textAlign: "center", lineHeight: 1.1 }}>{info?.name}</span>
-      <span style={{ fontSize: large ? 12 : (small ? 5 : 7), color: "#777", textAlign: "center", lineHeight: 1.1 }}>{info?.desc}</span>
+      <span style={{ fontSize: large ? 15 : (small ? 7 : 9), fontWeight: 700, textAlign: "center", lineHeight: 1.1 }}>{actionName}</span>
+      <span style={{ fontSize: large ? 12 : (small ? 5 : 7), color: "#777", textAlign: "center", lineHeight: 1.1 }}>{actionDesc}</span>
     </div>
   );
 };

@@ -98,6 +98,19 @@ export default function App() {
   const [uiLang, setUiLangState] = useState(() => getUILang());
   const T = useCallback((key) => t(key, uiLang), [uiLang]);
   const handleSetLang = (lang) => { setUILang(lang); setUiLangState(lang); };
+  const getActionText = useCallback((actionId) => {
+    const base = getActionInfo(actionId);
+    if (!base) return null;
+    const nameKey = `actionName_${actionId}`;
+    const descKey = `actionDesc_${actionId}`;
+    const trName = T(nameKey);
+    const trDesc = T(descKey);
+    return {
+      ...base,
+      name: trName === nameKey ? base.name : trName,
+      desc: trDesc === descKey ? base.desc : trDesc,
+    };
+  }, [T]);
   // â”€â”€ NegaciÃ³n state â”€â”€
   // pendingNeg: null | { actingIdx, cardInfo, eligibleIdxs, responses: {i: bool} }
   const [pendingNeg, setPendingNeg] = useState(null);
@@ -1781,8 +1794,8 @@ export default function App() {
                       ? <span style={{ color: '#4CAF50', fontSize: 12 }}>{T('canPlay')}</span>
                       : <span style={{ color: '#FF7043', fontSize: 12 }}>{T('cantPlay')}</span>}
                   </>) : (<>
-                    <span style={{ fontWeight: 700, fontSize: 14, color: '#FFD700' }}>{getActionInfo(card.action)?.name}</span>
-                    <span style={{ fontSize: 12, color: '#ccc' }}>{getActionInfo(card.action)?.desc}</span>
+                    <span style={{ fontWeight: 700, fontSize: 14, color: '#FFD700' }}>{getActionText(card.action)?.name}</span>
+                    <span style={{ fontSize: 12, color: '#ccc' }}>{getActionText(card.action)?.desc}</span>
                   </>)}
                 </div>
                 <div style={{ display: 'flex', gap: 4 }}>
@@ -1818,7 +1831,7 @@ export default function App() {
           ? <span style={{ color: '#4CAF50' }}>{T('canPlayThis')}</span>
           : <span style={{ color: '#FF7043' }}>{T('cantPlayNow')}</span>
       ) : (
-        <span style={{ color: '#FFD700' }}>{'\u26A1'} {getActionInfo(human.hand[selectedIdx]?.action)?.desc}</span>
+        <span style={{ color: '#FFD700' }}>{'\u26A1'} {getActionText(human.hand[selectedIdx]?.action)?.desc}</span>
       )}
     </div>
   );
@@ -2320,8 +2333,8 @@ export default function App() {
                     ? <span style={{ color: '#4CAF50', fontSize: 13 }}>{T('canPlay')}</span>
                     : <span style={{ color: '#FF7043', fontSize: 13 }}>{T('cantPlay')}</span>}
                 </>) : (<>
-                  <span style={{ fontWeight: 700, fontSize: 16, color: '#FFD700' }}>{getActionInfo(card.action)?.name}</span>
-                  <span style={{ fontSize: 13, color: '#ccc' }}>{getActionInfo(card.action)?.desc}</span>
+                  <span style={{ fontWeight: 700, fontSize: 16, color: '#FFD700' }}>{getActionText(card.action)?.name}</span>
+                  <span style={{ fontSize: 13, color: '#ccc' }}>{getActionText(card.action)?.desc}</span>
                 </>)}
               </div>
               <div style={{ display: 'flex', gap: 8, width: '100%' }}>
@@ -2600,7 +2613,7 @@ export default function App() {
             <h4 style={{ fontSize: 14, fontWeight: 800, color: '#FFD700', marginBottom: 8 }}>{T('affectingCards')}</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
               {allActionIds.map(id => {
-                const info = getActionInfo(id);
+                const info = getActionText(id);
                 if (!info) return null;
                 return (
                   <div key={id} style={{
