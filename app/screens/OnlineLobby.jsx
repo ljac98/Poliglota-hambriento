@@ -318,6 +318,51 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
       </>
     );
   };
+  const renderDesktopSidebar = () => (
+    <div style={{ ...floatingCardStyle, marginTop: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+        {myHat ? <HatSVG lang={myHat} size={38} /> : <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />}
+        <div>
+          <div style={{ color: '#FFD700', fontSize: 12, fontWeight: 900 }}>{myHat ? T(myHat) : T('yourLanguage')}</div>
+          <div style={{ color: '#8a8fa8', fontSize: 10, fontWeight: 700 }}>{T('yourLanguage')}</div>
+        </div>
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+        {LANGUAGES.map(lang => {
+          const takenBy = Object.entries(hatPicks).find(([n, h]) => h === lang && n !== myName);
+          const isTaken = !!takenBy;
+          return (
+            <div
+              key={`desktop-${lang}`}
+              onClick={() => !isTaken && pickHat(lang)}
+              style={{
+                flex: '1 1 28%', minWidth: 52, padding: '6px 4px', borderRadius: 8, cursor: isTaken ? 'not-allowed' : 'pointer',
+                border: myHat === lang ? '2px solid #FFD700' : `2px solid ${LANG_BORDER[lang]}44`,
+                background: myHat === lang ? 'rgba(255,215,0,.1)' : isTaken ? 'rgba(0,0,0,.2)' : 'rgba(255,255,255,.02)',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
+                opacity: isTaken ? 0.4 : 1, transition: 'all .15s',
+              }}
+            >
+              <HatSVG lang={lang} size={28} />
+              <span style={{ fontSize: 10, fontWeight: 800, color: myHat === lang ? '#FFD700' : LANG_TEXT[lang] }}>
+                {T(lang)}
+              </span>
+              {isTaken && <span style={{ fontSize: 9, color: '#888' }}>{takenBy[0]}</span>}
+            </div>
+          );
+        })}
+      </div>
+      <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '0 0 12px' }} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+        <img src={selectedMode.img} alt={selectedMode.label} style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 10 }} />
+        <div>
+          <div style={{ color: '#FFD700', fontSize: 12, fontWeight: 900 }}>{selectedMode.label}</div>
+          <div style={{ color: '#8a8fa8', fontSize: 10, fontWeight: 700 }}>{T('perPlayerLabel')}</div>
+        </div>
+      </div>
+      {renderModeSummary()}
+    </div>
+  );
   const floatingCardStyle = {
     position: isDesktopWide ? 'absolute' : 'static',
     right: isDesktopWide ? -224 : 'auto',
