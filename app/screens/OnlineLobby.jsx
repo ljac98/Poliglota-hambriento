@@ -320,28 +320,54 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
   };
   const renderDesktopSidebar = () => (
     <div style={{ ...floatingCardStyle, marginTop: 0 }}>
-      <div style={{ marginBottom: 14 }}>
-        <div style={{ color: '#ffd24a', fontSize: 11, fontWeight: 900, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 8 }}>
-          {T('yourLanguage')}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, alignItems: 'stretch', marginBottom: 14 }}>
+        <div>
+          <div style={{ color: '#ffd24a', fontSize: 11, fontWeight: 900, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 8 }}>
+            {T('yourLanguage')}
+          </div>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            minHeight: 76,
+            padding: '10px 12px',
+            borderRadius: 14,
+            background: 'linear-gradient(180deg, rgba(255,215,0,0.12), rgba(255,255,255,0.04))',
+            border: '1px solid rgba(255,215,0,0.18)',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)',
+          }}>
+            {myHat ? <HatSVG lang={myHat} size={38} /> : <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />}
+            <div style={{ minWidth: 0 }}>
+              <div style={{ color: '#fff3bf', fontSize: 13, fontWeight: 900, lineHeight: 1.05 }}>{myHat ? T(myHat) : T('chooseOne')}</div>
+              <div style={{ color: '#8a8fa8', fontSize: 10, fontWeight: 700, marginTop: 2 }}>{T('chooseHat')}</div>
+            </div>
+          </div>
         </div>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-          padding: '10px 12px',
-          borderRadius: 14,
-          background: 'linear-gradient(180deg, rgba(255,215,0,0.12), rgba(255,255,255,0.04))',
-          border: '1px solid rgba(255,215,0,0.18)',
-          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)',
-        }}>
-          {myHat ? <HatSVG lang={myHat} size={40} /> : <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />}
-          <div style={{ minWidth: 0 }}>
-            <div style={{ color: '#fff3bf', fontSize: 14, fontWeight: 900, lineHeight: 1.05 }}>{myHat ? T(myHat) : T('chooseOne')}</div>
-            <div style={{ color: '#8a8fa8', fontSize: 10, fontWeight: 700, marginTop: 2 }}>{T('chooseHat')}</div>
+        <div>
+          <div style={{ color: '#ffd24a', fontSize: 11, fontWeight: 900, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 8 }}>
+            {T('gameMode')}
+          </div>
+          <div style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: 9,
+            minHeight: 76,
+            padding: '10px 12px',
+            borderRadius: 14,
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.08)',
+          }}>
+            <img src={selectedMode.img} alt={selectedMode.label} style={{ width: 38, height: 38, objectFit: 'cover', borderRadius: 10, flexShrink: 0 }} />
+            <div style={{ minWidth: 0, textAlign: 'left' }}>
+              <div style={{ color: '#FFD700', fontSize: 13, fontWeight: 900, lineHeight: 1.05 }}>{selectedMode.label}</div>
+              <div style={{ color: '#8a8fa8', fontSize: 9, fontWeight: 700, marginTop: 2 }}>{T('perPlayerLabel')}</div>
+            </div>
           </div>
         </div>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 7, marginBottom: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16, alignItems: 'start' }}>
+        <div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 7, marginBottom: 0 }}>
         {LANGUAGES.map(lang => {
           const takenBy = Object.entries(hatPicks).find(([n, h]) => h === lang && n !== myName);
           const isTaken = !!takenBy;
@@ -369,12 +395,9 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
           );
         })}
       </div>
-      <div style={{ height: 1, background: 'linear-gradient(90deg, rgba(255,255,255,0), rgba(255,215,0,0.22), rgba(255,255,255,0))', margin: '0 0 14px' }} />
-      <div style={{ marginBottom: 10 }}>
-        <div style={{ color: '#ffd24a', fontSize: 11, fontWeight: 900, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 8 }}>
-          {T('gameMode')}
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8, marginBottom: 12 }}>
+        <div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8, marginBottom: 0 }}>
           {gameModes.map((m) => (
             <div
               key={`sidebar-mode-${m.id}`}
@@ -402,26 +425,9 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
             </div>
           ))}
         </div>
-        <div style={{
-          display: 'inline-flex',
-          alignItems: 'flex-start',
-          justifyContent: 'flex-start',
-          gap: 9,
-          padding: '8px 10px',
-          borderRadius: 12,
-          background: 'rgba(255,255,255,0.04)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          marginBottom: 12,
-          width: 'fit-content',
-          maxWidth: '100%',
-        }}>
-          <img src={selectedMode.img} alt={selectedMode.label} style={{ width: 34, height: 34, objectFit: 'cover', borderRadius: 10, flexShrink: 0 }} />
-          <div style={{ minWidth: 0, textAlign: 'left' }}>
-            <div style={{ color: '#FFD700', fontSize: 12, fontWeight: 900, lineHeight: 1.05 }}>{selectedMode.label}</div>
-            <div style={{ color: '#8a8fa8', fontSize: 9, fontWeight: 700, marginTop: 2 }}>{T('perPlayerLabel')}</div>
-          </div>
         </div>
       </div>
+      <div style={{ height: 1, background: 'linear-gradient(90deg, rgba(255,255,255,0), rgba(255,215,0,0.22), rgba(255,255,255,0))', margin: '0 0 14px' }} />
       {renderModeSummary()}
     </div>
   );
