@@ -17,6 +17,7 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
   const [gameMode, setGameMode] = useState('clon');
   const [burgerCount, setBurgerCount] = useState(2);
   const [ingredientCount, setIngredientCount] = useState(5);
+  const [chaosLevel, setChaosLevel] = useState(2);
   const [aiCount, setAiCount] = useState(2);
   const [showModeConfig, setShowModeConfig] = useState(false);
 
@@ -149,7 +150,7 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
 
         <div style={{ display: 'flex', gap: 10 }}>
           <Btn
-            onClick={() => onStart(name.trim(), hat, { mode: gameMode, burgerCount, ingredientCount }, aiCount)}
+            onClick={() => onStart(name.trim(), hat, { mode: gameMode, burgerCount, ingredientCount, chaosLevel }, aiCount)}
             disabled={!name.trim() || !hat}
             color="#FFD700"
             style={{ flex: 1, fontSize: 16, padding: '12px 0' }}
@@ -180,6 +181,22 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 6 }}>
                 <span style={markerStyle}>1</span>
                 <span style={markerStyle}>4</span>
+              </div>
+            </div>
+          )}
+          {gameMode === 'caotico' && (
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 8 }}>
+                {T('modeCaotico')}: <span style={{ color: '#FFD700' }}>{chaosLevel}/3</span>
+              </label>
+              <input
+                type="range" min={1} max={3} step={1} value={chaosLevel}
+                onChange={e => setChaosLevel(+e.target.value)}
+                style={{ width: '100%', accentColor: '#FF7043' }}
+              />
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 6 }}>
+                <span style={markerStyle}>Menos caótico</span>
+                <span style={markerStyle}>Más caótico</span>
               </div>
             </div>
           )}

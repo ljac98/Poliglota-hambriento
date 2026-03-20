@@ -16,6 +16,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
   const [gameMode, setGameMode] = useState('clon');
   const [burgerCount, setBurgerCount] = useState(2);
   const [ingredientCount, setIngredientCount] = useState(5);
+  const [chaosLevel, setChaosLevel] = useState(2);
   const [showModeConfig, setShowModeConfig] = useState(false);
   const [hatPicks, setHatPicks] = useState({});
   const [copied, setCopied] = useState(false);
@@ -120,7 +121,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
 
   function handleStart() {
     if (!myHat) return;
-    const gameConfig = { mode: gameMode, burgerCount, ingredientCount };
+    const gameConfig = { mode: gameMode, burgerCount, ingredientCount, chaosLevel };
     socket.emit('startGame', { code: roomCode, hatPicks, gameConfig });
     onStart(hatPicks, gameConfig);
   }
@@ -446,6 +447,22 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 6 }}>
                 <span style={markerStyle}>1</span>
                 <span style={markerStyle}>4</span>
+              </div>
+            </div>
+          )}
+          {gameMode === 'caotico' && (
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ color: '#aaa', fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 6 }}>
+                {T('modeCaotico')}: <span style={{ color: '#FFD700' }}>{chaosLevel}/3</span>
+              </label>
+              <input
+                type="range" min={1} max={3} step={1} value={chaosLevel}
+                onChange={e => setChaosLevel(+e.target.value)}
+                style={{ width: '100%', accentColor: '#FF7043' }}
+              />
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 6 }}>
+                <span style={markerStyle}>Menos caos</span>
+                <span style={markerStyle}>Mas caos</span>
               </div>
             </div>
           )}

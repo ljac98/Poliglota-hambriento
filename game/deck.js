@@ -63,14 +63,28 @@ export function initPlayer(name, deck, chosenHat, gameConfig, isAI = false) {
   const hand = deck.splice(0, 6);
   const perchero = LANGUAGES.filter(l => l !== chosenHat);
 
-  const { mode = 'clon', burgerCount = 2, ingredientCount = 5 } = gameConfig || {};
+  const { mode = 'clon', burgerCount = 2, ingredientCount = 5, chaosLevel = 2 } = gameConfig || {};
 
   let burgers;
   if (mode === 'escalera') {
     burgers = Array.from({ length: burgerCount }, (_, i) => genBurger(4 + i));
   } else if (mode === 'caotico') {
-    const count = randInt(2, 4);
-    burgers = Array.from({ length: count }, () => genBurger(randInt(3, 8)));
+    const lvl = Math.max(1, Math.min(3, Number(chaosLevel) || 2));
+    let burgerMin = 2;
+    let burgerMax = 4;
+    let ingMin = 4;
+    let ingMax = 7;
+    if (lvl === 1) {
+      // Menos caotico: max 2 hamburguesas, max 5 ingredientes
+      burgerMin = 1; burgerMax = 2;
+      ingMin = 3; ingMax = 5;
+    } else if (lvl === 3) {
+      // Mas caotico: hamburguesas 3-5, ingredientes 5+
+      burgerMin = 3; burgerMax = 5;
+      ingMin = 5; ingMax = 8;
+    }
+    const count = randInt(burgerMin, burgerMax);
+    burgers = Array.from({ length: count }, () => genBurger(randInt(ingMin, ingMax)));
   } else {
     // clon (default)
     burgers = Array.from({ length: burgerCount }, () => genBurger(ingredientCount));
