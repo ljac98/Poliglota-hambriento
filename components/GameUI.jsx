@@ -137,14 +137,18 @@ export const BurgerTarget = ({ ingredients, table, isCurrent, onIngredientClick 
           const isDupe = counts[ing] > 1;
 
           return (
-            <div key={i} onClick={() => onIngredientClick && onIngredientClick(ing)} style={{
+            <div
+              key={i}
+              onClick={() => onIngredientClick && onIngredientClick(viaWildcard ? `perrito|${ing}` : ing)}
+              style={{
               position: "relative", width: 36, height: 36, borderRadius: 6,
               background: filled ? ING_BG[ing] : "rgba(255,255,255,0.06)",
               display: "flex", alignItems: "center", justifyContent: "center",
               border: filled ? "none" : `2px dashed ${ING_BG[ing]}44`,
               opacity: filled ? 1 : 0.35, transition: "all 0.3s",
               cursor: onIngredientClick ? "pointer" : "default",
-            }}>
+            }}
+            >
               {ING_IMG[ing]
                 ? <img src={ING_IMG[ing]} alt={ing} style={{ width: 35, height: 35, objectFit: 'contain' }} />
                 : ING_EMOJI[ing]}

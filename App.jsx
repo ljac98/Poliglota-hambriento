@@ -1759,6 +1759,11 @@ export default function App() {
                   display: 'flex', flexDirection: 'column', gap: 2,
                 }}>
                   {card.type === 'ingredient' ? (<>
+                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 2 }}>
+                      {ING_IMG[card.ingredient]
+                        ? <img src={ING_IMG[card.ingredient]} alt={card.ingredient} style={{ width: 20, height: 20, objectFit: 'contain' }} />
+                        : <span style={{ fontSize: 18 }}>{ING_EMOJI[card.ingredient]}</span>}
+                    </div>
                     <span style={{ fontWeight: 700, fontSize: 14 }}>{getIngName(card.ingredient, card.language)}</span>
                     {card.ingredient === 'perrito' && (
                       <span style={{ fontSize: 12, color: '#ccc' }}>{T('wildcardChoose')}</span>
@@ -2271,6 +2276,11 @@ export default function App() {
                 display: 'flex', flexDirection: 'column', gap: 4, width: '100%',
               }}>
                 {card.type === 'ingredient' ? (<>
+                  <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 2 }}>
+                    {ING_IMG[card.ingredient]
+                      ? <img src={ING_IMG[card.ingredient]} alt={card.ingredient} style={{ width: 24, height: 24, objectFit: 'contain' }} />
+                      : <span style={{ fontSize: 20 }}>{ING_EMOJI[card.ingredient]}</span>}
+                  </div>
                   <span style={{ fontWeight: 700, fontSize: 16 }}>{getIngName(card.ingredient, card.language)}</span>
                   {card.ingredient === 'perrito' && (
                     <span style={{ fontSize: 13, color: '#ccc' }}>{T('wildcardChoose')}</span>
