@@ -104,6 +104,7 @@ const translations = {
     yourTurnLabel: '🎴 Tu turno',
     turnActionsLabel: 'Cómo jugar',
     howToPlayDesc: 'Guía rápida del turno: usa cartas de ingredientes para completar tu hamburguesa y cartas de acción para afectar la partida.',
+    howToPlayPage: 'Página',
     howToPlayTurnRulesTitle: 'Reglas del turno',
     howToPlayRuleOneCard: 'Por turno solo puedes jugar una carta: de ingrediente o de acción.',
     howToPlayRuleHatButtonsBeforePlay: 'Los botones Cambiar y Agregar solo se pueden usar antes de haber jugado una carta.',

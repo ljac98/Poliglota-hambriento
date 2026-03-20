@@ -1686,7 +1686,7 @@ export default function App() {
   const turnActionIndicators = (
     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', flexShrink: 0, alignItems: 'center' }}>
       <button
-        onClick={() => setModal({ type: 'howToPlay' })}
+        onClick={() => { setModal({ type: 'howToPlay' }); }}
         style={{
           fontSize: 11,
           color: '#4ecdc4',
@@ -1701,6 +1701,7 @@ export default function App() {
           fontFamily: 'inherit',
         }}
       >
+        <span style={{ marginRight: 4 }}>📖</span>
         {T('turnActionsLabel')}
       </button>
     </div>
@@ -1761,8 +1762,8 @@ export default function App() {
                   {card.type === 'ingredient' ? (<>
                     <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 2 }}>
                       {ING_IMG[card.ingredient]
-                        ? <img src={ING_IMG[card.ingredient]} alt={card.ingredient} style={{ width: 20, height: 20, objectFit: 'contain' }} />
-                        : <span style={{ fontSize: 18 }}>{ING_EMOJI[card.ingredient]}</span>}
+                        ? <img src={ING_IMG[card.ingredient]} alt={card.ingredient} style={{ width: 28, height: 28, objectFit: 'contain' }} />
+                        : <span style={{ fontSize: 24 }}>{ING_EMOJI[card.ingredient]}</span>}
                     </div>
                     <span style={{ fontWeight: 700, fontSize: 14 }}>{getIngName(card.ingredient, card.language)}</span>
                     {card.ingredient === 'perrito' && (
@@ -2278,8 +2279,8 @@ export default function App() {
                 {card.type === 'ingredient' ? (<>
                   <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 2 }}>
                     {ING_IMG[card.ingredient]
-                      ? <img src={ING_IMG[card.ingredient]} alt={card.ingredient} style={{ width: 24, height: 24, objectFit: 'contain' }} />
-                      : <span style={{ fontSize: 20 }}>{ING_EMOJI[card.ingredient]}</span>}
+                      ? <img src={ING_IMG[card.ingredient]} alt={card.ingredient} style={{ width: 32, height: 32, objectFit: 'contain' }} />
+                      : <span style={{ fontSize: 26 }}>{ING_EMOJI[card.ingredient]}</span>}
                   </div>
                   <span style={{ fontWeight: 700, fontSize: 16 }}>{getIngName(card.ingredient, card.language)}</span>
                   {card.ingredient === 'perrito' && (
@@ -2631,10 +2632,40 @@ export default function App() {
 
         return (
           <Modal title={T('turnActionsLabel')}>
+            <div style={{
+              position: 'relative',
+              background: 'linear-gradient(180deg,#b98d58 0%,#8f6a43 100%)',
+              borderRadius: 14,
+              border: '2px solid rgba(65,42,24,0.8)',
+              padding: 10,
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25), 0 10px 24px rgba(0,0,0,0.35)',
+              marginBottom: 12,
+            }}>
+              <div style={{
+                position: 'absolute',
+                left: '50%',
+                top: 10,
+                bottom: 10,
+                width: 6,
+                transform: 'translateX(-50%)',
+                borderRadius: 99,
+                background: 'linear-gradient(180deg, rgba(52,33,20,0.45), rgba(245,225,197,0.25), rgba(52,33,20,0.45))',
+                pointerEvents: 'none',
+              }} />
+              <div style={{
+                background: 'linear-gradient(180deg,#f3e2c7 0%,#e8d2b1 100%)',
+                borderRadius: 10,
+                border: '1px solid rgba(82,58,36,0.35)',
+                padding: '12px 14px',
+                maxHeight: '52vh',
+                overflowY: 'auto',
+                boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.35)',
+              }}>
             <p style={{ color: '#ccc', fontSize: 13, marginBottom: 14 }}>
               {T('howToPlayDesc')}
             </p>
             <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '12px 14px', marginBottom: 12 }}>
+              <div style={{ color: '#5a4635', fontSize: 10, fontWeight: 800, letterSpacing: 1, marginBottom: 6 }}>{T('howToPlayPage')} 1</div>
               <div style={{ color: '#FFD700', fontWeight: 800, fontSize: 14, marginBottom: 6 }}>
                 {T('howToPlayTurnRulesTitle')}
               </div>
@@ -2646,6 +2677,7 @@ export default function App() {
             </div>
 
             <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '12px 14px', marginBottom: 12 }}>
+              <div style={{ color: '#5a4635', fontSize: 10, fontWeight: 800, letterSpacing: 1, marginBottom: 6 }}>{T('howToPlayPage')} 2</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
                 <img src={ingredientCardIcon} alt={T('ingredientCard')} style={{ width: 22, height: 22, objectFit: 'contain' }} />
                 <div style={{ color: '#FFD700', fontWeight: 800, fontSize: 14 }}>{T('howToPlayIngredientTitle')}</div>
@@ -2656,6 +2688,7 @@ export default function App() {
             </div>
 
             <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '12px 14px', marginBottom: 14 }}>
+              <div style={{ color: '#5a4635', fontSize: 10, fontWeight: 800, letterSpacing: 1, marginBottom: 6 }}>{T('howToPlayPage')} 3</div>
               <div style={{ color: '#FFD700', fontWeight: 800, fontSize: 14, marginBottom: 8 }}>
                 {T('howToPlayActionTitle')}
               </div>
@@ -2709,6 +2742,7 @@ export default function App() {
             </div>
 
             <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '12px 14px', marginBottom: 12 }}>
+              <div style={{ color: '#5a4635', fontSize: 10, fontWeight: 800, letterSpacing: 1, marginBottom: 6 }}>{T('howToPlayPage')} 4</div>
               <div style={{ color: '#FFD700', fontWeight: 800, fontSize: 14, marginBottom: 6 }}>
                 {T('howToPlayGoalTitle')}
               </div>
@@ -2718,6 +2752,7 @@ export default function App() {
             </div>
 
             <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '12px 14px', marginBottom: 12 }}>
+              <div style={{ color: '#5a4635', fontSize: 10, fontWeight: 800, letterSpacing: 1, marginBottom: 6 }}>{T('howToPlayPage')} 5</div>
               <div style={{ color: '#FFD700', fontWeight: 800, fontSize: 14, marginBottom: 8 }}>
                 {T('howToPlayMainHatsTitle')}
               </div>
@@ -2747,6 +2782,7 @@ export default function App() {
             </div>
 
             <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '12px 14px', marginBottom: 14 }}>
+              <div style={{ color: '#5a4635', fontSize: 10, fontWeight: 800, letterSpacing: 1, marginBottom: 6 }}>{T('howToPlayPage')} 6</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                 <img src={percheroImg} alt={T('closet')} style={{ width: 22, height: 22, objectFit: 'contain' }} />
                 <div style={{ color: '#FFD700', fontWeight: 800, fontSize: 14 }}>{T('howToPlayClosetTitle')}</div>
@@ -2756,6 +2792,8 @@ export default function App() {
               </div>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {human.perchero.map((h, i) => <HatBadge key={`help-closet-${h}-${i}`} lang={h} size="sm" />)}
+              </div>
+            </div>
               </div>
             </div>
 
