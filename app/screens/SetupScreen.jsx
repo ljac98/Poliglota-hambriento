@@ -255,24 +255,24 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
                   {modePreview.burgers}
                 </div>
               </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ color: '#FFD700', fontSize: 13, fontWeight: 800, letterSpacing: 0.3, marginBottom: 6 }}>
+              <div style={{ flex: 1, minWidth: 0, paddingLeft: 4 }}>
+                <div style={{ color: '#FFD700', fontSize: 18, fontWeight: 900, letterSpacing: 0.3, marginBottom: 8 }}>
                   {T('burgerCount')}
                 </div>
-                <div style={{ color: '#9ea4be', fontSize: 12, lineHeight: 1.45 }}>
-                  {T('ingredientsLabelShort')}: <span style={{ color: '#fff1b3', fontWeight: 900 }}>{modePreview.ingredients}</span>
+                <div style={{ color: '#9ea4be', fontSize: 16, lineHeight: 1.45, fontWeight: 700 }}>
+                  {T('ingredientsLabelShort')}: <span style={{ color: '#fff1b3', fontWeight: 900, fontSize: 18 }}>{modePreview.ingredients}</span>
                 </div>
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', margin: '10px 0 6px' }}>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '14px 0 10px' }}>
                   {stackLayers.map((layerSrc, index) => (
                     <img
                       key={`mini-layer-${index}`}
                       src={layerSrc}
                       alt="ingrediente"
-                      style={{ width: 18, height: 18, objectFit: 'contain', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))' }}
+                      style={{ width: 22, height: 22, objectFit: 'contain', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))' }}
                     />
                   ))}
                 </div>
-                <div style={{ color: '#9ea4be', fontSize: 12, lineHeight: 1.45 }}>
+                <div style={{ color: '#9ea4be', fontSize: 16, lineHeight: 1.45, fontWeight: 700 }}>
                   {T('perPlayerLabel')}
                 </div>
               </div>
