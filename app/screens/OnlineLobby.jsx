@@ -117,6 +117,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
   }
 
   const myHat = hatPicks[myName];
+  const desktopLeftPanelWidth = 500;
 
   // Listen for other players' hat picks
   useEffect(() => {
@@ -464,7 +465,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
 
   const roomHeader = (
     <div style={{ width: '100%', maxWidth: isDesktopWide ? 1120 : 560, margin: '0 auto 18px' }}>
-      <div style={{ width: isDesktopWide ? 500 : '100%', marginRight: isDesktopWide ? 'auto' : 0, textAlign: 'center' }}>
+      <div style={{ width: isDesktopWide ? desktopLeftPanelWidth : '100%', marginRight: isDesktopWide ? 'auto' : 0, textAlign: 'center' }}>
       {isPublic ? (
         <>
           <div style={{ fontSize: 13, color: '#888', fontWeight: 700, letterSpacing: 1, marginBottom: 6 }}>{T('publicRoom')}</div>
@@ -618,7 +619,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
       <div style={{
         background: '#16213e', borderRadius: 20,
         padding: 'clamp(18px, 4vw, 32px) clamp(14px, 4vw, 36px)',
-        maxWidth: isDesktopWide ? 500 : 560, width: isDesktopWide ? 'min(500px, 78vw)' : '94vw',
+        maxWidth: isDesktopWide ? desktopLeftPanelWidth : 560, width: isDesktopWide ? `min(${desktopLeftPanelWidth}px, 78vw)` : '94vw',
         boxShadow: '0 8px 40px rgba(0,0,0,.6)', border: '2px solid #2a2a4a',
         position: 'relative',
         overflow: 'visible',
