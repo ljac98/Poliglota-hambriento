@@ -288,9 +288,9 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
   );
   const floatingCardStyle = {
     position: isDesktopWide ? 'absolute' : 'static',
-    right: isDesktopWide ? -224 : 'auto',
+    right: isDesktopWide ? -252 : 'auto',
     top: 0,
-    width: isDesktopWide ? 208 : 'auto',
+    width: isDesktopWide ? 236 : 'auto',
     borderRadius: 14,
     padding: '10px 10px 12px',
     background: 'linear-gradient(180deg, rgba(255,215,0,0.08), rgba(255,255,255,0.03))',
@@ -307,7 +307,7 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
       <div style={{
         background: '#16213e', borderRadius: 20,
         padding: 'clamp(20px, 5vw, 36px) clamp(16px, 5vw, 40px)',
-        maxWidth: 520, width: '92vw',
+        maxWidth: isDesktopWide ? 560 : 520, width: '92vw',
         boxShadow: '0 8px 40px rgba(0,0,0,.6)', border: '2px solid #2a2a4a',
         position: 'relative',
         overflow: 'visible',
@@ -357,7 +357,7 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
           </div>
         )}
 
-        <div style={{ position: 'relative', paddingRight: isDesktopWide ? 224 : 0 }}>
+        <div style={{ position: 'relative', paddingRight: isDesktopWide ? 252 : 0 }}>
         {/* Hat selection */}
         <div style={{ marginBottom: isDesktopWide ? 8 : 20 }}>
           {!isDesktopWide && (
