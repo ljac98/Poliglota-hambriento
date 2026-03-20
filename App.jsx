@@ -2608,9 +2608,9 @@ export default function App() {
                     background: 'rgba(255,255,255,0.05)', borderRadius: 8, padding: '6px 10px',
                   }}>
                     <span style={{
-                      width: 30,
-                      height: 30,
-                      minWidth: 30,
+                      width: 38,
+                      height: 38,
+                      minWidth: 38,
                       borderRadius: '50%',
                       background: 'rgba(255,255,255,0.16)',
                       border: '1px solid rgba(255,255,255,0.26)',
@@ -2619,8 +2619,8 @@ export default function App() {
                       justifyContent: 'center',
                     }}>
                       {actionCardIcons[id]
-                        ? <img src={actionCardIcons[id]} alt={info.name} style={{ width: 20, height: 20, objectFit: 'contain' }} />
-                        : <span style={{ fontSize: 16 }}>{info.emoji}</span>}
+                        ? <img src={actionCardIcons[id]} alt={info.name} style={{ width: 26, height: 26, objectFit: 'contain' }} />
+                        : <span style={{ fontSize: 20 }}>{info.emoji}</span>}
                     </span>
                     <div>
                       <div style={{ fontSize: 13, fontWeight: 700, color: '#eee' }}>{info.name}</div>
