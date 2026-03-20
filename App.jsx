@@ -1536,7 +1536,7 @@ export default function App() {
       <div style={{ flex: 1 }}>
         <div style={{ fontWeight: 900, fontSize: 16, color: humanColor }}>{human.name}</div>
         <div style={{ fontSize: 11, color: '#777' }}>
-          {'\u{1F354}'} {human.currentBurger}/{human.totalBurgers} hamburguesas
+          {'\u{1F354}'} {human.currentBurger}/{human.totalBurgers} {String(T('burgersLabel')).toLowerCase()}
           {extraPlay && <span style={{ color: '#FFD700', marginLeft: 8 }}>{T('extraPlayLabel')}</span>}
         </div>
       </div>
