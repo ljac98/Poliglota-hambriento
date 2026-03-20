@@ -427,9 +427,9 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
   );
   const floatingCardStyle = {
     position: isDesktopWide ? 'absolute' : 'static',
-    right: isDesktopWide ? -228 : 'auto',
+    right: isDesktopWide ? -244 : 'auto',
     top: isDesktopWide ? -324 : 0,
-    width: isDesktopWide ? 252 : 'auto',
+    width: isDesktopWide ? 286 : 'auto',
     borderRadius: 18,
     padding: '14px 14px 16px',
     background: 'linear-gradient(180deg, rgba(26,31,55,0.98), rgba(18,22,40,0.96))',
@@ -698,7 +698,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
 
         {/* Game Mode (host only) */}
         {isHost && (
-          <div style={{ marginBottom: 16, position: 'relative', paddingRight: isDesktopWide ? 236 : 0 }}>
+          <div style={{ marginBottom: 16, position: 'relative', paddingRight: isDesktopWide ? 286 : 0 }}>
             {!isDesktopWide && <label style={{ color: '#aaa', fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 8 }}>{T('gameMode')}</label>}
             <div style={{ display: 'flex', gap: 12, alignItems: 'stretch', flexWrap: 'wrap' }}>
               {!isDesktopWide && (
