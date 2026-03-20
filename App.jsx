@@ -2799,7 +2799,7 @@ export default function App() {
                     return (
                       <div key={group.key} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: '8px 10px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                          <img src={group.icon} alt={group.title} style={{ width: 24, height: 24, objectFit: 'contain' }} />
+                          <img src={group.icon} alt={group.title} style={{ width: 30, height: 30, objectFit: 'contain' }} />
                           <span style={{ color: '#7A4A00', fontWeight: 700, fontSize: 12 }}>{group.title}</span>
                         </div>
                         <div style={{ color: '#5a4635', fontSize: 11, lineHeight: 1.35, marginBottom: 6 }}>{group.desc}</div>
@@ -2812,7 +2812,7 @@ export default function App() {
                               <div key={a.id} style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: '#3f3125' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                   {actionIcons[a.id]
-                                    ? <img src={actionIcons[a.id]} alt={a.name} style={{ width: 24, height: 24, objectFit: 'contain' }} />
+                                    ? <img src={actionIcons[a.id]} alt={a.name} style={{ width: 32, height: 32, objectFit: 'contain' }} />
                                     : <span>{a.emoji}</span>}
                                   <span>{a.name}</span>
                                 </div>
@@ -2820,8 +2820,11 @@ export default function App() {
                                   <div style={{ fontSize: 11, color: '#5a4635', display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>
                                     <span>{T('howToPlayOthersDiscardLabel')}</span>
                                     {discards.map((ing) => (
-                                      <span key={`${a.id}-${ing}`} style={{ background: 'rgba(255,255,255,0.08)', borderRadius: 999, padding: '1px 6px' }}>
-                                        {ING_EMOJI[ing]} {getIngName(ing, 'español')}
+                                      <span key={`${a.id}-${ing}`} style={{ background: 'rgba(255,255,255,0.08)', borderRadius: 999, padding: '2px 8px', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                                        {ING_IMG[ing]
+                                          ? <img src={ING_IMG[ing]} alt={ing} style={{ width: 18, height: 18, objectFit: 'contain' }} />
+                                          : <span>{ING_EMOJI[ing]}</span>}
+                                        <span>{getIngName(ing, 'español')}</span>
                                       </span>
                                     ))}
                                   </div>
