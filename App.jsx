@@ -71,6 +71,7 @@ export default function App() {
   const [howToPlayPage, setHowToPlayPage] = useState(0);
   const aiRunning = useRef(false);
   const [turnTime, setTurnTime] = useState(60);
+  const [currentGameConfig, setCurrentGameConfig] = useState(null);
   const turnTimerRef = useRef(null);
 
   // â”€â”€ Online multiplayer state â”€â”€
@@ -199,6 +200,7 @@ export default function App() {
           setCp(gameState.cp);
           setLog(gameState.log || []);
           setExtraPlay(gameState.extraPlay || false);
+          setCurrentGameConfig(gameState.gameConfig || null);
           setModal(null);
           setPendingNeg(gameState.pendingNeg || null);
           if (gameState.winner) { setWinner(gameState.winner); clearRoomSession(); setPhase('gameover'); }
@@ -322,6 +324,7 @@ export default function App() {
       setCp(state.cp);
       setLog(state.log);
       setExtraPlay(state.extraPlay || false);
+      setCurrentGameConfig(state.gameConfig || null);
       setModal(currentModal => {
         const privateModals = ['manual_cambiar', 'manual_cambiar_discard', 'manual_agregar', 'wildcard', 'basurero', 'pickHatReplace', 'pickHatExchange', 'ingredientInfo', 'pickTarget', 'pickIngredient', 'pickIngredientRemote'];
         if (state.modal) return state.modal;
@@ -354,11 +357,11 @@ export default function App() {
       const syncModal = modal && privateModals.includes(modal.type) ? null : modal;
       socket.emit('syncState', {
         code: roomCode,
-        state: { players, deck, discard, cp, log, extraPlay, modal: syncModal, pendingNeg, winner, phase: 'playing' },
+        state: { players, deck, discard, cp, log, extraPlay, modal: syncModal, pendingNeg, winner, gameConfig: currentGameConfig, phase: 'playing' },
       });
     }, 80);
     return () => clearTimeout(syncRef.current);
-  }, [players, deck, discard, cp, log, extraPlay, modal, pendingNeg, winner, phase, isOnline, isHost]);
+  }, [players, deck, discard, cp, log, extraPlay, modal, pendingNeg, winner, currentGameConfig, phase, isOnline, isHost]);
 
   // â”€â”€ Socket: host processes remote player actions â”€â”€
   // We store the latest state in refs so the socket handler always has fresh values
@@ -478,7 +481,7 @@ export default function App() {
     }
     setPlayers(ps); setDeck(deckArr); setDiscard([]);
     setCp(0); setLog([]); setSelectedIdx(null); setModal(null);
-    setWinner(null); setExtraPlay(false);
+    setWinner(null); setExtraPlay(false); setCurrentGameConfig(normalizedConfig);
     aiRunning.current = false;
     setPhase('playing');
   }
@@ -493,7 +496,7 @@ export default function App() {
     ps.forEach((p, i) => { if (i !== 0) p.isRemote = true; });
     setPlayers(ps); setDeck(deckArr); setDiscard([]);
     setCp(0); setLog([]); setSelectedIdx(null); setModal(null);
-    setWinner(null); setExtraPlay(false);
+    setWinner(null); setExtraPlay(false); setCurrentGameConfig(normalizedConfig);
     aiRunning.current = false;
     // Update session to reflect game started
     const session = getRoomSession();
@@ -747,7 +750,7 @@ export default function App() {
       if (isOnline && isHost) {
         socket.emit('syncState', {
           code: roomCode,
-          state: { players: newPls, deck: newDeck, discard: newDiscard, cp, log, extraPlay, modal: null, pendingNeg: null, winner: w, phase: 'playing' },
+          state: { players: newPls, deck: newDeck, discard: newDiscard, cp, log, extraPlay, modal: null, pendingNeg: null, winner: w, gameConfig: currentGameConfig, phase: 'playing' },
         });
       }
       setWinner(w); clearRoomSession(); setPhase('gameover');
@@ -1487,6 +1490,7 @@ export default function App() {
   const isHumanTurn = cp === HI;
   const burger = human.burgers[human.currentBurger];
   const humanColor = PLAYER_COLORS[HI % PLAYER_COLORS.length];
+  const hasSharedGoals = currentGameConfig?.mode === 'clon' && Array.isArray(currentGameConfig?.sharedBurgers) && currentGameConfig.sharedBurgers.length > 0;
 
   // Card playability
   const getPlayable = (card, idx) => {
@@ -1551,6 +1555,26 @@ export default function App() {
           {'\u{1F354}'} {human.currentBurger}/{human.totalBurgers} {String(T('burgersLabel')).toLowerCase()}
           {extraPlay && <span style={{ color: '#FFD700', marginLeft: 8 }}>{T('extraPlayLabel')}</span>}
         </div>
+        {hasSharedGoals && (
+          <div style={{
+            marginTop: 6,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '4px 10px',
+            borderRadius: 999,
+            background: 'rgba(78,205,196,0.12)',
+            border: '1px solid rgba(78,205,196,0.35)',
+            color: '#7be7dd',
+            fontSize: 10,
+            fontWeight: 800,
+            letterSpacing: 0.4,
+            textTransform: 'uppercase',
+          }}>
+            <span>{'\u{1F91D}'}</span>
+            <span>{T('sharedGoalsLabel')}</span>
+          </div>
+        )}
       </div>
       {phase === 'playing' && players[cp] && !players[cp].isAI && (
         <div style={{
@@ -2725,6 +2749,39 @@ export default function App() {
           intercambio_hamburguesa: T('howToPlayEffectIntercambioMesa'),
           gloton: T('howToPlayEffectGloton'),
         };
+        const currentModeId = currentGameConfig?.mode || 'clon';
+        const modeCards = [
+          {
+            id: 'clon',
+            label: T('modeClon'),
+            short: T('modeClonDesc'),
+            detailed: T('modeClonDetailed'),
+          },
+          {
+            id: 'escalera',
+            label: T('modeEscalera'),
+            short: T('modeEscaleraDesc'),
+            detailed: T('modeEscaleraDetailed'),
+          },
+          {
+            id: 'caotico',
+            label: T('modeCaotico'),
+            short: T('modeCaoticoDesc'),
+            detailed: T('modeCaoticoDetailed'),
+          },
+        ];
+        const currentModeSummary = (() => {
+          if (currentModeId === 'clon') {
+            const burgers = currentGameConfig?.burgerCount ?? human.totalBurgers;
+            const ingredients = currentGameConfig?.ingredientCount ?? human.burgers?.[0]?.length ?? 0;
+            return `${burgers} ${String(T('burgers')).toLowerCase()} · ${ingredients} ${String(T('ingredientCount')).toLowerCase()}`;
+          }
+          if (currentModeId === 'escalera') {
+            const burgers = currentGameConfig?.burgerCount ?? human.totalBurgers;
+            return `${burgers} ${String(T('burgers')).toLowerCase()} · 4+ ${String(T('ingredientCount')).toLowerCase()}`;
+          }
+          return `${T('modeCaotico')} · ${currentGameConfig?.chaosLevel || 2}/3`;
+        })();
         const totalHowToPlayPages = 8;
         const page = Math.max(0, Math.min(howToPlayPage, totalHowToPlayPages - 1));
         const actionCategoriesByKey = actionCategories.reduce((acc, group) => {
@@ -2780,6 +2837,71 @@ export default function App() {
                 <span>{T('howToPlayRuleOneCard')}</span>
                 <span>{T('howToPlayRuleHatButtonsBeforePlay')}</span>
                 <span>{T('howToPlayRuleHatButtonsIngredientOnly')}</span>
+              </div>
+            </div>
+
+            <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '12px 14px', marginBottom: 12, display: page === 0 ? 'block' : 'none' }}>
+              <div style={{ color: '#7A4A00', fontWeight: 800, fontSize: 14, marginBottom: 6 }}>
+                {T('gameMode')}
+              </div>
+              <div style={{ color: '#5a4635', fontSize: 11, lineHeight: 1.35, marginBottom: 10 }}>
+                {T('howToPlayModeIntro')}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {modeCards.map((mode) => {
+                  const isCurrentMode = mode.id === currentModeId;
+                  return (
+                    <div
+                      key={mode.id}
+                      style={{
+                        borderRadius: 10,
+                        padding: '10px 12px',
+                        background: isCurrentMode ? 'rgba(255,215,0,0.12)' : 'rgba(255,255,255,0.05)',
+                        border: isCurrentMode ? '1px solid rgba(255,215,0,0.45)' : '1px solid rgba(82,58,36,0.18)',
+                        boxShadow: isCurrentMode ? '0 0 0 1px rgba(255,215,0,0.18) inset' : 'none',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 4 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                          <span style={{ color: '#7A4A00', fontWeight: 800, fontSize: 13 }}>{mode.label}</span>
+                          <span style={{
+                            borderRadius: 999,
+                            padding: '2px 8px',
+                            fontSize: 10,
+                            fontWeight: 800,
+                            letterSpacing: 0.3,
+                            color: isCurrentMode ? '#7A4A00' : '#6d5a48',
+                            background: isCurrentMode ? 'rgba(255,215,0,0.25)' : 'rgba(90,70,53,0.08)',
+                          }}>
+                            {mode.short}
+                          </span>
+                        </div>
+                        {isCurrentMode && (
+                          <span style={{
+                            borderRadius: 999,
+                            padding: '2px 8px',
+                            fontSize: 10,
+                            fontWeight: 900,
+                            letterSpacing: 0.4,
+                            background: '#7A4A00',
+                            color: '#f8e8cc',
+                            textTransform: 'uppercase',
+                          }}>
+                            {T('currentModeBadge')}
+                          </span>
+                        )}
+                      </div>
+                      {isCurrentMode && (
+                        <div style={{ color: '#7A4A00', fontSize: 10, fontWeight: 700, letterSpacing: 0.2, marginBottom: 5 }}>
+                          {currentModeSummary}
+                        </div>
+                      )}
+                      <div style={{ color: '#3f3125', fontSize: 12, lineHeight: 1.4 }}>
+                        {mode.detailed}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
