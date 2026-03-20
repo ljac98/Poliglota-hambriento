@@ -2590,18 +2590,18 @@ export default function App() {
         };
         const actionCategories = [
           {
-            key: 'global',
-            icon: eqRightGlobal,
-            title: T('howToPlayActionGlobalTitle'),
-            desc: T('howToPlayActionGlobalDesc'),
-            actions: ['milanesa', 'ensalada', 'pizza', 'parrilla', 'comecomodines'],
-          },
-          {
             key: 'single',
             icon: eqRightSingle,
             title: T('howToPlayActionSingleTitle'),
             desc: T('howToPlayActionSingleDesc'),
             actions: ['tenedor', 'ladron', 'intercambio_sombreros', 'intercambio_hamburguesa', 'gloton'],
+          },
+          {
+            key: 'global',
+            icon: eqRightGlobal,
+            title: T('howToPlayActionGlobalTitle'),
+            desc: T('howToPlayActionGlobalDesc'),
+            actions: ['milanesa', 'ensalada', 'pizza', 'parrilla', 'comecomodines'],
           },
           {
             key: 'discard',
@@ -2636,8 +2636,17 @@ export default function App() {
           intercambio_hamburguesa: T('howToPlayEffectIntercambioMesa'),
           gloton: T('howToPlayEffectGloton'),
         };
-        const totalHowToPlayPages = 6;
+        const totalHowToPlayPages = 8;
         const page = Math.max(0, Math.min(howToPlayPage, totalHowToPlayPages - 1));
+        const actionCategoriesByKey = actionCategories.reduce((acc, group) => {
+          acc[group.key] = group;
+          return acc;
+        }, {});
+        const actionPages = [
+          { idx: 2, pageNumber: 3, label: 'Acciones: un jugador', groups: ['single'] },
+          { idx: 3, pageNumber: 4, label: 'Acciones: los demás jugadores', groups: ['global'] },
+          { idx: 4, pageNumber: 5, label: 'Acciones: negación y basurero', groups: ['negation', 'discard'] },
+        ];
 
         return (
           <Modal title={T('turnActionsLabel')}>
@@ -2696,62 +2705,83 @@ export default function App() {
               </div>
             </div>
 
-            <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '12px 14px', marginBottom: 14, display: page === 2 ? 'block' : 'none' }}>
-              <div style={{ color: '#5a4635', fontSize: 10, fontWeight: 800, letterSpacing: 1, marginBottom: 6 }}>{T('howToPlayPage')} 3</div>
-              <div style={{ color: '#7A4A00', fontWeight: 800, fontSize: 14, marginBottom: 8 }}>
-                {T('howToPlayActionTitle')}
-              </div>
-              <div style={{ color: '#3f3125', fontSize: 12, lineHeight: 1.35, marginBottom: 10 }}>
-                {T('howToPlayActionDesc')}
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {actionCategories.map((group) => (
-                  <div key={group.key} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: '8px 10px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                      <img src={group.icon} alt={group.title} style={{ width: 24, height: 24, objectFit: 'contain' }} />
-                      <span style={{ color: '#7A4A00', fontWeight: 700, fontSize: 12 }}>{group.title}</span>
-                    </div>
-                    <div style={{ color: '#5a4635', fontSize: 11, lineHeight: 1.35, marginBottom: 6 }}>{group.desc}</div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 10px' }}>
-                      {group.actions.map((actionId) => {
-                        const a = actionsById[actionId];
-                        if (!a) return null;
-                        const discards = discardedIngredientsByAction[a.id] || [];
-                        return (
-                          <div key={a.id} style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: '#3f3125' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                    {actionIcons[a.id]
-                                      ? <img src={actionIcons[a.id]} alt={a.name} style={{ width: 24, height: 24, objectFit: 'contain' }} />
-                                      : <span>{a.emoji}</span>}
-                              <span>{a.name}</span>
-                            </div>
-                            {discards.length > 0 && (
-                              <div style={{ fontSize: 11, color: '#5a4635', display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>
-                                <span>{T('howToPlayOthersDiscardLabel')}</span>
-                                {discards.map((ing) => (
-                                  <span key={`${a.id}-${ing}`} style={{ background: 'rgba(255,255,255,0.08)', borderRadius: 999, padding: '1px 6px' }}>
-                                    {ING_EMOJI[ing]} {getIngName(ing, 'español')}
-                                  </span>
-                                ))}
+            {actionPages.map((ap) => (
+              <div key={`action-page-${ap.idx}`} style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '12px 14px', marginBottom: 14, display: page === ap.idx ? 'block' : 'none' }}>
+                <div style={{ color: '#5a4635', fontSize: 10, fontWeight: 800, letterSpacing: 1, marginBottom: 6 }}>{T('howToPlayPage')} {ap.pageNumber}</div>
+                <div style={{ marginBottom: 8 }}>
+                  <span style={{
+                    display: 'inline-block',
+                    background: 'rgba(122,74,0,0.14)',
+                    border: '1px solid rgba(122,74,0,0.35)',
+                    borderRadius: 999,
+                    padding: '2px 10px',
+                    color: '#7A4A00',
+                    fontWeight: 800,
+                    fontSize: 11,
+                    letterSpacing: 0.4,
+                  }}>
+                    {ap.label}
+                  </span>
+                </div>
+                <div style={{ color: '#7A4A00', fontWeight: 800, fontSize: 14, marginBottom: 8 }}>
+                  {T('howToPlayActionTitle')}
+                </div>
+                <div style={{ color: '#3f3125', fontSize: 12, lineHeight: 1.35, marginBottom: 10 }}>
+                  {T('howToPlayActionDesc')}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {ap.groups.map((groupKey) => {
+                    const group = actionCategoriesByKey[groupKey];
+                    if (!group) return null;
+                    return (
+                      <div key={group.key} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: '8px 10px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                          <img src={group.icon} alt={group.title} style={{ width: 24, height: 24, objectFit: 'contain' }} />
+                          <span style={{ color: '#7A4A00', fontWeight: 700, fontSize: 12 }}>{group.title}</span>
+                        </div>
+                        <div style={{ color: '#5a4635', fontSize: 11, lineHeight: 1.35, marginBottom: 6 }}>{group.desc}</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 10px' }}>
+                          {group.actions.map((actionId) => {
+                            const a = actionsById[actionId];
+                            if (!a) return null;
+                            const discards = discardedIngredientsByAction[a.id] || [];
+                            return (
+                              <div key={a.id} style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: '#3f3125' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                  {actionIcons[a.id]
+                                    ? <img src={actionIcons[a.id]} alt={a.name} style={{ width: 24, height: 24, objectFit: 'contain' }} />
+                                    : <span>{a.emoji}</span>}
+                                  <span>{a.name}</span>
+                                </div>
+                                {discards.length > 0 && (
+                                  <div style={{ fontSize: 11, color: '#5a4635', display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>
+                                    <span>{T('howToPlayOthersDiscardLabel')}</span>
+                                    {discards.map((ing) => (
+                                      <span key={`${a.id}-${ing}`} style={{ background: 'rgba(255,255,255,0.08)', borderRadius: 999, padding: '1px 6px' }}>
+                                        {ING_EMOJI[ing]} {getIngName(ing, 'español')}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                                {actionEffectById[a.id] && (
+                                  <div style={{ fontSize: 11, color: '#5a4635' }}>
+                                    <span>{T('howToPlayEffectLabel')} </span>
+                                    <span>{actionEffectById[a.id]}</span>
+                                  </div>
+                                )}
                               </div>
-                            )}
-                            {actionEffectById[a.id] && (
-                              <div style={{ fontSize: 11, color: '#5a4635' }}>
-                                <span>{T('howToPlayEffectLabel')} </span>
-                                <span>{actionEffectById[a.id]}</span>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            ))}
 
-            <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '12px 14px', marginBottom: 12, display: page === 3 ? 'block' : 'none' }}>
-              <div style={{ color: '#5a4635', fontSize: 10, fontWeight: 800, letterSpacing: 1, marginBottom: 6 }}>{T('howToPlayPage')} 4</div>
+            <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '12px 14px', marginBottom: 12, display: page === 5 ? 'block' : 'none' }}>
+              <div style={{ color: '#5a4635', fontSize: 10, fontWeight: 800, letterSpacing: 1, marginBottom: 6 }}>{T('howToPlayPage')} 6</div>
               <div style={{ color: '#7A4A00', fontWeight: 800, fontSize: 14, marginBottom: 6 }}>
                 {T('howToPlayGoalTitle')}
               </div>
@@ -2760,8 +2790,8 @@ export default function App() {
               </div>
             </div>
 
-            <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '12px 14px', marginBottom: 12, display: page === 4 ? 'block' : 'none' }}>
-              <div style={{ color: '#5a4635', fontSize: 10, fontWeight: 800, letterSpacing: 1, marginBottom: 6 }}>{T('howToPlayPage')} 5</div>
+            <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '12px 14px', marginBottom: 12, display: page === 6 ? 'block' : 'none' }}>
+              <div style={{ color: '#5a4635', fontSize: 10, fontWeight: 800, letterSpacing: 1, marginBottom: 6 }}>{T('howToPlayPage')} 7</div>
               <div style={{ color: '#7A4A00', fontWeight: 800, fontSize: 14, marginBottom: 8 }}>
                 {T('howToPlayMainHatsTitle')}
               </div>
@@ -2790,8 +2820,8 @@ export default function App() {
               </div>
             </div>
 
-            <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '12px 14px', marginBottom: 14, display: page === 5 ? 'block' : 'none' }}>
-              <div style={{ color: '#5a4635', fontSize: 10, fontWeight: 800, letterSpacing: 1, marginBottom: 6 }}>{T('howToPlayPage')} 6</div>
+            <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '12px 14px', marginBottom: 14, display: page === 7 ? 'block' : 'none' }}>
+              <div style={{ color: '#5a4635', fontSize: 10, fontWeight: 800, letterSpacing: 1, marginBottom: 6 }}>{T('howToPlayPage')} 8</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                 <img src={percheroImg} alt={T('closet')} style={{ width: 22, height: 22, objectFit: 'contain' }} />
                 <div style={{ color: '#7A4A00', fontWeight: 800, fontSize: 14 }}>{T('howToPlayClosetTitle')}</div>
