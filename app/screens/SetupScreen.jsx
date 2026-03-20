@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { LANGUAGES, LANG_BORDER, LANG_BG, LANG_TEXT, LANG_SHORT, AI_NAMES } from '../../constants/index.js';
+import { LANGUAGES, LANG_BORDER, LANG_BG, LANG_TEXT } from '../../constants/index.js';
 import { randInt, uid } from '../../game/utils.js';
 import { Btn } from '../components/Btn.jsx';
+import { Modal } from '../components/Modal.jsx';
 import { HatBadge, PercheroSVG } from '../../components/HatComponents.jsx';
 import HatSVG from '../../components/HatSVG.jsx';
 import hamImg from '../../imagenes/hamburguesas/ham.png';
@@ -16,13 +17,26 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
   const [gameMode, setGameMode] = useState('clon');
   const [burgerCount, setBurgerCount] = useState(2);
   const [ingredientCount, setIngredientCount] = useState(5);
+  const [chaosLevel, setChaosLevel] = useState(2);
   const [aiCount, setAiCount] = useState(2);
+  const [showModeConfig, setShowModeConfig] = useState(false);
 
   const gameModes = [
     { id: 'clon', label: T('modeClon'), desc: T('modeClonDesc') ,img:modoclon },
     { id: 'escalera', label: T('modeEscalera'), desc: T('modeEscaleraDesc'),img:modoescalera },
     { id: 'caotico', label: T('modeCaotico'), desc: T('modeCaoticoDesc') ,img:modocaotico},
   ];
+  const markerStyle = {
+    minWidth: 62,
+    textAlign: 'center',
+    fontSize: 11,
+    color: '#8a8fa8',
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.12)',
+    borderRadius: 999,
+    padding: '3px 8px',
+    lineHeight: 1.2,
+  };
 
   return (
     <div style={{
@@ -101,7 +115,7 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
               >
                 <HatSVG lang={lang} size={32} />
                 <span style={{ fontSize: 11, fontWeight: 800, color: hat === lang ? '#FFD700' : LANG_TEXT[lang] }}>
-                  {lang.charAt(0).toUpperCase() + lang.slice(1)}
+                  {T(lang)}
                 </span>
               </div>
             ))}
@@ -115,7 +129,7 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
             {gameModes.map(m => (
               <div
                 key={m.id}
-                onClick={() => setGameMode(m.id)}
+                onClick={() => { setGameMode(m.id); setShowModeConfig(true); }}
                 style={{
                   flex: 1, padding: '8px 6px', borderRadius: 10, cursor: 'pointer', textAlign: 'center',
                   border: gameMode === m.id ? '2px solid #FFD700' : '2px solid #2a2a4a',
@@ -132,58 +146,11 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
           </div>
         </div>
 
-        {/* Burger count (clon & escalera) */}
-        {gameMode !== 'caotico' && (
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 8 }}>
-              {T('burgerCount')}: <span style={{ color: '#FFD700' }}>{burgerCount}</span>
-            </label>
-            <input
-              type="range" min={1} max={4} value={burgerCount}
-              onChange={e => setBurgerCount(+e.target.value)}
-              style={{ width: '100%', accentColor: '#FFD700' }}
-            />
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#555', marginTop: 2 }}>
-              <span>1</span><span>4</span>
-            </div>
-          </div>
-        )}
-
-        {/* Ingredient count (clon only) */}
-        {gameMode === 'clon' && (
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 8 }}>
-              {T('ingredientCount')}: <span style={{ color: '#FFD700' }}>{ingredientCount}</span>
-            </label>
-            <input
-              type="range" min={2} max={8} value={ingredientCount}
-              onChange={e => setIngredientCount(+e.target.value)}
-              style={{ width: '100%', accentColor: '#FFD700' }}
-            />
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#555', marginTop: 2 }}>
-              <span>2</span><span>8</span>
-            </div>
-          </div>
-        )}
-
-        {/* AI count */}
-        <div style={{ marginBottom: 28 }}>
-          <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 8 }}>
-            {T('aiOpponents')}: <span style={{ color: '#FFD700' }}>{aiCount}</span>
-          </label>
-          <input
-            type="range" min={1} max={3} value={aiCount}
-            onChange={e => setAiCount(+e.target.value)}
-            style={{ width: '100%', accentColor: '#FFD700' }}
-          />
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#555', marginTop: 2 }}>
-            <span>{T('opponent1')}</span><span>{T('opponents3')}</span>
-          </div>
-        </div>
+        <div style={{ marginBottom: 28 }} />
 
         <div style={{ display: 'flex', gap: 10 }}>
           <Btn
-            onClick={() => onStart(name.trim(), hat, { mode: gameMode, burgerCount, ingredientCount }, aiCount)}
+            onClick={() => onStart(name.trim(), hat, { mode: gameMode, burgerCount, ingredientCount, chaosLevel }, aiCount)}
             disabled={!name.trim() || !hat}
             color="#FFD700"
             style={{ flex: 1, fontSize: 16, padding: '12px 0' }}
@@ -199,6 +166,73 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
           </Btn>
         </div>
       </div>
+      {showModeConfig && (
+        <Modal title={`${T('gameMode')}: ${gameModes.find(m => m.id === gameMode)?.label || ''}`}>
+          {gameMode !== 'caotico' && (
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 8 }}>
+                {T('burgerCount')}: <span style={{ color: '#FFD700' }}>{burgerCount}</span>
+              </label>
+              <input
+                type="range" min={1} max={4} value={burgerCount}
+                onChange={e => setBurgerCount(+e.target.value)}
+                style={{ width: '100%', accentColor: '#FFD700' }}
+              />
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 6 }}>
+                <span style={markerStyle}>1</span>
+                <span style={markerStyle}>4</span>
+              </div>
+            </div>
+          )}
+          {gameMode === 'caotico' && (
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 8 }}>
+                {T('modeCaotico')}: <span style={{ color: '#FFD700' }}>{chaosLevel}/3</span>
+              </label>
+              <input
+                type="range" min={1} max={3} step={1} value={chaosLevel}
+                onChange={e => setChaosLevel(+e.target.value)}
+                style={{ width: '100%', accentColor: '#FF7043' }}
+              />
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 6 }}>
+                <span style={markerStyle}>Menos caótico</span>
+                <span style={markerStyle}>Más caótico</span>
+              </div>
+            </div>
+          )}
+          {gameMode === 'clon' && (
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 8 }}>
+                {T('ingredientCount')}: <span style={{ color: '#FFD700' }}>{ingredientCount}</span>
+              </label>
+              <input
+                type="range" min={2} max={8} value={ingredientCount}
+                onChange={e => setIngredientCount(+e.target.value)}
+                style={{ width: '100%', accentColor: '#FFD700' }}
+              />
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 6 }}>
+                <span style={markerStyle}>2</span>
+                <span style={markerStyle}>8</span>
+              </div>
+            </div>
+          )}
+          <div style={{ marginBottom: 18 }}>
+            <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 8 }}>
+              {T('aiOpponents')}: <span style={{ color: '#FFD700' }}>{aiCount}</span>
+            </label>
+            <input
+              type="range" min={1} max={3} value={aiCount}
+              onChange={e => setAiCount(+e.target.value)}
+              style={{ width: '100%', accentColor: '#FFD700' }}
+            />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 6 }}>
+              <span style={markerStyle}>{T('opponent1')}</span>
+              <span style={markerStyle}>{T('opponents3')}</span>
+            </div>
+          </div>
+          <Btn onClick={() => setShowModeConfig(false)} color="#333" style={{ color: '#aaa' }}>{T('close')}</Btn>
+        </Modal>
+      )}
     </div>
   );
 }

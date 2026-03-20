@@ -1,19 +1,36 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
 import socket from './src/socket.js';
 import { getSavedUser } from './src/api.js';
 import {
-  LANGUAGES, LANG_BORDER, LANG_BG, LANG_TEXT, LANG_SHORT,
+  LANGUAGES, LANG_BORDER, LANG_BG, LANG_TEXT,
   ING_EMOJI, ING_BG, AI_NAMES, getIngName, getActionInfo,
   ING_NAMES, ACTION_CARDS,
 } from './constants';
 import { generateDeck, genBurger, initPlayer, canPlayCard } from './game';
 import { shuffle, randInt, uid } from './game/utils';
-import { t, getUILang, setUILang } from './src/translations.js';
+import { t, getUILang, setUILang, KEY_TO_LANG, getLocalizedLangShort } from './src/translations.js';
 import { GameCard } from './components/Cards';
 import { BurgerTarget, LogEntry } from './components/GameUI';
 import { HatBadge } from './components/HatComponents.jsx';
 import HatSVG from './components/HatSVG.jsx';
 import percheroImg from './imagenes/sombreros/perchero/percherofinal.png';
+import ingredientCardIcon from './imagenes/hamburguesas/ham.png';
+import eqMilanesa from './imagenes/acciones/esquina/milanga.png';
+import eqEnsalada from './imagenes/acciones/esquina/ensalada2.png';
+import eqPizza from './imagenes/acciones/esquina/pizza2.png';
+import eqParrilla from './imagenes/acciones/esquina/parrilla.png';
+import eqTenedor from './imagenes/acciones/esquina/tenedor2.png';
+import eqLadron from './imagenes/acciones/esquina/robo.png';
+import eqIntercambioSomb from './imagenes/acciones/esquina/intercambiosomb.png';
+import eqIntercambioHamb from './imagenes/acciones/esquina/intercam.png';
+import eqBasurero from './imagenes/acciones/esquina/basurero.png';
+import eqGloton from './imagenes/acciones/esquina/comelona.png';
+import eqNegacion from './imagenes/acciones/esquina/cancelh.png';
+import eqComeComodines from './imagenes/acciones/esquina/pancho.png';
+import eqRightGlobal from './imagenes/acciones/esquina derecha/global.png';
+import eqRightSingle from './imagenes/acciones/esquina derecha/singular.png';
+import eqRightDiscard from './imagenes/acciones/esquina derecha/descarte.png';
+import eqRightNegation from './imagenes/acciones/esquina derecha/negacion.png';
 
 import { Btn, Modal, OpponentCard } from './app/components/index.js';
 import { AppPhaseRouter } from './app/screens/index.js';
@@ -51,11 +68,12 @@ export default function App() {
   const [showLog, setShowLog] = useState(false);
   const [mobileTab, setMobileTab] = useState('mesa');
   const [showPercheroModal, setShowPercheroModal] = useState(false);
+  const [howToPlayPage, setHowToPlayPage] = useState(0);
   const aiRunning = useRef(false);
   const [turnTime, setTurnTime] = useState(60);
   const turnTimerRef = useRef(null);
 
-  // ── Online multiplayer state ──
+  // â”€â”€ Online multiplayer state â”€â”€
   const [isOnline, setIsOnline] = useState(false);
   const [isHost, setIsHost] = useState(false);
   const [myPlayerIdx, setMyPlayerIdx] = useState(0);
@@ -74,30 +92,44 @@ export default function App() {
   // Human index: 0 for local/AI mode, myPlayerIdx for online
   const HI = isOnline ? myPlayerIdx : 0;
 
-  // ── Auth state ──
+  // â”€â”€ Auth state â”€â”€
   const [user, setUser] = useState(() => getSavedUser());
-  // ── UI language state ──
+  // â”€â”€ UI language state â”€â”€
   const [uiLang, setUiLangState] = useState(() => getUILang());
   const T = useCallback((key) => t(key, uiLang), [uiLang]);
+  const uiGameLang = KEY_TO_LANG[uiLang] || LANGUAGES[0];
   const handleSetLang = (lang) => { setUILang(lang); setUiLangState(lang); };
-  // ── Negación state ──
+  const getActionText = useCallback((actionId) => {
+    const base = getActionInfo(actionId);
+    if (!base) return null;
+    const nameKey = `actionName_${actionId}`;
+    const descKey = `actionDesc_${actionId}`;
+    const trName = T(nameKey);
+    const trDesc = T(descKey);
+    return {
+      ...base,
+      name: trName === nameKey ? base.name : trName,
+      desc: trDesc === descKey ? base.desc : trDesc,
+    };
+  }, [T]);
+  // â”€â”€ NegaciÃ³n state â”€â”€
   // pendingNeg: null | { actingIdx, cardInfo, eligibleIdxs, responses: {i: bool} }
   const [pendingNeg, setPendingNeg] = useState(null);
   // Host-only ref that stores the resolve callback (not serializable over socket)
   const pendingNegRef = useRef(null);
 
-  // ── Voluntary leave state ──
+  // â”€â”€ Voluntary leave state â”€â”€
   const [gamePaused, setGamePaused] = useState(false);
   const [pausedMessage, setPausedMessage] = useState('');
 
-  // ── Room invite notification state ──
+  // â”€â”€ Room invite notification state â”€â”€
   const [roomInvite, setRoomInvite] = useState(null);
   const [inviteJoinCode, setInviteJoinCode] = useState('');
 
-  // ── Friend request notification state ──
+  // â”€â”€ Friend request notification state â”€â”€
   const [friendReqNotif, setFriendReqNotif] = useState(null);
 
-  // ── Room invite listener (global) ──
+  // â”€â”€ Room invite listener (global) â”€â”€
   useEffect(() => {
     const handleRoomInvite = (data) => {
       setRoomInvite(data);
@@ -108,7 +140,7 @@ export default function App() {
     return () => socket.off('roomInviteReceived', handleRoomInvite);
   }, []);
 
-  // ── Friend request notification listener (global) ──
+  // â”€â”€ Friend request notification listener (global) â”€â”€
   useEffect(() => {
     const handleFriendReq = (data) => {
       setFriendReqNotif(data);
@@ -126,15 +158,15 @@ export default function App() {
     setPhase('onlineMenu');
   }
 
-  // ── Handle voluntary leave from room ──
+  // â”€â”€ Handle voluntary leave from room â”€â”€
   function handleVoluntaryLeave() {
     if (!isOnline || !roomCode) return;
     socket.emit('voluntaryLeave', { code: roomCode });
-    // Don't disconnect socket — keep it alive for potential rejoin
+    // Don't disconnect socket â€” keep it alive for potential rejoin
     setPhase('leftRoom');
   }
 
-  // ── Auto-rejoin on page load ──
+  // â”€â”€ Auto-rejoin on page load â”€â”€
   const rejoinAttempted = useRef(false);
   useEffect(() => {
     if (rejoinAttempted.current) return;
@@ -175,7 +207,7 @@ export default function App() {
           // Non-host: stateUpdate will arrive from host within 80ms
           setPhase('playing');
         } else {
-          // Host but no cached state (edge case) — go to lobby
+          // Host but no cached state (edge case) â€” go to lobby
           setPhase('onlineLobby');
         }
       } else {
@@ -216,7 +248,7 @@ export default function App() {
     setChatInput('');
   }
 
-  // ── Socket: lobby updates (hat picks from others) ──
+  // â”€â”€ Socket: lobby updates (hat picks from others) â”€â”€
   useEffect(() => {
     if (!isOnline) return;
     socket.on('lobbyUpdate', ({ players: pls }) => setLobbyPlayers(pls));
@@ -280,7 +312,7 @@ export default function App() {
     if (showChat) chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages, showChat]);
 
-  // ── Socket: non-host receives full game state from host ──
+  // â”€â”€ Socket: non-host receives full game state from host â”€â”€
   useEffect(() => {
     if (!isOnline || isHost) return;
     socket.on('stateUpdate', ({ state }) => {
@@ -312,7 +344,7 @@ export default function App() {
     return () => socket.off('stateUpdate');
   }, [isOnline, isHost]);
 
-  // ── Socket: host syncs state to all clients after every change ──
+  // â”€â”€ Socket: host syncs state to all clients after every change â”€â”€
   const syncRef = useRef(null);
   useEffect(() => {
     clearTimeout(syncRef.current);
@@ -328,7 +360,7 @@ export default function App() {
     return () => clearTimeout(syncRef.current);
   }, [players, deck, discard, cp, log, extraPlay, modal, pendingNeg, winner, phase, isOnline, isHost]);
 
-  // ── Socket: host processes remote player actions ──
+  // â”€â”€ Socket: host processes remote player actions â”€â”€
   // We store the latest state in refs so the socket handler always has fresh values
   const playersRef = useRef(players);
   const deckRef = useRef(deck);
@@ -348,11 +380,11 @@ export default function App() {
     return () => socket.off('remoteAction', handler);
   }, [isOnline, isHost]);  // eslint-disable-line
 
-  // ── Negación: check before applying any action ──
-  // resolveCallback: () => void  — called if action is NOT negated
+  // â”€â”€ NegaciÃ³n: check before applying any action â”€â”€
+  // resolveCallback: () => void  â€” called if action is NOT negated
   function startNegCheck(actingIdx, card, resolveCallback, affectedIdxs) {
     const pls = playersRef.current;
-    // Find players who can negate (only affected players with a negación card)
+    // Find players who can negate (only affected players with a negaciÃ³n card)
     const eligible = pls.map((_, i) => i).filter(i =>
       i !== actingIdx && pls[i].hand.some(c => c.action === 'negacion') &&
       (!affectedIdxs || affectedIdxs.includes(i))
@@ -360,7 +392,7 @@ export default function App() {
 
     if (eligible.length === 0) { resolveCallback(); return; }
 
-    // AI players decide immediately (25% chance to use negación)
+    // AI players decide immediately (25% chance to use negaciÃ³n)
     const responses = {};
     for (const i of eligible) {
       if (pls[i].isAI) responses[i] = Math.random() < 0.25;
@@ -381,11 +413,11 @@ export default function App() {
     // Remove action card from acting player's hand (by id, it's still there during neg check)
     const cIdx = newPls[actingIdx].hand.findIndex(c => c.id === card.id);
     if (cIdx !== -1) newPls[actingIdx].hand.splice(cIdx, 1);
-    // Remove one negación card from negator's hand
+    // Remove one negaciÃ³n card from negator's hand
     const nIdx = newPls[negatorIdx].hand.findIndex(c => c.action === 'negacion');
     const negCard = nIdx !== -1 ? newPls[negatorIdx].hand.splice(nIdx, 1)[0] : null;
     const newDiscard = [...discardRef.current, card, ...(negCard ? [negCard] : [])];
-    addLog(negatorIdx, `usó 🚫 Negación contra ${newPls[actingIdx].name}!`, newPls);
+    addLog(negatorIdx, `usÃ³ ðŸš« NegaciÃ³n contra ${newPls[actingIdx].name}!`, newPls);
     setPendingNeg(null); pendingNegRef.current = null;
     endTurn(newPls, deckRef.current, newDiscard, actingIdx);
   }
@@ -406,7 +438,7 @@ export default function App() {
       cancelWithNegation(pendingNeg.actingIdx, HI, pendingNeg.card ?? pendingNegRef.current?.card);
       return;
     }
-    // Passed — record and check if all responded
+    // Passed â€” record and check if all responded
     const newResponses = { ...pendingNeg.responses, [HI]: false };
     if (pendingNegRef.current) pendingNegRef.current.responses = newResponses;
     const remaining = pendingNeg.eligibleIdxs.filter(i => !(i in newResponses));
@@ -430,7 +462,6 @@ export default function App() {
       ),
     };
   }
-
   function startGame(name, hat, gameConfig, aiCount) {
     const rawDeck = generateDeck();
     const deckArr = [...rawDeck];
@@ -438,7 +469,7 @@ export default function App() {
     const ps = [];
     ps.push(initPlayer(name, deckArr, hat, normalizedConfig, false));
     const usedHats = [hat];
-    const aiNames = shuffle([...AI_NAMES, 'Maestro Cocinero', 'Hambre Total', 'Chef Políglota']);
+    const aiNames = shuffle([...AI_NAMES, 'Maestro Cocinero', 'Hambre Total', 'Chef PolÃ­glota']);
     for (let i = 0; i < aiCount; i++) {
       const avail = LANGUAGES.filter(l => !usedHats.includes(l));
       const aiHat = avail.length ? shuffle(avail)[0] : shuffle(LANGUAGES)[0];
@@ -452,7 +483,7 @@ export default function App() {
     setPhase('playing');
   }
 
-  // ── Start game (online host) ──
+  // â”€â”€ Start game (online host) â”€â”€
   function startOnlineGame(hatPicks, gameConfig, onlinePls) {
     const rawDeck = generateDeck();
     const deckArr = [...rawDeck];
@@ -470,7 +501,7 @@ export default function App() {
     setPhase('playing');
   }
 
-  // ── Shared targeted action resolution (used by host for both local and remote players) ──
+  // â”€â”€ Shared targeted action resolution (used by host for both local and remote players) â”€â”€
   function applyTargetedAction(card, actingIdx, ti, action, pls, dk, di) {
     if (card.action === 'gloton') {
       pls[ti].table.forEach(ing => di.push({ type: 'ingredient', ingredient: ingKey(ing), id: uid() }));
@@ -525,7 +556,7 @@ export default function App() {
     }
   }
 
-  // ── Host: process remote player action ──
+  // â”€â”€ Host: process remote player action â”€â”€
   function processRemoteAction(idx, action) {
     // Use refs to get fresh values (avoid stale closure)
     {
@@ -539,31 +570,31 @@ export default function App() {
             if (type === 'playIngredient') {
               const card = pls[idx].hand[action.cardIdx];
               if (!card || !canPlayCard(pls[idx], card)) return;
-              addLog(idx, `jugó ${getIngName(card.ingredient, card.language)} ${ING_EMOJI[card.ingredient]}`, pls);
+              addLog(idx, `jugÃ³ ${getIngName(card.ingredient, card.language)} ${ING_EMOJI[card.ingredient]}`, pls);
               pls[idx].hand.splice(action.cardIdx, 1);
               pls[idx].table.push(card.ingredient);
               const { player: up, freed, done } = advanceBurger(pls[idx]);
               pls[idx] = up;
               di = [...di, card];
-              if (done) { freed.forEach(ing => di.push({ type: 'ingredient', ingredient: ingKey(ing), id: uid() })); addLog(idx, '¡completó una hamburguesa! 🎉', pls); }
+              if (done) { freed.forEach(ing => di.push({ type: 'ingredient', ingredient: ingKey(ing), id: uid() })); addLog(idx, 'Â¡completÃ³ una hamburguesa! ðŸŽ‰', pls); }
               setTimeout(() => endTurnFromRemote(pls, dk, di, idx), 0);
 
             } else if (type === 'playWildcard') {
               const card = pls[idx].hand[action.cardIdx];
               if (!card) return;
-              addLog(idx, 'jugó 🌭 Comodín', pls);
+              addLog(idx, 'jugÃ³ ðŸŒ­ ComodÃ­n', pls);
               pls[idx].hand.splice(action.cardIdx, 1);
               pls[idx].table.push('perrito|' + action.ingredient);
               const { player: up, freed, done } = advanceBurger(pls[idx]);
               pls[idx] = up;
               di = [...di, card];
-              if (done) { freed.forEach(ing => di.push({ type: 'ingredient', ingredient: ingKey(ing), id: uid() })); addLog(idx, '¡completó una hamburguesa! 🎉', pls); }
+              if (done) { freed.forEach(ing => di.push({ type: 'ingredient', ingredient: ingKey(ing), id: uid() })); addLog(idx, 'Â¡completÃ³ una hamburguesa! ðŸŽ‰', pls); }
               setTimeout(() => endTurnFromRemote(pls, dk, di, idx), 0);
 
             } else if (type === 'discard') {
               const card = pls[idx].hand[action.cardIdx];
               if (!card) return;
-              addLog(idx, `descartó una carta`, pls);
+              addLog(idx, `descartÃ³ una carta`, pls);
               pls[idx].hand.splice(action.cardIdx, 1);
               di = [...di, card];
               setTimeout(() => endTurnFromRemote(pls, dk, di, idx), 0);
@@ -572,7 +603,7 @@ export default function App() {
               const card = pls[idx].hand[action.cardIdx];
               if (!card) return;
               const info = getActionInfo(card.action);
-              addLog(idx, `jugó ${info.name} ${info.emoji}`, pls);
+              addLog(idx, `jugÃ³ ${info.name} ${info.emoji}`, pls);
               startNegCheck(idx, card, () => {
                 const fp = clone(playersRef.current);
                 const ci = fp[idx].hand.findIndex(c => c.id === card.id);
@@ -588,7 +619,7 @@ export default function App() {
               if (!card) return;
               const info = getActionInfo(card.action);
               const ti = action.targetIdx;
-              addLog(idx, `jugó ${info.name} ${info.emoji} contra ${pls[ti].name}`, pls);
+              addLog(idx, `jugÃ³ ${info.name} ${info.emoji} contra ${pls[ti].name}`, pls);
               startNegCheck(idx, card, () => {
                 const fp = clone(playersRef.current);
                 const fd = [...discardRef.current];
@@ -608,7 +639,7 @@ export default function App() {
               if (found) {
                 di = di.filter(c => c.id !== action.pickedCardId);
                 pls[idx].hand.push(found);
-                addLog(idx, 'rescató una carta del 🗑️ basurero', pls);
+                addLog(idx, 'rescatÃ³ una carta del ðŸ—‘ï¸ basurero', pls);
               }
               setTimeout(() => endTurnFromRemote(pls, dk, di, idx), 0);
 
@@ -629,7 +660,7 @@ export default function App() {
                 discarded = p.hand.splice(0, cost);
               }
               di = [...di, ...discarded];
-              addLog(idx, `cambió sombrero a ${action.hatLang} (descartó ${discarded.length} cartas)`, pls);
+              addLog(idx, `cambiÃ³ sombrero a ${action.hatLang} (descartÃ³ ${discarded.length} cartas)`, pls);
               setPlayers(pls); setDiscard(di); setExtraPlay(true);
 
             } else if (type === 'manualAgregar') {
@@ -644,7 +675,7 @@ export default function App() {
               p.maxHand = Math.max(1, p.maxHand - 1);
               const { drawn, deck: nd, discard: nd2 } = drawN(dk, di, p.maxHand);
               p.hand = drawn; dk = nd; di = nd2;
-              addLog(idx, `agregó sombrero ${action.hatLang} — mano máx reducida a ${p.maxHand}`, pls);
+              addLog(idx, `agregÃ³ sombrero ${action.hatLang} â€” mano mÃ¡x reducida a ${p.maxHand}`, pls);
               setPlayers(pls); setDeck(dk); setDiscard(di); setExtraPlay(true);
 
             } else if (type === 'pickHatReplace') {
@@ -690,12 +721,12 @@ export default function App() {
     endTurn(pls, dk, di, idx);
   }
 
-  // ── Check win ──
+  // â”€â”€ Check win â”€â”€
   function checkWin(pls) {
     return pls.find(p => p.currentBurger >= p.totalBurgers) || null;
   }
 
-  // ── End turn ──
+  // â”€â”€ End turn â”€â”€
   function endTurn(pls, deckArr, discardArr, fromIdx) {
     // Fill hand
     const p = pls[fromIdx];
@@ -733,7 +764,7 @@ export default function App() {
     // If AI, useEffect will trigger
   }
 
-  // ── AI Turn ──
+  // â”€â”€ AI Turn â”€â”€
   function runAITurn(pls, deckArr, discardArr, idx) {
     if (aiRunning.current) return;
     aiRunning.current = true;
@@ -743,7 +774,7 @@ export default function App() {
     const playableIdx = p.hand.findIndex(c => c.type === 'ingredient' && canPlayCard(p, c));
     if (playableIdx !== -1) {
       const card = p.hand[playableIdx];
-      addLog(idx, `jugó ${getIngName(card.ingredient, card.language)} ${ING_EMOJI[card.ingredient]}`, pls);
+      addLog(idx, `jugÃ³ ${getIngName(card.ingredient, card.language)} ${ING_EMOJI[card.ingredient]}`, pls);
       const newPls = clone(pls);
       newPls[idx].hand.splice(playableIdx, 1);
       if (card.ingredient === 'perrito') {
@@ -762,7 +793,7 @@ export default function App() {
       const { player: up, freed, done } = advanceBurger(newPls[idx]);
       newPls[idx] = up;
       let newDiscard = [...discardArr, card];
-      if (done) { freed.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `f${Date.now()}${Math.random()}` })); addLog(idx, '¡completó una hamburguesa! 🎉', newPls); }
+      if (done) { freed.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `f${Date.now()}${Math.random()}` })); addLog(idx, 'Â¡completÃ³ una hamburguesa! ðŸŽ‰', newPls); }
       setTimeout(() => { aiRunning.current = false; endTurn(newPls, deckArr, newDiscard, idx); }, 900);
       return;
     }
@@ -779,7 +810,7 @@ export default function App() {
       let newPls = clone(pls);
       let newDiscard = [...discardArr, card];
       newPls[idx].hand.splice(actionIdx, 1);
-      addLog(idx, `jugó ${info.name} ${info.emoji}`, pls);
+      addLog(idx, `jugÃ³ ${info.name} ${info.emoji}`, pls);
 
       const mass = ['milanesa', 'ensalada', 'pizza', 'parrilla', 'comecomodines'];
       if (mass.includes(card.action)) {
@@ -788,7 +819,7 @@ export default function App() {
       } else if (card.action === 'gloton') {
         newPls[richest].table.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `g${Date.now()}${Math.random()}` }));
         newPls[richest].table = [];
-        addLog(idx, `vació la mesa de ${pls[richest].name}`, newPls);
+        addLog(idx, `vaciÃ³ la mesa de ${pls[richest].name}`, newPls);
       } else if (card.action === 'tenedor') {
         if (newPls[richest].table.length > 0) {
           const si = randInt(0, newPls[richest].table.length - 1);
@@ -797,7 +828,7 @@ export default function App() {
           const { player: up2, freed: fr2, done: dn2 } = advanceBurger(newPls[idx]);
           newPls[idx] = up2;
           if (dn2) { fr2.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `t${Date.now()}${Math.random()}` })); }
-          addLog(idx, `robó ${ING_EMOJI[ingKey(stolen)]} de ${pls[richest].name}`, newPls);
+          addLog(idx, `robÃ³ ${ING_EMOJI[ingKey(stolen)]} de ${pls[richest].name}`, newPls);
         }
       } else if (card.action === 'ladron') {
         if (newPls[richest].mainHats.length > 0) {
@@ -810,14 +841,14 @@ export default function App() {
             const nh = newPls[richest].perchero.shift();
             newPls[richest].mainHats.push(nh);
           }
-          addLog(idx, `robó el sombrero ${stolen} de ${pls[richest].name}`, newPls);
+          addLog(idx, `robÃ³ el sombrero ${stolen} de ${pls[richest].name}`, newPls);
         }
       } else if (card.action === 'intercambio_sombreros') {
         if (newPls[idx].mainHats[0] && newPls[richest].mainHats[0]) {
           const tmp = newPls[idx].mainHats[0];
           newPls[idx].mainHats[0] = newPls[richest].mainHats[0];
           newPls[richest].mainHats[0] = tmp;
-          addLog(idx, `intercambió sombreros con ${pls[richest].name}`, newPls);
+          addLog(idx, `intercambiÃ³ sombreros con ${pls[richest].name}`, newPls);
         }
       } else if (card.action === 'intercambio_hamburguesa') {
         const tmp = newPls[idx].table;
@@ -825,7 +856,7 @@ export default function App() {
         newPls[richest].table = tmp;
         filterTable(newPls[idx], newDiscard);
         filterTable(newPls[richest], newDiscard);
-        addLog(idx, `intercambió mesa con ${pls[richest].name}`, newPls);
+        addLog(idx, `intercambiÃ³ mesa con ${pls[richest].name}`, newPls);
       }
 
       setTimeout(() => { aiRunning.current = false; endTurn(newPls, deckArr, newDiscard, idx); }, 900);
@@ -836,7 +867,7 @@ export default function App() {
     const di2 = p.hand.findIndex(c => c.type === 'action') !== -1
       ? p.hand.findIndex(c => c.type === 'action') : 0;
     if (p.hand.length > 0) {
-      addLog(idx, `descartó una carta`, pls);
+      addLog(idx, `descartÃ³ una carta`, pls);
       const newPls = clone(pls);
       const card = newPls[idx].hand.splice(di2, 1)[0];
       const newDiscard2 = [...discardArr, card];
@@ -847,7 +878,7 @@ export default function App() {
     }
   }
 
-  // ── AI useEffect ──
+  // â”€â”€ AI useEffect â”€â”€
   useEffect(() => {
     if (phase !== 'playing') return;
     if (!players.length) return;
@@ -862,7 +893,7 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [phase, cp, players, deck, discard, modal]);
 
-  // ── Turn timer (60s) ──
+  // â”€â”€ Turn timer (60s) â”€â”€
   useEffect(() => {
     clearInterval(turnTimerRef.current);
     const isTimedPlayer = players[cp] && !players[cp].isAI;
@@ -897,7 +928,7 @@ export default function App() {
     // Timeout: discard random card and end turn
     const randIdx = Math.floor(Math.random() * p.hand.length);
     const card = p.hand[randIdx];
-    addLog(cp, `se le acabó el tiempo — descartó ${card.type === 'ingredient' ? getIngName(card.ingredient, card.language) : getActionInfo(card.action).name}`, players);
+    addLog(cp, `se le acabÃ³ el tiempo â€” descartÃ³ ${card.type === 'ingredient' ? getIngName(card.ingredient, card.language) : getActionInfo(card.action).name}`, players);
     const newPls = clone(players);
     const discarded = newPls[cp].hand.splice(randIdx, 1)[0];
     setSelectedIdx(null);
@@ -905,7 +936,7 @@ export default function App() {
     endTurn(newPls, deck, [...discard, discarded], cp);
   }, [turnTime]);
 
-  // ── Human: Play selected card ──
+  // â”€â”€ Human: Play selected card â”€â”€
   function humanPlay() {
     if (selectedIdx === null) return;
     const human = players[HI];
@@ -933,7 +964,7 @@ export default function App() {
         setModal({ type: 'wildcard', cardIdx: selectedIdx });
         return;
       }
-      addLog(HI, `jugó ${getIngName(card.ingredient, card.language)} ${ING_EMOJI[card.ingredient]}`, players);
+      addLog(HI, `jugÃ³ ${getIngName(card.ingredient, card.language)} ${ING_EMOJI[card.ingredient]}`, players);
       const newPls = clone(players);
       newPls[HI].hand.splice(selectedIdx, 1);
       newPls[HI].table.push(card.ingredient);
@@ -942,7 +973,7 @@ export default function App() {
       let newDiscard = [...discard, card];
       if (done) {
         freed.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `f${Date.now()}${Math.random()}` }));
-        addLog(HI, '¡completó una hamburguesa! 🎉', newPls);
+        addLog(HI, 'Â¡completÃ³ una hamburguesa! ðŸŽ‰', newPls);
       }
       setSelectedIdx(null);
       setExtraPlay(false);
@@ -953,7 +984,7 @@ export default function App() {
     }
   }
 
-  // ── Non-host: action card dispatch via socket ──
+  // â”€â”€ Non-host: action card dispatch via socket â”€â”€
   function humanPlayActionRemote(card, cardIdx) {
     const mass = ['milanesa', 'ensalada', 'pizza', 'parrilla', 'comecomodines'];
     if (mass.includes(card.action)) {
@@ -961,12 +992,12 @@ export default function App() {
       setSelectedIdx(null);
     } else if (card.action === 'basurero') {
       const ingCards = discard.filter(c => c.type === 'ingredient');
-      if (ingCards.length === 0) { alert('El basurero está vacío'); return; }
+      if (ingCards.length === 0) { alert('El basurero estÃ¡ vacÃ­o'); return; }
       setModal({ type: 'basurero', cardIdx, cards: ingCards });
     } else if (['tenedor', 'ladron', 'intercambio_sombreros', 'intercambio_hamburguesa', 'gloton'].includes(card.action)) {
       setModal({ type: 'pickTarget', cardIdx, action: card.action });
     } else if (card.action === 'negacion') {
-      alert('Negación se juega automáticamente cuando un oponente juega una acción.');
+      alert('NegaciÃ³n se juega automÃ¡ticamente cuando un oponente juega una acciÃ³n.');
     }
   }
 
@@ -976,7 +1007,7 @@ export default function App() {
     const targeted = ['tenedor', 'ladron', 'intercambio_sombreros', 'intercambio_hamburguesa', 'gloton'];
 
     if (card.action === 'negacion') {
-      alert('Negación se juega automáticamente cuando un oponente juega una acción.');
+      alert('NegaciÃ³n se juega automÃ¡ticamente cuando un oponente juega una acciÃ³n.');
       return;
     }
 
@@ -988,7 +1019,7 @@ export default function App() {
     }
 
     setSelectedIdx(null);
-    addLog(HI, `jugó ${info.name} ${info.emoji}`, players);
+    addLog(HI, `jugÃ³ ${info.name} ${info.emoji}`, players);
 
     // Mass actions & basurero: all opponents can negate
     startNegCheck(HI, card, () => {
@@ -1026,7 +1057,7 @@ export default function App() {
       return;
     }
     const card = players[HI].hand[selectedIdx];
-    addLog(HI, `descartó ${card.type === 'ingredient' ? getIngName(card.ingredient, card.language) : getActionInfo(card.action).name}`, players);
+    addLog(HI, `descartÃ³ ${card.type === 'ingredient' ? getIngName(card.ingredient, card.language) : getActionInfo(card.action).name}`, players);
     const newPls = clone(players);
     const discarded = newPls[HI].hand.splice(selectedIdx, 1)[0];
     setSelectedIdx(null);
@@ -1041,7 +1072,7 @@ export default function App() {
       return;
     }
     const card = players[HI].hand[cardIdx];
-    addLog(HI, 'jugó 🌭 Comodín', players);
+    addLog(HI, 'jugÃ³ ðŸŒ­ ComodÃ­n', players);
     const newPls = clone(players);
     newPls[HI].hand.splice(cardIdx, 1);
     newPls[HI].table.push('perrito|' + chosenIng);
@@ -1050,13 +1081,13 @@ export default function App() {
     let newDiscard = [...discard, card];
     if (done) {
       freed.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `f${Date.now()}${Math.random()}` }));
-      addLog(HI, '¡completó una hamburguesa! 🎉', newPls);
+      addLog(HI, 'Â¡completÃ³ una hamburguesa! ðŸŽ‰', newPls);
     }
     setExtraPlay(false);
     endTurn(newPls, deck, newDiscard, HI);
   }
 
-  // ── Modal resolvers ──
+  // â”€â”€ Modal resolvers â”€â”€
   function resolvePickTarget(targetIdx) {
     const { cardIdx, action } = modal;
     setModal(null); setSelectedIdx(null);
@@ -1082,7 +1113,7 @@ export default function App() {
 
     const card = players[HI].hand[cardIdx];
     const info = getActionInfo(action);
-    addLog(HI, `jugó ${info.name} ${info.emoji} contra ${players[targetIdx].name}`, players);
+    addLog(HI, `jugÃ³ ${info.name} ${info.emoji} contra ${players[targetIdx].name}`, players);
 
     // Negation check: only the targeted player can negate
     startNegCheck(HI, card, () => {
@@ -1110,7 +1141,7 @@ export default function App() {
         if (newPls[targetIdx].mainHats.length > 0) {
           newPls[targetIdx].maxHand = Math.min(6, newPls[targetIdx].maxHand + 1);
         }
-        addLog(HI, `robó el sombrero ${stolen}`, newPls);
+        addLog(HI, `robÃ³ el sombrero ${stolen}`, newPls);
         if (newPls[targetIdx].mainHats.length === 0) {
           if (newPls[targetIdx].perchero.length > 0) {
             if (newPls[targetIdx].isAI) {
@@ -1161,7 +1192,7 @@ export default function App() {
     const { player: up, freed, done } = advanceBurger(newPls[HI]);
     newPls[HI] = up;
     let fd = newDiscard;
-    if (done) { freed.forEach(ing => fd = [...fd, { type: 'ingredient', ingredient: ingKey(ing), id: `t${Date.now()}` }]); addLog(HI, '¡completó una hamburguesa! 🎉', newPls); }
+    if (done) { freed.forEach(ing => fd = [...fd, { type: 'ingredient', ingredient: ingKey(ing), id: `t${Date.now()}` }]); addLog(HI, 'Â¡completÃ³ una hamburguesa! ðŸŽ‰', newPls); }
     endTurn(newPls, deck, fd, HI);
   }
 
@@ -1199,7 +1230,7 @@ export default function App() {
     endTurn(newPls, dk || deck, newDiscard || discard, HI);
   }
 
-  // Manual: swap main hat from perchero (costs half your hand — player chooses which cards)
+  // Manual: swap main hat from perchero (costs half your hand â€” player chooses which cards)
   function resolveManualCambiar(hatLang, cardIndices) {
     setModal(null); setSelectedIdx(null);
     if (isOnline && !isHost) {
@@ -1217,7 +1248,7 @@ export default function App() {
     const discarded = sorted.map(i => p.hand.splice(i, 1)[0]);
     let newDiscard = [...discard, ...discarded];
     const cost = discarded.length;
-    addLog(HI, `cambió sombrero a ${hatLang} (descartó ${cost} carta${cost !== 1 ? 's' : ''}) — puede jugar un ingrediente`, newPls);
+    addLog(HI, `cambiÃ³ sombrero a ${hatLang} (descartÃ³ ${cost} carta${cost !== 1 ? 's' : ''}) â€” puede jugar un ingrediente`, newPls);
     setPlayers(newPls); setDiscard(newDiscard); setExtraPlay(true); setPhase('transition');
   }
 
@@ -1239,7 +1270,7 @@ export default function App() {
     p.maxHand = Math.max(1, p.maxHand - 1);
     const { drawn, deck: newDeck, discard: di2 } = drawN(deck, newDiscard, p.maxHand);
     p.hand = drawn;
-    addLog(HI, `agregó sombrero ${hatLang} — mano máx reducida a ${p.maxHand}`, newPls);
+    addLog(HI, `agregÃ³ sombrero ${hatLang} â€” mano mÃ¡x reducida a ${p.maxHand}`, newPls);
     setPlayers(newPls); setDeck(newDeck); setDiscard(di2); setExtraPlay(true); setPhase('transition');
   }
 
@@ -1258,13 +1289,13 @@ export default function App() {
     if (found) {
       newDiscard = newDiscard.filter(c => c.id !== cardId);
       newPls[HI].hand.push(found);
-      addLog(HI, 'rescató una carta del 🗑️ basurero', newPls);
+      addLog(HI, 'rescatÃ³ una carta del ðŸ—‘ï¸ basurero', newPls);
     }
     endTurn(newPls, deck, newDiscard, HI);
   }
 
-  // ── Render phases ──
-  // ── Room invite toast overlay (shown on any screen when invite received) ──
+  // â”€â”€ Render phases â”€â”€
+  // â”€â”€ Room invite toast overlay (shown on any screen when invite received) â”€â”€
   const inviteToast = roomInvite && (
     <div style={{
       position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)',
@@ -1290,11 +1321,11 @@ export default function App() {
         padding: '7px 12px', borderRadius: 10, border: '1px solid #555',
         background: 'transparent', color: '#888', fontFamily: "'Fredoka',sans-serif",
         fontWeight: 700, fontSize: 13, cursor: 'pointer',
-      }}>✕</button>
+      }}>{'\u00D7'}</button>
     </div>
   );
 
-  // ── Friend request toast overlay (shown on any screen) ──
+  // â”€â”€ Friend request toast overlay (shown on any screen) â”€â”€
   const friendReqToast = friendReqNotif && (
     <div style={{
       position: 'fixed', bottom: roomInvite ? 90 : 20, left: '50%', transform: 'translateX(-50%)',
@@ -1305,7 +1336,7 @@ export default function App() {
     }}>
       <div>
         <div style={{ color: '#eee', fontSize: 14, fontWeight: 700 }}>
-          🤝 {friendReqNotif.fromDisplayName} {T('friendRequestNotif')}
+          {'\u{1F91D}'} {friendReqNotif.fromDisplayName} {T('friendRequestNotif')}
         </div>
       </div>
       <button onClick={() => { setFriendReqNotif(null); setPhase('friends'); }} style={{
@@ -1317,7 +1348,7 @@ export default function App() {
         padding: '7px 12px', borderRadius: 10, border: '1px solid #555',
         background: 'transparent', color: '#888', fontFamily: "'Fredoka',sans-serif",
         fontWeight: 700, fontSize: 13, cursor: 'pointer',
-      }}>✕</button>
+      }}>{'\u00D7'}</button>
     </div>
   );
 
@@ -1450,7 +1481,7 @@ export default function App() {
 
   if (!players.length) return null;
 
-  // ── Playing screen ──
+  // â”€â”€ Playing screen â”€â”€
   const human = players[HI] || players[0];
   const opponents = players.filter((_, i) => i !== HI);
   const isHumanTurn = cp === HI;
@@ -1471,7 +1502,7 @@ export default function App() {
   const MAX_ANGLE = isMobile ? 12 : 14;
   const OVERLAP = isMobile ? 20 : 18;
 
-  // ── Panel: Rivals (left sidebar) ──
+  // â”€â”€ Panel: Rivals (left sidebar) â”€â”€
   const rivalesPanel = (
     <div style={{
       ...(isMobile
@@ -1506,7 +1537,7 @@ export default function App() {
     </div>
   );
 
-  // ── Panel: Mesa (center) — section blocks ──
+  // â”€â”€ Panel: Mesa (center) â€” section blocks â”€â”€
 
   const playerHeader = (
     <div style={{
@@ -1517,7 +1548,7 @@ export default function App() {
       <div style={{ flex: 1 }}>
         <div style={{ fontWeight: 900, fontSize: 16, color: humanColor }}>{human.name}</div>
         <div style={{ fontSize: 11, color: '#777' }}>
-          🍔 {human.currentBurger}/{human.totalBurgers} hamburguesas
+          {'\u{1F354}'} {human.currentBurger}/{human.totalBurgers} {String(T('burgersLabel')).toLowerCase()}
           {extraPlay && <span style={{ color: '#FFD700', marginLeft: 8 }}>{T('extraPlayLabel')}</span>}
         </div>
       </div>
@@ -1546,12 +1577,13 @@ export default function App() {
         {human.burgers.slice(0, human.currentBurger + 1).map((b, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ fontSize: 11, color: i === human.currentBurger ? '#FFD700' : '#555', width: 14, fontWeight: 700 }}>
-              {i < human.currentBurger ? '✅' : i === human.currentBurger ? '▶' : '○'}
+              {i < human.currentBurger ? '\u2714' : i === human.currentBurger ? '\u25B6' : '\u25CB'}
             </span>
             <BurgerTarget
               ingredients={b}
               table={i === human.currentBurger ? human.table : i < human.currentBurger ? b : []}
               isCurrent={i === human.currentBurger}
+              onIngredientClick={(ing) => setModal({ type: 'ingredientInfo', ingredient: ing })}
             />
           </div>
         ))}
@@ -1584,8 +1616,15 @@ export default function App() {
                 filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
               }}>
                 <HatSVG lang={h} size={24} />
-                <span style={{ fontSize: 7, fontWeight: 800, color: LANG_TEXT[h], letterSpacing: 0.5, marginTop: -2 }}>
-                  {LANG_SHORT[h]}
+                <span style={{
+                  fontSize: h === 'inglés' ? 8 : 7,
+                  fontWeight: 900,
+                  color: h === 'inglés' ? '#FFD700' : LANG_TEXT[h],
+                  letterSpacing: 0.5,
+                  marginTop: -2,
+                  textShadow: h === 'inglés' ? '0 1px 2px rgba(0,0,0,0.6)' : 'none',
+                }}>
+                  {getLocalizedLangShort(h, uiLang)}
                 </span>
               </div>
             );
@@ -1670,7 +1709,7 @@ export default function App() {
       {T('hand')} ({human.hand.length}/{human.maxHand})
       {isReduced && (
         <span style={{ color: '#FF7043', display: 'inline-flex', alignItems: 'center', gap: 2 }}>
-          ⚠ {T('maxReduced')}: {addedHats.map(h => (
+          {'\u26A0'} {T('maxReduced')}: {addedHats.map(h => (
             <HatBadge key={h} lang={h} isMain size="sm" />
           ))}
         </span>
@@ -1680,42 +1719,25 @@ export default function App() {
 
   const turnActionIndicators = (
     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', flexShrink: 0, alignItems: 'center' }}>
-      <span style={{ fontSize: 11, color: '#555', fontWeight: 700, letterSpacing: 1 }}>
+      <button
+        onClick={() => { setHowToPlayPage(0); setModal({ type: 'howToPlay' }); }}
+        style={{
+          fontSize: 11,
+          color: '#4ecdc4',
+          fontWeight: 800,
+          letterSpacing: 1,
+          background: 'transparent',
+          border: 'none',
+          padding: 0,
+          cursor: 'pointer',
+          textDecoration: 'underline',
+          textUnderlineOffset: 3,
+          fontFamily: 'inherit',
+        }}
+      >
+        <span style={{ marginRight: 4 }}>{'\u{1F4D6}'}</span>
         {T('turnActionsLabel')}
-      </span>
-      {[
-        { key: 'playIngredient', emoji: '🃏', label: T('ingredientCard') },
-        { key: 'playAction',     emoji: '⚡', label: T('actionCard')    },
-        { key: 'discard',        emoji: '🗑️', label: T('discard')       },
-        { key: 'changeHat',      emoji: '🎩', label: T('changeHat')     },
-        { key: 'addHat',         emoji: '➕', label: T('addHat')        },
-      ].map(({ key, emoji, label }) => (
-        <button
-          key={key}
-          onClick={() => setModal({ type: 'turnActionInfo', action: key })}
-          style={{
-            background: 'rgba(255,255,255,0.06)',
-            border: '1px solid rgba(255,255,255,0.15)',
-            borderRadius: 20, padding: '4px 10px', cursor: 'pointer',
-            color: isHumanTurn ? '#ddd' : '#555',
-            fontSize: 12, display: 'flex', gap: 4, alignItems: 'center',
-            fontFamily: 'inherit', fontWeight: 600, transition: 'all .15s',
-          }}
-          onMouseOver={e => {
-            e.currentTarget.style.background = 'rgba(78,205,196,0.2)';
-            e.currentTarget.style.borderColor = '#4ecdc4';
-            e.currentTarget.style.color = '#fff';
-          }}
-          onMouseOut={e => {
-            e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
-            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
-            e.currentTarget.style.color = isHumanTurn ? '#ddd' : '#555';
-          }}
-        >
-          <span>{emoji}</span>
-          <span>{label}</span>
-        </button>
-      ))}
+      </button>
     </div>
   );
 
@@ -1772,6 +1794,11 @@ export default function App() {
                   display: 'flex', flexDirection: 'column', gap: 2,
                 }}>
                   {card.type === 'ingredient' ? (<>
+                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 2 }}>
+                      {ING_IMG[card.ingredient]
+                        ? <img src={ING_IMG[card.ingredient]} alt={card.ingredient} style={{ width: 28, height: 28, objectFit: 'contain' }} />
+                        : <span style={{ fontSize: 24 }}>{ING_EMOJI[card.ingredient]}</span>}
+                    </div>
                     <span style={{ fontWeight: 700, fontSize: 14 }}>{getIngName(card.ingredient, card.language)}</span>
                     {card.ingredient === 'perrito' && (
                       <span style={{ fontSize: 12, color: '#ccc' }}>{T('wildcardChoose')}</span>
@@ -1780,8 +1807,8 @@ export default function App() {
                       ? <span style={{ color: '#4CAF50', fontSize: 12 }}>{T('canPlay')}</span>
                       : <span style={{ color: '#FF7043', fontSize: 12 }}>{T('cantPlay')}</span>}
                   </>) : (<>
-                    <span style={{ fontWeight: 700, fontSize: 14, color: '#FFD700' }}>{getActionInfo(card.action)?.name}</span>
-                    <span style={{ fontSize: 12, color: '#ccc' }}>{getActionInfo(card.action)?.desc}</span>
+                    <span style={{ fontWeight: 700, fontSize: 14, color: '#FFD700' }}>{getActionText(card.action)?.name}</span>
+                    <span style={{ fontSize: 12, color: '#ccc' }}>{getActionText(card.action)?.desc}</span>
                   </>)}
                 </div>
                 <div style={{ display: 'flex', gap: 4 }}>
@@ -1817,7 +1844,7 @@ export default function App() {
           ? <span style={{ color: '#4CAF50' }}>{T('canPlayThis')}</span>
           : <span style={{ color: '#FF7043' }}>{T('cantPlayNow')}</span>
       ) : (
-        <span style={{ color: '#FFD700' }}>⚡ {getActionInfo(human.hand[selectedIdx]?.action)?.desc}</span>
+        <span style={{ color: '#FFD700' }}>{'\u26A1'} {getActionText(human.hand[selectedIdx]?.action)?.desc}</span>
       )}
     </div>
   );
@@ -1885,34 +1912,34 @@ export default function App() {
     </div>
   );
 
-  // ── Panel: Mano (right sidebar) ──
+  // â”€â”€ Panel: Mano (right sidebar) â”€â”€
   return (
     <div style={{
       height: '100vh', display: 'flex', flexDirection: 'column',
       background: '#0f1117', fontFamily: "'Fredoka',sans-serif", overflow: 'hidden', position: 'relative',
     }}>
 
-      {/* ── Header ── */}
+      {/* â”€â”€ Header â”€â”€ */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: isMobile ? 6 : 12, padding: isMobile ? '6px 10px' : '8px 16px',
         background: '#16213e', borderBottom: '2px solid #2a2a4a', flexShrink: 0,
       }}>
-        <span style={{ fontSize: 22 }}>🍔</span>
+        <span style={{ fontSize: 22 }}>{'\u{1F354}'}</span>
         {!isMobile && <span style={{ fontWeight: 900, fontSize: 16, color: '#FFD700' }}>HUNGRY POLY</span>}
         <div style={{ marginLeft: 'auto', display: 'flex', gap: isMobile ? 6 : 12, alignItems: 'center' }}>
-          <span style={{ fontSize: 12, color: '#555' }}>🃏 {deck.length}</span>
-          <span style={{ fontSize: 12, color: '#555' }}>🗑️ {discard.length}</span>
+          <span style={{ fontSize: 12, color: '#555' }}>Deck: {deck.length}</span>
+          <span style={{ fontSize: 12, color: '#555' }}>Discard: {discard.length}</span>
           <div style={{
             background: isHumanTurn ? 'rgba(255,215,0,.15)' : 'rgba(0,188,212,.15)',
             border: `1px solid ${isHumanTurn ? '#FFD700' : '#00BCD4'}`,
             borderRadius: 8, padding: isMobile ? '3px 6px' : '3px 10px', fontSize: isMobile ? 11 : 12, fontWeight: 700,
             color: isHumanTurn ? '#FFD700' : '#00BCD4',
           }}>
-            {isHumanTurn ? (extraPlay ? T('extraPlayLabel') : T('yourTurnLabel')) : (typeof T('waitingPlayer') === 'function' ? T('waitingPlayer')(players[cp]?.name) : `⏳ ${players[cp]?.name}`)}
+            {isHumanTurn ? (extraPlay ? T('extraPlayLabel') : T('yourTurnLabel')) : (typeof T('waitingPlayer') === 'function' ? T('waitingPlayer')(players[cp]?.name) : `${'\u23F3'} ${players[cp]?.name}`)}
           </div>
           {isOnline && !isMobile && (
             <div style={{ fontSize: 11, color: '#555', padding: '3px 8px', borderRadius: 6, background: 'rgba(0,188,212,.08)', border: '1px solid rgba(0,188,212,.2)' }}>
-              🌐 {T('room')}: {roomCode}
+              {'\u{1F310}'} {T('room')}: {roomCode}
             </div>
           )}
           <Btn onClick={() => setShowLog(l => !l)} color="#2a2a4a" style={{ color: '#aaa', fontSize: 12, padding: '4px 10px' }}>
@@ -1938,7 +1965,7 @@ export default function App() {
         </div>
       </div>
 
-      {/* ── Game paused overlay (opponent left or alone) ── */}
+      {/* â”€â”€ Game paused overlay (opponent left or alone) â”€â”€ */}
       {gamePaused && (
         <div style={{
           position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999,
@@ -1948,13 +1975,13 @@ export default function App() {
           <div style={{ textAlign: 'center', padding: 32 }}>
             {pausedMessage === 'alone' ? (
               <>
-                <div style={{ fontSize: 48, marginBottom: 16 }}>😔</div>
+                <div style={{ fontSize: 48, marginBottom: 16 }}>ðŸ˜”</div>
                 <h2 style={{ color: '#FFD700', fontSize: 22, fontWeight: 900, marginBottom: 12 }}>{T('aloneTitle')}</h2>
                 <p style={{ color: '#aaa', fontSize: 15, marginBottom: 24 }}>{T('aloneDesc')}</p>
               </>
             ) : (
               <>
-                <div style={{ fontSize: 48, marginBottom: 16 }}>⏸️</div>
+                <div style={{ fontSize: 48, marginBottom: 16 }}>â¸ï¸</div>
                 <h2 style={{ color: '#FFD700', fontSize: 22, fontWeight: 900, marginBottom: 12 }}>{T('gamePaused')}</h2>
                 <p style={{ color: '#aaa', fontSize: 15, marginBottom: 24 }}>{pausedMessage}</p>
               </>
@@ -1974,7 +2001,7 @@ export default function App() {
         </div>
       )}
 
-      {/* ── Main area ── */}
+      {/* â”€â”€ Main area â”€â”€ */}
       {isMobile ? (
         <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           {mobileTab === 'mesa' && mesaPanel}
@@ -2046,11 +2073,11 @@ export default function App() {
         </div>
       )}
 
-      {/* ── Modals ── */}
+      {/* â”€â”€ Modals â”€â”€ */}
 
       {/* Pick Target */}
       {modal?.type === 'pickTarget' && (
-        <Modal title={`${getActionInfo(modal.action)?.emoji} ${getActionInfo(modal.action)?.name} — ${T('chooseOpponent')}`}>
+        <Modal title={`${getActionInfo(modal.action)?.emoji} ${getActionInfo(modal.action)?.name} â€” ${T('chooseOpponent')}`}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {players.map((p, i) => {
               if (i === HI) return null;
@@ -2071,7 +2098,7 @@ export default function App() {
                   <div>
                     <div style={{ fontWeight: 800, color: PLAYER_COLORS[i % PLAYER_COLORS.length] }}>{p.name}</div>
                     <div style={{ fontSize: 11, color: '#777' }}>
-                      {T('tableLabel')}: {p.table.map(ing => ING_EMOJI[ingKey(ing)]).join(' ') || T('empty')} •
+                      {T('tableLabel')}: {p.table.map(ing => ING_EMOJI[ingKey(ing)]).join(' ') || T('empty')} â€¢
                       {T('burgersLabel')}: {p.currentBurger}/{p.totalBurgers}
                     </div>
                   </div>
@@ -2145,7 +2172,7 @@ export default function App() {
         </Modal>
       )}
 
-      {/* Pick Hat Replace (after Ladrón steals last hat) */}
+      {/* Pick Hat Replace (after LadrÃ³n steals last hat) */}
       {modal?.type === 'pickHatReplace' && (!isOnline || !isHost || modal.victimIdx === HI) && (
         <Modal title={T('chooseNewHat')}>
           <p style={{ color: '#888', fontSize: 12, marginBottom: 12 }}>
@@ -2169,7 +2196,7 @@ export default function App() {
               >
                 <HatSVG lang={h} size={36} />
                 <span style={{ fontSize: 11, fontWeight: 700, color: LANG_TEXT[h] }}>
-                  {h.charAt(0).toUpperCase() + h.slice(1)}
+                  {T(h)}
                 </span>
               </div>
             ))}
@@ -2205,7 +2232,7 @@ export default function App() {
                   >
                     <HatSVG lang={h} size={36} />
                     <span style={{ fontSize: 11, fontWeight: 700, color: modal.selectedMyHat === h ? '#FFD700' : LANG_TEXT[h] }}>
-                      {h.charAt(0).toUpperCase() + h.slice(1)}
+                      {T(h)}
                     </span>
                   </div>
                 ))}
@@ -2230,7 +2257,7 @@ export default function App() {
                   >
                     <HatSVG lang={h} size={36} />
                     <span style={{ fontSize: 11, fontWeight: 700, color: modal.selectedTheirHat === h ? '#FFD700' : LANG_TEXT[h] }}>
-                      {h.charAt(0).toUpperCase() + h.slice(1)}
+                      {T(h)}
                     </span>
                   </div>
                 ))}
@@ -2256,7 +2283,7 @@ export default function App() {
 
       {/* Mobile: Perchero modal */}
       {showPercheroModal && (
-        <Modal title="🧥 Perchero">
+        <Modal title={T('closet')}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
             {percheroTree}
             <button onClick={() => setShowPercheroModal(false)} style={{
@@ -2274,8 +2301,30 @@ export default function App() {
       {isMobile && isHumanTurn && selectedIdx !== null && human.hand[selectedIdx] && (() => {
         const card = human.hand[selectedIdx];
         const playable = card.type === 'ingredient' ? canPlayCard(human, card) : (extraPlay ? false : null);
+        const cleanTitle = (txt) => String(txt).replace('🃏 ', '').replace('🃏', '').replace('⚡ ', '').replace('⚡', '');
+        const actionTypeIcon = (() => {
+          if (card.type !== 'action') return null;
+          if (['tenedor', 'ladron', 'intercambio_sombreros', 'intercambio_hamburguesa', 'gloton'].includes(card.action)) return eqRightSingle;
+          if (['milanesa', 'ensalada', 'pizza', 'parrilla', 'comecomodines'].includes(card.action)) return eqRightGlobal;
+          if (card.action === 'basurero') return eqRightDiscard;
+          if (card.action === 'negacion') return eqRightNegation;
+          return eqRightSingle;
+        })();
+        const mobileTitle = card.type === 'ingredient'
+          ? (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              <img src={ingredientCardIcon} alt={cleanTitle(T('ingredientCard'))} style={{ width: 22, height: 22, objectFit: 'contain' }} />
+              <span>{cleanTitle(T('ingredientCard'))}</span>
+            </span>
+          )
+          : (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              {actionTypeIcon && <img src={actionTypeIcon} alt={cleanTitle(T('actionCard'))} style={{ width: 22, height: 22, objectFit: 'contain' }} />}
+              <span>{cleanTitle(T('actionCard'))}</span>
+            </span>
+          );
         return (
-          <Modal title={card.type === 'ingredient' ? T('ingredientCard') : T('actionCard')}>
+          <Modal title={mobileTitle}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
               <GameCard card={card} selected playable={playable} large />
               <div style={{
@@ -2284,6 +2333,11 @@ export default function App() {
                 display: 'flex', flexDirection: 'column', gap: 4, width: '100%',
               }}>
                 {card.type === 'ingredient' ? (<>
+                  <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 2 }}>
+                    {ING_IMG[card.ingredient]
+                      ? <img src={ING_IMG[card.ingredient]} alt={card.ingredient} style={{ width: 32, height: 32, objectFit: 'contain' }} />
+                      : <span style={{ fontSize: 26 }}>{ING_EMOJI[card.ingredient]}</span>}
+                  </div>
                   <span style={{ fontWeight: 700, fontSize: 16 }}>{getIngName(card.ingredient, card.language)}</span>
                   {card.ingredient === 'perrito' && (
                     <span style={{ fontSize: 13, color: '#ccc' }}>{T('wildcardChoose')}</span>
@@ -2292,8 +2346,8 @@ export default function App() {
                     ? <span style={{ color: '#4CAF50', fontSize: 13 }}>{T('canPlay')}</span>
                     : <span style={{ color: '#FF7043', fontSize: 13 }}>{T('cantPlay')}</span>}
                 </>) : (<>
-                  <span style={{ fontWeight: 700, fontSize: 16, color: '#FFD700' }}>{getActionInfo(card.action)?.name}</span>
-                  <span style={{ fontSize: 13, color: '#ccc' }}>{getActionInfo(card.action)?.desc}</span>
+                  <span style={{ fontWeight: 700, fontSize: 16, color: '#FFD700' }}>{getActionText(card.action)?.name}</span>
+                  <span style={{ fontSize: 13, color: '#ccc' }}>{getActionText(card.action)?.desc}</span>
                 </>)}
               </div>
               <div style={{ display: 'flex', gap: 8, width: '100%' }}>
@@ -2316,7 +2370,7 @@ export default function App() {
         );
       })()}
 
-      {/* Manual: Cambiar sombrero — paso 1: elegir sombrero */}
+      {/* Manual: Cambiar sombrero â€” paso 1: elegir sombrero */}
       {modal?.type === 'manual_cambiar' && (
         <Modal title={T('changeHatStep1')}>
           <p style={{ color: '#888', fontSize: 12, marginBottom: 12 }}>
@@ -2338,7 +2392,7 @@ export default function App() {
               >
                 <HatSVG lang={h} size={36} />
                 <span style={{ fontSize: 11, fontWeight: 700, color: LANG_TEXT[h] }}>
-                  {h.charAt(0).toUpperCase() + h.slice(1)}
+                  {T(h)}
                 </span>
               </div>
             ))}
@@ -2347,13 +2401,13 @@ export default function App() {
         </Modal>
       )}
 
-      {/* Manual: Cambiar sombrero — paso 2: elegir cartas a descartar */}
+      {/* Manual: Cambiar sombrero â€” paso 2: elegir cartas a descartar */}
       {modal?.type === 'manual_cambiar_discard' && (() => {
         const cost = Math.ceil(human.hand.length / 2);
         const sel = modal.selected;
         const remaining = cost - sel.length;
         return (
-          <Modal title={typeof T('changeHatStep2') === 'function' ? T('changeHatStep2')(modal.hatLang.charAt(0).toUpperCase() + modal.hatLang.slice(1)) : T('changeHatStep2')}>
+          <Modal title={typeof T('changeHatStep2') === 'function' ? T('changeHatStep2')(T(modal.hatLang)) : T('changeHatStep2')}>
             <p style={{ color: '#888', fontSize: 12, marginBottom: 8 }}>
               <strong style={{ color: remaining > 0 ? '#FFD700' : '#4CAF50' }}>
                 {remaining > 0 ? (typeof T('moreCards') === 'function' ? T('moreCards')(remaining) : T('moreCards')) : T('ready')}
@@ -2421,7 +2475,7 @@ export default function App() {
               >
                 <HatSVG lang={h} size={36} />
                 <span style={{ fontSize: 11, fontWeight: 700, color: LANG_TEXT[h] }}>
-                  {h.charAt(0).toUpperCase() + h.slice(1)}
+                  {T(h)}
                 </span>
               </div>
             ))}
@@ -2451,7 +2505,7 @@ export default function App() {
         </Modal>
       )}
 
-      {/* Wildcard (Comodín) modal */}
+      {/* Wildcard (ComodÃ­n) modal */}
       {modal?.type === 'wildcard' && (() => {
         const human = players[HI];
         const burger = human.burgers[human.currentBurger] || [];
@@ -2506,14 +2560,40 @@ export default function App() {
         const chosen = ingChosen(raw);
         const displayIng = chosen || base;
         const isWildcard = base === 'perrito';
+        const ingredientTitle = (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+            {ING_IMG[displayIng]
+              ? <img src={ING_IMG[displayIng]} alt={displayIng} style={{ width: 22, height: 22, objectFit: 'contain' }} />
+              : <span>{ING_EMOJI[displayIng]}</span>}
+            <span>{getIngName(displayIng, uiGameLang) || displayIng}</span>
+          </span>
+        );
+        const actionCardIcons = {
+          milanesa: eqMilanesa,
+          ensalada: eqEnsalada,
+          pizza: eqPizza,
+          parrilla: eqParrilla,
+          tenedor: eqTenedor,
+          ladron: eqLadron,
+          intercambio_sombreros: eqIntercambioSomb,
+          intercambio_hamburguesa: eqIntercambioHamb,
+          basurero: eqBasurero,
+          gloton: eqGloton,
+          negacion: eqNegacion,
+          comecomodines: eqComeComodines,
+        };
         const specific = ING_AFFECTED_BY[displayIng] || [];
-        const general = ['tenedor', 'gloton', 'intercambio_hamburguesa'];
-        const allActionIds = [...specific, ...general, ...(isWildcard && !specific.includes('comecomodines') ? ['comecomodines'] : [])];
+        const singleTarget = ['tenedor', 'gloton', 'intercambio_hamburguesa'];
+        const allActionIds = [...new Set([
+          ...specific,
+          ...singleTarget,
+          ...(isWildcard ? ['comecomodines'] : []),
+        ])];
         return (
-          <Modal title={`${ING_EMOJI[displayIng]} ${ING_NAMES[displayIng]?.español || displayIng}`}>
+          <Modal title={ingredientTitle}>
             {isWildcard && chosen && (
               <p style={{ color: '#ccc', fontSize: 13, marginBottom: 12 }}>
-                {typeof T('wildcardActingAs') === 'function' ? T('wildcardActingAs')(`${ING_EMOJI[chosen]} ${ING_NAMES[chosen]?.español || chosen}`) : T('wildcardActingAs')}
+                {typeof T('wildcardActingAs') === 'function' ? T('wildcardActingAs')(`${ING_EMOJI[chosen]} ${getIngName(chosen, uiGameLang) || chosen}`) : T('wildcardActingAs')}
               </p>
             )}
             {isWildcard && !chosen && (
@@ -2538,7 +2618,7 @@ export default function App() {
                   <span style={{
                     background: LANG_BG[lang], color: LANG_TEXT[lang], border: `1px solid ${LANG_BORDER[lang]}`,
                     borderRadius: 4, padding: '1px 5px', fontSize: 10, fontWeight: 700, minWidth: 28, textAlign: 'center',
-                  }}>{LANG_SHORT[lang]}</span>
+                  }}>{getLocalizedLangShort(lang, uiLang)}</span>
                   <span style={{ color: '#ddd' }}>{getIngName(displayIng, lang)}</span>
                 </div>
               ))}
@@ -2546,14 +2626,28 @@ export default function App() {
             <h4 style={{ fontSize: 14, fontWeight: 800, color: '#FFD700', marginBottom: 8 }}>{T('affectingCards')}</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
               {allActionIds.map(id => {
-                const info = getActionInfo(id);
+                const info = getActionText(id);
                 if (!info) return null;
                 return (
                   <div key={id} style={{
                     display: 'flex', alignItems: 'center', gap: 8,
                     background: 'rgba(255,255,255,0.05)', borderRadius: 8, padding: '6px 10px',
                   }}>
-                    <span style={{ fontSize: 18 }}>{info.emoji}</span>
+                    <span style={{
+                      width: 38,
+                      height: 38,
+                      minWidth: 38,
+                      borderRadius: '50%',
+                      background: 'rgba(255,255,255,0.16)',
+                      border: '1px solid rgba(255,255,255,0.26)',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}>
+                      {actionCardIcons[id]
+                        ? <img src={actionCardIcons[id]} alt={info.name} style={{ width: 26, height: 26, objectFit: 'contain' }} />
+                        : <span style={{ fontSize: 20 }}>{info.emoji}</span>}
+                    </span>
                     <div>
                       <div style={{ fontSize: 13, fontWeight: 700, color: '#eee' }}>{info.name}</div>
                       <div style={{ fontSize: 11, color: '#999' }}>{info.desc}</div>
@@ -2567,31 +2661,315 @@ export default function App() {
         );
       })()}
 
+      {/* How to play modal */}
+      {modal?.type === 'howToPlay' && (() => {
+        const actionIcons = {
+          milanesa: eqMilanesa,
+          ensalada: eqEnsalada,
+          pizza: eqPizza,
+          parrilla: eqParrilla,
+          tenedor: eqTenedor,
+          ladron: eqLadron,
+          intercambio_sombreros: eqIntercambioSomb,
+          intercambio_hamburguesa: eqIntercambioHamb,
+          basurero: eqBasurero,
+          gloton: eqGloton,
+          negacion: eqNegacion,
+          comecomodines: eqComeComodines,
+        };
+        const actionCategories = [
+          {
+            key: 'single',
+            icon: eqRightSingle,
+            title: T('howToPlayActionSingleTitle'),
+            desc: T('howToPlayActionSingleDesc'),
+            actions: ['tenedor', 'ladron', 'intercambio_sombreros', 'intercambio_hamburguesa', 'gloton'],
+          },
+          {
+            key: 'global',
+            icon: eqRightGlobal,
+            title: T('howToPlayActionGlobalTitle'),
+            desc: T('howToPlayActionGlobalDesc'),
+            actions: ['milanesa', 'ensalada', 'pizza', 'parrilla', 'comecomodines'],
+          },
+          {
+            key: 'discard',
+            icon: eqRightDiscard,
+            title: T('howToPlayActionDiscardTitle'),
+            desc: T('howToPlayActionDiscardDesc'),
+            actions: ['basurero'],
+          },
+          {
+            key: 'negation',
+            icon: eqRightNegation,
+            title: T('howToPlayActionNegationTitle'),
+            desc: T('howToPlayActionNegationDesc'),
+            actions: ['negacion'],
+          },
+        ];
+        const actionsById = ACTION_CARDS.reduce((acc, a) => {
+          acc[a.id] = getActionText(a.id) || a;
+          return acc;
+        }, {});
+        const discardedIngredientsByAction = {
+          milanesa: ['pan', 'huevo'],
+          ensalada: ['lechuga', 'tomate', 'cebolla', 'palta'],
+          pizza: ['queso'],
+          parrilla: ['pollo', 'carne'],
+          comecomodines: ['perrito'],
+        };
+        const actionEffectById = {
+          tenedor: T('howToPlayEffectTenedor'),
+          ladron: T('howToPlayEffectLadron'),
+          intercambio_sombreros: T('howToPlayEffectIntercambioSombreros'),
+          intercambio_hamburguesa: T('howToPlayEffectIntercambioMesa'),
+          gloton: T('howToPlayEffectGloton'),
+        };
+        const totalHowToPlayPages = 8;
+        const page = Math.max(0, Math.min(howToPlayPage, totalHowToPlayPages - 1));
+        const actionCategoriesByKey = actionCategories.reduce((acc, group) => {
+          acc[group.key] = group;
+          return acc;
+        }, {});
+        const actionPages = [
+          { idx: 2, pageNumber: 3, label: T('howToPlayActionPageSingle') || 'Acciones: un jugador', groups: ['single'] },
+          { idx: 3, pageNumber: 4, label: T('howToPlayActionPageGlobal') || 'Acciones: los demas jugadores', groups: ['global'] },
+          { idx: 4, pageNumber: 5, label: T('howToPlayActionPageNegDiscard') || 'Acciones: negacion y basurero', groups: ['negation', 'discard'] },
+        ];
+
+        return (
+          <Modal title={T('turnActionsLabel')}>
+            <div style={{
+              position: 'relative',
+              background: 'linear-gradient(180deg,#b98d58 0%,#8f6a43 100%)',
+              borderRadius: 14,
+              border: '2px solid rgba(65,42,24,0.8)',
+              padding: 10,
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25), 0 10px 24px rgba(0,0,0,0.35)',
+              marginBottom: 12,
+            }}>
+              <div style={{
+                position: 'absolute',
+                left: '50%',
+                top: 10,
+                bottom: 10,
+                width: 6,
+                transform: 'translateX(-50%)',
+                borderRadius: 99,
+                background: 'linear-gradient(180deg, rgba(52,33,20,0.45), rgba(245,225,197,0.25), rgba(52,33,20,0.45))',
+                pointerEvents: 'none',
+              }} />
+              <div style={{
+                background: 'linear-gradient(180deg,#f3e2c7 0%,#e8d2b1 100%)',
+                borderRadius: 10,
+                border: '1px solid rgba(82,58,36,0.35)',
+                padding: '12px 14px',
+                maxHeight: '52vh',
+                overflowY: 'auto',
+                boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.35)',
+              }}>
+            <p style={{ color: '#3f3125', fontSize: 13, marginBottom: 14, display: page === 0 ? 'block' : 'none' }}>
+              {T('howToPlayDesc')}
+            </p>
+            <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '12px 14px', marginBottom: 12, display: page === 0 ? 'block' : 'none' }}>
+              <div style={{ color: '#5a4635', fontSize: 10, fontWeight: 800, letterSpacing: 1, marginBottom: 6 }}>{T('howToPlayPage')} 1</div>
+              <div style={{ color: '#7A4A00', fontWeight: 800, fontSize: 14, marginBottom: 6 }}>
+                {T('howToPlayTurnRulesTitle')}
+              </div>
+              <div style={{ color: '#3f3125', fontSize: 12, lineHeight: 1.35, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <span>{T('howToPlayRuleOneCard')}</span>
+                <span>{T('howToPlayRuleHatButtonsBeforePlay')}</span>
+                <span>{T('howToPlayRuleHatButtonsIngredientOnly')}</span>
+              </div>
+            </div>
+
+            <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '12px 14px', marginBottom: 12, display: page === 1 ? 'block' : 'none' }}>
+              <div style={{ color: '#5a4635', fontSize: 10, fontWeight: 800, letterSpacing: 1, marginBottom: 6 }}>{T('howToPlayPage')} 2</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                <img src={ingredientCardIcon} alt={T('ingredientCard')} style={{ width: 22, height: 22, objectFit: 'contain' }} />
+                <div style={{ color: '#7A4A00', fontWeight: 800, fontSize: 14 }}>{T('howToPlayIngredientTitle')}</div>
+              </div>
+              <div style={{ color: '#3f3125', fontSize: 12, lineHeight: 1.35 }}>
+                {T('howToPlayIngredientDesc')}
+              </div>
+            </div>
+
+            {actionPages.map((ap) => (
+              <div key={`action-page-${ap.idx}`} style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '12px 14px', marginBottom: 14, display: page === ap.idx ? 'block' : 'none' }}>
+                <div style={{ color: '#5a4635', fontSize: 10, fontWeight: 800, letterSpacing: 1, marginBottom: 6 }}>{T('howToPlayPage')} {ap.pageNumber}</div>
+                <div style={{ marginBottom: 8 }}>
+                  <span style={{
+                    display: 'inline-block',
+                    background: 'rgba(122,74,0,0.14)',
+                    border: '1px solid rgba(122,74,0,0.35)',
+                    borderRadius: 999,
+                    padding: '2px 10px',
+                    color: '#7A4A00',
+                    fontWeight: 800,
+                    fontSize: 11,
+                    letterSpacing: 0.4,
+                  }}>
+                    {ap.label}
+                  </span>
+                </div>
+                <div style={{ color: '#7A4A00', fontWeight: 800, fontSize: 14, marginBottom: 8 }}>
+                  {T('howToPlayActionTitle')}
+                </div>
+                <div style={{ color: '#3f3125', fontSize: 12, lineHeight: 1.35, marginBottom: 10 }}>
+                  {T('howToPlayActionDesc')}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {ap.groups.map((groupKey) => {
+                    const group = actionCategoriesByKey[groupKey];
+                    if (!group) return null;
+                    return (
+                      <div key={group.key} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: '8px 10px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                          <img src={group.icon} alt={group.title} style={{ width: 30, height: 30, objectFit: 'contain' }} />
+                          <span style={{ color: '#7A4A00', fontWeight: 700, fontSize: 12 }}>{group.title}</span>
+                        </div>
+                        <div style={{ color: '#5a4635', fontSize: 11, lineHeight: 1.35, marginBottom: 6 }}>{group.desc}</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 10px' }}>
+                          {group.actions.map((actionId) => {
+                            const a = actionsById[actionId];
+                            if (!a) return null;
+                            const discards = discardedIngredientsByAction[a.id] || [];
+                            return (
+                              <div key={a.id} style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: '#3f3125' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                  {actionIcons[a.id]
+                                    ? <img src={actionIcons[a.id]} alt={a.name} style={{ width: 32, height: 32, objectFit: 'contain' }} />
+                                    : <span>{a.emoji}</span>}
+                                  <span>{a.name}</span>
+                                </div>
+                                {discards.length > 0 && (
+                                  <div style={{ fontSize: 11, color: '#5a4635', display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>
+                                    <span>{T('howToPlayOthersDiscardLabel')}</span>
+                                    {discards.map((ing) => (
+                                      <span key={`${a.id}-${ing}`} style={{ background: 'rgba(255,255,255,0.08)', borderRadius: 999, padding: '2px 8px', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                                        {ING_IMG[ing]
+                                          ? <img src={ING_IMG[ing]} alt={ing} style={{ width: 18, height: 18, objectFit: 'contain' }} />
+                                          : <span>{ING_EMOJI[ing]}</span>}
+                                        <span>{getIngName(ing, uiGameLang)}</span>
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                                {actionEffectById[a.id] && (
+                                  <div style={{ fontSize: 11, color: '#5a4635' }}>
+                                    <span>{T('howToPlayEffectLabel')} </span>
+                                    <span>{actionEffectById[a.id]}</span>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+
+            <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '12px 14px', marginBottom: 12, display: page === 5 ? 'block' : 'none' }}>
+              <div style={{ color: '#5a4635', fontSize: 10, fontWeight: 800, letterSpacing: 1, marginBottom: 6 }}>{T('howToPlayPage')} 6</div>
+              <div style={{ color: '#7A4A00', fontWeight: 800, fontSize: 14, marginBottom: 6 }}>
+                {T('howToPlayGoalTitle')}
+              </div>
+              <div style={{ color: '#3f3125', fontSize: 12, lineHeight: 1.35 }}>
+                {T('howToPlayGoalDesc')}
+              </div>
+            </div>
+
+            <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '12px 14px', marginBottom: 12, display: page === 6 ? 'block' : 'none' }}>
+              <div style={{ color: '#5a4635', fontSize: 10, fontWeight: 800, letterSpacing: 1, marginBottom: 6 }}>{T('howToPlayPage')} 7</div>
+              <div style={{ color: '#7A4A00', fontWeight: 800, fontSize: 14, marginBottom: 8 }}>
+                {T('howToPlayMainHatsTitle')}
+              </div>
+              <div style={{ color: '#3f3125', fontSize: 12, lineHeight: 1.35, marginBottom: 8 }}>
+                {T('howToPlayMainHatsDesc')}
+              </div>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {human.mainHats.map((h) => <HatBadge key={`help-main-${h}`} lang={h} isMain size="sm" />)}
+              </div>
+              <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div style={{ fontSize: 11, color: '#5a4635' }}>{T('howToPlayHatButtonsTitle')}</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <div style={{ fontSize: 12, color: '#3f3125' }}>
+                    <strong>{T('changeHat')}:</strong> {T('changeHatTooltip')}
+                  </div>
+                  <div style={{ fontSize: 11, color: '#5a4635' }}>
+                    {T('howToPlayChangeHatRule')}
+                  </div>
+                  <div style={{ fontSize: 12, color: '#3f3125' }}>
+                    <strong>{T('addHat')}:</strong> {T('addHatTooltip')}
+                  </div>
+                  <div style={{ fontSize: 11, color: '#5a4635' }}>
+                    {T('howToPlayAddHatRule')}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '12px 14px', marginBottom: 14, display: page === 7 ? 'block' : 'none' }}>
+              <div style={{ color: '#5a4635', fontSize: 10, fontWeight: 800, letterSpacing: 1, marginBottom: 6 }}>{T('howToPlayPage')} 8</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <img src={percheroImg} alt={T('closet')} style={{ width: 22, height: 22, objectFit: 'contain' }} />
+                <div style={{ color: '#7A4A00', fontWeight: 800, fontSize: 14 }}>{T('howToPlayClosetTitle')}</div>
+              </div>
+              <div style={{ color: '#3f3125', fontSize: 12, lineHeight: 1.35, marginBottom: 8 }}>
+                {typeof T('howToPlayClosetDesc') === 'function' ? T('howToPlayClosetDesc')(human.perchero.length) : T('howToPlayClosetDesc')}
+              </div>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {human.perchero.map((h, i) => <HatBadge key={`help-closet-${h}-${i}`} lang={h} size="sm" />)}
+              </div>
+            </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, gap: 8 }}>
+              <Btn onClick={() => setHowToPlayPage((p) => Math.max(0, p - 1))} color="#6b4f36" disabled={page === 0}>
+                {T('prevPage') || 'Anterior'}
+              </Btn>
+              <span style={{ color: '#c9b08f', fontSize: 12 }}>
+                {T('howToPlayPage')} {page + 1}/{totalHowToPlayPages}
+              </span>
+              <Btn onClick={() => setHowToPlayPage((p) => Math.min(totalHowToPlayPages - 1, p + 1))} color="#6b4f36" disabled={page === totalHowToPlayPages - 1}>
+                {T('nextPage') || 'Siguiente'}
+              </Btn>
+            </div>
+
+            <Btn onClick={() => setModal(null)} color="#333" style={{ color: '#aaa' }}>{T('close')}</Btn>
+          </Modal>
+        );
+      })()}
+
       {/* Turn Action Info modal */}
       {modal?.type === 'turnActionInfo' && (() => {
         const actionKey = modal.action;
         const infos = {
           playIngredient: {
-            emoji: '🃏',
+            emoji: 'ðŸƒ',
             title: T('ingredientCard'),
             desc: T('tiPlayIngDesc'),
             example: (
               <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '12px 14px', marginBottom: 12 }}>
                 <div style={{ fontSize: 12, color: '#888', marginBottom: 8 }}>Ej:</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', fontSize: 13 }}>
-                  <span style={{ background: 'rgba(255,215,0,.2)', border: '1px solid #FFD700', borderRadius: 8, padding: '3px 8px' }}>🎩 ESP</span>
+                  <span style={{ background: 'rgba(255,215,0,.2)', border: '1px solid #FFD700', borderRadius: 8, padding: '3px 8px' }}>ðŸŽ© ESP</span>
                   <span style={{ color: '#888' }}>+</span>
-                  <span style={{ background: 'rgba(255,255,255,.08)', borderRadius: 8, padding: '3px 8px' }}>🥩 Carne <small style={{ color: '#aaa' }}>(ESP)</small></span>
+                  <span style={{ background: 'rgba(255,255,255,.08)', borderRadius: 8, padding: '3px 8px' }}>ðŸ¥© Carne <small style={{ color: '#aaa' }}>(ESP)</small></span>
                   <span style={{ color: '#888' }}>+</span>
-                  <span style={{ background: 'rgba(76,175,80,.15)', border: '1px solid #4CAF50', borderRadius: 8, padding: '3px 8px' }}>🍔 necesita 🥩</span>
-                  <span style={{ color: '#888' }}>→</span>
-                  <span style={{ color: '#4CAF50', fontWeight: 700 }}>✅ ¡Jugá!</span>
+                  <span style={{ background: 'rgba(76,175,80,.15)', border: '1px solid #4CAF50', borderRadius: 8, padding: '3px 8px' }}>ðŸ” necesita ðŸ¥©</span>
+                  <span style={{ color: '#888' }}>â†’</span>
+                  <span style={{ color: '#4CAF50', fontWeight: 700 }}>âœ… Â¡JugÃ¡!</span>
                 </div>
               </div>
             ),
           },
           playAction: {
-            emoji: '⚡',
+            emoji: 'âš¡',
             title: T('actionCard'),
             desc: T('tiPlayCardDesc'),
             example: (
@@ -2608,48 +2986,48 @@ export default function App() {
             ),
           },
           discard: {
-            emoji: '🗑️',
+            emoji: 'ðŸ—‘ï¸',
             title: T('discard'),
             desc: T('tiDiscardDesc'),
             example: (
               <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '12px 14px', marginBottom: 12, textAlign: 'center' }}>
-                <div style={{ fontSize: 28 }}>🃏 → 🗑️</div>
-                <div style={{ fontSize: 12, color: '#888', marginTop: 6 }}>→ {T('yourTurnLabel')}</div>
+                <div style={{ fontSize: 28 }}>ðŸƒ â†’ ðŸ—‘ï¸</div>
+                <div style={{ fontSize: 12, color: '#888', marginTop: 6 }}>â†’ {T('yourTurnLabel')}</div>
               </div>
             ),
           },
           changeHat: {
-            emoji: '🎩',
+            emoji: 'ðŸŽ©',
             title: T('changeHat'),
             desc: T('changeHatTooltip'),
             example: (
               <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '12px 14px', marginBottom: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', fontSize: 13 }}>
-                  <span style={{ background: 'rgba(255,215,0,.15)', border: '1px solid #FFD700', borderRadius: 8, padding: '3px 8px' }}>🎩 ESP</span>
-                  <span style={{ color: '#888' }}>↔</span>
-                  <span style={{ background: 'rgba(0,188,212,.15)', border: '1px solid #00BCD4', borderRadius: 8, padding: '3px 8px' }}>🎩 ENG</span>
-                  <span style={{ color: '#888' }}>→</span>
-                  <span style={{ color: '#FF7043' }}>✂️ -3 cartas</span>
-                  <span style={{ color: '#888' }}>→</span>
-                  <span style={{ color: '#4ecdc4' }}>+1 🥩</span>
+                  <span style={{ background: 'rgba(255,215,0,.15)', border: '1px solid #FFD700', borderRadius: 8, padding: '3px 8px' }}>ðŸŽ© ESP</span>
+                  <span style={{ color: '#888' }}>â†”</span>
+                  <span style={{ background: 'rgba(0,188,212,.15)', border: '1px solid #00BCD4', borderRadius: 8, padding: '3px 8px' }}>ðŸŽ© ENG</span>
+                  <span style={{ color: '#888' }}>â†’</span>
+                  <span style={{ color: '#FF7043' }}>âœ‚ï¸ -3 cartas</span>
+                  <span style={{ color: '#888' }}>â†’</span>
+                  <span style={{ color: '#4ecdc4' }}>+1 ðŸ¥©</span>
                 </div>
               </div>
             ),
           },
           addHat: {
-            emoji: '➕',
+            emoji: 'âž•',
             title: T('addHat'),
             desc: T('addHatTooltip'),
             example: (
               <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '12px 14px', marginBottom: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', fontSize: 13 }}>
-                  <span style={{ background: 'rgba(255,215,0,.15)', border: '1px solid #FFD700', borderRadius: 8, padding: '3px 8px' }}>🎩 ESP</span>
+                  <span style={{ background: 'rgba(255,215,0,.15)', border: '1px solid #FFD700', borderRadius: 8, padding: '3px 8px' }}>ðŸŽ© ESP</span>
                   <span style={{ color: '#888' }}>+</span>
-                  <span style={{ background: 'rgba(0,188,212,.15)', border: '1px solid #00BCD4', borderRadius: 8, padding: '3px 8px' }}>🎩 ENG</span>
-                  <span style={{ color: '#888' }}>→</span>
-                  <span style={{ color: '#FF7043' }}>🗑️ toda la mano</span>
-                  <span style={{ color: '#888' }}>→</span>
-                  <span style={{ color: '#4ecdc4' }}>+1 🥩</span>
+                  <span style={{ background: 'rgba(0,188,212,.15)', border: '1px solid #00BCD4', borderRadius: 8, padding: '3px 8px' }}>ðŸŽ© ENG</span>
+                  <span style={{ color: '#888' }}>â†’</span>
+                  <span style={{ color: '#FF7043' }}>ðŸ—‘ï¸ toda la mano</span>
+                  <span style={{ color: '#888' }}>â†’</span>
+                  <span style={{ color: '#4ecdc4' }}>+1 ðŸ¥©</span>
                 </div>
               </div>
             ),
@@ -2666,7 +3044,7 @@ export default function App() {
         );
       })()}
 
-      {/* Negación window modal */}
+      {/* NegaciÃ³n window modal */}
       {pendingNeg && pendingNeg.eligibleIdxs.includes(HI) && !(HI in (pendingNeg.responses || {})) && (
         <Modal title={T('negation')}>
           <p style={{ marginBottom: 8, fontSize: 14 }} dangerouslySetInnerHTML={{ __html: typeof T('negationPlayed') === 'function' ? T('negationPlayed')(players[pendingNeg.actingIdx]?.name, `${pendingNeg.cardInfo?.emoji} ${pendingNeg.cardInfo?.name}`) : T('negationPlayed') }} />
@@ -2680,7 +3058,7 @@ export default function App() {
         </Modal>
       )}
 
-      {/* ── Chat panel ── */}
+      {/* â”€â”€ Chat panel â”€â”€ */}
       {isOnline && showChat && (
         <div style={{
           position: 'fixed', bottom: isMobile ? 50 : 16, right: 16,
@@ -2693,8 +3071,8 @@ export default function App() {
             display: 'flex', alignItems: 'center', padding: '10px 14px',
             borderBottom: '1px solid #2a2a4a',
           }}>
-            <span style={{ fontWeight: 800, fontSize: 14, color: '#4ecdc4', flex: 1 }}>💬 Chat</span>
-            <span onClick={() => setShowChat(false)} style={{ cursor: 'pointer', color: '#666', fontSize: 18, lineHeight: 1 }}>✕</span>
+            <span style={{ fontWeight: 800, fontSize: 14, color: '#4ecdc4', flex: 1 }}>{'\u{1F4AC}'} Chat</span>
+            <span onClick={() => setShowChat(false)} style={{ cursor: 'pointer', color: '#666', fontSize: 18, lineHeight: 1 }}>{'\u00D7'}</span>
           </div>
           <div style={{
             flex: 1, overflowY: 'auto', padding: '8px 12px',
@@ -2736,4 +3114,6 @@ export default function App() {
     </div>
   );
 }
+
+
 

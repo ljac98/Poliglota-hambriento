@@ -1,8 +1,9 @@
 import React from 'react';
 import HatSVG from './HatSVG';
+import { t, getUILang, getLocalizedLangShort } from '../src/translations.js';
 import {
   ING_EMOJI, ING_BG, LANG_BORDER, LANG_BG, LANG_TEXT,
-  LANG_BADGE, LANG_SHORT, getIngName, getActionInfo
+  LANG_BADGE, getIngName, getActionInfo
 } from '../constants';
 import ingPan    from '../imagenes/hamburguesas/objetivos/pan.png';
 import ingLechuga from '../imagenes/hamburguesas/objetivos/lechuga.png';
@@ -77,6 +78,8 @@ const ING_IMG = {
 // ═══ INGREDIENT CARD (Lotería style) ═══
 export const IngredientCard = ({ card, onClick, selected, small, large, playable }) => {
   const { language: lang, ingredient: ing } = card;
+  const uiLang = getUILang();
+  const langShort = getLocalizedLangShort(lang, uiLang);
   const isWild = ing === "perrito";
   const border = LANG_BORDER[lang];
   const bg = LANG_BG[lang];
@@ -122,7 +125,7 @@ export const IngredientCard = ({ card, onClick, selected, small, large, playable
         color: txtColor, letterSpacing: 2, fontFamily: "'Fredoka',sans-serif",
         textShadow: isDark ? "none" : "0 1px 0 rgba(255,255,255,0.3)"
       }}>
-        {LANG_SHORT[lang]}
+        {langShort}
       </div>
       {/* Center: hat on ingredient with eyes */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", marginTop: 0 }}>
@@ -152,6 +155,13 @@ export const IngredientCard = ({ card, onClick, selected, small, large, playable
 // ═══ ACTION CARD ═══
 export const ActionCard = ({ card, onClick, selected, small, large, playable }) => {
   const info = getActionInfo(card.action);
+  const uiLang = getUILang();
+  const nameKey = `actionName_${card.action}`;
+  const descKey = `actionDesc_${card.action}`;
+  const trName = t(nameKey, uiLang);
+  const trDesc = t(descKey, uiLang);
+  const actionName = trName === nameKey ? info?.name : trName;
+  const actionDesc = trDesc === descKey ? info?.desc : trDesc;
   const dimmed = playable === false;
   const w = large ? 150 : (small ? 64 : 86);
   const h = large ? 200 : (small ? 94 : 126);
@@ -181,11 +191,11 @@ export const ActionCard = ({ card, onClick, selected, small, large, playable }) 
         <img src={cornerImg} alt="" style={{ position:"absolute", bottom:3, right:3, width:cornerSize, height:cornerSize, objectFit:"contain", transform:"rotate(180deg)" }} />
       </>}
       {mainImg
-        ? <img src={mainImg} alt={info?.name} style={{ width:mainSize, height:mainSize, objectFit:"contain", filter:"drop-shadow(0 2px 4px rgba(0,0,0,0.4))" }} />
+        ? <img src={mainImg} alt={actionName} style={{ width:mainSize, height:mainSize, objectFit:"contain", filter:"drop-shadow(0 2px 4px rgba(0,0,0,0.4))" }} />
         : <span style={{ fontSize: small ? 22 : 32 }}>{info?.emoji}</span>
       }
-      <span style={{ fontSize: large ? 15 : (small ? 7 : 9), fontWeight: 700, textAlign: "center", lineHeight: 1.1 }}>{info?.name}</span>
-      <span style={{ fontSize: large ? 12 : (small ? 5 : 7), color: "#777", textAlign: "center", lineHeight: 1.1 }}>{info?.desc}</span>
+      <span style={{ fontSize: large ? 15 : (small ? 7 : 9), fontWeight: 700, textAlign: "center", lineHeight: 1.1 }}>{actionName}</span>
+      <span style={{ fontSize: large ? 12 : (small ? 5 : 7), color: "#777", textAlign: "center", lineHeight: 1.1 }}>{actionDesc}</span>
     </div>
   );
 };
