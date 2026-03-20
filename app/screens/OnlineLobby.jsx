@@ -350,8 +350,8 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
               key={`desktop-${lang}`}
               onClick={() => !isTaken && pickHat(lang)}
               style={{
-                minHeight: 66,
-                padding: '8px 4px 7px',
+                minHeight: 62,
+                padding: '7px 4px 6px',
                 borderRadius: 10,
                 cursor: isTaken ? 'not-allowed' : 'pointer',
                 border: myHat === lang ? '2px solid #FFD700' : `1px solid ${LANG_BORDER[lang]}44`,
@@ -361,7 +361,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
                 boxShadow: myHat === lang ? '0 0 18px rgba(255,215,0,.18)' : 'none',
               }}
             >
-              <HatSVG lang={lang} size={30} />
+              <HatSVG lang={lang} size={28} />
               <span style={{ fontSize: 10, fontWeight: 800, color: myHat === lang ? '#FFD700' : LANG_TEXT[lang], textAlign: 'center', lineHeight: 1 }}>
                 {T(lang)}
               </span>
@@ -380,8 +380,8 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
               key={`sidebar-mode-${m.id}`}
               onClick={() => { setGameMode(m.id); setShowModeConfig(true); }}
               style={{
-                minHeight: 92,
-                padding: '7px 5px',
+                minHeight: 84,
+                padding: '7px 4px',
                 borderRadius: 12,
                 cursor: 'pointer',
                 border: gameMode === m.id ? '2px solid #FFD700' : '1px solid rgba(255,255,255,0.08)',
@@ -395,7 +395,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
                 transition: 'all .15s',
               }}
             >
-              <img src={m.img} alt={m.label} style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 12 }} />
+              <img src={m.img} alt={m.label} style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 12 }} />
               <div style={{ color: gameMode === m.id ? '#FFD700' : '#f3f4ff', fontSize: 11, fontWeight: 900, lineHeight: 1, textAlign: 'center' }}>
                 {m.label}
               </div>
@@ -424,9 +424,9 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
   );
   const floatingCardStyle = {
     position: isDesktopWide ? 'absolute' : 'static',
-    right: isDesktopWide ? -248 : 'auto',
-    top: isDesktopWide ? -178 : 0,
-    width: isDesktopWide ? 232 : 'auto',
+    right: isDesktopWide ? -228 : 'auto',
+    top: isDesktopWide ? -324 : 0,
+    width: isDesktopWide ? 252 : 'auto',
     borderRadius: 18,
     padding: '14px 14px 16px',
     background: 'linear-gradient(180deg, rgba(26,31,55,0.98), rgba(18,22,40,0.96))',
@@ -695,7 +695,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
 
         {/* Game Mode (host only) */}
         {isHost && (
-          <div style={{ marginBottom: 16, position: 'relative', paddingRight: isDesktopWide ? 248 : 0 }}>
+          <div style={{ marginBottom: 16, position: 'relative', paddingRight: isDesktopWide ? 236 : 0 }}>
             {!isDesktopWide && <label style={{ color: '#aaa', fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 8 }}>{T('gameMode')}</label>}
             <div style={{ display: 'flex', gap: 12, alignItems: 'stretch', flexWrap: 'wrap' }}>
               {!isDesktopWide && (
