@@ -2610,12 +2610,29 @@ export default function App() {
           parrilla: ['pollo', 'carne'],
           comecomodines: ['perrito'],
         };
+        const actionEffectById = {
+          tenedor: T('howToPlayEffectTenedor'),
+          ladron: T('howToPlayEffectLadron'),
+          intercambio_sombreros: T('howToPlayEffectIntercambioSombreros'),
+          intercambio_hamburguesa: T('howToPlayEffectIntercambioMesa'),
+          gloton: T('howToPlayEffectGloton'),
+        };
 
         return (
           <Modal title={T('turnActionsLabel')}>
             <p style={{ color: '#ccc', fontSize: 13, marginBottom: 14 }}>
               {T('howToPlayDesc')}
             </p>
+            <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '12px 14px', marginBottom: 12 }}>
+              <div style={{ color: '#FFD700', fontWeight: 800, fontSize: 14, marginBottom: 6 }}>
+                {T('howToPlayTurnRulesTitle')}
+              </div>
+              <div style={{ color: '#ddd', fontSize: 12, lineHeight: 1.35, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <span>{T('howToPlayRuleOneCard')}</span>
+                <span>{T('howToPlayRuleHatButtonsBeforePlay')}</span>
+                <span>{T('howToPlayRuleHatButtonsIngredientOnly')}</span>
+              </div>
+            </div>
 
             <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '12px 14px', marginBottom: 12 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
@@ -2665,6 +2682,12 @@ export default function App() {
                                 ))}
                               </div>
                             )}
+                            {actionEffectById[a.id] && (
+                              <div style={{ fontSize: 11, color: '#bbb' }}>
+                                <span>{T('howToPlayEffectLabel')} </span>
+                                <span>{actionEffectById[a.id]}</span>
+                              </div>
+                            )}
                           </div>
                         );
                       })}
@@ -2699,8 +2722,14 @@ export default function App() {
                   <div style={{ fontSize: 12, color: '#ddd' }}>
                     <strong>{T('changeHat')}:</strong> {T('changeHatTooltip')}
                   </div>
+                  <div style={{ fontSize: 11, color: '#bbb' }}>
+                    {T('howToPlayChangeHatRule')}
+                  </div>
                   <div style={{ fontSize: 12, color: '#ddd' }}>
                     <strong>{T('addHat')}:</strong> {T('addHatTooltip')}
+                  </div>
+                  <div style={{ fontSize: 11, color: '#bbb' }}>
+                    {T('howToPlayAddHatRule')}
                   </div>
                 </div>
               </div>
