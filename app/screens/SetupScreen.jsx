@@ -289,7 +289,7 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
   const floatingCardStyle = {
     position: isDesktopWide ? 'absolute' : 'static',
     right: isDesktopWide ? -252 : 'auto',
-    top: 0,
+    top: isDesktopWide ? -188 : 0,
     width: isDesktopWide ? 236 : 'auto',
     borderRadius: 14,
     padding: '10px 10px 12px',

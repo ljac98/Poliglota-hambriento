@@ -467,7 +467,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
     <div style={{ width: '100%', maxWidth: isDesktopWide ? 1120 : 560, margin: '0 auto 18px' }}>
       {isDesktopWide ? (
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 60 }}>
-          <div style={{ width: desktopLeftPanelWidth, paddingTop: 118 }}>
+          <div style={{ width: desktopLeftPanelWidth, paddingTop: 84 }}>
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
               <button
                 onClick={handleCopyLink}
