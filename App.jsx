@@ -196,6 +196,8 @@ export default function App() {
 
   // â”€â”€ Friend request notification state â”€â”€
   const [friendReqNotif, setFriendReqNotif] = useState(null);
+  const [friendAddedNotif, setFriendAddedNotif] = useState(null);
+  const [friendRemovedNotif, setFriendRemovedNotif] = useState(null);
 
   // â”€â”€ Room invite listener (global) â”€â”€
   useEffect(() => {
@@ -216,6 +218,24 @@ export default function App() {
     };
     socket.on('friendRequestReceived', handleFriendReq);
     return () => socket.off('friendRequestReceived', handleFriendReq);
+  }, []);
+
+  useEffect(() => {
+    const handleFriendAccepted = (data) => {
+      setFriendAddedNotif(data);
+      setTimeout(() => setFriendAddedNotif(prev => prev === data ? null : prev), 10000);
+    };
+    socket.on('friendRequestAccepted', handleFriendAccepted);
+    return () => socket.off('friendRequestAccepted', handleFriendAccepted);
+  }, []);
+
+  useEffect(() => {
+    const handleFriendRemoved = (data) => {
+      setFriendRemovedNotif(data);
+      setTimeout(() => setFriendRemovedNotif(prev => prev === data ? null : prev), 10000);
+    };
+    socket.on('friendRemoved', handleFriendRemoved);
+    return () => socket.off('friendRemoved', handleFriendRemoved);
   }, []);
 
   useEffect(() => {
@@ -1651,62 +1671,129 @@ export default function App() {
   }
 
   // â”€â”€ Render phases â”€â”€
-  // â”€â”€ Room invite toast overlay (shown on any screen when invite received) â”€â”€
-  const inviteToast = roomInvite && (
+  const noticeCards = [
+    roomInvite && {
+      key: `room-${roomInvite.roomCode}`,
+      color: '#4ecdc4',
+      icon: '🎮',
+      message: `${roomInvite.fromDisplayName} ${T('roomInvite')}`,
+      sub: roomInvite.roomName || roomInvite.roomCode || '',
+      actionLabel: T('joinRoom'),
+      onAction: acceptRoomInvite,
+      onClose: () => setRoomInvite(null),
+    },
+    friendReqNotif && {
+      key: `req-${friendReqNotif.fromUserId || friendReqNotif.fromDisplayName}`,
+      color: '#FFD700',
+      icon: '🤝',
+      message: `${friendReqNotif.fromDisplayName} ${T('friendRequestNotif')}`,
+      sub: '',
+      actionLabel: T('viewRequest'),
+      onAction: () => { setFriendReqNotif(null); setPhase('friends'); },
+      onClose: () => setFriendReqNotif(null),
+    },
+    friendAddedNotif && {
+      key: `added-${friendAddedNotif.userId || friendAddedNotif.displayName}`,
+      color: '#7ef0a2',
+      icon: '🎉',
+      message: `${friendAddedNotif.displayName || 'Jugador'} ${T('friendAccepted')}`,
+      sub: '',
+      actionLabel: T('friends'),
+      onAction: () => { setFriendAddedNotif(null); setPhase('friends'); },
+      onClose: () => setFriendAddedNotif(null),
+    },
+    friendRemovedNotif && {
+      key: `removed-${friendRemovedNotif.userId || friendRemovedNotif.displayName}`,
+      color: '#ff8a80',
+      icon: '💔',
+      message: `${friendRemovedNotif.displayName || 'Jugador'} ${T('friendRemovedNotif')}`,
+      sub: '',
+      actionLabel: T('friends'),
+      onAction: () => { setFriendRemovedNotif(null); setPhase('friends'); },
+      onClose: () => setFriendRemovedNotif(null),
+    },
+  ].filter(Boolean);
+
+  const inviteToast = noticeCards.length > 0 && (
     <div style={{
-      position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)',
-      background: '#1a2744', borderRadius: 16, padding: '14px 20px',
-      border: '2px solid #4ecdc4', boxShadow: '0 8px 32px rgba(0,0,0,.6)',
-      zIndex: 9999, display: 'flex', alignItems: 'center', gap: 14,
-      fontFamily: "'Fredoka',sans-serif", maxWidth: '90vw',
+      position: 'fixed',
+      right: 18,
+      bottom: 18,
+      zIndex: 9999,
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 10,
+      width: 'min(360px, calc(100vw - 28px))',
+      pointerEvents: 'none',
     }}>
-      <div>
-        <div style={{ color: '#eee', fontSize: 14, fontWeight: 700 }}>
-          {roomInvite.fromDisplayName} {T('roomInvite')}
+      {noticeCards.map((notice) => (
+        <div
+          key={notice.key}
+          style={{
+            pointerEvents: 'auto',
+            background: 'rgba(18,26,48,0.96)',
+            borderRadius: 18,
+            padding: '14px 14px 12px',
+            border: `2px solid ${notice.color}`,
+            boxShadow: '0 12px 28px rgba(0,0,0,.42)',
+            fontFamily: "'Fredoka',sans-serif",
+          }}
+        >
+          <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+            <div style={{
+              width: 40,
+              height: 40,
+              borderRadius: 14,
+              background: 'rgba(255,255,255,0.08)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 20,
+              flexShrink: 0,
+            }}>
+              {notice.icon}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ color: '#f8f4cf', fontSize: 14, fontWeight: 800, lineHeight: 1.25 }}>{notice.message}</div>
+              {notice.sub ? (
+                <div style={{ color: '#8a8fa8', fontSize: 12, fontWeight: 700, marginTop: 4 }}>{notice.sub}</div>
+              ) : null}
+              <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+                <button onClick={notice.onAction} style={{
+                  padding: '8px 14px',
+                  borderRadius: 10,
+                  border: 'none',
+                  background: notice.color,
+                  color: '#0f1117',
+                  fontFamily: "'Fredoka',sans-serif",
+                  fontWeight: 800,
+                  fontSize: 13,
+                  cursor: 'pointer',
+                }}>
+                  {notice.actionLabel}
+                </button>
+                <button onClick={notice.onClose} style={{
+                  padding: '8px 12px',
+                  borderRadius: 10,
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  background: 'transparent',
+                  color: '#9ea6c7',
+                  fontFamily: "'Fredoka',sans-serif",
+                  fontWeight: 800,
+                  fontSize: 13,
+                  cursor: 'pointer',
+                }}>
+                  ×
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
-        {roomInvite.roomName && (
-          <div style={{ color: '#888', fontSize: 11, marginTop: 2 }}>{roomInvite.roomName}</div>
-        )}
-      </div>
-      <button onClick={acceptRoomInvite} style={{
-        padding: '7px 16px', borderRadius: 10, border: 'none',
-        background: '#4ecdc4', color: '#000', fontFamily: "'Fredoka',sans-serif",
-        fontWeight: 700, fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap',
-      }}>{T('joinRoom')}</button>
-      <button onClick={() => setRoomInvite(null)} style={{
-        padding: '7px 12px', borderRadius: 10, border: '1px solid #555',
-        background: 'transparent', color: '#888', fontFamily: "'Fredoka',sans-serif",
-        fontWeight: 700, fontSize: 13, cursor: 'pointer',
-      }}>{'\u00D7'}</button>
+      ))}
     </div>
   );
 
-  // â”€â”€ Friend request toast overlay (shown on any screen) â”€â”€
-  const friendReqToast = friendReqNotif && (
-    <div style={{
-      position: 'fixed', bottom: roomInvite ? 90 : 20, left: '50%', transform: 'translateX(-50%)',
-      background: '#1a2744', borderRadius: 16, padding: '14px 20px',
-      border: '2px solid #FFD700', boxShadow: '0 8px 32px rgba(0,0,0,.6)',
-      zIndex: 9999, display: 'flex', alignItems: 'center', gap: 14,
-      fontFamily: "'Fredoka',sans-serif", maxWidth: '90vw',
-    }}>
-      <div>
-        <div style={{ color: '#eee', fontSize: 14, fontWeight: 700 }}>
-          {'\u{1F91D}'} {friendReqNotif.fromDisplayName} {T('friendRequestNotif')}
-        </div>
-      </div>
-      <button onClick={() => { setFriendReqNotif(null); setPhase('friends'); }} style={{
-        padding: '7px 16px', borderRadius: 10, border: 'none',
-        background: '#FFD700', color: '#000', fontFamily: "'Fredoka',sans-serif",
-        fontWeight: 700, fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap',
-      }}>{T('viewRequest')}</button>
-      <button onClick={() => setFriendReqNotif(null)} style={{
-        padding: '7px 12px', borderRadius: 10, border: '1px solid #555',
-        background: 'transparent', color: '#888', fontFamily: "'Fredoka',sans-serif",
-        fontWeight: 700, fontSize: 13, cursor: 'pointer',
-      }}>{'\u00D7'}</button>
-    </div>
-  );
+  const friendReqToast = null;
 
   const handleLeftRoomReturn = () => {
     const reconnectId = sessionStorage.getItem('hp_reconnect_id');

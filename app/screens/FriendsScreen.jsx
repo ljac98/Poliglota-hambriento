@@ -44,15 +44,18 @@ export function FriendsScreen({ user, onBack, T, onOpenProfile }) {
     const handleOffline = ({ userId }) => setFriends((prev) => prev.map((f) => (f.id === userId ? { ...f, online: false } : f)));
     const handleNewRequest = () => loadData();
     const handleAccepted = () => loadData();
+    const handleRemoved = () => loadData();
     socket.on('friendOnline', handleOnline);
     socket.on('friendOffline', handleOffline);
     socket.on('friendRequestReceived', handleNewRequest);
     socket.on('friendRequestAccepted', handleAccepted);
+    socket.on('friendRemoved', handleRemoved);
     return () => {
       socket.off('friendOnline', handleOnline);
       socket.off('friendOffline', handleOffline);
       socket.off('friendRequestReceived', handleNewRequest);
       socket.off('friendRequestAccepted', handleAccepted);
+      socket.off('friendRemoved', handleRemoved);
     };
   }, [loadData]);
 

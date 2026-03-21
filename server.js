@@ -314,7 +314,13 @@ app.post('/api/friends/request', requireDB, requireAuth, async (req, res) => {
         await pool.query('INSERT INTO friendships (user_id, friend_id) VALUES ($1,$2),($2,$1) ON CONFLICT DO NOTHING', [req.userId, toId]);
         // Notify via socket
         const friendSocket = onlineUsers.get(toId);
-        if (friendSocket) io.to(friendSocket).emit('friendRequestAccepted', { userId: req.userId });
+        if (friendSocket) {
+          const fromUser = await pool.query('SELECT display_name FROM users WHERE id=$1', [req.userId]);
+          io.to(friendSocket).emit('friendRequestAccepted', {
+            userId: req.userId,
+            displayName: fromUser.rows[0]?.display_name || 'Jugador',
+          });
+        }
         return res.json({ status: 'accepted', message: 'Solicitud aceptada automáticamente' });
       }
       return res.status(400).json({ error: 'Solicitud ya enviada' });
@@ -377,7 +383,13 @@ app.post('/api/friends/accept/:requestId', requireDB, requireAuth, async (req, r
     );
     // Notify the sender
     const senderSocket = onlineUsers.get(fromId);
-    if (senderSocket) io.to(senderSocket).emit('friendRequestAccepted', { userId: req.userId });
+    if (senderSocket) {
+      const accepter = await pool.query('SELECT display_name FROM users WHERE id=$1', [req.userId]);
+      io.to(senderSocket).emit('friendRequestAccepted', {
+        userId: req.userId,
+        displayName: accepter.rows[0]?.display_name || 'Jugador',
+      });
+    }
     res.json({ status: 'accepted' });
   } catch {
     res.status(500).json({ error: 'Error del servidor' });
@@ -397,10 +409,19 @@ app.post('/api/friends/decline/:requestId', requireDB, requireAuth, async (req, 
 // ── Remove friend ──
 app.delete('/api/friends/:friendId', requireDB, requireAuth, async (req, res) => {
   try {
+    const friendId = parseInt(req.params.friendId, 10);
     await pool.query(
       'DELETE FROM friendships WHERE (user_id=$1 AND friend_id=$2) OR (user_id=$2 AND friend_id=$1)',
-      [req.userId, parseInt(req.params.friendId)]
+      [req.userId, friendId]
     );
+    const friendSocket = onlineUsers.get(friendId);
+    if (friendSocket) {
+      const remover = await pool.query('SELECT display_name FROM users WHERE id=$1', [req.userId]);
+      io.to(friendSocket).emit('friendRemoved', {
+        userId: req.userId,
+        displayName: remover.rows[0]?.display_name || 'Jugador',
+      });
+    }
     res.json({ status: 'removed' });
   } catch {
     res.status(500).json({ error: 'Error del servidor' });
