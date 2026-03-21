@@ -34,6 +34,18 @@ const INGREDIENT_IMAGE_SOURCES = {
   bunTop: require('../../assets/game/bun-top.png'),
   bunBottom: require('../../assets/game/bun-bottom.png'),
 };
+const INGREDIENT_ICON_SOURCES = {
+  lettuce: require('../../assets/game/icon-lettuce.png'),
+  tomato: require('../../assets/game/icon-tomato.png'),
+  beef: require('../../assets/game/icon-beef.png'),
+  cheese: require('../../assets/game/icon-cheese.png'),
+  chicken: require('../../assets/game/icon-chicken.png'),
+  egg: require('../../assets/game/icon-egg.png'),
+  onion: require('../../assets/game/icon-onion.png'),
+  avocado: require('../../assets/game/icon-avocado.png'),
+  bread: require('../../assets/game/icon-bread.png'),
+  wildcard: require('../../assets/game/wildcard.png'),
+};
 const HAT_IMAGE_SOURCES = {
   espanol: require('../../assets/game/hat-espanol.png'),
   ingles: require('../../assets/game/hat-ingles.png'),
@@ -41,6 +53,20 @@ const HAT_IMAGE_SOURCES = {
   italiano: require('../../assets/game/hat-italiano.png'),
   aleman: require('../../assets/game/hat-aleman.png'),
   portugues: require('../../assets/game/hat-portugues.png'),
+};
+const ACTION_ICON_SOURCES = {
+  milanesa: require('../../assets/game/action-milanesa.png'),
+  ensalada: require('../../assets/game/action-ensalada.png'),
+  pizza: require('../../assets/game/action-pizza.png'),
+  parrilla: require('../../assets/game/action-parrilla.png'),
+  comecomodines: require('../../assets/game/action-comecomodines.png'),
+  tenedor: require('../../assets/game/action-tenedor.png'),
+  ladron: require('../../assets/game/action-ladron.png'),
+  intercambio_sombreros: require('../../assets/game/action-intercambio_sombreros.png'),
+  intercambio_hamburguesa: require('../../assets/game/action-intercambio_hamburguesa.png'),
+  gloton: require('../../assets/game/action-gloton.png'),
+  basurero: require('../../assets/game/action-basurero.png'),
+  negacion: require('../../assets/game/action-negacion.png'),
 };
 
 function buildBurgerStack(mode, pool, ingredientCount, burgerIndex, playerIndex) {
@@ -145,6 +171,25 @@ function normalizeIngredientKey(item) {
   return item;
 }
 
+function getCardVisual(card) {
+  if (!card) return { title: 'Carta', subtitle: '', icon: INGREDIENT_ICON_SOURCES.wildcard, accent: '#8a8fa8' };
+  if (card.type === 'ingredient') {
+    const key = card.ingredient === 'perrito' ? 'wildcard' : card.ingredient;
+    return {
+      title: INGREDIENT_LABELS[card.ingredient] || 'Ingrediente',
+      subtitle: (card.language || '').toUpperCase(),
+      icon: INGREDIENT_ICON_SOURCES[key] || INGREDIENT_ICON_SOURCES.wildcard,
+      accent: '#4ecdc4',
+    };
+  }
+  return {
+    title: ACTION_LABELS[card.action] || 'Accion',
+    subtitle: 'ACCION',
+    icon: ACTION_ICON_SOURCES[card.action] || INGREDIENT_ICON_SOURCES.wildcard,
+    accent: '#FFD700',
+  };
+}
+
 function burgerStackFromObjective(target = [], table = []) {
   const tableLayers = (table || []).map((item) => normalizeIngredientKey(item)).filter(Boolean);
   const targetLayers = (target || []).map((item) => normalizeIngredientKey(item)).filter(Boolean);
@@ -162,6 +207,30 @@ function RenderBurgerVisual({ target = [], table = [], badge, compact = false })
           return <Image key={`${item}-${index}`} source={source} style={[styles.visualBurgerLayer, compact && styles.visualBurgerLayerCompact]} resizeMode="contain" />;
         })}
       </View>
+    </View>
+  );
+}
+
+function RenderHandCard({ card, active, onPress }) {
+  const visual = getCardVisual(card);
+  return (
+    <Pressable style={[styles.handCard, active && styles.handCardActive]} onPress={onPress}>
+      <View style={[styles.handCardIconWrap, { borderColor: visual.accent }]}>
+        <Image source={visual.icon} style={styles.handCardIcon} resizeMode="contain" />
+      </View>
+      <Text style={[styles.handCardTitle, active && styles.handCardTitleActive]} numberOfLines={2}>{visual.title}</Text>
+      <Text style={styles.handCardSubtitle}>{visual.subtitle}</Text>
+    </Pressable>
+  );
+}
+
+function RenderTableTile({ item }) {
+  const key = normalizeIngredientKey(item) || 'wildcard';
+  const title = formatTableItem(item);
+  return (
+    <View style={styles.tableTile}>
+      <Image source={INGREDIENT_ICON_SOURCES[key] || INGREDIENT_ICON_SOURCES.wildcard} style={styles.tableTileIcon} resizeMode="contain" />
+      <Text style={styles.tableTileText} numberOfLines={2}>{title}</Text>
     </View>
   );
 }
@@ -471,24 +540,25 @@ export function NativeGameScreen({ setup, online, gameSession, chatMessages = []
               <View style={styles.liveColumns}>
                 <View style={styles.liveColumnCard}>
                   <Text style={styles.liveColumnTitle}>Tu mano</Text>
-                  <View style={styles.cardChipWrap}>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.handRow}>
                     {(myLivePlayer.hand || []).length === 0 ? (
                       <Text style={styles.emptyText}>Sin cartas visibles todavia.</Text>
                     ) : (
                       myLivePlayer.hand.map((card, index) => {
                         const active = index === selectedCardIdx;
                         return (
-                          <Pressable key={`hand-${card.id || index}`} style={[styles.cardChip, active && styles.cardChipActive]} onPress={() => setSelectedCardIdx(index)}>
-                            <Text style={[styles.cardChipText, active && styles.cardChipTextActive]}>{formatCard(card)}</Text>
-                          </Pressable>
+                          <RenderHandCard key={`hand-${card.id || index}`} card={card} active={active} onPress={() => setSelectedCardIdx(index)} />
                         );
                       })
                     )}
-                  </View>
+                  </ScrollView>
                   {selectedCard && (
                     <View style={styles.actionPanel}>
                       <Text style={styles.actionPanelTitle}>Carta seleccionada</Text>
-                      <Text style={styles.actionPanelText}>{formatCard(selectedCard)}</Text>
+                      <View style={styles.selectedCardHeader}>
+                        <Image source={getCardVisual(selectedCard).icon} style={styles.selectedCardIcon} resizeMode="contain" />
+                        <Text style={styles.actionPanelText}>{formatCard(selectedCard)}</Text>
+                      </View>
                       {!isMyTurn ? (
                         <Text style={styles.actionHint}>Todavia no es tu turno.</Text>
                       ) : (
@@ -690,15 +760,11 @@ export function NativeGameScreen({ setup, online, gameSession, chatMessages = []
 
                 <View style={styles.liveColumnCard}>
                   <Text style={styles.liveColumnTitle}>Tu mesa</Text>
-                  <View style={styles.cardChipWrap}>
+                  <View style={styles.tableTileWrap}>
                     {(myLivePlayer.table || []).length === 0 ? (
                       <Text style={styles.emptyText}>Tu mesa esta vacia.</Text>
                     ) : (
-                      myLivePlayer.table.map((item, index) => (
-                        <View key={`table-${item}-${index}`} style={styles.tableChip}>
-                          <Text style={styles.tableChipText}>{formatTableItem(item)}</Text>
-                        </View>
-                      ))
+                      myLivePlayer.table.map((item, index) => <RenderTableTile key={`table-${item}-${index}`} item={item} />)
                     )}
                   </View>
                 </View>
@@ -720,7 +786,7 @@ export function NativeGameScreen({ setup, online, gameSession, chatMessages = []
               ))}
             </View>
 
-            <View style={styles.rivalsBoard}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.rivalsBoard}>
               {livePlayers.map((player, index) => {
                 const target = player?.burgers?.[player?.currentBurger || 0] || [];
                 return (
@@ -739,7 +805,7 @@ export function NativeGameScreen({ setup, online, gameSession, chatMessages = []
                   </View>
                 );
               })}
-            </View>
+            </ScrollView>
           </>
         ) : (
           <Text style={styles.bodyText}>Esperando el primer `stateUpdate` del host para mostrar la partida en vivo.</Text>
@@ -862,8 +928,8 @@ const styles = StyleSheet.create({
   boardHeroSubtext: { color: '#8a8fa8', fontSize: 12, marginTop: 4, marginBottom: 8 },
   boardSplit: { gap: 12 },
   boardPanel: { backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', padding: 12 },
-  rivalsBoard: { gap: 10, marginTop: 12 },
-  rivalBoardCard: { backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', padding: 12 },
+  rivalsBoard: { gap: 10, marginTop: 12, paddingRight: 12 },
+  rivalBoardCard: { width: 220, backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', padding: 12 },
   rivalBoardTitle: { color: '#fff1b3', fontSize: 14, fontWeight: '800', marginBottom: 8 },
   rivalBoardBody: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   rivalMetaColumn: { flex: 1, gap: 4 },
@@ -880,13 +946,27 @@ const styles = StyleSheet.create({
   liveColumns: { gap: 12, marginBottom: 12 },
   liveColumnCard: { backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', padding: 14 },
   liveColumnTitle: { color: '#fff1b3', fontSize: 14, fontWeight: '800', marginBottom: 10 },
+  handRow: { gap: 10, paddingRight: 12 },
+  handCard: { width: 112, minHeight: 148, backgroundColor: '#1d2a4a', borderRadius: 18, borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)', padding: 12, alignItems: 'center', justifyContent: 'center' },
+  handCardActive: { borderColor: '#FFD700', backgroundColor: 'rgba(255,215,0,0.10)' },
+  handCardIconWrap: { width: 54, height: 54, borderRadius: 18, borderWidth: 1, backgroundColor: 'rgba(255,255,255,0.04)', alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
+  handCardIcon: { width: 38, height: 38 },
+  handCardTitle: { color: '#fff', fontSize: 13, fontWeight: '800', textAlign: 'center' },
+  handCardTitleActive: { color: '#FFD700' },
+  handCardSubtitle: { color: '#8a8fa8', fontSize: 11, fontWeight: '700', marginTop: 6, textAlign: 'center' },
   cardChipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   cardChip: { backgroundColor: 'rgba(255,215,0,0.08)', borderRadius: 999, borderWidth: 1, borderColor: 'rgba(255,215,0,0.22)', paddingHorizontal: 10, paddingVertical: 8 },
   cardChipActive: { backgroundColor: 'rgba(255,215,0,0.18)', borderColor: '#FFD700' },
   cardChipText: { color: '#fff1b3', fontSize: 12, fontWeight: '700' },
   cardChipTextActive: { color: '#FFD700' },
+  selectedCardHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  selectedCardIcon: { width: 28, height: 28 },
   tableChip: { backgroundColor: 'rgba(78,205,196,0.08)', borderRadius: 999, borderWidth: 1, borderColor: 'rgba(78,205,196,0.22)', paddingHorizontal: 10, paddingVertical: 8 },
   tableChipText: { color: '#9ff6ef', fontSize: 12, fontWeight: '700' },
+  tableTileWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  tableTile: { width: 94, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(78,205,196,0.22)', backgroundColor: 'rgba(78,205,196,0.08)', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 8 },
+  tableTileIcon: { width: 36, height: 36, marginBottom: 8 },
+  tableTileText: { color: '#9ff6ef', fontSize: 11, fontWeight: '700', textAlign: 'center' },
   emptyText: { color: '#8a8fa8', fontSize: 12, lineHeight: 18 },
   actionPanel: { marginTop: 14, paddingTop: 12, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.08)', gap: 10 },
   actionPanelTitle: { color: '#FFD700', fontSize: 13, fontWeight: '800' },
