@@ -1,26 +1,24 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-export function HomeScreen({ onOpenNativeSetup, onOpenNativeOnline, onOpenWebGame, onOpenWebsite }) {
+export function HomeScreen({ setupSummary, onOpenNativeSetup, onOpenNativeOnline, onOpenWebGame, onOpenWebsite }) {
   return (
     <View style={styles.screen}>
       <View style={styles.hero}>
-        <Text style={styles.heroIcon}>🍔</Text>
+        <Text style={styles.heroIcon}>BURGER</Text>
         <Text style={styles.title}>Hungry Poly</Text>
-        <Text style={styles.subtitle}>Base React Native lista para crecer hacia una versión móvil nativa real.</Text>
+        <Text style={styles.subtitle}>Base React Native lista para crecer hacia una version movil nativa real.</Text>
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Qué ya hicimos</Text>
-        <Text style={styles.cardText}>
-          La web ya se puede instalar en teléfono, Expo ya quedó preparado para compilar APK y esta app ya incluye una primera pantalla nativa de setup.
-        </Text>
+        <Text style={styles.cardTitle}>Setup actual</Text>
+        <Text style={styles.cardText}>{setupSummary}</Text>
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Siguiente paso</Text>
+        <Text style={styles.cardTitle}>Continuar port nativo</Text>
         <Text style={styles.cardText}>
-          Ahora puedes abrir el setup nativo para ver cómo va a sentirse el port móvil, o entrar directo al juego web desde el contenedor nativo.
+          Ya tenemos setup nativo, online nativo y conexion real por sockets para el lobby movil.
         </Text>
 
         <Pressable onPress={onOpenNativeSetup} style={styles.primaryButton}>
@@ -56,8 +54,11 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   heroIcon: {
-    fontSize: 56,
+    color: '#FFD700',
+    fontSize: 18,
+    fontWeight: '900',
     marginBottom: 8,
+    letterSpacing: 1,
   },
   title: {
     color: '#FFD700',

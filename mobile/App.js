@@ -1,20 +1,252 @@
-import React, { useMemo, useState } from 'react';
-import { ActivityIndicator, Linking, Pressable, SafeAreaView, StatusBar, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Linking, Pressable, SafeAreaView, StatusBar, StyleSheet, Text, View } from 'react-native';
 import Constants from 'expo-constants';
 import { WebView } from 'react-native-webview';
 import { HomeScreen } from './src/screens/HomeScreen';
 import { NativeOnlineScreen } from './src/screens/NativeOnlineScreen';
 import { NativeSetupScreen } from './src/screens/NativeSetupScreen';
+import { createMobileSocket } from './src/lib/socket';
 
 const FALLBACK_URL = 'https://hungry-poly.up.railway.app';
+const DEFAULT_SETUP = {
+  playerName: 'Mobile Player',
+  roomName: 'Hungry Mobile',
+  isPublic: true,
+  hat: 'espanol',
+  gameMode: 'clon',
+  burgerCount: 2,
+  ingredientCount: 5,
+  ingredientPool: ['lettuce', 'tomato', 'beef', 'cheese', 'chicken', 'egg', 'onion', 'avocado'],
+  chaosLevel: 2,
+  aiCount: 2,
+};
+const DEFAULT_ONLINE = {
+  tab: 'create',
+  rooms: [],
+  players: [],
+  roomCode: '',
+  roomName: '',
+  isPublic: false,
+  isHost: false,
+  myIdx: 0,
+  hatPicks: {},
+  error: '',
+  status: '',
+  loading: false,
+  started: false,
+};
+
+function buildGameConfig(setup) {
+  return {
+    mode: setup.gameMode,
+    burgerCount: setup.burgerCount,
+    ingredientCount: setup.ingredientCount,
+    chaosLevel: setup.chaosLevel,
+    ingredientPool: setup.ingredientPool,
+  };
+}
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState('home');
   const [loadingGame, setLoadingGame] = useState(true);
+  const [setupState, setSetupState] = useState(DEFAULT_SETUP);
+  const [onlineState, setOnlineState] = useState(DEFAULT_ONLINE);
+  const gameUrl = useMemo(() => Constants.expoConfig?.extra?.gameUrl || FALLBACK_URL, []);
+  const socketRef = useRef(null);
 
-  const gameUrl = useMemo(() => {
-    return Constants.expoConfig?.extra?.gameUrl || FALLBACK_URL;
-  }, []);
+  if (!socketRef.current) {
+    socketRef.current = createMobileSocket(gameUrl);
+  }
+  const socket = socketRef.current;
+
+  useEffect(() => {
+    const handleConnect = () => {
+      setOnlineState((prev) => ({ ...prev, status: 'Conectado al servidor.', error: '' }));
+    };
+    const handleDisconnect = () => {
+      setOnlineState((prev) => ({ ...prev, status: 'Desconectado del servidor.' }));
+    };
+    const handleRoomCreated = ({ code, isPublic, roomName }) => {
+      setOnlineState((prev) => ({
+        ...prev,
+        roomCode: code,
+        roomName: roomName || setupState.roomName,
+        isPublic: !!isPublic,
+        isHost: true,
+        myIdx: 0,
+        players: [{ name: setupState.playerName, idx: 0, host: true }],
+        hatPicks: prev.hatPicks,
+        loading: false,
+        error: '',
+        status: `Sala ${code} creada.`,
+        started: false,
+      }));
+    };
+    const handleRoomJoined = ({ code, myIdx, isPublic, roomName }) => {
+      setOnlineState((prev) => ({
+        ...prev,
+        roomCode: code,
+        roomName: roomName || '',
+        isPublic: !!isPublic,
+        isHost: false,
+        myIdx,
+        loading: false,
+        error: '',
+        status: `Unido a la sala ${code}.`,
+        started: false,
+      }));
+    };
+    const handleLobbyUpdate = ({ players }) => {
+      setOnlineState((prev) => ({
+        ...prev,
+        players: (players || []).map((player) => ({
+          ...player,
+          host: player.idx === 0,
+        })),
+      }));
+    };
+    const handleHatPick = ({ playerName, hat }) => {
+      setOnlineState((prev) => ({ ...prev, hatPicks: { ...prev.hatPicks, [playerName]: hat } }));
+    };
+    const handleJoinError = (message) => {
+      setOnlineState((prev) => ({ ...prev, loading: false, error: message || 'No se pudo entrar a la sala.' }));
+    };
+    const handleLobbyListUpdate = (rooms) => {
+      setOnlineState((prev) => ({ ...prev, rooms: rooms || [] }));
+    };
+    const handleGameStarted = ({ hatPicks, gameConfig }) => {
+      setOnlineState((prev) => ({
+        ...prev,
+        loading: false,
+        started: true,
+        status: `Partida iniciada: ${gameConfig?.mode || 'clon'}.`,
+        hatPicks: hatPicks || prev.hatPicks,
+      }));
+    };
+    const handleBecameHost = () => {
+      setOnlineState((prev) => ({ ...prev, isHost: true, status: 'Ahora eres host de la sala.' }));
+    };
+
+    socket.on('connect', handleConnect);
+    socket.on('disconnect', handleDisconnect);
+    socket.on('roomCreated', handleRoomCreated);
+    socket.on('roomJoined', handleRoomJoined);
+    socket.on('lobbyUpdate', handleLobbyUpdate);
+    socket.on('lobbyHatPick', handleHatPick);
+    socket.on('joinError', handleJoinError);
+    socket.on('lobbyListUpdate', handleLobbyListUpdate);
+    socket.on('gameStarted', handleGameStarted);
+    socket.on('becameHost', handleBecameHost);
+
+    return () => {
+      socket.off('connect', handleConnect);
+      socket.off('disconnect', handleDisconnect);
+      socket.off('roomCreated', handleRoomCreated);
+      socket.off('roomJoined', handleRoomJoined);
+      socket.off('lobbyUpdate', handleLobbyUpdate);
+      socket.off('lobbyHatPick', handleHatPick);
+      socket.off('joinError', handleJoinError);
+      socket.off('lobbyListUpdate', handleLobbyListUpdate);
+      socket.off('gameStarted', handleGameStarted);
+      socket.off('becameHost', handleBecameHost);
+      socket.disconnect();
+    };
+  }, [socket, setupState.playerName, setupState.roomName]);
+
+  useEffect(() => {
+    if (currentScreen !== 'nativeOnline' || onlineState.roomCode || onlineState.tab !== 'lobby') return undefined;
+    socket.connect();
+    socket.emit('joinLobbyBrowser');
+    socket.emit('listRooms', (rooms) => {
+      setOnlineState((prev) => ({ ...prev, rooms: rooms || [] }));
+    });
+    const timer = setInterval(() => {
+      socket.emit('listRooms', (rooms) => {
+        setOnlineState((prev) => ({ ...prev, rooms: rooms || [] }));
+      });
+    }, 4000);
+    return () => {
+      clearInterval(timer);
+      socket.emit('leaveLobbyBrowser');
+    };
+  }, [currentScreen, onlineState.roomCode, onlineState.tab, socket]);
+
+  useEffect(() => {
+    if (!onlineState.roomCode || !setupState.playerName || !setupState.hat) return;
+    setOnlineState((prev) => {
+      if (prev.hatPicks[setupState.playerName] === setupState.hat) return prev;
+      return { ...prev, hatPicks: { ...prev.hatPicks, [setupState.playerName]: setupState.hat } };
+    });
+    socket.emit('lobbyHatPick', { code: onlineState.roomCode, playerName: setupState.playerName, hat: setupState.hat });
+  }, [onlineState.roomCode, setupState.playerName, setupState.hat, socket]);
+
+  const setupSummary = `${setupState.playerName} · ${setupState.gameMode} · ${setupState.burgerCount} burgers`;
+
+  function ensureConnected() {
+    if (!socket.connected) socket.connect();
+  }
+
+  function createRoom() {
+    if (!setupState.playerName.trim()) {
+      Alert.alert('Falta nombre', 'Pon tu nombre antes de crear la sala.');
+      return;
+    }
+    ensureConnected();
+    setOnlineState((prev) => ({ ...prev, loading: true, error: '', status: 'Creando sala...' }));
+    socket.emit('createRoom', {
+      playerName: setupState.playerName.trim(),
+      isPublic: setupState.isPublic,
+      roomName: setupState.roomName.trim(),
+    });
+  }
+
+  function joinByCode(code) {
+    const cleanCode = (code || '').trim().toUpperCase();
+    if (!setupState.playerName.trim() || !cleanCode) {
+      Alert.alert('Datos incompletos', 'Necesitas nombre y codigo de sala.');
+      return;
+    }
+    ensureConnected();
+    setOnlineState((prev) => ({ ...prev, loading: true, error: '', status: `Uniendose a ${cleanCode}...` }));
+    socket.emit('joinRoom', { code: cleanCode, playerName: setupState.playerName.trim() });
+  }
+
+  function joinPublicRoom(code) {
+    joinByCode(code);
+  }
+
+  function refreshRooms() {
+    ensureConnected();
+    socket.emit('listRooms', (rooms) => {
+      setOnlineState((prev) => ({ ...prev, rooms: rooms || [], status: 'Lobby actualizado.' }));
+    });
+  }
+
+  function leaveRoom() {
+    socket.emit('leaveRoom');
+    socket.disconnect();
+    setOnlineState(DEFAULT_ONLINE);
+  }
+
+  function pickHat(hat) {
+    setSetupState((prev) => ({ ...prev, hat }));
+    if (!onlineState.roomCode) return;
+    setOnlineState((prev) => ({ ...prev, hatPicks: { ...prev.hatPicks, [setupState.playerName]: hat } }));
+    socket.emit('lobbyHatPick', { code: onlineState.roomCode, playerName: setupState.playerName, hat });
+  }
+
+  function startRoom() {
+    if (!onlineState.isHost || !onlineState.roomCode) return;
+    const hatPicks = { ...onlineState.hatPicks, [setupState.playerName]: setupState.hat };
+    const missingHat = onlineState.players.find((player) => !hatPicks[player.name]);
+    if (missingHat) {
+      Alert.alert('Falta un sombrero', `${missingHat.name} todavia no eligio sombrero.`);
+      return;
+    }
+    const gameConfig = buildGameConfig(setupState);
+    setOnlineState((prev) => ({ ...prev, loading: true, error: '', status: 'Enviando startGame real...' }));
+    socket.emit('startGame', { code: onlineState.roomCode, hatPicks, gameConfig });
+  }
 
   if (currentScreen === 'web') {
     return (
@@ -54,16 +286,17 @@ export default function App() {
     return (
       <SafeAreaView style={styles.screen}>
         <StatusBar barStyle="light-content" />
-        <View style={styles.webviewHeader}>
-          <Pressable onPress={() => setCurrentScreen('home')} style={styles.secondaryButton}>
-            <Text style={styles.secondaryButtonText}>Volver</Text>
-          </Pressable>
+        <View style={styles.headerBar}>
+          <Pressable onPress={() => setCurrentScreen('home')} style={styles.secondaryButton}><Text style={styles.secondaryButtonText}>Volver</Text></Pressable>
           <Text style={styles.webviewTitle}>Setup nativo</Text>
-          <Pressable onPress={() => { setLoadingGame(true); setCurrentScreen('web'); }} style={styles.secondaryButton}>
-            <Text style={styles.secondaryButtonText}>Jugar web</Text>
-          </Pressable>
+          <Pressable onPress={() => setCurrentScreen('nativeOnline')} style={styles.secondaryButton}><Text style={styles.secondaryButtonText}>Online</Text></Pressable>
         </View>
-        <NativeSetupScreen onOpenWebGame={() => { setLoadingGame(true); setCurrentScreen('web'); }} />
+        <NativeSetupScreen
+          setup={setupState}
+          onChangeSetup={(patch) => setSetupState((prev) => ({ ...prev, ...patch }))}
+          onContinueOnline={() => setCurrentScreen('nativeOnline')}
+          onOpenWebGame={() => { setLoadingGame(true); setCurrentScreen('web'); }}
+        />
       </SafeAreaView>
     );
   }
@@ -72,16 +305,24 @@ export default function App() {
     return (
       <SafeAreaView style={styles.screen}>
         <StatusBar barStyle="light-content" />
-        <View style={styles.webviewHeader}>
-          <Pressable onPress={() => setCurrentScreen('home')} style={styles.secondaryButton}>
-            <Text style={styles.secondaryButtonText}>Volver</Text>
-          </Pressable>
+        <View style={styles.headerBar}>
+          <Pressable onPress={() => setCurrentScreen('home')} style={styles.secondaryButton}><Text style={styles.secondaryButtonText}>Volver</Text></Pressable>
           <Text style={styles.webviewTitle}>Online nativo</Text>
-          <Pressable onPress={() => { setLoadingGame(true); setCurrentScreen('web'); }} style={styles.secondaryButton}>
-            <Text style={styles.secondaryButtonText}>Jugar web</Text>
-          </Pressable>
+          <Pressable onPress={() => setCurrentScreen('nativeSetup')} style={styles.secondaryButton}><Text style={styles.secondaryButtonText}>Setup</Text></Pressable>
         </View>
-        <NativeOnlineScreen onOpenWebGame={() => { setLoadingGame(true); setCurrentScreen('web'); }} />
+        <NativeOnlineScreen
+          setup={setupState}
+          online={onlineState}
+          onChangeOnline={(patch) => setOnlineState((prev) => ({ ...prev, ...patch }))}
+          onCreateRoom={createRoom}
+          onJoinByCode={joinByCode}
+          onJoinPublicRoom={joinPublicRoom}
+          onRefreshRooms={refreshRooms}
+          onLeaveRoom={leaveRoom}
+          onPickHat={pickHat}
+          onStartRoom={startRoom}
+          onOpenWebGame={() => { setLoadingGame(true); setCurrentScreen('web'); }}
+        />
       </SafeAreaView>
     );
   }
@@ -90,6 +331,7 @@ export default function App() {
     <SafeAreaView style={styles.screen}>
       <StatusBar barStyle="light-content" />
       <HomeScreen
+        setupSummary={setupSummary}
         onOpenNativeSetup={() => setCurrentScreen('nativeSetup')}
         onOpenNativeOnline={() => setCurrentScreen('nativeOnline')}
         onOpenWebGame={() => { setLoadingGame(true); setCurrentScreen('web'); }}
@@ -100,13 +342,18 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: '#0f1117',
-  },
-  webviewScreen: {
-    flex: 1,
-    backgroundColor: '#0f1117',
+  screen: { flex: 1, backgroundColor: '#0f1117' },
+  webviewScreen: { flex: 1, backgroundColor: '#0f1117' },
+  headerBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: '#16213e',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,215,0,0.15)',
   },
   webviewHeader: {
     flexDirection: 'row',
@@ -119,41 +366,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,215,0,0.15)',
   },
-  webviewTitle: {
-    color: '#FFD700',
-    fontSize: 18,
-    fontWeight: '800',
-  },
-  webviewWrap: {
-    flex: 1,
-    position: 'relative',
-  },
-  webview: {
-    flex: 1,
-    backgroundColor: '#0f1117',
-  },
-  loaderOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#0f1117',
-    gap: 12,
-  },
-  loaderText: {
-    color: '#d8ddf3',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  secondaryButton: {
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  secondaryButtonText: {
-    color: '#d8ddf3',
-    fontWeight: '700',
-    fontSize: 13,
-  },
+  webviewTitle: { color: '#FFD700', fontSize: 18, fontWeight: '800' },
+  webviewWrap: { flex: 1, position: 'relative' },
+  webview: { flex: 1, backgroundColor: '#0f1117' },
+  loaderOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#0f1117', gap: 12 },
+  loaderText: { color: '#d8ddf3', fontSize: 16, fontWeight: '600' },
+  secondaryButton: { backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
+  secondaryButtonText: { color: '#d8ddf3', fontWeight: '700', fontSize: 13 },
 });
+

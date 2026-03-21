@@ -64,3 +64,9 @@ Nota:
 
 - Expo/React Native recomiendan Node `>= 20.19.4`
 - la maquina actual sigue en `20.16.0`, asi que antes de compilar APK final conviene actualizar Node
+
+## Mobile Native Progress
+- Native online now connects to the real Socket.IO server for room creation, join by code, public lobby browsing, hat picks and start events.
+- Native setup now drives the real mobile game configuration sent to the server.
+- The React Native app already includes native home, setup and online flows, plus the web game fallback.
+

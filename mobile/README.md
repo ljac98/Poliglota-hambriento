@@ -68,3 +68,10 @@ La app abre por defecto:
 `https://hungry-poly.up.railway.app`
 
 Si luego quieres apuntarla a otro backend/web, cambia `expo.extra.gameUrl` en `mobile/app.json`.
+
+## Current Native Scope
+- Home screen is native.
+- Setup screen is native and produces the real game config used for online start.
+- Online screen is native and connected to the live Socket.IO backend for create room, join room, public room browsing, hat picks and start events.
+- WebView remains available as the in-game fallback while more gameplay screens are ported.
+
