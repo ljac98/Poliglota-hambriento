@@ -72,6 +72,7 @@ function buildGameConfig(setup) {
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState('home');
   const [loadingGame, setLoadingGame] = useState(true);
+  const [showAppMenu, setShowAppMenu] = useState(false);
   const [setupState, setSetupState] = useState(DEFAULT_SETUP);
   const [onlineState, setOnlineState] = useState(DEFAULT_ONLINE);
   const [gameSession, setGameSession] = useState(DEFAULT_GAME_SESSION);
@@ -701,6 +702,74 @@ export default function App() {
     pendingNegMetaRef.current = null;
   }
 
+  function goToAppHome() {
+    if (onlineState.roomCode) {
+      leaveRoom();
+      setOnlineState((prev) => ({ ...DEFAULT_ONLINE, tab: 'lobby' }));
+    }
+    setShowAppMenu(false);
+    setCurrentScreen('home');
+  }
+
+  function goToNativeOnlineTab(tab) {
+    if (onlineState.roomCode) {
+      leaveRoom();
+      setOnlineState((prev) => ({ ...DEFAULT_ONLINE, tab }));
+    } else {
+      setOnlineState((prev) => ({ ...prev, tab }));
+      setCurrentScreen('nativeOnline');
+    }
+    setShowAppMenu(false);
+  }
+
+  function leaveCurrentMatchFromMenu() {
+    if (onlineState.roomCode) {
+      leaveRoom();
+      setOnlineState((prev) => ({ ...DEFAULT_ONLINE, tab: 'lobby' }));
+      setShowAppMenu(false);
+      return;
+    }
+    setShowAppMenu(false);
+    setCurrentScreen('nativeSetup');
+  }
+
+  function renderAppMenu() {
+    const inMatch = currentScreen === 'web' || currentScreen === 'nativeGame';
+    return (
+      <View pointerEvents="box-none" style={styles.appMenuRoot}>
+        {showAppMenu ? (
+          <Pressable style={styles.appMenuBackdrop} onPress={() => setShowAppMenu(false)} />
+        ) : null}
+        <View style={styles.appMenuWrap}>
+          <Pressable onPress={() => setShowAppMenu((prev) => !prev)} style={styles.appMenuToggle}>
+            <Text style={styles.appMenuToggleText}>☰</Text>
+          </Pressable>
+          {showAppMenu ? (
+            <View style={styles.appMenuPanel}>
+              <Pressable onPress={goToAppHome} style={[styles.appMenuButton, styles.appMenuHome]}>
+                <Text style={styles.appMenuButtonTextDark}>Inicio</Text>
+              </Pressable>
+              {inMatch ? (
+                <Pressable onPress={leaveCurrentMatchFromMenu} style={[styles.appMenuButton, styles.appMenuLeave]}>
+                  <Text style={styles.appMenuButtonTextLight}>Salir partida</Text>
+                </Pressable>
+              ) : null}
+              <Pressable onPress={() => goToNativeOnlineTab('create')} style={[styles.appMenuButton, styles.appMenuCreate]}>
+                <Text style={styles.appMenuButtonTextDark}>Crear sala</Text>
+              </Pressable>
+              <Pressable onPress={() => goToNativeOnlineTab('join')} style={[styles.appMenuButton, styles.appMenuJoin]}>
+                <Text style={styles.appMenuButtonTextDark}>Unirse</Text>
+              </Pressable>
+              <Pressable onPress={() => goToNativeOnlineTab('lobby')} style={[styles.appMenuButton, styles.appMenuLobby]}>
+                <Text style={styles.appMenuButtonTextLight}>Lobby</Text>
+              </Pressable>
+            </View>
+          ) : null}
+        </View>
+      </View>
+    );
+  }
+
   function pickHat(hat) {
     setSetupState((prev) => ({ ...prev, hat }));
     if (!onlineState.roomCode) return;
@@ -770,6 +839,7 @@ export default function App() {
     return (
       <SafeAreaView style={styles.webviewScreen}>
         <StatusBar barStyle="light-content" />
+        {renderAppMenu()}
         <View style={styles.webviewHeader}>
           <Pressable onPress={leaveWebScreen} style={styles.secondaryButton}>
             <Text style={styles.secondaryButtonText}>{isLocalWebGame ? 'Salir partida' : 'Lobby'}</Text>
@@ -804,6 +874,7 @@ export default function App() {
     return (
       <SafeAreaView style={styles.screen}>
         <StatusBar barStyle="light-content" />
+        {renderAppMenu()}
         <View style={styles.headerBar}>
           <Pressable onPress={() => setCurrentScreen('home')} style={styles.secondaryButton}><Text style={styles.secondaryButtonText}>Volver</Text></Pressable>
           <Text style={styles.webviewTitle}>Setup nativo</Text>
@@ -823,6 +894,7 @@ export default function App() {
     return (
       <SafeAreaView style={styles.screen}>
         <StatusBar barStyle="light-content" />
+        {renderAppMenu()}
         <View style={styles.headerBar}>
           <Pressable onPress={() => setCurrentScreen('home')} style={styles.secondaryButton}><Text style={styles.secondaryButtonText}>Volver</Text></Pressable>
           <Text style={styles.webviewTitle}>Online nativo</Text>
@@ -849,6 +921,7 @@ export default function App() {
     return (
       <SafeAreaView style={styles.screen}>
         <StatusBar barStyle="light-content" />
+        {renderAppMenu()}
         <View style={styles.headerBar}>
           <Pressable onPress={() => setCurrentScreen('nativeOnline')} style={styles.secondaryButton}><Text style={styles.secondaryButtonText}>Lobby</Text></Pressable>
           <Text style={styles.webviewTitle}>Partida nativa</Text>
@@ -872,6 +945,7 @@ export default function App() {
   return (
     <SafeAreaView style={styles.screen}>
       <StatusBar barStyle="light-content" />
+      {renderAppMenu()}
       <HomeScreen
         setupSummary={setupSummary}
         onOpenNativeSetup={() => setCurrentScreen('nativeSetup')}
@@ -886,6 +960,79 @@ export default function App() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#0f1117' },
   webviewScreen: { flex: 1, backgroundColor: '#0f1117' },
+  appMenuRoot: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    left: 0,
+    bottom: 0,
+    zIndex: 50,
+  },
+  appMenuBackdrop: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    left: 0,
+    bottom: 0,
+  },
+  appMenuWrap: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    alignItems: 'flex-end',
+  },
+  appMenuToggle: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: 'rgba(255,215,0,0.45)',
+    backgroundColor: 'rgba(22,33,62,0.96)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 8,
+  },
+  appMenuToggleText: {
+    color: '#FFD700',
+    fontSize: 24,
+    fontWeight: '900',
+  },
+  appMenuPanel: {
+    marginTop: 8,
+    minWidth: 190,
+    borderRadius: 16,
+    padding: 10,
+    gap: 8,
+    backgroundColor: 'rgba(22,33,62,0.98)',
+    borderWidth: 2,
+    borderColor: 'rgba(255,215,0,0.18)',
+  },
+  appMenuButton: {
+    borderRadius: 12,
+    paddingVertical: 11,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  appMenuHome: { backgroundColor: '#4ecdc4' },
+  appMenuLeave: { backgroundColor: '#ff4444' },
+  appMenuCreate: { backgroundColor: '#FFD700' },
+  appMenuJoin: { backgroundColor: '#00BCD4' },
+  appMenuLobby: { backgroundColor: '#2a2a4a' },
+  appMenuButtonTextDark: {
+    color: '#0f1117',
+    fontSize: 15,
+    fontWeight: '900',
+  },
+  appMenuButtonTextLight: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '900',
+  },
   headerBar: {
     flexDirection: 'row',
     alignItems: 'center',
