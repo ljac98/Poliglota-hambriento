@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 const HAT_LABELS = {
   espanol: 'Espanol',
@@ -20,6 +20,28 @@ const INGREDIENT_LABELS = {
   avocado: 'Avocado',
 };
 const FALLBACK_POOL = ['lettuce', 'tomato', 'beef', 'cheese', 'chicken', 'egg', 'onion', 'avocado'];
+const INGREDIENT_IMAGE_SOURCES = {
+  lettuce: require('../../assets/game/lettuce.png'),
+  tomato: require('../../assets/game/tomato.png'),
+  beef: require('../../assets/game/beef.png'),
+  cheese: require('../../assets/game/cheese.png'),
+  chicken: require('../../assets/game/chicken.png'),
+  egg: require('../../assets/game/egg.png'),
+  onion: require('../../assets/game/onion.png'),
+  avocado: require('../../assets/game/avocado.png'),
+  bread: require('../../assets/game/bread.png'),
+  wildcard: require('../../assets/game/wildcard.png'),
+  bunTop: require('../../assets/game/bun-top.png'),
+  bunBottom: require('../../assets/game/bun-bottom.png'),
+};
+const HAT_IMAGE_SOURCES = {
+  espanol: require('../../assets/game/hat-espanol.png'),
+  ingles: require('../../assets/game/hat-ingles.png'),
+  frances: require('../../assets/game/hat-frances.png'),
+  italiano: require('../../assets/game/hat-italiano.png'),
+  aleman: require('../../assets/game/hat-aleman.png'),
+  portugues: require('../../assets/game/hat-portugues.png'),
+};
 
 function buildBurgerStack(mode, pool, ingredientCount, burgerIndex, playerIndex) {
   const safePool = pool && pool.length ? pool : FALLBACK_POOL;
@@ -112,6 +134,38 @@ function resolveNeededIngredients(target = [], table = []) {
   return remaining;
 }
 
+function normalizeIngredientKey(item) {
+  if (!item) return null;
+  if (typeof item !== 'string') return item;
+  if (item === 'BUN TOP') return 'bunTop';
+  if (item === 'BUN BOT') return 'bunBottom';
+  if (item === 'bread' || item === 'pan') return 'bread';
+  if (item.startsWith('perrito|')) return item.split('|')[1];
+  if (item === 'perrito') return 'wildcard';
+  return item;
+}
+
+function burgerStackFromObjective(target = [], table = []) {
+  const tableLayers = (table || []).map((item) => normalizeIngredientKey(item)).filter(Boolean);
+  const targetLayers = (target || []).map((item) => normalizeIngredientKey(item)).filter(Boolean);
+  return ['bunTop', ...tableLayers, ...targetLayers, 'bunBottom'];
+}
+
+function RenderBurgerVisual({ target = [], table = [], badge, compact = false }) {
+  const layers = burgerStackFromObjective(target, table);
+  return (
+    <View style={[styles.visualBurgerCard, compact && styles.visualBurgerCardCompact]}>
+      {badge != null && <Text style={styles.visualBurgerBadge}>{badge}</Text>}
+      <View style={styles.visualBurgerStack}>
+        {layers.map((item, index) => {
+          const source = INGREDIENT_IMAGE_SOURCES[item] || INGREDIENT_IMAGE_SOURCES.wildcard;
+          return <Image key={`${item}-${index}`} source={source} style={[styles.visualBurgerLayer, compact && styles.visualBurgerLayerCompact]} resizeMode="contain" />;
+        })}
+      </View>
+    </View>
+  );
+}
+
 const MASS_ACTIONS = ['milanesa', 'ensalada', 'pizza', 'parrilla', 'comecomodines'];
 const TARGETED_ACTIONS = ['tenedor', 'ladron', 'intercambio_sombreros', 'intercambio_hamburguesa', 'gloton'];
 const ACTION_LABELS = {
@@ -149,6 +203,7 @@ export function NativeGameScreen({ setup, online, gameSession, chatMessages = []
   const myTarget = myLivePlayer?.burgers?.[myLivePlayer?.currentBurger || 0] || [];
   const neededIngredients = resolveNeededIngredients(myTarget, myLivePlayer?.table || []);
   const wildcardOptions = [...new Set(neededIngredients)].filter(Boolean);
+  const currentBurgerIndex = (myLivePlayer?.currentBurger || 0) + 1;
   const discardIngredients = liveDiscardCards.filter((card) => card?.type === 'ingredient');
   const urgentHatReplace = !isMyTurn && myLivePlayer && (myLivePlayer.mainHats?.length || 0) === 0 && (myLivePlayer.perchero?.length || 0) > 0;
   const targetedPlayers = TARGETED_ACTIONS.includes(selectedCard?.action)
@@ -227,13 +282,79 @@ export function NativeGameScreen({ setup, online, gameSession, chatMessages = []
             const hat = gameSession.hatPicks?.[player.name] || online.hatPicks?.[player.name] || setup.hat;
             return (
               <View key={`${player.name}-${player.idx}`} style={styles.playerCard}>
-                <Text style={styles.playerName}>{player.name}{isMe ? ' (tu)' : ''}</Text>
-                <Text style={styles.playerMeta}>Sombrero: {HAT_LABELS[hat] || hat || 'pendiente'}</Text>
+                <View style={styles.playerHeaderRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.playerName}>{player.name}{isMe ? ' (tu)' : ''}</Text>
+                    <Text style={styles.playerMeta}>Sombrero: {HAT_LABELS[hat] || hat || 'pendiente'}</Text>
+                  </View>
+                  {hat ? <Image source={HAT_IMAGE_SOURCES[hat]} style={styles.playerHatImage} resizeMode="contain" /> : null}
+                </View>
               </View>
             );
           })}
         </View>
       </View>
+
+      {myLivePlayer && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Tablero nativo</Text>
+          <View style={styles.boardHero}>
+            <View style={styles.boardHeroColumn}>
+              <Text style={styles.boardHeroLabel}>Objetivo actual</Text>
+              <Text style={styles.boardHeroSubtext}>Hamburguesa {currentBurgerIndex}</Text>
+              <RenderBurgerVisual target={myTarget} table={[]} badge={currentBurgerIndex} />
+            </View>
+            <View style={styles.boardHeroColumn}>
+              <Text style={styles.boardHeroLabel}>Tu mesa ahora</Text>
+              <Text style={styles.boardHeroSubtext}>Progreso real de la partida</Text>
+              <RenderBurgerVisual target={[]} table={myLivePlayer.table || []} />
+            </View>
+          </View>
+
+          <View style={styles.boardSplit}>
+            <View style={styles.boardPanel}>
+              <Text style={styles.liveColumnTitle}>Ingredientes que faltan</Text>
+              <View style={styles.ingredientIconRow}>
+                {neededIngredients.length === 0 ? (
+                  <Text style={styles.emptyText}>Ya no faltan ingredientes para esta hamburguesa.</Text>
+                ) : (
+                  neededIngredients.map((ingredient, index) => (
+                    <View key={`need-${ingredient}-${index}`} style={styles.ingredientNeedCard}>
+                      <Image source={INGREDIENT_IMAGE_SOURCES[ingredient] || INGREDIENT_IMAGE_SOURCES.wildcard} style={styles.ingredientNeedImage} resizeMode="contain" />
+                      <Text style={styles.ingredientNeedText}>{INGREDIENT_LABELS[ingredient] || ingredient}</Text>
+                    </View>
+                  ))
+                )}
+              </View>
+            </View>
+
+            <View style={styles.boardPanel}>
+              <Text style={styles.liveColumnTitle}>Sombreros activos</Text>
+              <View style={styles.hatBoardRow}>
+                {(myLivePlayer.mainHats || []).map((hatLang) => (
+                  <View key={`mainhat-${hatLang}`} style={styles.hatBoardCard}>
+                    <Image source={HAT_IMAGE_SOURCES[hatLang]} style={styles.hatBoardImage} resizeMode="contain" />
+                    <Text style={styles.hatBoardText}>{HAT_LABELS[hatLang] || hatLang}</Text>
+                  </View>
+                ))}
+              </View>
+              {(myLivePlayer.perchero?.length || 0) > 0 && (
+                <>
+                  <Text style={[styles.actionHint, { marginTop: 10 }]}>Perchero listo para Cambiar o Agregar.</Text>
+                  <View style={styles.hatBoardRow}>
+                    {(myLivePlayer.perchero || []).map((hatLang) => (
+                      <View key={`perchero-${hatLang}`} style={styles.hatBoardCardMuted}>
+                        <Image source={HAT_IMAGE_SOURCES[hatLang]} style={styles.hatBoardImage} resizeMode="contain" />
+                        <Text style={styles.hatBoardTextMuted}>{HAT_LABELS[hatLang] || hatLang}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </>
+              )}
+            </View>
+          </View>
+        </View>
+      )}
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Estado vivo de la partida</Text>
@@ -598,6 +719,27 @@ export function NativeGameScreen({ setup, online, gameSession, chatMessages = []
                 </View>
               ))}
             </View>
+
+            <View style={styles.rivalsBoard}>
+              {livePlayers.map((player, index) => {
+                const target = player?.burgers?.[player?.currentBurger || 0] || [];
+                return (
+                  <View key={`${player.name}-${index}-board`} style={styles.rivalBoardCard}>
+                    <Text style={styles.rivalBoardTitle}>{player.name}{index === liveCp ? ' - turno' : ''}</Text>
+                    <Text style={styles.playerMeta}>Burger actual: {(player?.currentBurger || 0) + 1}</Text>
+                    <View style={styles.rivalBoardBody}>
+                      <RenderBurgerVisual target={target} table={player?.table || []} compact badge={(player?.currentBurger || 0) + 1} />
+                      <View style={styles.rivalMetaColumn}>
+                        <Text style={styles.playerMeta}>Mesa: {player.table?.length ?? 0}</Text>
+                        <Text style={styles.playerMeta}>Mano: {player.hand?.length ?? 0}</Text>
+                        <Text style={styles.playerMeta}>Sombreros: {player.mainHats?.length ?? 0}</Text>
+                        <Text style={styles.playerMeta}>Perchero: {player.perchero?.length ?? 0}</Text>
+                      </View>
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
           </>
         ) : (
           <Text style={styles.bodyText}>Esperando el primer `stateUpdate` del host para mostrar la partida en vivo.</Text>
@@ -634,12 +776,7 @@ export function NativeGameScreen({ setup, online, gameSession, chatMessages = []
             <Text style={styles.objectiveTitle}>Hamburguesas de {currentObjective.player.name}</Text>
             <View style={styles.burgerGrid}>
               {currentObjective.burgers.map((burger, burgerIndex) => (
-                <View key={`goal-${burgerIndex}`} style={styles.burgerCard}>
-                  <Text style={styles.burgerBadge}>{burgerIndex + 1}</Text>
-                  {burger.map((item, itemIndex) => (
-                    <Text key={`${item}-${itemIndex}`} style={styles.burgerItem}>{item}</Text>
-                  ))}
-                </View>
+                <RenderBurgerVisual key={`goal-${burgerIndex}`} target={burger.filter((item) => item !== 'BUN TOP' && item !== 'BUN BOT').map((item) => normalizeIngredientKey(item))} table={[]} badge={burgerIndex + 1} compact />
               ))}
             </View>
           </View>
@@ -714,9 +851,22 @@ const styles = StyleSheet.create({
   sectionTitle: { color: '#FFD700', fontSize: 20, fontWeight: '800', marginBottom: 12 },
   playerList: { gap: 10 },
   playerCard: { backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', padding: 14 },
+  playerHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  playerHatImage: { width: 44, height: 44 },
   livePlayerCard: { backgroundColor: '#1d2a4a', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)', padding: 14 },
   playerName: { color: '#fff', fontSize: 15, fontWeight: '800' },
   playerMeta: { color: '#8a8fa8', fontSize: 12, marginTop: 4 },
+  boardHero: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 12 },
+  boardHeroColumn: { flex: 1, minWidth: 150, backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', padding: 12, alignItems: 'center' },
+  boardHeroLabel: { color: '#FFD700', fontSize: 14, fontWeight: '800' },
+  boardHeroSubtext: { color: '#8a8fa8', fontSize: 12, marginTop: 4, marginBottom: 8 },
+  boardSplit: { gap: 12 },
+  boardPanel: { backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', padding: 12 },
+  rivalsBoard: { gap: 10, marginTop: 12 },
+  rivalBoardCard: { backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', padding: 12 },
+  rivalBoardTitle: { color: '#fff1b3', fontSize: 14, fontWeight: '800', marginBottom: 8 },
+  rivalBoardBody: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  rivalMetaColumn: { flex: 1, gap: 4 },
   liveMetrics: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 12 },
   metricCard: { flexGrow: 1, minWidth: 96, backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', padding: 12 },
   metricLabel: { color: '#8a8fa8', fontSize: 11, fontWeight: '700', marginBottom: 6, textTransform: 'uppercase' },
@@ -770,9 +920,22 @@ const styles = StyleSheet.create({
   objectivePanel: { backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 18, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', padding: 14 },
   objectiveTitle: { color: '#fff1b3', fontSize: 15, fontWeight: '800', marginBottom: 12 },
   burgerGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  burgerCard: { width: 102, alignItems: 'center', backgroundColor: '#1d2a4a', borderRadius: 18, paddingVertical: 10, paddingHorizontal: 8, position: 'relative' },
-  burgerBadge: { position: 'absolute', top: 6, right: 6, backgroundColor: '#FFD700', color: '#111', width: 24, height: 24, borderRadius: 12, textAlign: 'center', lineHeight: 24, fontWeight: '900', fontSize: 12, overflow: 'hidden' },
-  burgerItem: { color: '#d8ddf3', fontSize: 11, lineHeight: 16, marginVertical: 1, fontWeight: '700', textAlign: 'center' },
+  visualBurgerCard: { width: 118, minHeight: 170, alignItems: 'center', justifyContent: 'center', backgroundColor: '#1d2a4a', borderRadius: 18, paddingVertical: 12, paddingHorizontal: 8, position: 'relative' },
+  visualBurgerCardCompact: { width: 106, minHeight: 154 },
+  visualBurgerBadge: { position: 'absolute', top: 8, right: 8, backgroundColor: '#FFD700', color: '#111', width: 28, height: 28, borderRadius: 14, textAlign: 'center', lineHeight: 28, fontWeight: '900', fontSize: 13, overflow: 'hidden' },
+  visualBurgerStack: { alignItems: 'center', justifyContent: 'center' },
+  visualBurgerLayer: { width: 84, height: 24, marginTop: -8 },
+  visualBurgerLayerCompact: { width: 72, height: 20, marginTop: -7 },
+  ingredientIconRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  ingredientNeedCard: { width: 92, alignItems: 'center', borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.04)', paddingVertical: 10, paddingHorizontal: 6 },
+  ingredientNeedImage: { width: 42, height: 42, marginBottom: 8 },
+  ingredientNeedText: { color: '#d8ddf3', fontSize: 11, fontWeight: '700', textAlign: 'center' },
+  hatBoardRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  hatBoardCard: { width: 98, alignItems: 'center', borderRadius: 14, backgroundColor: 'rgba(255,215,0,0.08)', borderWidth: 1, borderColor: 'rgba(255,215,0,0.22)', paddingVertical: 10, paddingHorizontal: 8 },
+  hatBoardCardMuted: { width: 98, alignItems: 'center', borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', paddingVertical: 10, paddingHorizontal: 8 },
+  hatBoardImage: { width: 48, height: 48, marginBottom: 8 },
+  hatBoardText: { color: '#fff1b3', fontSize: 11, fontWeight: '800', textAlign: 'center' },
+  hatBoardTextMuted: { color: '#aeb4d0', fontSize: 11, fontWeight: '700', textAlign: 'center' },
   bodyText: { color: '#d8ddf3', fontSize: 14, lineHeight: 21, marginBottom: 8 },
   chatList: { gap: 8, marginBottom: 12 },
   chatBubble: { backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', padding: 12 },
