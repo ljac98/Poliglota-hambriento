@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { getProfile, getHistory, getProfileFriends, saveUserLocally, sendFriendRequest, updateProfileAvatar } from '../../src/api.js';
+import { getProfile, getHistory, getProfileFriends, removeFriend, saveUserLocally, sendFriendRequest, updateProfileAvatar } from '../../src/api.js';
 import { getUILang } from '../../src/translations.js';
 import { Btn } from '../components/Btn.jsx';
 import { Modal } from '../components/Modal.jsx';
@@ -31,6 +31,10 @@ const COPY = {
     photoHint: 'Puedes subir una imagen cuadrada o rectangular.',
     friendsList: 'Lista de amigos',
     openFriendsList: 'Ver amigos',
+    removeFriend: 'Dejar de ser amigos',
+    removingFriend: 'Quitando amistad...',
+    removeFriendConfirm: '¿Seguro que quieres dejar de ser amigos?',
+    removedFriend: 'Ya no son amigos',
   },
   en: {
     title: 'Profile',
@@ -57,6 +61,10 @@ const COPY = {
     photoHint: 'You can upload a square or rectangular image.',
     friendsList: 'Friends list',
     openFriendsList: 'View friends',
+    removeFriend: 'Remove friend',
+    removingFriend: 'Removing friend...',
+    removeFriendConfirm: 'Are you sure you want to remove this friend?',
+    removedFriend: 'You are no longer friends',
   },
 };
 
@@ -97,6 +105,7 @@ export function ProfileScreen({ profileUserId, user, onUserUpdate, onOpenProfile
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [removingFriend, setRemovingFriend] = useState(false);
   const [savingAvatar, setSavingAvatar] = useState(false);
   const [showFriendsModal, setShowFriendsModal] = useState(false);
   const [friendsLoading, setFriendsLoading] = useState(false);
@@ -104,23 +113,37 @@ export function ProfileScreen({ profileUserId, user, onUserUpdate, onOpenProfile
   const [statusMessage, setStatusMessage] = useState('');
   const fileInputRef = useRef(null);
 
+  async function loadProfileData(targetUserId, { keepStatus = false } = {}) {
+    setLoading(true);
+    if (!keepStatus) setStatusMessage('');
+    try {
+      const [profileData, historyData] = await Promise.all([getProfile(targetUserId), getHistory(targetUserId)]);
+      setProfile(profileData);
+      setHistory(Array.isArray(historyData) ? historyData : []);
+    } catch (err) {
+      setStatusMessage(err.message || 'Error');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    setStatusMessage('');
-    Promise.all([getProfile(profileUserId), getHistory(profileUserId)])
-      .then(([profileData, historyData]) => {
+    (async () => {
+      setLoading(true);
+      setStatusMessage('');
+      try {
+        const [profileData, historyData] = await Promise.all([getProfile(profileUserId), getHistory(profileUserId)]);
         if (cancelled) return;
         setProfile(profileData);
         setHistory(Array.isArray(historyData) ? historyData : []);
-      })
-      .catch((err) => {
+      } catch (err) {
         if (cancelled) return;
         setStatusMessage(err.message || 'Error');
-      })
-      .finally(() => {
+      } finally {
         if (!cancelled) setLoading(false);
-      });
+      }
+    })();
     return () => {
       cancelled = true;
     };
@@ -167,6 +190,21 @@ export function ProfileScreen({ profileUserId, user, onUserUpdate, onOpenProfile
       setStatusMessage(err.message || 'Error');
     } finally {
       setSending(false);
+    }
+  }
+
+  async function handleRemoveFriend() {
+    if (!profile?.id || !window.confirm(text.removeFriendConfirm)) return;
+    setRemovingFriend(true);
+    setStatusMessage('');
+    try {
+      await removeFriend(profile.id);
+      await loadProfileData(profile.id, { keepStatus: true });
+      setStatusMessage(text.removedFriend);
+    } catch (err) {
+      setStatusMessage(err.message || 'Error');
+    } finally {
+      setRemovingFriend(false);
     }
   }
 
@@ -238,7 +276,7 @@ export function ProfileScreen({ profileUserId, user, onUserUpdate, onOpenProfile
       return <div style={{ color: '#8a8fa8', fontSize: 13, fontWeight: 700 }}>{text.signInToAdd}</div>;
     }
     if (profile.relationship === 'friends') {
-              return (
+      return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           <div style={{ color: '#7ef0a2', fontSize: 16, fontWeight: 900 }}>{text.alreadyFriends}</div>
           {profile.friendSince && (
@@ -246,6 +284,11 @@ export function ProfileScreen({ profileUserId, user, onUserUpdate, onOpenProfile
               {text.since} {formatSince(profile.friendSince, uiKey)}
             </div>
           )}
+          <div style={{ marginTop: 8 }}>
+            <Btn onClick={handleRemoveFriend} color="#ff8a80" disabled={removingFriend} style={{ color: '#201313', fontSize: 13 }}>
+              {removingFriend ? text.removingFriend : text.removeFriend}
+            </Btn>
+          </div>
         </div>
       );
     }
