@@ -95,10 +95,30 @@ function formatTableItem(item) {
   return INGREDIENT_LABELS[item] || item;
 }
 
-export function NativeGameScreen({ setup, online, gameSession, chatMessages = [], onSendChat, onBackToLobby, onOpenWebGame, onLeaveRoom }) {
+function resolveNeededIngredients(target = [], table = []) {
+  const remaining = [...target];
+  const normalizedTable = [...table].map((item) => {
+    if (typeof item !== 'string') return item;
+    if (item.startsWith('perrito|')) return item.split('|')[1];
+    if (item === 'perrito') return null;
+    return item;
+  }).filter(Boolean);
+
+  normalizedTable.forEach((ing) => {
+    const idx = remaining.indexOf(ing);
+    if (idx !== -1) remaining.splice(idx, 1);
+  });
+
+  return remaining;
+}
+
+const MASS_ACTIONS = ['milanesa', 'ensalada', 'pizza', 'parrilla', 'comecomodines'];
+
+export function NativeGameScreen({ setup, online, gameSession, chatMessages = [], onSendChat, onSendAction, onBackToLobby, onOpenWebGame, onLeaveRoom }) {
   const objectivesByPlayer = useMemo(() => buildObjectives(gameSession), [gameSession]);
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [chatInput, setChatInput] = useState('');
+  const [selectedCardIdx, setSelectedCardIdx] = useState(null);
   const currentObjective = objectivesByPlayer[selectedIdx] || objectivesByPlayer[0];
   const currentPlayerName = setup.playerName;
   const livePlayers = gameSession.liveState?.players || [];
@@ -107,6 +127,11 @@ export function NativeGameScreen({ setup, online, gameSession, chatMessages = []
   const liveDiscardCount = gameSession.liveState?.discard?.length ?? null;
   const liveWinner = gameSession.liveState?.winner || null;
   const myLivePlayer = livePlayers.find((player) => player?.name === currentPlayerName);
+  const isMyTurn = online.myIdx === liveCp;
+  const selectedCard = selectedCardIdx != null ? myLivePlayer?.hand?.[selectedCardIdx] : null;
+  const myTarget = myLivePlayer?.burgers?.[myLivePlayer?.currentBurger || 0] || [];
+  const neededIngredients = resolveNeededIngredients(myTarget, myLivePlayer?.table || []);
+  const wildcardOptions = [...new Set(neededIngredients)].filter(Boolean);
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
@@ -178,13 +203,64 @@ export function NativeGameScreen({ setup, online, gameSession, chatMessages = []
                     {(myLivePlayer.hand || []).length === 0 ? (
                       <Text style={styles.emptyText}>Sin cartas visibles todavia.</Text>
                     ) : (
-                      myLivePlayer.hand.map((card, index) => (
-                        <View key={`hand-${card.id || index}`} style={styles.cardChip}>
-                          <Text style={styles.cardChipText}>{formatCard(card)}</Text>
-                        </View>
-                      ))
+                      myLivePlayer.hand.map((card, index) => {
+                        const active = index === selectedCardIdx;
+                        return (
+                          <Pressable key={`hand-${card.id || index}`} style={[styles.cardChip, active && styles.cardChipActive]} onPress={() => setSelectedCardIdx(index)}>
+                            <Text style={[styles.cardChipText, active && styles.cardChipTextActive]}>{formatCard(card)}</Text>
+                          </Pressable>
+                        );
+                      })
                     )}
                   </View>
+                  {selectedCard && (
+                    <View style={styles.actionPanel}>
+                      <Text style={styles.actionPanelTitle}>Carta seleccionada</Text>
+                      <Text style={styles.actionPanelText}>{formatCard(selectedCard)}</Text>
+                      {!isMyTurn ? (
+                        <Text style={styles.actionHint}>Todavia no es tu turno.</Text>
+                      ) : (
+                        <>
+                          {selectedCard.type === 'ingredient' && selectedCard.ingredient !== 'perrito' && (
+                            <Pressable style={styles.inlineActionButton} onPress={() => onSendAction?.({ type: 'playIngredient', cardIdx: selectedCardIdx })}>
+                              <Text style={styles.inlineActionButtonText}>Jugar ingrediente</Text>
+                            </Pressable>
+                          )}
+                          {selectedCard.type === 'ingredient' && selectedCard.ingredient === 'perrito' && (
+                            <View style={styles.inlineActionGroup}>
+                              <Text style={styles.actionHint}>Elige como usar el comodin:</Text>
+                              <View style={styles.optionWrap}>
+                                {wildcardOptions.length === 0 ? (
+                                  <Text style={styles.emptyText}>No hay ingredientes faltantes visibles.</Text>
+                                ) : (
+                                  wildcardOptions.map((ingredient) => (
+                                    <Pressable
+                                      key={`wild-${ingredient}`}
+                                      style={styles.optionChip}
+                                      onPress={() => onSendAction?.({ type: 'playWildcard', cardIdx: selectedCardIdx, ingredient })}
+                                    >
+                                      <Text style={styles.optionChipText}>{INGREDIENT_LABELS[ingredient] || ingredient}</Text>
+                                    </Pressable>
+                                  ))
+                                )}
+                              </View>
+                            </View>
+                          )}
+                          {selectedCard.type === 'action' && MASS_ACTIONS.includes(selectedCard.action) && (
+                            <Pressable style={styles.inlineActionButton} onPress={() => onSendAction?.({ type: 'playMass', cardIdx: selectedCardIdx })}>
+                              <Text style={styles.inlineActionButtonText}>Jugar accion masiva</Text>
+                            </Pressable>
+                          )}
+                          {selectedCard.type === 'action' && !MASS_ACTIONS.includes(selectedCard.action) && (
+                            <Text style={styles.actionHint}>Esta accion todavia necesita la version web para elegir objetivo.</Text>
+                          )}
+                          <Pressable style={styles.inlineDiscardButton} onPress={() => onSendAction?.({ type: 'discard', cardIdx: selectedCardIdx })}>
+                            <Text style={styles.inlineDiscardButtonText}>Descartar</Text>
+                          </Pressable>
+                        </>
+                      )}
+                    </View>
+                  )}
                 </View>
 
                 <View style={styles.liveColumnCard}>
@@ -221,6 +297,11 @@ export function NativeGameScreen({ setup, online, gameSession, chatMessages = []
           </>
         ) : (
           <Text style={styles.bodyText}>Esperando el primer `stateUpdate` del host para mostrar la partida en vivo.</Text>
+        )}
+        {isMyTurn && (
+          <Pressable style={styles.passTurnButton} onPress={() => onSendAction?.({ type: 'passTurn' })}>
+            <Text style={styles.passTurnButtonText}>Pasar turno</Text>
+          </Pressable>
         )}
       </View>
 
@@ -340,10 +421,24 @@ const styles = StyleSheet.create({
   liveColumnTitle: { color: '#fff1b3', fontSize: 14, fontWeight: '800', marginBottom: 10 },
   cardChipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   cardChip: { backgroundColor: 'rgba(255,215,0,0.08)', borderRadius: 999, borderWidth: 1, borderColor: 'rgba(255,215,0,0.22)', paddingHorizontal: 10, paddingVertical: 8 },
+  cardChipActive: { backgroundColor: 'rgba(255,215,0,0.18)', borderColor: '#FFD700' },
   cardChipText: { color: '#fff1b3', fontSize: 12, fontWeight: '700' },
+  cardChipTextActive: { color: '#FFD700' },
   tableChip: { backgroundColor: 'rgba(78,205,196,0.08)', borderRadius: 999, borderWidth: 1, borderColor: 'rgba(78,205,196,0.22)', paddingHorizontal: 10, paddingVertical: 8 },
   tableChipText: { color: '#9ff6ef', fontSize: 12, fontWeight: '700' },
   emptyText: { color: '#8a8fa8', fontSize: 12, lineHeight: 18 },
+  actionPanel: { marginTop: 14, paddingTop: 12, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.08)', gap: 10 },
+  actionPanelTitle: { color: '#FFD700', fontSize: 13, fontWeight: '800' },
+  actionPanelText: { color: '#d8ddf3', fontSize: 13, lineHeight: 19 },
+  actionHint: { color: '#8a8fa8', fontSize: 12, lineHeight: 18 },
+  inlineActionGroup: { gap: 8 },
+  optionWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  optionChip: { backgroundColor: 'rgba(78,205,196,0.08)', borderRadius: 999, borderWidth: 1, borderColor: 'rgba(78,205,196,0.22)', paddingHorizontal: 10, paddingVertical: 8 },
+  optionChipText: { color: '#9ff6ef', fontSize: 12, fontWeight: '700' },
+  inlineActionButton: { backgroundColor: '#FFD700', borderRadius: 12, paddingVertical: 10, alignItems: 'center' },
+  inlineActionButtonText: { color: '#111', fontSize: 13, fontWeight: '900' },
+  inlineDiscardButton: { backgroundColor: '#2a2a4a', borderRadius: 12, paddingVertical: 10, alignItems: 'center' },
+  inlineDiscardButtonText: { color: '#d8ddf3', fontSize: 13, fontWeight: '800' },
   tabsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 },
   playerTab: { paddingHorizontal: 12, paddingVertical: 10, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)' },
   playerTabActive: { borderColor: '#FFD700', backgroundColor: 'rgba(255,215,0,0.08)' },
@@ -364,6 +459,8 @@ const styles = StyleSheet.create({
   chatInput: { backgroundColor: '#0f1117', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 14, color: '#fff', paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
   chatSendButton: { backgroundColor: '#4ecdc4', borderRadius: 14, paddingVertical: 12, alignItems: 'center' },
   chatSendButtonText: { color: '#04101c', fontSize: 15, fontWeight: '900' },
+  passTurnButton: { backgroundColor: '#2a2a4a', borderRadius: 14, paddingVertical: 12, alignItems: 'center', marginTop: 12 },
+  passTurnButtonText: { color: '#FFD700', fontSize: 14, fontWeight: '900' },
   primaryButton: { backgroundColor: '#FFD700', borderRadius: 16, paddingVertical: 16, alignItems: 'center' },
   primaryButtonText: { color: '#111', fontSize: 16, fontWeight: '900' },
   secondaryButton: { backgroundColor: '#00BCD4', borderRadius: 16, paddingVertical: 16, alignItems: 'center' },

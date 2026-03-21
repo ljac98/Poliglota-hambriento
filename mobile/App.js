@@ -330,6 +330,11 @@ export default function App() {
     socket.emit('chatMessage', { code: onlineState.roomCode, playerName, text: clean });
   }
 
+  function sendNativeAction(action) {
+    if (!onlineState.roomCode || !action?.type) return;
+    socket.emit('playerAction', { code: onlineState.roomCode, action });
+  }
+
   if (currentScreen === 'web') {
     return (
       <SafeAreaView style={styles.webviewScreen}>
@@ -424,6 +429,7 @@ export default function App() {
           gameSession={gameSession}
           chatMessages={chatMessages}
           onSendChat={sendNativeChat}
+          onSendAction={sendNativeAction}
           onBackToLobby={() => setCurrentScreen('nativeOnline')}
           onOpenWebGame={goToWebGame}
           onLeaveRoom={leaveRoom}
