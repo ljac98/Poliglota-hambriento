@@ -235,6 +235,33 @@ function RenderTableTile({ item }) {
   );
 }
 
+function RenderTargetPlayerCard({ player, active, onPress, liveCp }) {
+  const hat = player?.mainHats?.[0];
+  const target = player?.burgers?.[player?.currentBurger || 0] || [];
+  return (
+    <Pressable style={[styles.targetPlayerCard, active && styles.targetPlayerCardActive]} onPress={onPress}>
+      <View style={styles.targetPlayerHeader}>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.targetPlayerName, active && styles.targetPlayerNameActive]}>{player?.name || 'Jugador'}</Text>
+          <Text style={styles.targetPlayerMeta}>
+            {(player?.currentBurger || 0) + 1} / {player?.totalBurgers || player?.burgers?.length || 0} burgers
+            {player?.idx === liveCp ? ' - turno' : ''}
+          </Text>
+        </View>
+        {hat ? <Image source={HAT_IMAGE_SOURCES[hat]} style={styles.targetPlayerHat} resizeMode="contain" /> : null}
+      </View>
+      <View style={styles.targetPlayerBody}>
+        <RenderBurgerVisual target={target} table={player?.table || []} compact badge={(player?.currentBurger || 0) + 1} />
+        <View style={styles.targetPlayerStats}>
+          <Text style={styles.targetPlayerStat}>Mesa: {player?.table?.length ?? 0}</Text>
+          <Text style={styles.targetPlayerStat}>Mano: {player?.hand?.length ?? 0}</Text>
+          <Text style={styles.targetPlayerStat}>Sombreros: {player?.mainHats?.length ?? 0}</Text>
+        </View>
+      </View>
+    </Pressable>
+  );
+}
+
 const MASS_ACTIONS = ['milanesa', 'ensalada', 'pizza', 'parrilla', 'comecomodines'];
 const TARGETED_ACTIONS = ['tenedor', 'ladron', 'intercambio_sombreros', 'intercambio_hamburguesa', 'gloton'];
 const ACTION_LABELS = {
@@ -273,6 +300,7 @@ export function NativeGameScreen({ setup, online, gameSession, chatMessages = []
   const neededIngredients = resolveNeededIngredients(myTarget, myLivePlayer?.table || []);
   const wildcardOptions = [...new Set(neededIngredients)].filter(Boolean);
   const currentBurgerIndex = (myLivePlayer?.currentBurger || 0) + 1;
+  const currentTurnPlayer = liveCp != null ? livePlayers[liveCp] : null;
   const discardIngredients = liveDiscardCards.filter((card) => card?.type === 'ingredient');
   const urgentHatReplace = !isMyTurn && myLivePlayer && (myLivePlayer.mainHats?.length || 0) === 0 && (myLivePlayer.perchero?.length || 0) > 0;
   const targetedPlayers = TARGETED_ACTIONS.includes(selectedCard?.action)
@@ -342,6 +370,38 @@ export function NativeGameScreen({ setup, online, gameSession, chatMessages = []
         <Text style={styles.heroText}>Sala {gameSession.roomCode || online.roomCode || 'sin codigo'} - {gameSession.roomName || online.roomName || 'Sin nombre'}</Text>
         <Text style={styles.heroSubtext}>{summarizeMode(gameSession.gameConfig)}</Text>
       </View>
+
+      {gameSession.liveState && (
+        <View style={[styles.section, styles.turnBannerSection]}>
+          <View style={styles.turnBanner}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.turnBannerLabel}>{isMyTurn ? 'Es tu turno' : 'Turno actual'}</Text>
+              <Text style={styles.turnBannerValue}>{isMyTurn ? 'Puedes jugar ahora' : currentTurnPlayer?.name || 'Esperando host'}</Text>
+            </View>
+            <View style={styles.turnBannerStats}>
+              <Text style={styles.turnBannerStat}>Mazo {liveDeckCount ?? '-'}</Text>
+              <Text style={styles.turnBannerStat}>Descarte {liveDiscardCount ?? '-'}</Text>
+            </View>
+          </View>
+          <View style={styles.turnQuickRow}>
+            <Pressable style={styles.turnQuickButton} onPress={onOpenWebGame}>
+              <Text style={styles.turnQuickButtonText}>Abrir juego web</Text>
+            </Pressable>
+            {isMyTurn && (
+              <Pressable
+                style={styles.turnQuickButtonAccent}
+                onPress={() => {
+                  onSendAction?.({ type: 'passTurn' });
+                  resetCardFlow();
+                  setHatDraft(null);
+                }}
+              >
+                <Text style={styles.turnQuickButtonAccentText}>Pasar turno</Text>
+              </Pressable>
+            )}
+          </View>
+        </View>
+      )}
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Jugadores y sombreros</Text>
@@ -644,24 +704,24 @@ export function NativeGameScreen({ setup, online, gameSession, chatMessages = []
                           {selectedCard.type === 'action' && TARGETED_ACTIONS.includes(selectedCard.action) && (
                             <View style={styles.inlineActionGroup}>
                               <Text style={styles.actionHint}>Selecciona el objetivo para {ACTION_LABELS[selectedCard.action] || selectedCard.action}.</Text>
-                              <View style={styles.optionWrap}>
+                              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.targetPlayerRow}>
                                 {targetedPlayers.length === 0 ? (
                                   <Text style={styles.emptyText}>No hay objetivos validos en este momento.</Text>
                                 ) : (
                                   targetedPlayers.map((player) => {
                                     const active = actionDraft?.targetIdx === player.idx;
                                     return (
-                                      <Pressable
+                                      <RenderTargetPlayerCard
                                         key={`target-${player.idx}`}
-                                        style={[styles.optionChip, active && styles.optionChipActive]}
+                                        player={player}
+                                        active={active}
+                                        liveCp={liveCp}
                                         onPress={() => setActionDraft({ type: 'targeted', targetIdx: player.idx })}
-                                      >
-                                        <Text style={[styles.optionChipText, active && styles.optionChipTextActive]}>{player.name}</Text>
-                                      </Pressable>
+                                      />
                                     );
                                   })
                                 )}
-                              </View>
+                              </ScrollView>
 
                               {targetPlayer && selectedCard.action === 'tenedor' && (
                                 <View style={styles.inlineActionGroup}>
@@ -810,18 +870,6 @@ export function NativeGameScreen({ setup, online, gameSession, chatMessages = []
         ) : (
           <Text style={styles.bodyText}>Esperando el primer `stateUpdate` del host para mostrar la partida en vivo.</Text>
         )}
-        {isMyTurn && (
-          <Pressable
-            style={styles.passTurnButton}
-            onPress={() => {
-              onSendAction?.({ type: 'passTurn' });
-              resetCardFlow();
-              setHatDraft(null);
-            }}
-          >
-            <Text style={styles.passTurnButtonText}>Pasar turno</Text>
-          </Pressable>
-        )}
       </View>
 
       <View style={styles.section}>
@@ -914,6 +962,17 @@ const styles = StyleSheet.create({
   heroText: { color: '#d8ddf3', fontSize: 15, lineHeight: 22 },
   heroSubtext: { color: '#8a8fa8', fontSize: 13, marginTop: 8 },
   section: { backgroundColor: '#16213e', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', padding: 18 },
+  turnBannerSection: { paddingTop: 14, paddingBottom: 14 },
+  turnBanner: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: 'rgba(255,215,0,0.08)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,215,0,0.18)', padding: 14 },
+  turnBannerLabel: { color: '#fff1b3', fontSize: 12, fontWeight: '800', textTransform: 'uppercase', marginBottom: 4 },
+  turnBannerValue: { color: '#FFD700', fontSize: 20, fontWeight: '900' },
+  turnBannerStats: { gap: 6, alignItems: 'flex-end' },
+  turnBannerStat: { color: '#d8ddf3', fontSize: 12, fontWeight: '700' },
+  turnQuickRow: { flexDirection: 'row', gap: 10, marginTop: 12 },
+  turnQuickButton: { flex: 1, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', paddingVertical: 12, alignItems: 'center' },
+  turnQuickButtonText: { color: '#d8ddf3', fontSize: 13, fontWeight: '800' },
+  turnQuickButtonAccent: { flex: 1, backgroundColor: '#FFD700', borderRadius: 14, paddingVertical: 12, alignItems: 'center' },
+  turnQuickButtonAccentText: { color: '#111', fontSize: 13, fontWeight: '900' },
   sectionTitle: { color: '#FFD700', fontSize: 20, fontWeight: '800', marginBottom: 12 },
   playerList: { gap: 10 },
   playerCard: { backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', padding: 14 },
@@ -933,6 +992,17 @@ const styles = StyleSheet.create({
   rivalBoardTitle: { color: '#fff1b3', fontSize: 14, fontWeight: '800', marginBottom: 8 },
   rivalBoardBody: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   rivalMetaColumn: { flex: 1, gap: 4 },
+  targetPlayerRow: { gap: 10, paddingRight: 12 },
+  targetPlayerCard: { width: 220, backgroundColor: '#1d2a4a', borderRadius: 18, borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)', padding: 12 },
+  targetPlayerCardActive: { borderColor: '#FFD700', backgroundColor: 'rgba(255,215,0,0.10)' },
+  targetPlayerHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
+  targetPlayerName: { color: '#fff', fontSize: 14, fontWeight: '800' },
+  targetPlayerNameActive: { color: '#FFD700' },
+  targetPlayerMeta: { color: '#8a8fa8', fontSize: 11, marginTop: 4, fontWeight: '700' },
+  targetPlayerHat: { width: 38, height: 38 },
+  targetPlayerBody: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  targetPlayerStats: { flex: 1, gap: 4 },
+  targetPlayerStat: { color: '#d8ddf3', fontSize: 12, fontWeight: '700' },
   liveMetrics: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 12 },
   metricCard: { flexGrow: 1, minWidth: 96, backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', padding: 12 },
   metricLabel: { color: '#8a8fa8', fontSize: 11, fontWeight: '700', marginBottom: 6, textTransform: 'uppercase' },
@@ -1025,8 +1095,6 @@ const styles = StyleSheet.create({
   chatInput: { backgroundColor: '#0f1117', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 14, color: '#fff', paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
   chatSendButton: { backgroundColor: '#4ecdc4', borderRadius: 14, paddingVertical: 12, alignItems: 'center' },
   chatSendButtonText: { color: '#04101c', fontSize: 15, fontWeight: '900' },
-  passTurnButton: { backgroundColor: '#2a2a4a', borderRadius: 14, paddingVertical: 12, alignItems: 'center', marginTop: 12 },
-  passTurnButtonText: { color: '#FFD700', fontSize: 14, fontWeight: '900' },
   primaryButton: { backgroundColor: '#FFD700', borderRadius: 16, paddingVertical: 16, alignItems: 'center' },
   primaryButtonText: { color: '#111', fontSize: 16, fontWeight: '900' },
   secondaryButton: { backgroundColor: '#00BCD4', borderRadius: 16, paddingVertical: 16, alignItems: 'center' },
