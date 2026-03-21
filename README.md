@@ -54,6 +54,7 @@ Archivos importantes:
 
 - `mobile/App.js`
 - `mobile/src/screens/HomeScreen.js`
+- `mobile/src/screens/NativeOnlineScreen.js`
 - `mobile/src/screens/NativeSetupScreen.js`
 - `mobile/app.json`
 - `mobile/eas.json`

@@ -3,6 +3,7 @@ import { ActivityIndicator, Linking, Pressable, SafeAreaView, StatusBar, StyleSh
 import Constants from 'expo-constants';
 import { WebView } from 'react-native-webview';
 import { HomeScreen } from './src/screens/HomeScreen';
+import { NativeOnlineScreen } from './src/screens/NativeOnlineScreen';
 import { NativeSetupScreen } from './src/screens/NativeSetupScreen';
 
 const FALLBACK_URL = 'https://hungry-poly.up.railway.app';
@@ -67,11 +68,30 @@ export default function App() {
     );
   }
 
+  if (currentScreen === 'nativeOnline') {
+    return (
+      <SafeAreaView style={styles.screen}>
+        <StatusBar barStyle="light-content" />
+        <View style={styles.webviewHeader}>
+          <Pressable onPress={() => setCurrentScreen('home')} style={styles.secondaryButton}>
+            <Text style={styles.secondaryButtonText}>Volver</Text>
+          </Pressable>
+          <Text style={styles.webviewTitle}>Online nativo</Text>
+          <Pressable onPress={() => { setLoadingGame(true); setCurrentScreen('web'); }} style={styles.secondaryButton}>
+            <Text style={styles.secondaryButtonText}>Jugar web</Text>
+          </Pressable>
+        </View>
+        <NativeOnlineScreen onOpenWebGame={() => { setLoadingGame(true); setCurrentScreen('web'); }} />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.screen}>
       <StatusBar barStyle="light-content" />
       <HomeScreen
         onOpenNativeSetup={() => setCurrentScreen('nativeSetup')}
+        onOpenNativeOnline={() => setCurrentScreen('nativeOnline')}
         onOpenWebGame={() => { setLoadingGame(true); setCurrentScreen('web'); }}
         onOpenWebsite={() => Linking.openURL(gameUrl)}
       />

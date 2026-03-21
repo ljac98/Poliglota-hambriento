@@ -5,6 +5,7 @@ Base mobile hecha con Expo + React Native.
 ## Que incluye
 
 - contenedor nativo para jugar Hungry Poly en telefono
+- una primera pantalla nativa de online en `mobile/src/screens/NativeOnlineScreen.js`
 - una primera pantalla nativa de setup en `mobile/src/screens/NativeSetupScreen.js`
 - configuracion lista para compilar Android/iOS con Expo
 - archivo `eas.json` para sacar APK preview y builds de produccion

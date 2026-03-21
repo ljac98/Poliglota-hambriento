@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-export function HomeScreen({ onOpenNativeSetup, onOpenWebGame, onOpenWebsite }) {
+export function HomeScreen({ onOpenNativeSetup, onOpenNativeOnline, onOpenWebGame, onOpenWebsite }) {
   return (
     <View style={styles.screen}>
       <View style={styles.hero}>
@@ -27,8 +27,12 @@ export function HomeScreen({ onOpenNativeSetup, onOpenWebGame, onOpenWebsite }) 
           <Text style={styles.primaryButtonText}>Abrir setup nativo</Text>
         </Pressable>
 
-        <Pressable onPress={onOpenWebGame} style={styles.secondaryButton}>
-          <Text style={styles.secondaryButtonText}>Abrir juego web</Text>
+        <Pressable onPress={onOpenNativeOnline} style={styles.secondaryButton}>
+          <Text style={styles.secondaryButtonText}>Abrir online nativo</Text>
+        </Pressable>
+
+        <Pressable onPress={onOpenWebGame} style={styles.webButton}>
+          <Text style={styles.webButtonText}>Abrir juego web</Text>
         </Pressable>
 
         <Pressable onPress={onOpenWebsite} style={styles.linkButton}>
@@ -107,6 +111,18 @@ const styles = StyleSheet.create({
   },
   secondaryButtonText: {
     color: '#04101c',
+    fontSize: 17,
+    fontWeight: '800',
+  },
+  webButton: {
+    backgroundColor: '#2a2a4a',
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  webButtonText: {
+    color: '#d8ddf3',
     fontSize: 17,
     fontWeight: '800',
   },
