@@ -12,6 +12,7 @@ export async function initDB() {
       username VARCHAR(20) UNIQUE NOT NULL,
       password_hash VARCHAR(255) NOT NULL,
       display_name VARCHAR(20) NOT NULL,
+      avatar_url TEXT,
       wins INT DEFAULT 0,
       games_played INT DEFAULT 0,
       created_at TIMESTAMP DEFAULT NOW()
@@ -52,7 +53,10 @@ export async function initDB() {
       UNIQUE(user_id, blocked_id)
     );
   `);
-  console.log('✅ Base de datos inicializada');
+
+  await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT');
+  console.log('Base de datos inicializada');
 }
 
 export default pool;
+

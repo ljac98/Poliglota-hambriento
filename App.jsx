@@ -97,13 +97,16 @@ export default function App() {
   const initialParams = new URLSearchParams(window.location.search);
   const initialSalaCode = initialParams.get('sala') || '';
   const initialView = initialParams.get('view') || '';
+  const initialProfileId = parseInt(initialParams.get('id') || '', 10);
+  const savedUserOnLoad = getSavedUser();
   const appDownloadUrl = typeof window !== 'undefined' ? new URL('/', window.location.href).toString() : 'https://hungry-poly.up.railway.app/';
   const hasRoomSession = !!sessionStorage.getItem('hp_room_session');
   const [phase, setPhase] = useState(
     hasRoomSession ? 'reconnecting'
     : initialSalaCode ? 'onlineMenu'
-    : initialView === 'friends' && getSavedUser() ? 'friends'
-    : (getSavedUser() ? 'setup' : 'auth')
+    : initialView === 'profile' && savedUserOnLoad && (Number.isFinite(initialProfileId) || savedUserOnLoad?.id) ? 'profile'
+    : initialView === 'friends' && savedUserOnLoad ? 'friends'
+    : (savedUserOnLoad ? 'setup' : 'auth')
   );
   const [players, setPlayers] = useState([]);
   const [deck, setDeck] = useState([]);
@@ -124,6 +127,8 @@ export default function App() {
   const [downloadReturnPhase, setDownloadReturnPhase] = useState('setup');
   const [onlineMenuTab, setOnlineMenuTab] = useState('');
   const [showQuickMenu, setShowQuickMenu] = useState(false);
+  const [profileUserId, setProfileUserId] = useState(Number.isFinite(initialProfileId) ? initialProfileId : (savedUserOnLoad?.id || null));
+  const [profileReturnPhase, setProfileReturnPhase] = useState('setup');
   const aiRunning = useRef(false);
   const [turnTime, setTurnTime] = useState(60);
   const [currentGameConfig, setCurrentGameConfig] = useState(null);
@@ -413,6 +418,7 @@ export default function App() {
     }
     setInviteJoinCode('');
     setOnlineMenuTab('');
+    setProfileUserId(null);
     setShowQuickMenu(false);
     setPhase(getSavedUser() ? 'setup' : 'auth');
   }
@@ -428,6 +434,7 @@ export default function App() {
     }
     setInviteJoinCode('');
     setOnlineMenuTab('');
+    setProfileUserId(null);
     setShowQuickMenu(false);
     if (getSavedUser()) {
       socket.connect();
@@ -435,6 +442,36 @@ export default function App() {
     } else {
       setPhase('auth');
     }
+  }
+
+  function goToProfile() {
+    if (phase === 'playing' && !isOnline) {
+      resetLocalGameState();
+    }
+    if (isOnline && roomCode) {
+      socket.emit('leaveRoom');
+      socket.disconnect();
+      resetOnlineRoomState();
+    }
+    setInviteJoinCode('');
+    setOnlineMenuTab('');
+    setShowQuickMenu(false);
+    if (getSavedUser()) {
+      const saved = getSavedUser();
+      setProfileUserId(saved?.id || null);
+      setProfileReturnPhase('setup');
+      setPhase('profile');
+    } else {
+      setPhase('auth');
+    }
+  }
+
+  function openProfile(targetUserId, returnPhase = phase) {
+    if (!targetUserId) return;
+    setProfileUserId(targetUserId);
+    setProfileReturnPhase(returnPhase || (user ? 'setup' : 'auth'));
+    setShowQuickMenu(false);
+    setPhase('profile');
   }
 
   function handleQuickLeaveGame() {
@@ -1763,6 +1800,9 @@ export default function App() {
             <Btn onClick={goToFriends} color="#7ad8ff" style={{ color: '#102033', width: '100%', justifyContent: 'center' }}>
               {T('friends')}
             </Btn>
+            <Btn onClick={goToProfile} color="#c8a2ff" style={{ color: '#1f1530', width: '100%', justifyContent: 'center' }}>
+              {T('profileMenu')}
+            </Btn>
             {phase === 'playing' && (
               <Btn onClick={handleQuickLeaveGame} color="#ff4444" style={{ color: '#fff', width: '100%', justifyContent: 'center' }}>
                 {T('leaveLocal')}
@@ -1802,6 +1842,9 @@ export default function App() {
           downloadUrl={appDownloadUrl}
           downloadReturnPhase={downloadReturnPhase}
           setDownloadReturnPhase={setDownloadReturnPhase}
+          profileUserId={profileUserId}
+          profileReturnPhase={profileReturnPhase}
+          openProfile={openProfile}
           inviteToast={inviteToast}
           friendReqToast={friendReqToast}
           setUser={setUser}

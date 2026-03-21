@@ -5,6 +5,7 @@ export { SetupScreen } from './SetupScreen.jsx';
 export { TransitionScreen } from './TransitionScreen.jsx';
 export { GameOverScreen } from './GameOverScreen.jsx';
 export { FriendsScreen } from './FriendsScreen.jsx';
+export { ProfileScreen } from './ProfileScreen.jsx';
 export { OnlineMenu } from './OnlineMenu.jsx';
 export { OnlineLobby } from './OnlineLobby.jsx';
 export { ReconnectingScreen } from './ReconnectingScreen.jsx';

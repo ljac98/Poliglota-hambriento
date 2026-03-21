@@ -741,6 +741,13 @@ export default function App() {
     setCurrentScreen('web');
   }
 
+  function openProfileWebView() {
+    setLoadingGame(true);
+    setCurrentWebUrl(`${gameUrl}?view=profile`);
+    setShowAppMenu(false);
+    setCurrentScreen('web');
+  }
+
   function renderAppMenu() {
     const inMatch = currentScreen === 'web' || currentScreen === 'nativeGame';
     return (
@@ -759,6 +766,9 @@ export default function App() {
               </Pressable>
               <Pressable onPress={openFriendsWebView} style={[styles.appMenuButton, styles.appMenuFriends]}>
                 <Text style={styles.appMenuButtonTextDark}>Amigos</Text>
+              </Pressable>
+              <Pressable onPress={openProfileWebView} style={[styles.appMenuButton, styles.appMenuProfile]}>
+                <Text style={styles.appMenuButtonTextDark}>Perfil</Text>
               </Pressable>
               {inMatch ? (
                 <Pressable onPress={leaveCurrentMatchFromMenu} style={[styles.appMenuButton, styles.appMenuLeave]}>
@@ -1032,6 +1042,7 @@ const styles = StyleSheet.create({
   },
   appMenuHome: { backgroundColor: '#4ecdc4' },
   appMenuFriends: { backgroundColor: '#7ad8ff' },
+  appMenuProfile: { backgroundColor: '#c8a2ff' },
   appMenuLeave: { backgroundColor: '#ff4444' },
   appMenuCreate: { backgroundColor: '#FFD700' },
   appMenuJoin: { backgroundColor: '#00BCD4' },

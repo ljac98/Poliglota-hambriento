@@ -24,6 +24,10 @@ function saveUser(user) {
   localStorage.setItem('hp_user', JSON.stringify(user));
 }
 
+export function saveUserLocally(user) {
+  saveUser(user);
+}
+
 async function request(path, opts = {}) {
   const token = getToken();
   const res = await fetch(`${API_URL}${path}`, {
@@ -61,6 +65,15 @@ export async function login(username, password) {
 
 export async function getProfile(userId) {
   return request(`/api/profile/${userId}`);
+}
+
+export async function updateProfileAvatar(avatarUrl) {
+  const data = await request('/api/profile/avatar', {
+    method: 'PATCH',
+    body: JSON.stringify({ avatarUrl }),
+  });
+  if (data?.user) saveUser(data.user);
+  return data.user;
 }
 
 export async function getHistory(userId) {

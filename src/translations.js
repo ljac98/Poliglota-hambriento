@@ -312,6 +312,7 @@ const translations = {
     friendRequestNotif: 'te envió solicitud de amistad',
     viewRequest: 'Ver',
     addFriendShort: 'Agregar',
+    profileMenu: 'Perfil',
   },
 
   en: {
@@ -617,6 +618,7 @@ const translations = {
     friendRequestNotif: 'sent you a friend request',
     viewRequest: 'View',
     addFriendShort: 'Add',
+    profileMenu: 'Profile',
   },
 
   fr: {
@@ -922,6 +924,7 @@ const translations = {
     friendRequestNotif: "t'a envoyé une demande d'ami",
     viewRequest: 'Voir',
     addFriendShort: 'Ajouter',
+    profileMenu: 'Profil',
   },
 
   it: {
@@ -1227,6 +1230,7 @@ const translations = {
     friendRequestNotif: 'ti ha inviato una richiesta di amicizia',
     viewRequest: 'Vedi',
     addFriendShort: 'Aggiungi',
+    profileMenu: 'Profilo',
   },
 
   de: {
@@ -1532,6 +1536,7 @@ const translations = {
     friendRequestNotif: 'hat dir eine Freundschaftsanfrage geschickt',
     viewRequest: 'Ansehen',
     addFriendShort: 'Hinzufügen',
+    profileMenu: 'Profil',
   },
 
   pt: {
@@ -1837,6 +1842,7 @@ const translations = {
     friendRequestNotif: 'enviou-te um pedido de amizade',
     viewRequest: 'Ver',
     addFriendShort: 'Adicionar',
+    profileMenu: 'Perfil',
   },
 };
 

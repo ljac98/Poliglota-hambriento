@@ -8,6 +8,7 @@ import { LeftRoomScreen } from './LeftRoomScreen.jsx';
 import { DownloadAppScreen } from './DownloadAppScreen.jsx';
 import { OnlineLobby } from './OnlineLobby.jsx';
 import { OnlineMenu } from './OnlineMenu.jsx';
+import { ProfileScreen } from './ProfileScreen.jsx';
 import { ReconnectingScreen } from './ReconnectingScreen.jsx';
 import { SetupScreen } from './SetupScreen.jsx';
 import { TransitionScreen } from './TransitionScreen.jsx';
@@ -27,6 +28,9 @@ export function AppPhaseRouter({
   downloadUrl,
   downloadReturnPhase,
   setDownloadReturnPhase,
+  profileUserId,
+  profileReturnPhase,
+  openProfile,
   inviteToast,
   friendReqToast,
   setUser,
@@ -104,7 +108,24 @@ export function AppPhaseRouter({
   }
 
   if (phase === 'friends' && user) {
-    return <>{inviteToast}{friendReqToast}<FriendsScreen user={user} onBack={() => setPhase('setup')} T={T} /></>;
+    return <>{inviteToast}{friendReqToast}<FriendsScreen user={user} onBack={() => setPhase('setup')} T={T} onOpenProfile={(id) => openProfile(id, 'friends')} /></>;
+  }
+
+  if (phase === 'profile' && profileUserId) {
+    return (
+      <>
+        {inviteToast}
+        {friendReqToast}
+        <ProfileScreen
+          profileUserId={profileUserId}
+          user={user}
+          T={T}
+          onUserUpdate={setUser}
+          onBack={() => setPhase(profileReturnPhase || (user ? 'setup' : 'auth'))}
+          onOpenFriends={() => setPhase(user ? 'friends' : 'auth')}
+        />
+      </>
+    );
   }
 
   if (phase === 'setup') {
@@ -188,6 +209,7 @@ export function AppPhaseRouter({
           roomDisplayName={roomDisplayName}
           T={T}
           user={user}
+          onOpenProfile={(id) => openProfile(id, 'onlineLobby')}
           onStart={(hatPicks, gameConfig) => {
             if (isHost) startOnlineGame(hatPicks, gameConfig, lobbyPlayers);
           }}

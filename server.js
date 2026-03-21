@@ -28,6 +28,12 @@ function verifyToken(token) {
   catch { return null; }
 }
 
+function getRequestUserId(req) {
+  const token = req.headers.authorization?.split(' ')[1];
+  const payload = verifyToken(token);
+  return payload?.id || null;
+}
+
 // ── REST API ──
 
 const dbAvailable = !!process.env.DATABASE_URL;
@@ -46,12 +52,12 @@ app.post('/api/register', requireDB, async (req, res) => {
 
     const hash = await bcrypt.hash(password, 10);
     const result = await pool.query(
-      'INSERT INTO users (username, password_hash, display_name) VALUES ($1, $2, $3) RETURNING id, username, display_name, wins, games_played',
+      'INSERT INTO users (username, password_hash, display_name) VALUES ($1, $2, $3) RETURNING id, username, display_name, avatar_url, wins, games_played',
       [username.toLowerCase(), hash, displayName]
     );
     const user = result.rows[0];
     const token = signToken(user);
-    res.json({ token, user: { id: user.id, username: user.username, displayName: user.display_name, wins: user.wins, gamesPlayed: user.games_played } });
+    res.json({ token, user: { id: user.id, username: user.username, displayName: user.display_name, avatarUrl: user.avatar_url, wins: user.wins, gamesPlayed: user.games_played } });
   } catch (err) {
     if (err.code === '23505') return res.status(400).json({ error: 'Ese nombre de usuario ya existe' });
     console.error('Register error:', err.message);
@@ -72,7 +78,7 @@ app.post('/api/login', requireDB, async (req, res) => {
     if (!valid) return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
 
     const token = signToken(user);
-    res.json({ token, user: { id: user.id, username: user.username, displayName: user.display_name, wins: user.wins, gamesPlayed: user.games_played } });
+    res.json({ token, user: { id: user.id, username: user.username, displayName: user.display_name, avatarUrl: user.avatar_url, wins: user.wins, gamesPlayed: user.games_played } });
   } catch {
     res.status(500).json({ error: 'Error del servidor' });
   }
@@ -80,13 +86,99 @@ app.post('/api/login', requireDB, async (req, res) => {
 
 app.get('/api/profile/:id', requireDB, async (req, res) => {
   try {
+    const targetUserId = parseInt(req.params.id, 10);
+    if (!Number.isFinite(targetUserId)) return res.status(400).json({ error: 'Usuario invÃ¡lido' });
+
+    const viewerUserId = getRequestUserId(req);
     const result = await pool.query(
-      'SELECT id, username, display_name, wins, games_played, created_at FROM users WHERE id = $1',
-      [req.params.id]
+      `SELECT
+         u.id,
+         u.username,
+         u.display_name,
+         u.avatar_url,
+         u.wins,
+         u.games_played,
+         u.created_at,
+         COALESCE((
+           SELECT COUNT(*)::int
+           FROM friendships f
+           WHERE f.user_id = u.id
+         ), 0) AS friends_count
+       FROM users u
+       WHERE u.id = $1`,
+      [targetUserId]
     );
     if (!result.rows[0]) return res.status(404).json({ error: 'Usuario no encontrado' });
     const u = result.rows[0];
-    res.json({ id: u.id, username: u.username, displayName: u.display_name, wins: u.wins, gamesPlayed: u.games_played, createdAt: u.created_at });
+
+    let relationship = 'none';
+    let friendSince = null;
+    let mutualFriendsCount = 0;
+    let mutualFriends = [];
+
+    if (viewerUserId) {
+      if (viewerUserId === targetUserId) {
+        relationship = 'self';
+      } else {
+        const [friendshipResult, requestResult, mutualCountResult, mutualNamesResult] = await Promise.all([
+          pool.query(
+            'SELECT created_at FROM friendships WHERE user_id = $1 AND friend_id = $2 LIMIT 1',
+            [viewerUserId, targetUserId]
+          ),
+          pool.query(
+            `SELECT from_user_id, to_user_id
+             FROM friend_requests
+             WHERE (from_user_id = $1 AND to_user_id = $2)
+                OR (from_user_id = $2 AND to_user_id = $1)
+             LIMIT 1`,
+            [viewerUserId, targetUserId]
+          ),
+          pool.query(
+            `SELECT COUNT(*)::int AS count
+             FROM friendships f1
+             JOIN friendships f2 ON f1.friend_id = f2.friend_id
+             WHERE f1.user_id = $1 AND f2.user_id = $2`,
+            [viewerUserId, targetUserId]
+          ),
+          pool.query(
+            `SELECT u.display_name
+             FROM friendships f1
+             JOIN friendships f2 ON f1.friend_id = f2.friend_id
+             JOIN users u ON u.id = f1.friend_id
+             WHERE f1.user_id = $1 AND f2.user_id = $2
+             ORDER BY u.display_name
+             LIMIT 6`,
+            [viewerUserId, targetUserId]
+          ),
+        ]);
+
+        if (friendshipResult.rows[0]) {
+          relationship = 'friends';
+          friendSince = friendshipResult.rows[0].created_at;
+        } else if (requestResult.rows[0]) {
+          relationship = requestResult.rows[0].from_user_id === viewerUserId ? 'outgoing_request' : 'incoming_request';
+        }
+
+        mutualFriendsCount = mutualCountResult.rows[0]?.count || 0;
+        mutualFriends = mutualNamesResult.rows.map((row) => row.display_name);
+      }
+    }
+
+    res.json({
+      id: u.id,
+      username: u.username,
+      displayName: u.display_name,
+      avatarUrl: u.avatar_url,
+      wins: u.wins,
+      gamesPlayed: u.games_played,
+      losses: Math.max(0, Number(u.games_played || 0) - Number(u.wins || 0)),
+      createdAt: u.created_at,
+      friendsCount: u.friends_count || 0,
+      mutualFriendsCount,
+      mutualFriends,
+      relationship,
+      friendSince,
+    });
   } catch {
     res.status(500).json({ error: 'Error del servidor' });
   }
@@ -99,7 +191,7 @@ app.get('/api/history/:userId', requireDB, async (req, res) => {
       [JSON.stringify([{ userId: parseInt(req.params.userId) }])]
     );
     res.json(result.rows.map(r => ({
-      id: r.id, roomCode: r.room_code, winnerName: r.winner_name,
+      id: r.id, roomCode: r.room_code, winnerId: r.winner_id, winnerName: r.winner_name,
       playerCount: r.player_count, difficulty: r.difficulty,
       players: r.players, finishedAt: r.finished_at,
     })));
@@ -113,8 +205,7 @@ const onlineUsers = new Map();
 
 // ── Auth middleware for protected routes ──
 function requireAuth(req, res, next) {
-  const token = req.headers.authorization?.split(' ')[1];
-  const payload = verifyToken(token);
+  const payload = verifyToken(req.headers.authorization?.split(' ')[1]);
   if (!payload) return res.status(401).json({ error: 'No autorizado' });
   req.userId = payload.id;
   next();
@@ -126,11 +217,11 @@ app.get('/api/users/search', requireDB, requireAuth, async (req, res) => {
     const q = (req.query.q || '').toLowerCase().trim();
     if (!q || q.length < 2) return res.json([]);
     const result = await pool.query(
-      `SELECT id, username, display_name FROM users
+      `SELECT id, username, display_name, avatar_url FROM users
        WHERE username LIKE $1 AND id != $2 LIMIT 10`,
       [`%${q}%`, req.userId]
     );
-    res.json(result.rows.map(u => ({ id: u.id, username: u.username, displayName: u.display_name })));
+    res.json(result.rows.map(u => ({ id: u.id, username: u.username, displayName: u.display_name, avatarUrl: u.avatar_url })));
   } catch {
     res.status(500).json({ error: 'Error del servidor' });
   }
@@ -140,13 +231,14 @@ app.get('/api/users/search', requireDB, requireAuth, async (req, res) => {
 app.get('/api/friends', requireDB, requireAuth, async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT u.id, u.username, u.display_name, u.wins, u.games_played
+      `SELECT u.id, u.username, u.display_name, u.avatar_url, u.wins, u.games_played
        FROM friendships f JOIN users u ON u.id = f.friend_id
        WHERE f.user_id = $1 ORDER BY u.display_name`,
       [req.userId]
     );
     res.json(result.rows.map(u => ({
       id: u.id, username: u.username, displayName: u.display_name,
+      avatarUrl: u.avatar_url,
       wins: u.wins, gamesPlayed: u.games_played,
       online: onlineUsers.has(u.id),
     })));
@@ -231,14 +323,14 @@ app.post('/api/friends/request', requireDB, requireAuth, async (req, res) => {
 app.get('/api/friends/requests', requireDB, requireAuth, async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT fr.id, fr.from_user_id, u.username, u.display_name, fr.created_at
+      `SELECT fr.id, fr.from_user_id, u.username, u.display_name, u.avatar_url, fr.created_at
        FROM friend_requests fr JOIN users u ON u.id = fr.from_user_id
        WHERE fr.to_user_id = $1 ORDER BY fr.created_at DESC`,
       [req.userId]
     );
     res.json(result.rows.map(r => ({
       id: r.id, fromUserId: r.from_user_id, username: r.username,
-      displayName: r.display_name, createdAt: r.created_at,
+      displayName: r.display_name, avatarUrl: r.avatar_url, createdAt: r.created_at,
     })));
   } catch {
     res.status(500).json({ error: 'Error del servidor' });
@@ -330,12 +422,38 @@ app.delete('/api/users/unblock/:userId', requireDB, requireAuth, async (req, res
 app.get('/api/users/blocked', requireDB, requireAuth, async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT u.id, u.username, u.display_name
+      `SELECT u.id, u.username, u.display_name, u.avatar_url
        FROM blocked_users b JOIN users u ON u.id = b.blocked_id
        WHERE b.user_id = $1 ORDER BY u.display_name`,
       [req.userId]
     );
-    res.json(result.rows.map(u => ({ id: u.id, username: u.username, displayName: u.display_name })));
+    res.json(result.rows.map(u => ({ id: u.id, username: u.username, displayName: u.display_name, avatarUrl: u.avatar_url })));
+  } catch {
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
+app.patch('/api/profile/avatar', requireDB, requireAuth, async (req, res) => {
+  try {
+    const { avatarUrl } = req.body || {};
+    if (avatarUrl && (typeof avatarUrl !== 'string' || avatarUrl.length > 800000)) {
+      return res.status(400).json({ error: 'Imagen demasiado grande' });
+    }
+    const result = await pool.query(
+      'UPDATE users SET avatar_url = $1 WHERE id = $2 RETURNING id, username, display_name, avatar_url, wins, games_played',
+      [avatarUrl || null, req.userId]
+    );
+    const updated = result.rows[0];
+    res.json({
+      user: {
+        id: updated.id,
+        username: updated.username,
+        displayName: updated.display_name,
+        avatarUrl: updated.avatar_url,
+        wins: updated.wins,
+        gamesPlayed: updated.games_played,
+      },
+    });
   } catch {
     res.status(500).json({ error: 'Error del servidor' });
   }

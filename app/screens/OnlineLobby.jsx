@@ -7,6 +7,7 @@ import { HatBadge, PercheroSVG } from '../../components/HatComponents.jsx';
 import HatSVG from '../../components/HatSVG.jsx';
 import { Btn } from '../components/Btn.jsx';
 import { Modal } from '../components/Modal.jsx';
+import { UserAvatar } from '../components/UserAvatar.jsx';
 import { PLAYER_COLORS } from '../utils/gameHelpers.js';
 import { ING_IMG } from '../utils/gameHelpers.js';
 import { genBurger } from '../../game/deck.js';
@@ -25,7 +26,7 @@ import burgerPollo from '../../imagenes/hamburguesas/ingredientes/pollo.png';
 import burgerHuevo from '../../imagenes/hamburguesas/ingredientes/huevo.png';
 import burgerPalta from '../../imagenes/hamburguesas/ingredientes/palta.png';
 
-export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack, isPublic, roomDisplayName, T, user }) {
+export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack, isPublic, roomDisplayName, T, user, onOpenProfile }) {
   const uiGameLang = KEY_TO_LANG[getUILang()] || 'español';
   const cloneIngredients = INGREDIENTS.filter((ing) => ing !== 'pan');
   const [gameMode, setGameMode] = useState('clon');
@@ -801,6 +802,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
                 borderRadius: 10, background: 'rgba(255,255,255,.04)',
                 border: `2px solid ${PLAYER_COLORS[i % PLAYER_COLORS.length]}44`,
               }}>
+                <UserAvatar name={p.name} username={p.username} size={34} />
                 <div style={{
                   width: 28, height: 28, borderRadius: '50%',
                   background: PLAYER_COLORS[i % PLAYER_COLORS.length] + '33',
@@ -809,7 +811,29 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
                 }}>
                   {i + 1}
                 </div>
-                <span style={{ fontWeight: 700, color: '#eee' }}>{p.name}</span>
+                {p.userId ? (
+                  <button
+                    type="button"
+                    onClick={() => onOpenProfile?.(p.userId)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      padding: 0,
+                      margin: 0,
+                      color: '#eee',
+                      fontFamily: "'Fredoka',sans-serif",
+                      fontSize: 15,
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      textDecoration: 'underline',
+                      textUnderlineOffset: 3,
+                    }}
+                  >
+                    {p.name}
+                  </button>
+                ) : (
+                  <span style={{ fontWeight: 700, color: '#eee' }}>{p.name}</span>
+                )}
                 {p.name === myName && <span style={{ fontSize: 11, color: '#888' }}>{T('you')}</span>}
                 {i === 0 && <span style={{ fontSize: 11, color: '#FFD700', marginLeft: 'auto' }}>{T('host')}</span>}
                 {hatPicks[p.name] && (
