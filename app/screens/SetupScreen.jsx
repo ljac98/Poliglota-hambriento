@@ -36,6 +36,7 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
   const [chaosLevel, setChaosLevel] = useState(2);
   const [aiCount, setAiCount] = useState(2);
   const [showModeConfig, setShowModeConfig] = useState(false);
+  const [selectedStaircasePlayer, setSelectedStaircasePlayer] = useState(0);
   const [isDesktopWide, setIsDesktopWide] = useState(() => (typeof window !== 'undefined' ? window.innerWidth >= 1180 : false));
   const uiKey = getUILang();
   const playerWord = ({
@@ -102,6 +103,9 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
     ),
     [totalPreviewPlayers, burgerCount],
   );
+  useEffect(() => {
+    setSelectedStaircasePlayer((prev) => Math.min(prev, Math.max(totalPreviewPlayers - 1, 0)));
+  }, [totalPreviewPlayers, burgerCount]);
   const markerStyle = {
     minWidth: 62,
     textAlign: 'center',
@@ -183,11 +187,37 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
       </div>
     );
   };
-  const renderEscaleraPlayers = (compact = false) => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: compact ? 8 : 12 }}>
-      {staircasePreviewByPlayer.map((playerBurgers, playerIndex) => (
+  const renderEscaleraPlayers = (compact = false) => {
+    const safeIndex = Math.min(selectedStaircasePlayer, Math.max(staircasePreviewByPlayer.length - 1, 0));
+    const selectedPlayerBurgers = staircasePreviewByPlayer[safeIndex] || [];
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: compact ? 8 : 12 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {staircasePreviewByPlayer.map((_, playerIndex) => {
+            const isActive = playerIndex === safeIndex;
+            return (
+              <button
+                key={`escalera-tab-${playerIndex}`}
+                type="button"
+                onClick={() => setSelectedStaircasePlayer(playerIndex)}
+                style={{
+                  padding: compact ? '6px 10px' : '7px 12px',
+                  borderRadius: 999,
+                  border: isActive ? '2px solid #FFD700' : '1px solid rgba(255,255,255,0.12)',
+                  background: isActive ? 'rgba(255,215,0,0.12)' : 'rgba(255,255,255,0.04)',
+                  color: isActive ? '#FFD700' : '#d8ddf3',
+                  fontFamily: "'Fredoka',sans-serif",
+                  fontSize: compact ? 11 : 12,
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                }}
+              >
+                {playerWord} {playerIndex + 1}
+              </button>
+            );
+          })}
+        </div>
         <div
-          key={`escalera-player-${playerIndex}`}
           style={{
             borderRadius: 12,
             padding: compact ? '8px 10px' : '10px 12px',
@@ -196,15 +226,15 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
           }}
         >
           <div style={{ color: '#FFD700', fontSize: compact ? 11 : 12, fontWeight: 900, marginBottom: 6 }}>
-            {playerWord} {playerIndex + 1}
+            {playerWord} {safeIndex + 1}
           </div>
           <div style={{ display: 'flex', gap: compact ? 8 : 12, flexWrap: 'wrap', alignItems: 'flex-end', justifyContent: compact ? 'flex-start' : 'center' }}>
-            {playerBurgers.map((burger, burgerIndex) => renderBurgerPreview(burger, burgerIndex, { compact }))}
+            {selectedPlayerBurgers.map((burger, burgerIndex) => renderBurgerPreview(burger, burgerIndex, { compact }))}
           </div>
         </div>
-      ))}
-    </div>
-  );
+      </div>
+    );
+  };
   const renderModeSummary = () => {
     if (gameMode === 'escalera') {
       return renderEscaleraPlayers(true);
