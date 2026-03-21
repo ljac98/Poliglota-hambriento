@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { login, register } from '../../src/api.js';
 import { Btn } from '../components/Btn.jsx';
+import { InstallFloatingCard } from '../components/InstallFloatingCard.jsx';
 import hamImg from '../../imagenes/hamburguesas/ham.png';
 
 const UI_LANG_OPTIONS = [
@@ -46,6 +47,14 @@ export function AuthScreen({ onAuth, onGuest, onDownload, T, uiLang, onLangChang
       background: 'linear-gradient(135deg,#0f1117 0%,#1a1a2e 100%)',
       fontFamily: "'Fredoka',sans-serif", padding: '20px 0',
     }}>
+      <InstallFloatingCard
+        visible={installEntryVisible}
+        title={installEntryTitle}
+        desc={installEntryDesc}
+        buttonLabel={installEntryButton}
+        onInstall={onOpenInstallPrompt}
+        onDownload={onDownload}
+      />
       <div style={{
         background: '#16213e', borderRadius: 20, padding: 'clamp(20px, 5vw, 36px) clamp(16px, 5vw, 40px)',
         maxWidth: 420, width: '92vw',
@@ -70,44 +79,6 @@ export function AuthScreen({ onAuth, onGuest, onDownload, T, uiLang, onLangChang
           <h1 style={{ fontSize: 28, fontWeight: 900, color: '#FFD700', letterSpacing: 1 }}>{T('appTitle')}</h1>
           <p style={{ color: '#888', fontSize: 12, marginTop: 4 }}>{T('tagline')}</p>
         </div>
-
-        {installEntryVisible && (
-          <div style={{
-            marginBottom: 16,
-            padding: '12px 14px',
-            borderRadius: 14,
-            background: 'rgba(255,215,0,.06)',
-            border: '1px solid rgba(255,215,0,.16)',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{
-                width: 36, height: 36, borderRadius: 12, background: 'rgba(255,215,0,.12)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0,
-              }}>{'\u{1F4F1}'}</div>
-              <div style={{ flex: 1 }}>
-                <div style={{ color: '#FFD700', fontSize: 14, fontWeight: 900 }}>{installEntryTitle}</div>
-                <div style={{ color: '#b7bdd4', fontSize: 11, lineHeight: 1.35, marginTop: 2 }}>{installEntryDesc}</div>
-              </div>
-            </div>
-            <Btn onClick={onOpenInstallPrompt} color="#FFD700" style={{ width: '100%', marginTop: 10, color: '#111', fontWeight: 900 }}>
-              {installEntryButton}
-            </Btn>
-            <button onClick={onDownload} style={{
-              width: '100%',
-              marginTop: 8,
-              background: 'none',
-              border: 'none',
-              color: '#4ecdc4',
-              fontSize: 12,
-              fontWeight: 700,
-              cursor: 'pointer',
-              fontFamily: "'Fredoka',sans-serif",
-              textDecoration: 'underline',
-            }}>
-              Ver QR y enlace
-            </button>
-          </div>
-        )}
 
         <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
           {['login', 'register'].map(tb => (

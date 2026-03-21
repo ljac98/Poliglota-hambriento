@@ -3,6 +3,7 @@ import { LANGUAGES, LANG_BORDER, LANG_BG, LANG_TEXT, INGREDIENTS, ING_BG, getIng
 import { randInt, uid } from '../../game/utils.js';
 import { Btn } from '../components/Btn.jsx';
 import { Modal } from '../components/Modal.jsx';
+import { InstallFloatingCard } from '../components/InstallFloatingCard.jsx';
 import { getUILang, KEY_TO_LANG } from '../../src/translations.js';
 import { ING_IMG } from '../utils/gameHelpers.js';
 import { genBurger } from '../../game/deck.js';
@@ -335,6 +336,14 @@ export function SetupScreen({ onStart, onOnline, onDownload, user, onLogout, onH
       fontFamily: "'Fredoka',sans-serif",
       overflowY: 'auto', padding: '20px 0',
     }}>
+      <InstallFloatingCard
+        visible={installEntryVisible}
+        title={installEntryTitle}
+        desc={installEntryDesc}
+        buttonLabel={installEntryButton}
+        onInstall={onOpenInstallPrompt}
+        onDownload={onDownload}
+      />
       <div style={{
         display: isDesktopWide ? 'flex' : 'block',
         alignItems: 'flex-start',
@@ -491,46 +500,6 @@ export function SetupScreen({ onStart, onOnline, onDownload, user, onLogout, onH
             {T('online')}
           </Btn>
         </div>
-        {installEntryVisible && (
-          <div style={{
-            marginTop: 14,
-            padding: '14px 16px',
-            borderRadius: 16,
-            background: 'rgba(255,215,0,.05)',
-            border: '1px solid rgba(255,215,0,.16)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 14,
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: '1 1 260px' }}>
-              <div style={{
-                width: 42, height: 42, borderRadius: 14, background: 'rgba(255,215,0,.12)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0,
-              }}>{'\u{1F4F1}'}</div>
-              <div>
-                <div style={{ color: '#FFD700', fontSize: 14, fontWeight: 900 }}>{installEntryTitle}</div>
-                <div style={{ color: '#b7bdd4', fontSize: 11, lineHeight: 1.35, marginTop: 2 }}>{installEntryDesc}</div>
-              </div>
-            </div>
-            <Btn onClick={onOpenInstallPrompt} color="#FFD700" style={{ fontWeight: 900, color: '#111', minWidth: 160 }}>
-              {installEntryButton}
-            </Btn>
-            <button onClick={onDownload} style={{
-              background: 'none',
-              border: 'none',
-              color: '#4ecdc4',
-              fontSize: 12,
-              fontWeight: 700,
-              cursor: 'pointer',
-              fontFamily: "'Fredoka',sans-serif",
-              textDecoration: 'underline',
-            }}>
-              Ver QR y enlace
-            </button>
-          </div>
-        )}
       </div>
       {isDesktopWide && (
         <div>
