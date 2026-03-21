@@ -187,7 +187,7 @@ export function NativeSetupScreen({ setup, onChangeSetup, onContinueOnline, onOp
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Preview local</Text>
-        <Text style={styles.previewHint}>Modo {setup.gameMode} · Sombrero {setup.hat}</Text>
+        <Text style={styles.previewHint}>Modo {setup.gameMode} Â· Sombrero {setup.hat}</Text>
         <View style={styles.burgerRow}>
           {previewBurgers.map((burger, index) => (
             <View key={`native-preview-${index}`} style={styles.previewBurger}>
@@ -254,3 +254,4 @@ const styles = StyleSheet.create({
   secondaryButton: { backgroundColor: '#00BCD4', borderRadius: 16, paddingVertical: 16, alignItems: 'center' },
   secondaryButtonText: { color: '#04101c', fontSize: 17, fontWeight: '800' },
 });
+

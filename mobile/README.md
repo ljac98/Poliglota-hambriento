@@ -75,3 +75,5 @@ Si luego quieres apuntarla a otro backend/web, cambia `expo.extra.gameUrl` en `m
 - Online screen is native and connected to the live Socket.IO backend for create room, join room, public room browsing, hat picks and start events.
 - WebView remains available as the in-game fallback while more gameplay screens are ported.
 
+- Native game screen now opens after gameStarted and gives a first in-app match overview before jumping to WebView gameplay if needed.
+

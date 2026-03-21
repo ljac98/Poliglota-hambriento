@@ -3,6 +3,7 @@ import { ActivityIndicator, Alert, Linking, Pressable, SafeAreaView, StatusBar, 
 import Constants from 'expo-constants';
 import { WebView } from 'react-native-webview';
 import { HomeScreen } from './src/screens/HomeScreen';
+import { NativeGameScreen } from './src/screens/NativeGameScreen';
 import { NativeOnlineScreen } from './src/screens/NativeOnlineScreen';
 import { NativeSetupScreen } from './src/screens/NativeSetupScreen';
 import { createMobileSocket } from './src/lib/socket';
@@ -35,6 +36,14 @@ const DEFAULT_ONLINE = {
   loading: false,
   started: false,
 };
+const DEFAULT_GAME_SESSION = {
+  roomCode: '',
+  roomName: '',
+  players: [],
+  hatPicks: {},
+  gameConfig: null,
+  startedAt: 0,
+};
 
 function buildGameConfig(setup) {
   return {
@@ -51,13 +60,24 @@ export default function App() {
   const [loadingGame, setLoadingGame] = useState(true);
   const [setupState, setSetupState] = useState(DEFAULT_SETUP);
   const [onlineState, setOnlineState] = useState(DEFAULT_ONLINE);
+  const [gameSession, setGameSession] = useState(DEFAULT_GAME_SESSION);
   const gameUrl = useMemo(() => Constants.expoConfig?.extra?.gameUrl || FALLBACK_URL, []);
   const socketRef = useRef(null);
+  const setupRef = useRef(DEFAULT_SETUP);
+  const onlineRef = useRef(DEFAULT_ONLINE);
 
   if (!socketRef.current) {
     socketRef.current = createMobileSocket(gameUrl);
   }
   const socket = socketRef.current;
+
+  useEffect(() => {
+    setupRef.current = setupState;
+  }, [setupState]);
+
+  useEffect(() => {
+    onlineRef.current = onlineState;
+  }, [onlineState]);
 
   useEffect(() => {
     const handleConnect = () => {
@@ -67,15 +87,17 @@ export default function App() {
       setOnlineState((prev) => ({ ...prev, status: 'Desconectado del servidor.' }));
     };
     const handleRoomCreated = ({ code, isPublic, roomName }) => {
+      const currentSetup = setupRef.current;
+      setGameSession(DEFAULT_GAME_SESSION);
       setOnlineState((prev) => ({
         ...prev,
         roomCode: code,
-        roomName: roomName || setupState.roomName,
+        roomName: roomName || currentSetup.roomName,
         isPublic: !!isPublic,
         isHost: true,
         myIdx: 0,
-        players: [{ name: setupState.playerName, idx: 0, host: true }],
-        hatPicks: prev.hatPicks,
+        players: [{ name: currentSetup.playerName, idx: 0, host: true }],
+        hatPicks: { ...prev.hatPicks, [currentSetup.playerName]: currentSetup.hat },
         loading: false,
         error: '',
         status: `Sala ${code} creada.`,
@@ -83,6 +105,7 @@ export default function App() {
       }));
     };
     const handleRoomJoined = ({ code, myIdx, isPublic, roomName }) => {
+      setGameSession(DEFAULT_GAME_SESSION);
       setOnlineState((prev) => ({
         ...prev,
         roomCode: code,
@@ -114,14 +137,32 @@ export default function App() {
     const handleLobbyListUpdate = (rooms) => {
       setOnlineState((prev) => ({ ...prev, rooms: rooms || [] }));
     };
-    const handleGameStarted = ({ hatPicks, gameConfig }) => {
+    const handleGameStarted = ({ hatPicks, gameConfig, players }) => {
+      const currentSetup = setupRef.current;
+      const currentOnline = onlineRef.current;
+      const nextHatPicks = hatPicks || currentOnline.hatPicks || {};
+      const nextPlayers = (players || currentOnline.players || []).map((player) => ({
+        ...player,
+        host: player.idx === 0,
+      }));
+
       setOnlineState((prev) => ({
         ...prev,
         loading: false,
         started: true,
+        players: nextPlayers,
         status: `Partida iniciada: ${gameConfig?.mode || 'clon'}.`,
-        hatPicks: hatPicks || prev.hatPicks,
+        hatPicks: nextHatPicks,
       }));
+      setGameSession({
+        roomCode: currentOnline.roomCode,
+        roomName: currentOnline.roomName,
+        players: nextPlayers,
+        hatPicks: nextHatPicks,
+        gameConfig: gameConfig || buildGameConfig(currentSetup),
+        startedAt: Date.now(),
+      });
+      setCurrentScreen('nativeGame');
     };
     const handleBecameHost = () => {
       setOnlineState((prev) => ({ ...prev, isHost: true, status: 'Ahora eres host de la sala.' }));
@@ -151,7 +192,7 @@ export default function App() {
       socket.off('becameHost', handleBecameHost);
       socket.disconnect();
     };
-  }, [socket, setupState.playerName, setupState.roomName]);
+  }, [socket]);
 
   useEffect(() => {
     if (currentScreen !== 'nativeOnline' || onlineState.roomCode || onlineState.tab !== 'lobby') return undefined;
@@ -180,7 +221,7 @@ export default function App() {
     socket.emit('lobbyHatPick', { code: onlineState.roomCode, playerName: setupState.playerName, hat: setupState.hat });
   }, [onlineState.roomCode, setupState.playerName, setupState.hat, socket]);
 
-  const setupSummary = `${setupState.playerName} · ${setupState.gameMode} · ${setupState.burgerCount} burgers`;
+  const setupSummary = `${setupState.playerName} - ${setupState.gameMode} - ${setupState.burgerCount} burgers`;
 
   function ensureConnected() {
     if (!socket.connected) socket.connect();
@@ -225,7 +266,9 @@ export default function App() {
   function leaveRoom() {
     socket.emit('leaveRoom');
     socket.disconnect();
+    setGameSession(DEFAULT_GAME_SESSION);
     setOnlineState(DEFAULT_ONLINE);
+    setCurrentScreen('nativeOnline');
   }
 
   function pickHat(hat) {
@@ -246,6 +289,11 @@ export default function App() {
     const gameConfig = buildGameConfig(setupState);
     setOnlineState((prev) => ({ ...prev, loading: true, error: '', status: 'Enviando startGame real...' }));
     socket.emit('startGame', { code: onlineState.roomCode, hatPicks, gameConfig });
+  }
+
+  function goToWebGame() {
+    setLoadingGame(true);
+    setCurrentScreen('web');
   }
 
   if (currentScreen === 'web') {
@@ -295,7 +343,7 @@ export default function App() {
           setup={setupState}
           onChangeSetup={(patch) => setSetupState((prev) => ({ ...prev, ...patch }))}
           onContinueOnline={() => setCurrentScreen('nativeOnline')}
-          onOpenWebGame={() => { setLoadingGame(true); setCurrentScreen('web'); }}
+          onOpenWebGame={goToWebGame}
         />
       </SafeAreaView>
     );
@@ -321,7 +369,28 @@ export default function App() {
           onLeaveRoom={leaveRoom}
           onPickHat={pickHat}
           onStartRoom={startRoom}
-          onOpenWebGame={() => { setLoadingGame(true); setCurrentScreen('web'); }}
+          onOpenWebGame={goToWebGame}
+        />
+      </SafeAreaView>
+    );
+  }
+
+  if (currentScreen === 'nativeGame') {
+    return (
+      <SafeAreaView style={styles.screen}>
+        <StatusBar barStyle="light-content" />
+        <View style={styles.headerBar}>
+          <Pressable onPress={() => setCurrentScreen('nativeOnline')} style={styles.secondaryButton}><Text style={styles.secondaryButtonText}>Lobby</Text></Pressable>
+          <Text style={styles.webviewTitle}>Partida nativa</Text>
+          <Pressable onPress={goToWebGame} style={styles.secondaryButton}><Text style={styles.secondaryButtonText}>Juego web</Text></Pressable>
+        </View>
+        <NativeGameScreen
+          setup={setupState}
+          online={onlineState}
+          gameSession={gameSession}
+          onBackToLobby={() => setCurrentScreen('nativeOnline')}
+          onOpenWebGame={goToWebGame}
+          onLeaveRoom={leaveRoom}
         />
       </SafeAreaView>
     );
@@ -334,7 +403,7 @@ export default function App() {
         setupSummary={setupSummary}
         onOpenNativeSetup={() => setCurrentScreen('nativeSetup')}
         onOpenNativeOnline={() => setCurrentScreen('nativeOnline')}
-        onOpenWebGame={() => { setLoadingGame(true); setCurrentScreen('web'); }}
+        onOpenWebGame={goToWebGame}
         onOpenWebsite={() => Linking.openURL(gameUrl)}
       />
     </SafeAreaView>
@@ -374,4 +443,3 @@ const styles = StyleSheet.create({
   secondaryButton: { backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
   secondaryButtonText: { color: '#d8ddf3', fontWeight: '700', fontSize: 13 },
 });
-

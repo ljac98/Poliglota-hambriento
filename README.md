@@ -70,3 +70,6 @@ Nota:
 - Native setup now drives the real mobile game configuration sent to the server.
 - The React Native app already includes native home, setup and online flows, plus the web game fallback.
 
+
+- Native game screen now opens automatically after the real server gameStarted event and shows players, hats and generated burger objectives.
+
