@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Linking, Pressable, SafeAreaView, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Linking, Pressable, SafeAreaView, StatusBar, StyleSheet, Text, View } from 'react-native';
 import Constants from 'expo-constants';
 import { WebView } from 'react-native-webview';
 import { HomeScreen } from './src/screens/HomeScreen';
@@ -26,6 +26,7 @@ import {
   toUiHat,
 } from './src/lib/gameMapping';
 import { createMobileSocket } from './src/lib/socket';
+import hamMenuImg from './assets/game/ham-menu.png';
 
 const FALLBACK_URL = 'https://hungry-poly.up.railway.app';
 const DEFAULT_SETUP = {
@@ -946,33 +947,6 @@ export default function App() {
     } catch {}
   }
 
-  function renderNativeNotifications() {
-    if (currentScreen === 'web' || nativeNotices.length === 0) return null;
-    return (
-      <View pointerEvents="box-none" style={styles.nativeNoticeRoot}>
-        {nativeNotices.map((notice) => (
-          <View key={notice.id} style={[styles.nativeNoticeCard, { borderColor: notice.accent || '#4ecdc4' }]}>
-            <View style={styles.nativeNoticeHeader}>
-              <Text style={styles.nativeNoticeTitle}>{notice.title}</Text>
-              <Pressable onPress={() => dismissNativeNotice(notice.id)} style={styles.nativeNoticeClose}>
-                <Text style={styles.nativeNoticeCloseText}>×</Text>
-              </Pressable>
-            </View>
-            {notice.subtitle ? <Text style={styles.nativeNoticeSubtitle}>{notice.subtitle}</Text> : null}
-            <View style={styles.nativeNoticeActions}>
-              <Pressable
-                onPress={notice.onAction}
-                style={[styles.nativeNoticeActionButton, { backgroundColor: notice.accent || '#4ecdc4' }]}
-              >
-                <Text style={styles.nativeNoticeActionText}>{notice.actionLabel || 'Abrir'}</Text>
-              </Pressable>
-            </View>
-          </View>
-        ))}
-      </View>
-    );
-  }
-
   function pickHat(hat) {
     setSetupState((prev) => ({ ...prev, hat }));
     if (!onlineState.roomCode) return;
@@ -1081,7 +1055,6 @@ export default function App() {
       <SafeAreaView style={styles.screen}>
         <StatusBar barStyle="light-content" />
         {renderAppMenu()}
-        {renderNativeNotifications()}
         <View style={styles.headerBar}>
           <Pressable onPress={() => setCurrentScreen('home')} style={styles.secondaryButton}><Text style={styles.secondaryButtonText}>Volver</Text></Pressable>
           <Text style={styles.webviewTitle}>Setup nativo</Text>
@@ -1102,7 +1075,6 @@ export default function App() {
       <SafeAreaView style={styles.screen}>
         <StatusBar barStyle="light-content" />
         {renderAppMenu()}
-        {renderNativeNotifications()}
         <View style={styles.headerBar}>
           <Pressable onPress={() => setCurrentScreen('home')} style={styles.secondaryButton}><Text style={styles.secondaryButtonText}>Volver</Text></Pressable>
           <Text style={styles.webviewTitle}>Online nativo</Text>
@@ -1130,7 +1102,6 @@ export default function App() {
       <SafeAreaView style={styles.screen}>
         <StatusBar barStyle="light-content" />
         {renderAppMenu()}
-        {renderNativeNotifications()}
         <View style={styles.headerBar}>
           <Pressable onPress={() => setCurrentScreen('nativeOnline')} style={styles.secondaryButton}><Text style={styles.secondaryButtonText}>Lobby</Text></Pressable>
           <Text style={styles.webviewTitle}>Partida nativa</Text>
@@ -1155,7 +1126,6 @@ export default function App() {
     <SafeAreaView style={styles.screen}>
       <StatusBar barStyle="light-content" />
       {renderAppMenu()}
-      {renderNativeNotifications()}
       <HomeScreen
         setupSummary={setupSummary}
         onOpenNativeSetup={() => setCurrentScreen('nativeSetup')}
@@ -1271,71 +1241,176 @@ const styles = StyleSheet.create({
   appMenuJoin: { backgroundColor: '#00BCD4' },
   appMenuLobby: { backgroundColor: '#2a2a4a' },
   appMenuLogout: { backgroundColor: '#ff8a80' },
-  nativeNoticeRoot: {
+  appMenuNotifBubble: {
     position: 'absolute',
-    left: 12,
-    right: 12,
-    bottom: 14,
-    zIndex: 45,
-    gap: 10,
-  },
-  nativeNoticeCard: {
-    borderRadius: 16,
-    borderWidth: 2,
-    backgroundColor: 'rgba(18,26,48,0.97)',
-    padding: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.28,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 7,
-  },
-  nativeNoticeHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  nativeNoticeTitle: {
-    flex: 1,
-    color: '#f8f4cf',
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  nativeNoticeSubtitle: {
-    color: '#8a8fa8',
-    fontSize: 12,
-    fontWeight: '700',
-    marginTop: 4,
-  },
-  nativeNoticeClose: {
-    width: 28,
-    height: 28,
-    borderRadius: 10,
+    left: -10,
+    bottom: -10,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.10)',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    overflow: 'hidden',
   },
-  nativeNoticeCloseText: {
-    color: '#d8ddf3',
-    fontSize: 18,
+  appMenuNotifBubbleActive: {
+    backgroundColor: 'rgba(255,215,0,0.16)',
+    borderWidth: 2,
+    borderColor: 'rgba(255,215,0,0.55)',
+  },
+  appMenuNotifImage: {
+    width: 22,
+    height: 22,
+    opacity: 0.42,
+  },
+  appMenuNotifImageActive: {
+    opacity: 1,
+  },
+  appMenuNotifCount: {
+    position: 'absolute',
+    top: -3,
+    right: -3,
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 4,
+    borderRadius: 9,
+    backgroundColor: '#ff5f57',
+    borderWidth: 2,
+    borderColor: 'rgba(22,33,62,0.98)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  appMenuNotifCountText: {
+    color: '#fff',
+    fontSize: 11,
     fontWeight: '900',
-    lineHeight: 20,
   },
-  nativeNoticeActions: {
+  appMenuNoticeSection: {
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255,215,0,0.16)',
+    backgroundColor: 'rgba(255,255,255,0.035)',
+    padding: 10,
+    gap: 8,
+  },
+  appMenuNoticeHeader: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: 10,
+    alignItems: 'center',
+    gap: 10,
   },
-  nativeNoticeActionButton: {
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+  appMenuNoticeIconWrap: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  nativeNoticeActionText: {
-    color: '#0f1117',
+  appMenuNoticeIconWrapActive: {
+    backgroundColor: 'rgba(255,215,0,0.14)',
+    borderWidth: 2,
+    borderColor: 'rgba(255,215,0,0.45)',
+  },
+  appMenuNoticeIcon: {
+    width: 25,
+    height: 25,
+    opacity: 0.42,
+  },
+  appMenuNoticeIconActive: {
+    opacity: 1,
+  },
+  appMenuNoticeCount: {
+    position: 'absolute',
+    top: -3,
+    right: -3,
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 4,
+    borderRadius: 9,
+    backgroundColor: '#ff5f57',
+    borderWidth: 2,
+    borderColor: 'rgba(22,33,62,0.98)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  appMenuNoticeCountText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '900',
+  },
+  appMenuNoticeTitle: {
+    color: '#fff3bf',
     fontSize: 13,
     fontWeight: '900',
+  },
+  appMenuNoticeSubtitle: {
+    color: '#8a8fa8',
+    fontSize: 11,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  appMenuNoticeEmpty: {
+    color: '#9ea6c7',
+    fontSize: 12,
+    fontWeight: '700',
+    paddingTop: 4,
+  },
+  appMenuNoticeList: {
+    gap: 8,
+  },
+  appMenuNoticeCard: {
+    borderRadius: 12,
+    borderWidth: 1,
+    backgroundColor: 'rgba(18,26,48,0.9)',
+    padding: 10,
+    gap: 8,
+  },
+  appMenuNoticeCardTitle: {
+    color: '#f8f4cf',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  appMenuNoticeCardSubtitle: {
+    color: '#8a8fa8',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  appMenuNoticeActions: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  appMenuNoticeActionButton: {
+    flex: 1,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  appMenuNoticeActionText: {
+    color: '#0f1117',
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  appMenuNoticeCloseButton: {
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  appMenuNoticeCloseText: {
+    color: '#9ea6c7',
+    fontSize: 14,
+    fontWeight: '900',
+    lineHeight: 14,
   },
   appMenuButtonTextDark: {
     color: '#0f1117',
@@ -1378,3 +1453,5 @@ const styles = StyleSheet.create({
   secondaryButtonText: { color: '#d8ddf3', fontWeight: '700', fontSize: 13 },
 });
   const mobileAuthRef = useRef({ token: '', user: null });
+
+
