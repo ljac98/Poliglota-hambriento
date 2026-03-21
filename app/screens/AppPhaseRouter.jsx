@@ -18,6 +18,11 @@ export function AppPhaseRouter({
   user,
   uiLang,
   handleSetLang,
+  installEntryVisible,
+  installEntryTitle,
+  installEntryDesc,
+  installEntryButton,
+  openInstallPrompt,
   inviteToast,
   friendReqToast,
   setUser,
@@ -66,6 +71,11 @@ export function AppPhaseRouter({
         T={T}
         uiLang={uiLang}
         onLangChange={handleSetLang}
+        installEntryVisible={installEntryVisible}
+        installEntryTitle={installEntryTitle}
+        installEntryDesc={installEntryDesc}
+        installEntryButton={installEntryButton}
+        onOpenInstallPrompt={openInstallPrompt}
       />
     );
   }
@@ -89,6 +99,11 @@ export function AppPhaseRouter({
           onHistory={() => setPhase('history')}
           onFriends={() => { socket.connect(); setPhase('friends'); }}
           T={T}
+          installEntryVisible={installEntryVisible}
+          installEntryTitle={installEntryTitle}
+          installEntryDesc={installEntryDesc}
+          installEntryButton={installEntryButton}
+          onOpenInstallPrompt={openInstallPrompt}
         />
       </>
     );
@@ -102,6 +117,11 @@ export function AppPhaseRouter({
           initialCode={inviteJoinCode || initialSalaCode}
           onBack={() => { setInviteJoinCode(''); setPhase('setup'); }}
           T={T}
+          installEntryVisible={installEntryVisible}
+          installEntryTitle={installEntryTitle}
+          installEntryDesc={installEntryDesc}
+          installEntryButton={installEntryButton}
+          onOpenInstallPrompt={openInstallPrompt}
           onCreated={(name, code, pub, rn) => {
             setIsOnline(true);
             setIsHost(true);

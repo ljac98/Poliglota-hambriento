@@ -24,7 +24,7 @@ import burgerPollo from '../../imagenes/hamburguesas/ingredientes/pollo.png';
 import burgerHuevo from '../../imagenes/hamburguesas/ingredientes/huevo.png';
 import burgerPalta from '../../imagenes/hamburguesas/ingredientes/palta.png';
 
-export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFriends, T }) {
+export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFriends, T, installEntryVisible, installEntryTitle, installEntryDesc, installEntryButton, onOpenInstallPrompt }) {
   const uiGameLang = KEY_TO_LANG[getUILang()] || 'español';
   const cloneIngredients = INGREDIENTS.filter((ing) => ing !== 'pan');
   const [name, setName] = useState(user?.displayName || '');
@@ -491,6 +491,34 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
             {T('online')}
           </Btn>
         </div>
+        {installEntryVisible && (
+          <div style={{
+            marginTop: 14,
+            padding: '14px 16px',
+            borderRadius: 16,
+            background: 'rgba(255,215,0,.05)',
+            border: '1px solid rgba(255,215,0,.16)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 14,
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: '1 1 260px' }}>
+              <div style={{
+                width: 42, height: 42, borderRadius: 14, background: 'rgba(255,215,0,.12)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0,
+              }}>{'\u{1F4F1}'}</div>
+              <div>
+                <div style={{ color: '#FFD700', fontSize: 14, fontWeight: 900 }}>{installEntryTitle}</div>
+                <div style={{ color: '#b7bdd4', fontSize: 11, lineHeight: 1.35, marginTop: 2 }}>{installEntryDesc}</div>
+              </div>
+            </div>
+            <Btn onClick={onOpenInstallPrompt} color="#FFD700" style={{ fontWeight: 900, color: '#111', minWidth: 160 }}>
+              {installEntryButton}
+            </Btn>
+          </div>
+        )}
       </div>
       {isDesktopWide && (
         <div>

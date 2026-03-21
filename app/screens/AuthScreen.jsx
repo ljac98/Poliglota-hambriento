@@ -13,7 +13,7 @@ const UI_LANG_OPTIONS = [
 ];
 
 // ── Auth Screen (full page) ──────────────────────────────────────────────────
-export function AuthScreen({ onAuth, onGuest, T, uiLang, onLangChange }) {
+export function AuthScreen({ onAuth, onGuest, T, uiLang, onLangChange, installEntryVisible, installEntryTitle, installEntryDesc, installEntryButton, onOpenInstallPrompt }) {
   const [tab, setTab] = useState('login');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -70,6 +70,30 @@ export function AuthScreen({ onAuth, onGuest, T, uiLang, onLangChange }) {
           <h1 style={{ fontSize: 28, fontWeight: 900, color: '#FFD700', letterSpacing: 1 }}>{T('appTitle')}</h1>
           <p style={{ color: '#888', fontSize: 12, marginTop: 4 }}>{T('tagline')}</p>
         </div>
+
+        {installEntryVisible && (
+          <div style={{
+            marginBottom: 16,
+            padding: '12px 14px',
+            borderRadius: 14,
+            background: 'rgba(255,215,0,.06)',
+            border: '1px solid rgba(255,215,0,.16)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{
+                width: 36, height: 36, borderRadius: 12, background: 'rgba(255,215,0,.12)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0,
+              }}>{'\u{1F4F1}'}</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ color: '#FFD700', fontSize: 14, fontWeight: 900 }}>{installEntryTitle}</div>
+                <div style={{ color: '#b7bdd4', fontSize: 11, lineHeight: 1.35, marginTop: 2 }}>{installEntryDesc}</div>
+              </div>
+            </div>
+            <Btn onClick={onOpenInstallPrompt} color="#FFD700" style={{ width: '100%', marginTop: 10, color: '#111', fontWeight: 900 }}>
+              {installEntryButton}
+            </Btn>
+          </div>
+        )}
 
         <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
           {['login', 'register'].map(tb => (

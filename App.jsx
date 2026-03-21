@@ -148,6 +148,7 @@ export default function App() {
   const T = useCallback((key) => t(key, uiLang), [uiLang]);
   const uiGameLang = KEY_TO_LANG[uiLang] || LANGUAGES[0];
   const installCopy = INSTALL_PROMPT_COPY[uiLang] || INSTALL_PROMPT_COPY.en;
+  const canOpenInstallPrompt = showIosInstallHint || !!deferredInstallPrompt;
   const handleSetLang = (lang) => { setUILang(lang); setUiLangState(lang); };
   const getActionText = useCallback((actionId) => {
     const base = getActionInfo(actionId);
@@ -248,6 +249,11 @@ export default function App() {
     setShowInstallPrompt(false);
   }, [deferredInstallPrompt]);
 
+  const openInstallPrompt = useCallback(() => {
+    if (!canOpenInstallPrompt) return;
+    setShowInstallPrompt(true);
+  }, [canOpenInstallPrompt]);
+
   const installBanner = showInstallPrompt && (
     <div
       style={{
@@ -297,8 +303,6 @@ export default function App() {
             <Btn
               onClick={() => {
                 setShowInstallPrompt(false);
-                setShowIosInstallHint(false);
-                setDeferredInstallPrompt(null);
               }}
               color="#2a2a4a"
               style={{ color: '#c5cada', fontWeight: 800 }}
@@ -1614,6 +1618,11 @@ export default function App() {
           user={user}
           uiLang={uiLang}
           handleSetLang={handleSetLang}
+          installEntryVisible={canOpenInstallPrompt}
+          installEntryTitle={installCopy.title}
+          installEntryDesc={showIosInstallHint ? installCopy.descIos : installCopy.descPrompt}
+          installEntryButton={showIosInstallHint ? installCopy.title : installCopy.install}
+          openInstallPrompt={openInstallPrompt}
           inviteToast={inviteToast}
           friendReqToast={friendReqToast}
           setUser={setUser}

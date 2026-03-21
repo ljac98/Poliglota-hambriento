@@ -3,7 +3,7 @@ import socket from '../../src/socket.js';
 import { Btn } from '../components/Btn.jsx';
 import { Modal } from '../components/Modal.jsx';
 
-export function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '', user, T }) {
+export function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '', user, T, installEntryVisible, installEntryTitle, installEntryDesc, installEntryButton, onOpenInstallPrompt }) {
   const [tab, setTab] = useState(initialCode ? 'join' : 'create');
   const [name, setName] = useState(user?.displayName || '');
   const [isPublic, setIsPublic] = useState(false);
@@ -213,6 +213,30 @@ export function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '', user
           <h1 style={{ fontSize: 26, fontWeight: 900, color: '#FFD700' }}>{T('multiplayerOnline')}</h1>
           <p style={{ color: '#888', fontSize: 13, marginTop: 4 }}>{T('playWithFriends')}</p>
         </div>
+
+        {installEntryVisible && (
+          <div style={{
+            marginBottom: 18,
+            padding: '12px 14px',
+            borderRadius: 14,
+            background: 'rgba(255,215,0,.06)',
+            border: '1px solid rgba(255,215,0,.16)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{
+                width: 36, height: 36, borderRadius: 12, background: 'rgba(255,215,0,.12)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0,
+              }}>{'\u{1F4F1}'}</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ color: '#FFD700', fontSize: 14, fontWeight: 900 }}>{installEntryTitle}</div>
+                <div style={{ color: '#b7bdd4', fontSize: 11, lineHeight: 1.35, marginTop: 2 }}>{installEntryDesc}</div>
+              </div>
+            </div>
+            <Btn onClick={onOpenInstallPrompt} color="#FFD700" style={{ width: '100%', marginTop: 10, color: '#111', fontWeight: 900 }}>
+              {installEntryButton}
+            </Btn>
+          </div>
+        )}
 
         <div style={{ display: 'flex', gap: 6, marginBottom: 24 }}>
           <button style={tabStyle(tab === 'create')} onClick={() => { setTab('create'); setError(''); }}>
