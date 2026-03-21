@@ -432,7 +432,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
   const floatingCardStyle = {
     position: isDesktopWide ? 'absolute' : 'static',
     right: isDesktopWide ? -518 : 'auto',
-    top: isDesktopWide ? -324 : 0,
+    top: isDesktopWide ? -8 : 0,
     width: isDesktopWide ? 560 : 'auto',
     borderRadius: 18,
     padding: '14px 14px 16px',
