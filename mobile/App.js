@@ -65,6 +65,23 @@ const DEFAULT_GAME_SESSION = {
   liveState: null,
 };
 
+const WEBVIEW_AUTH_SYNC_SCRIPT = `
+  (function () {
+    function sendAuth() {
+      try {
+        window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({
+          type: 'authSync',
+          token: localStorage.getItem('hp_token'),
+          user: localStorage.getItem('hp_user')
+        }));
+      } catch (e) {}
+    }
+    sendAuth();
+    setInterval(sendAuth, 2000);
+  })();
+  true;
+`;
+
 function buildGameConfig(setup) {
   return buildNativeGameConfig(setup);
 }
@@ -82,6 +99,8 @@ export default function App() {
   const [onlineState, setOnlineState] = useState(DEFAULT_ONLINE);
   const [gameSession, setGameSession] = useState(DEFAULT_GAME_SESSION);
   const [chatMessages, setChatMessages] = useState([]);
+  const [mobileAuth, setMobileAuth] = useState({ token: '', user: null });
+  const [nativeNotices, setNativeNotices] = useState([]);
   const gameUrl = useMemo(() => Constants.expoConfig?.extra?.gameUrl || FALLBACK_URL, []);
   const socketRef = useRef(null);
   const setupRef = useRef(DEFAULT_SETUP);
@@ -90,8 +109,21 @@ export default function App() {
   const hostStateRef = useRef(null);
   const pendingNegMetaRef = useRef(null);
 
+  function addNativeNotice(notice) {
+    const id = `${notice.type}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const item = { id, ...notice };
+    setNativeNotices((prev) => [...prev.filter((n) => n.type !== notice.type || n.refId !== notice.refId), item].slice(-4));
+    setTimeout(() => {
+      setNativeNotices((prev) => prev.filter((n) => n.id !== id));
+    }, 10000);
+  }
+
+  function dismissNativeNotice(id) {
+    setNativeNotices((prev) => prev.filter((n) => n.id !== id));
+  }
+
   if (!socketRef.current) {
-    socketRef.current = createMobileSocket(gameUrl);
+    socketRef.current = createMobileSocket(gameUrl, () => mobileAuthRef.current);
   }
   const socket = socketRef.current;
 
@@ -106,6 +138,18 @@ export default function App() {
   useEffect(() => {
     gameSessionRef.current = gameSession;
   }, [gameSession]);
+
+  useEffect(() => {
+    mobileAuthRef.current = mobileAuth;
+  }, [mobileAuth]);
+
+  useEffect(() => {
+    if (!mobileAuth.token || onlineState.roomCode) return;
+    if (socket.connected) {
+      socket.disconnect();
+    }
+    socket.connect();
+  }, [mobileAuth.token, onlineState.roomCode, socket]);
 
   function addHostLog(state, playerIdx, text) {
     state.log = [...(state.log || []), { playerIdx, text, at: Date.now() }].slice(-80);
@@ -593,6 +637,66 @@ export default function App() {
       if (!onlineRef.current.isHost) return;
       processHostAction(playerIdx, action);
     };
+    const handleRoomInviteReceived = (payload) => {
+      if (!payload) return;
+      addNativeNotice({
+        type: 'roomInvite',
+        refId: payload.roomCode,
+        title: `${payload.fromDisplayName || 'Jugador'} te invitó a una sala`,
+        subtitle: payload.roomName || payload.roomCode || '',
+        accent: '#4ecdc4',
+        actionLabel: 'Unirse',
+        onAction: () => {
+          dismissNativeNoticeByRef('roomInvite', payload.roomCode);
+          setCurrentScreen('nativeOnline');
+          setOnlineState((prev) => ({ ...prev, tab: 'join' }));
+          joinByCode(payload.roomCode);
+        },
+      });
+    };
+    const handleFriendRequestReceived = (payload) => {
+      if (!payload) return;
+      addNativeNotice({
+        type: 'friendRequest',
+        refId: String(payload.fromUserId || payload.fromDisplayName || Date.now()),
+        title: `${payload.fromDisplayName || 'Jugador'} te envió solicitud de amistad`,
+        subtitle: '',
+        accent: '#FFD700',
+        actionLabel: 'Amigos',
+        onAction: () => {
+          dismissNativeNoticeByRef('friendRequest', String(payload.fromUserId || payload.fromDisplayName || ''));
+          openFriendsWebView();
+        },
+      });
+    };
+    const handleFriendAccepted = (payload) => {
+      addNativeNotice({
+        type: 'friendAccepted',
+        refId: String(payload?.userId || payload?.displayName || Date.now()),
+        title: `${payload?.displayName || 'Jugador'} aceptó tu solicitud`,
+        subtitle: '',
+        accent: '#7ef0a2',
+        actionLabel: 'Amigos',
+        onAction: () => {
+          dismissNativeNoticeByRef('friendAccepted', String(payload?.userId || payload?.displayName || ''));
+          openFriendsWebView();
+        },
+      });
+    };
+    const handleFriendRemoved = (payload) => {
+      addNativeNotice({
+        type: 'friendRemoved',
+        refId: String(payload?.userId || payload?.displayName || Date.now()),
+        title: `${payload?.displayName || 'Jugador'} dejó de ser tu amigo`,
+        subtitle: '',
+        accent: '#ff8a80',
+        actionLabel: 'Amigos',
+        onAction: () => {
+          dismissNativeNoticeByRef('friendRemoved', String(payload?.userId || payload?.displayName || ''));
+          openFriendsWebView();
+        },
+      });
+    };
 
     socket.on('connect', handleConnect);
     socket.on('disconnect', handleDisconnect);
@@ -607,6 +711,10 @@ export default function App() {
     socket.on('chatMessage', handleChatMessage);
     socket.on('becameHost', handleBecameHost);
     socket.on('remoteAction', handleRemoteAction);
+    socket.on('roomInviteReceived', handleRoomInviteReceived);
+    socket.on('friendRequestReceived', handleFriendRequestReceived);
+    socket.on('friendRequestAccepted', handleFriendAccepted);
+    socket.on('friendRemoved', handleFriendRemoved);
 
     return () => {
       socket.off('connect', handleConnect);
@@ -622,6 +730,10 @@ export default function App() {
       socket.off('chatMessage', handleChatMessage);
       socket.off('becameHost', handleBecameHost);
       socket.off('remoteAction', handleRemoteAction);
+      socket.off('roomInviteReceived', handleRoomInviteReceived);
+      socket.off('friendRequestReceived', handleFriendRequestReceived);
+      socket.off('friendRequestAccepted', handleFriendAccepted);
+      socket.off('friendRemoved', handleFriendRemoved);
       socket.disconnect();
     };
   }, [socket]);
@@ -705,6 +817,10 @@ export default function App() {
     setCurrentScreen('nativeOnline');
     hostStateRef.current = null;
     pendingNegMetaRef.current = null;
+  }
+
+  function dismissNativeNoticeByRef(type, refId) {
+    setNativeNotices((prev) => prev.filter((n) => !(n.type === type && n.refId === refId)));
   }
 
   function goToAppHome() {
@@ -812,6 +928,51 @@ export default function App() {
     );
   }
 
+  function handleWebViewMessage(event) {
+    try {
+      const payload = JSON.parse(event.nativeEvent.data);
+      if (payload?.type !== 'authSync') return;
+      const nextUser = payload.user ? JSON.parse(payload.user) : null;
+      setMobileAuth((prev) => {
+        const next = {
+          token: payload.token || '',
+          user: nextUser,
+        };
+        if (prev.token === next.token && JSON.stringify(prev.user) === JSON.stringify(next.user)) {
+          return prev;
+        }
+        return next;
+      });
+    } catch {}
+  }
+
+  function renderNativeNotifications() {
+    if (currentScreen === 'web' || nativeNotices.length === 0) return null;
+    return (
+      <View pointerEvents="box-none" style={styles.nativeNoticeRoot}>
+        {nativeNotices.map((notice) => (
+          <View key={notice.id} style={[styles.nativeNoticeCard, { borderColor: notice.accent || '#4ecdc4' }]}>
+            <View style={styles.nativeNoticeHeader}>
+              <Text style={styles.nativeNoticeTitle}>{notice.title}</Text>
+              <Pressable onPress={() => dismissNativeNotice(notice.id)} style={styles.nativeNoticeClose}>
+                <Text style={styles.nativeNoticeCloseText}>×</Text>
+              </Pressable>
+            </View>
+            {notice.subtitle ? <Text style={styles.nativeNoticeSubtitle}>{notice.subtitle}</Text> : null}
+            <View style={styles.nativeNoticeActions}>
+              <Pressable
+                onPress={notice.onAction}
+                style={[styles.nativeNoticeActionButton, { backgroundColor: notice.accent || '#4ecdc4' }]}
+              >
+                <Text style={styles.nativeNoticeActionText}>{notice.actionLabel || 'Abrir'}</Text>
+              </Pressable>
+            </View>
+          </View>
+        ))}
+      </View>
+    );
+  }
+
   function pickHat(hat) {
     setSetupState((prev) => ({ ...prev, hat }));
     if (!onlineState.roomCode) return;
@@ -906,6 +1067,8 @@ export default function App() {
             javaScriptEnabled
             domStorageEnabled
             setSupportMultipleWindows={false}
+            injectedJavaScript={WEBVIEW_AUTH_SYNC_SCRIPT}
+            onMessage={handleWebViewMessage}
             onLoadEnd={() => setLoadingGame(false)}
           />
         </View>
@@ -918,6 +1081,7 @@ export default function App() {
       <SafeAreaView style={styles.screen}>
         <StatusBar barStyle="light-content" />
         {renderAppMenu()}
+        {renderNativeNotifications()}
         <View style={styles.headerBar}>
           <Pressable onPress={() => setCurrentScreen('home')} style={styles.secondaryButton}><Text style={styles.secondaryButtonText}>Volver</Text></Pressable>
           <Text style={styles.webviewTitle}>Setup nativo</Text>
@@ -938,6 +1102,7 @@ export default function App() {
       <SafeAreaView style={styles.screen}>
         <StatusBar barStyle="light-content" />
         {renderAppMenu()}
+        {renderNativeNotifications()}
         <View style={styles.headerBar}>
           <Pressable onPress={() => setCurrentScreen('home')} style={styles.secondaryButton}><Text style={styles.secondaryButtonText}>Volver</Text></Pressable>
           <Text style={styles.webviewTitle}>Online nativo</Text>
@@ -965,6 +1130,7 @@ export default function App() {
       <SafeAreaView style={styles.screen}>
         <StatusBar barStyle="light-content" />
         {renderAppMenu()}
+        {renderNativeNotifications()}
         <View style={styles.headerBar}>
           <Pressable onPress={() => setCurrentScreen('nativeOnline')} style={styles.secondaryButton}><Text style={styles.secondaryButtonText}>Lobby</Text></Pressable>
           <Text style={styles.webviewTitle}>Partida nativa</Text>
@@ -989,6 +1155,7 @@ export default function App() {
     <SafeAreaView style={styles.screen}>
       <StatusBar barStyle="light-content" />
       {renderAppMenu()}
+      {renderNativeNotifications()}
       <HomeScreen
         setupSummary={setupSummary}
         onOpenNativeSetup={() => setCurrentScreen('nativeSetup')}
@@ -1104,6 +1271,72 @@ const styles = StyleSheet.create({
   appMenuJoin: { backgroundColor: '#00BCD4' },
   appMenuLobby: { backgroundColor: '#2a2a4a' },
   appMenuLogout: { backgroundColor: '#ff8a80' },
+  nativeNoticeRoot: {
+    position: 'absolute',
+    left: 12,
+    right: 12,
+    bottom: 14,
+    zIndex: 45,
+    gap: 10,
+  },
+  nativeNoticeCard: {
+    borderRadius: 16,
+    borderWidth: 2,
+    backgroundColor: 'rgba(18,26,48,0.97)',
+    padding: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.28,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 7,
+  },
+  nativeNoticeHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  nativeNoticeTitle: {
+    flex: 1,
+    color: '#f8f4cf',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  nativeNoticeSubtitle: {
+    color: '#8a8fa8',
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 4,
+  },
+  nativeNoticeClose: {
+    width: 28,
+    height: 28,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.06)',
+  },
+  nativeNoticeCloseText: {
+    color: '#d8ddf3',
+    fontSize: 18,
+    fontWeight: '900',
+    lineHeight: 20,
+  },
+  nativeNoticeActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 10,
+  },
+  nativeNoticeActionButton: {
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  nativeNoticeActionText: {
+    color: '#0f1117',
+    fontSize: 13,
+    fontWeight: '900',
+  },
   appMenuButtonTextDark: {
     color: '#0f1117',
     fontSize: 15,
@@ -1144,3 +1377,4 @@ const styles = StyleSheet.create({
   secondaryButton: { backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
   secondaryButtonText: { color: '#d8ddf3', fontWeight: '700', fontSize: 13 },
 });
+  const mobileAuthRef = useRef({ token: '', user: null });
