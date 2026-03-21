@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "Hungry Poly",
+    "slug": "hungry-poly-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#16213e"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.hungrypoly.mobile"
+    },
+    "android": {
+      "package": "com.hungrypoly.mobile",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#16213e"
+      }
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "extra": {
+      "gameUrl": "https://hungry-poly.up.railway.app"
+    }
+  }
+}
