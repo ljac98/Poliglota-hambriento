@@ -3,7 +3,7 @@ import socket from '../../src/socket.js';
 import { Btn } from '../components/Btn.jsx';
 import { Modal } from '../components/Modal.jsx';
 
-export function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '', user, T, installEntryVisible, installEntryTitle, installEntryDesc, installEntryButton, onOpenInstallPrompt }) {
+export function OnlineMenu({ onCreated, onJoined, onBack, onDownload, initialCode = '', user, T, installEntryVisible, installEntryTitle, installEntryDesc, installEntryButton, onOpenInstallPrompt }) {
   const [tab, setTab] = useState(initialCode ? 'join' : 'create');
   const [name, setName] = useState(user?.displayName || '');
   const [isPublic, setIsPublic] = useState(false);
@@ -235,6 +235,20 @@ export function OnlineMenu({ onCreated, onJoined, onBack, initialCode = '', user
             <Btn onClick={onOpenInstallPrompt} color="#FFD700" style={{ width: '100%', marginTop: 10, color: '#111', fontWeight: 900 }}>
               {installEntryButton}
             </Btn>
+            <button onClick={onDownload} style={{
+              width: '100%',
+              marginTop: 8,
+              background: 'none',
+              border: 'none',
+              color: '#4ecdc4',
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: 'pointer',
+              fontFamily: "'Fredoka',sans-serif",
+              textDecoration: 'underline',
+            }}>
+              Ver QR y enlace
+            </button>
           </div>
         )}
 

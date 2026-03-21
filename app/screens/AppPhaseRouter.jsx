@@ -5,6 +5,7 @@ import { FriendsScreen } from './FriendsScreen.jsx';
 import { GameOverScreen } from './GameOverScreen.jsx';
 import { HistoryScreen } from './HistoryScreen.jsx';
 import { LeftRoomScreen } from './LeftRoomScreen.jsx';
+import { DownloadAppScreen } from './DownloadAppScreen.jsx';
 import { OnlineLobby } from './OnlineLobby.jsx';
 import { OnlineMenu } from './OnlineMenu.jsx';
 import { ReconnectingScreen } from './ReconnectingScreen.jsx';
@@ -23,6 +24,9 @@ export function AppPhaseRouter({
   installEntryDesc,
   installEntryButton,
   openInstallPrompt,
+  downloadUrl,
+  downloadReturnPhase,
+  setDownloadReturnPhase,
   inviteToast,
   friendReqToast,
   setUser,
@@ -68,6 +72,7 @@ export function AppPhaseRouter({
       <AuthScreen
         onAuth={(nextUser) => { setUser(nextUser); setPhase('setup'); }}
         onGuest={() => setPhase('setup')}
+        onDownload={() => { setDownloadReturnPhase('auth'); setPhase('download'); }}
         T={T}
         uiLang={uiLang}
         onLangChange={handleSetLang}
@@ -76,6 +81,19 @@ export function AppPhaseRouter({
         installEntryDesc={installEntryDesc}
         installEntryButton={installEntryButton}
         onOpenInstallPrompt={openInstallPrompt}
+      />
+    );
+  }
+
+  if (phase === 'download') {
+    return (
+      <DownloadAppScreen
+        uiLang={uiLang}
+        downloadUrl={downloadUrl}
+        installEntryVisible={installEntryVisible}
+        installEntryButton={installEntryButton}
+        onOpenInstallPrompt={openInstallPrompt}
+        onBack={() => setPhase(downloadReturnPhase || (user ? 'setup' : 'auth'))}
       />
     );
   }
@@ -94,6 +112,7 @@ export function AppPhaseRouter({
         <SetupScreen
           onStart={startGame}
           onOnline={() => setPhase('onlineMenu')}
+          onDownload={() => { setDownloadReturnPhase('setup'); setPhase('download'); }}
           user={user}
           onLogout={() => { clearAuth(); setUser(null); setPhase('auth'); }}
           onHistory={() => setPhase('history')}
@@ -116,6 +135,7 @@ export function AppPhaseRouter({
           user={user}
           initialCode={inviteJoinCode || initialSalaCode}
           onBack={() => { setInviteJoinCode(''); setPhase('setup'); }}
+          onDownload={() => { setDownloadReturnPhase('onlineMenu'); setPhase('download'); }}
           T={T}
           installEntryVisible={installEntryVisible}
           installEntryTitle={installEntryTitle}

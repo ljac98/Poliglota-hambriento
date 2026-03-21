@@ -24,7 +24,7 @@ import burgerPollo from '../../imagenes/hamburguesas/ingredientes/pollo.png';
 import burgerHuevo from '../../imagenes/hamburguesas/ingredientes/huevo.png';
 import burgerPalta from '../../imagenes/hamburguesas/ingredientes/palta.png';
 
-export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFriends, T, installEntryVisible, installEntryTitle, installEntryDesc, installEntryButton, onOpenInstallPrompt }) {
+export function SetupScreen({ onStart, onOnline, onDownload, user, onLogout, onHistory, onFriends, T, installEntryVisible, installEntryTitle, installEntryDesc, installEntryButton, onOpenInstallPrompt }) {
   const uiGameLang = KEY_TO_LANG[getUILang()] || 'español';
   const cloneIngredients = INGREDIENTS.filter((ing) => ing !== 'pan');
   const [name, setName] = useState(user?.displayName || '');
@@ -517,6 +517,18 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
             <Btn onClick={onOpenInstallPrompt} color="#FFD700" style={{ fontWeight: 900, color: '#111', minWidth: 160 }}>
               {installEntryButton}
             </Btn>
+            <button onClick={onDownload} style={{
+              background: 'none',
+              border: 'none',
+              color: '#4ecdc4',
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: 'pointer',
+              fontFamily: "'Fredoka',sans-serif",
+              textDecoration: 'underline',
+            }}>
+              Ver QR y enlace
+            </button>
           </div>
         )}
       </div>

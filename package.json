@@ -15,7 +15,10 @@
     "mobile:start": "npm run start --prefix mobile",
     "mobile:android": "npm run android --prefix mobile",
     "mobile:web": "npm run web --prefix mobile",
-    "mobile:config": "cd mobile && npx expo config --type public"
+    "mobile:config": "cd mobile && npx expo config --type public",
+    "mobile:apk": "cd mobile && npm run apk",
+    "mobile:apk:prod": "cd mobile && npm run apk:prod",
+    "mobile:eas:version": "cd mobile && npx eas --version"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",

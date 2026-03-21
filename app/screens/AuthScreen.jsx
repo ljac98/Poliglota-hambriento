@@ -13,7 +13,7 @@ const UI_LANG_OPTIONS = [
 ];
 
 // ── Auth Screen (full page) ──────────────────────────────────────────────────
-export function AuthScreen({ onAuth, onGuest, T, uiLang, onLangChange, installEntryVisible, installEntryTitle, installEntryDesc, installEntryButton, onOpenInstallPrompt }) {
+export function AuthScreen({ onAuth, onGuest, onDownload, T, uiLang, onLangChange, installEntryVisible, installEntryTitle, installEntryDesc, installEntryButton, onOpenInstallPrompt }) {
   const [tab, setTab] = useState('login');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -92,6 +92,20 @@ export function AuthScreen({ onAuth, onGuest, T, uiLang, onLangChange, installEn
             <Btn onClick={onOpenInstallPrompt} color="#FFD700" style={{ width: '100%', marginTop: 10, color: '#111', fontWeight: 900 }}>
               {installEntryButton}
             </Btn>
+            <button onClick={onDownload} style={{
+              width: '100%',
+              marginTop: 8,
+              background: 'none',
+              border: 'none',
+              color: '#4ecdc4',
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: 'pointer',
+              fontFamily: "'Fredoka',sans-serif",
+              textDecoration: 'underline',
+            }}>
+              Ver QR y enlace
+            </button>
           </div>
         )}
 

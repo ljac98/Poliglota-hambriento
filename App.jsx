@@ -95,6 +95,7 @@ const INSTALL_PROMPT_COPY = {
 
 export default function App() {
   const initialSalaCode = new URLSearchParams(window.location.search).get('sala') || '';
+  const appDownloadUrl = typeof window !== 'undefined' ? new URL('/', window.location.href).toString() : 'https://hungry-poly.up.railway.app/';
   const hasRoomSession = !!sessionStorage.getItem('hp_room_session');
   const [phase, setPhase] = useState(
     hasRoomSession ? 'reconnecting'
@@ -117,6 +118,7 @@ export default function App() {
   const [deferredInstallPrompt, setDeferredInstallPrompt] = useState(null);
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
   const [showIosInstallHint, setShowIosInstallHint] = useState(false);
+  const [downloadReturnPhase, setDownloadReturnPhase] = useState('setup');
   const aiRunning = useRef(false);
   const [turnTime, setTurnTime] = useState(60);
   const [currentGameConfig, setCurrentGameConfig] = useState(null);
@@ -1623,6 +1625,9 @@ export default function App() {
           installEntryDesc={showIosInstallHint ? installCopy.descIos : installCopy.descPrompt}
           installEntryButton={showIosInstallHint ? installCopy.title : installCopy.install}
           openInstallPrompt={openInstallPrompt}
+          downloadUrl={appDownloadUrl}
+          downloadReturnPhase={downloadReturnPhase}
+          setDownloadReturnPhase={setDownloadReturnPhase}
           inviteToast={inviteToast}
           friendReqToast={friendReqToast}
           setUser={setUser}
