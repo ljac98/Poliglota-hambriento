@@ -1,6 +1,6 @@
 import React from 'react';
 
-export function Modal({ title, children }) {
+export function Modal({ title, children, maxWidth = 480, width = '90vw' }) {
   return (
     <div
       style={{
@@ -18,8 +18,8 @@ export function Modal({ title, children }) {
           background: '#16213e',
           borderRadius: 16,
           padding: '24px 28px',
-          maxWidth: 480,
-          width: '90vw',
+          maxWidth,
+          width,
           maxHeight: '80vh',
           overflowY: 'auto',
           border: '2px solid #2a2a4a',

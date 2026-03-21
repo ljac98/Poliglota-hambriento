@@ -971,7 +971,11 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
       )}
       </div>
       {isHost && showModeConfig && (
-        <Modal title={`${T('gameMode')}: ${gameModes.find(m => m.id === gameMode)?.label || ''}`}>
+        <Modal
+          title={`${T('gameMode')}: ${gameModes.find(m => m.id === gameMode)?.label || ''}`}
+          maxWidth={isDesktopWide ? 1040 : 480}
+          width={isDesktopWide ? 'min(1040px, 94vw)' : '90vw'}
+        >
           <div style={modalDesktopColumns || undefined}>
             <div style={{
               marginBottom: isDesktopWide ? 0 : 16,
