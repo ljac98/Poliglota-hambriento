@@ -35,6 +35,7 @@ export function AppPhaseRouter({
   socket,
   setInviteJoinCode,
   inviteJoinCode,
+  onlineMenuTab,
   initialSalaCode,
   setIsOnline,
   setIsHost,
@@ -134,6 +135,7 @@ export function AppPhaseRouter({
         <OnlineMenu
           user={user}
           initialCode={inviteJoinCode || initialSalaCode}
+          initialTab={onlineMenuTab}
           onBack={() => { setInviteJoinCode(''); setPhase('setup'); }}
           onDownload={() => { setDownloadReturnPhase('onlineMenu'); setPhase('download'); }}
           T={T}

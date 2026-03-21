@@ -119,6 +119,8 @@ export default function App() {
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
   const [showIosInstallHint, setShowIosInstallHint] = useState(false);
   const [downloadReturnPhase, setDownloadReturnPhase] = useState('setup');
+  const [onlineMenuTab, setOnlineMenuTab] = useState('');
+  const [showQuickMenu, setShowQuickMenu] = useState(false);
   const aiRunning = useRef(false);
   const [turnTime, setTurnTime] = useState(60);
   const [currentGameConfig, setCurrentGameConfig] = useState(null);
@@ -327,11 +329,7 @@ export default function App() {
   }
 
   // â”€â”€ Handle voluntary leave from room / local match â”€â”€
-  function handleLeaveLocalGame() {
-    if (isOnline || phase !== 'playing') return;
-    const fallbackConfirm = 'Exit the AI match and return to setup?';
-    const confirmText = T('leaveLocalConfirm');
-    if (typeof window !== 'undefined' && !window.confirm(confirmText === 'leaveLocalConfirm' ? fallbackConfirm : confirmText)) return;
+  function resetLocalGameState() {
     aiRunning.current = false;
     setPlayers([]);
     setDeck([]);
@@ -353,6 +351,14 @@ export default function App() {
     setHowToPlayPage(0);
     setMobileTab('mesa');
     setTurnTime(60);
+  }
+
+  function handleLeaveLocalGame() {
+    if (isOnline || phase !== 'playing') return;
+    const fallbackConfirm = 'Exit the AI match and return to setup?';
+    const confirmText = T('leaveLocalConfirm');
+    if (typeof window !== 'undefined' && !window.confirm(confirmText === 'leaveLocalConfirm' ? fallbackConfirm : confirmText)) return;
+    resetLocalGameState();
     setPhase('setup');
   }
 
@@ -361,6 +367,46 @@ export default function App() {
     socket.emit('voluntaryLeave', { code: roomCode });
     // Don't disconnect socket â€” keep it alive for potential rejoin
     setPhase('leftRoom');
+  }
+
+  function resetOnlineRoomState() {
+    setIsOnline(false);
+    setIsHost(false);
+    setMyPlayerIdx(0);
+    setRoomCode('');
+    setRoomIsPublic(false);
+    setRoomDisplayName('');
+    setLobbyPlayers([]);
+    clearRoomSession();
+    setGamePaused(false);
+    setPausedMessage('');
+    setShowChat(false);
+    setUnreadChat(0);
+  }
+
+  function goToOnlineHub(tab = 'lobby') {
+    if (phase === 'playing' && !isOnline) {
+      resetLocalGameState();
+    }
+    if (isOnline && roomCode) {
+      socket.emit('leaveRoom');
+      socket.disconnect();
+      resetOnlineRoomState();
+    }
+    setInviteJoinCode('');
+    setOnlineMenuTab(tab);
+    setShowQuickMenu(false);
+    setPhase('onlineMenu');
+  }
+
+  function handleQuickLeaveGame() {
+    if (phase !== 'playing') return;
+    if (isOnline) {
+      goToOnlineHub('lobby');
+      return;
+    }
+    handleLeaveLocalGame();
+    setShowQuickMenu(false);
   }
 
   // â”€â”€ Auto-rejoin on page load â”€â”€
@@ -1627,22 +1673,76 @@ export default function App() {
     const reconnectId = sessionStorage.getItem('hp_reconnect_id');
     socket.emit('permanentLeave', { code: roomCode, reconnectId });
     socket.disconnect();
-    setIsOnline(false);
-    setIsHost(false);
-    setMyPlayerIdx(0);
-    setRoomCode('');
-    setRoomIsPublic(false);
-    setRoomDisplayName('');
-    setLobbyPlayers([]);
-    clearRoomSession();
-    setGamePaused(false);
-    setPausedMessage('');
+    resetOnlineRoomState();
     setPhase('setup');
   };
+
+  const quickMenu = (
+    <div style={{ position: 'fixed', top: isMobile ? 10 : 16, right: isMobile ? 10 : 16, zIndex: 3000 }}>
+      {showQuickMenu && (
+        <button
+          aria-label="Close menu"
+          onClick={() => setShowQuickMenu(false)}
+          style={{ position: 'fixed', inset: 0, border: 'none', background: 'transparent', cursor: 'default' }}
+        />
+      )}
+      <div style={{ position: 'relative' }}>
+        <button
+          onClick={() => setShowQuickMenu(v => !v)}
+          style={{
+            width: isMobile ? 42 : 46,
+            height: isMobile ? 42 : 46,
+            borderRadius: 14,
+            border: '2px solid rgba(255,215,0,.45)',
+            background: 'rgba(18,25,46,.96)',
+            color: '#FFD700',
+            fontSize: 22,
+            fontWeight: 900,
+            cursor: 'pointer',
+            boxShadow: '0 10px 24px rgba(0,0,0,.35)',
+          }}
+        >
+          ☰
+        </button>
+        {showQuickMenu && (
+          <div style={{
+            position: 'absolute',
+            top: isMobile ? 50 : 54,
+            right: 0,
+            minWidth: isMobile ? 188 : 210,
+            padding: 10,
+            borderRadius: 16,
+            background: 'rgba(22,33,62,.98)',
+            border: '2px solid rgba(255,215,0,.18)',
+            boxShadow: '0 18px 40px rgba(0,0,0,.45)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 8,
+          }}>
+            {phase === 'playing' && (
+              <Btn onClick={handleQuickLeaveGame} color="#ff4444" style={{ color: '#fff', width: '100%', justifyContent: 'center' }}>
+                {T('leaveLocal')}
+              </Btn>
+            )}
+            <Btn onClick={() => goToOnlineHub('create')} color="#FFD700" style={{ color: '#111', width: '100%', justifyContent: 'center' }}>
+              {T('createRoom')}
+            </Btn>
+            <Btn onClick={() => goToOnlineHub('join')} color="#00BCD4" style={{ color: '#0f1117', width: '100%', justifyContent: 'center' }}>
+              {T('joinBtn')}
+            </Btn>
+            <Btn onClick={() => goToOnlineHub('lobby')} color="#2a2a4a" style={{ color: '#fff', width: '100%', justifyContent: 'center' }}>
+              {T('lobby')}
+            </Btn>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 
   if (phase !== 'playing') {
     return (
       <>
+        {quickMenu}
         <AppPhaseRouter
           phase={phase}
           T={T}
@@ -1666,6 +1766,7 @@ export default function App() {
           socket={socket}
           setInviteJoinCode={setInviteJoinCode}
           inviteJoinCode={inviteJoinCode}
+          onlineMenuTab={onlineMenuTab}
           initialSalaCode={initialSalaCode}
           setIsOnline={setIsOnline}
           setIsHost={setIsHost}
@@ -2154,6 +2255,7 @@ export default function App() {
       height: '100vh', display: 'flex', flexDirection: 'column',
       background: '#0f1117', fontFamily: "'Fredoka',sans-serif", overflow: 'hidden', position: 'relative',
     }}>
+      {quickMenu}
       {installBanner}
 
       {/* â”€â”€ Header â”€â”€ */}
@@ -2182,11 +2284,6 @@ export default function App() {
           <Btn onClick={() => setShowLog(l => !l)} color="#2a2a4a" style={{ color: '#aaa', fontSize: 12, padding: '4px 10px' }}>
             {T('log')}
           </Btn>
-          {!isOnline && (
-            <Btn onClick={handleLeaveLocalGame} color="#ff4444" style={{ color: '#fff', fontSize: 12, padding: '4px 10px' }}>
-              {T('leaveLocal')}
-            </Btn>
-          )}
           {isOnline && (
             <>
               <Btn onClick={() => { setShowChat(s => !s); setUnreadChat(0); }} color="#2a2a4a" style={{ color: '#aaa', fontSize: 12, padding: '4px 10px', position: 'relative' }}>
@@ -2198,9 +2295,6 @@ export default function App() {
                     fontSize: 10, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}>{unreadChat}</span>
                 )}
-              </Btn>
-              <Btn onClick={handleVoluntaryLeave} color="#ff4444" style={{ color: '#fff', fontSize: 12, padding: '4px 10px' }}>
-                {T('leave')}
               </Btn>
             </>
           )}

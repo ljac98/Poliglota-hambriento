@@ -3,8 +3,8 @@ import socket from '../../src/socket.js';
 import { Btn } from '../components/Btn.jsx';
 import { Modal } from '../components/Modal.jsx';
 
-export function OnlineMenu({ onCreated, onJoined, onBack, onDownload, initialCode = '', user, T, installEntryVisible, installEntryTitle, installEntryDesc, installEntryButton, onOpenInstallPrompt }) {
-  const [tab, setTab] = useState(initialCode ? 'join' : 'create');
+export function OnlineMenu({ onCreated, onJoined, onBack, onDownload, initialCode = '', initialTab = '', user, T, installEntryVisible, installEntryTitle, installEntryDesc, installEntryButton, onOpenInstallPrompt }) {
+  const [tab, setTab] = useState(initialTab || (initialCode ? 'join' : 'create'));
   const [name, setName] = useState(user?.displayName || '');
   const [isPublic, setIsPublic] = useState(false);
   const [roomName, setRoomName] = useState('');
@@ -17,6 +17,10 @@ export function OnlineMenu({ onCreated, onJoined, onBack, onDownload, initialCod
   const [lobbyLoading, setLobbyLoading] = useState(false);
   const [lobbyName, setLobbyName] = useState(user?.displayName || '');
   const joinedRoomRef = useRef(false);
+
+  useEffect(() => {
+    if (initialTab) setTab(initialTab);
+  }, [initialTab]);
 
   // Lobby browser: fetch & subscribe to public rooms
   useEffect(() => {
