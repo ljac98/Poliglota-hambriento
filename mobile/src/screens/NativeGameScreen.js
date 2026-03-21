@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 const HAT_LABELS = {
@@ -113,18 +113,35 @@ function resolveNeededIngredients(target = [], table = []) {
 }
 
 const MASS_ACTIONS = ['milanesa', 'ensalada', 'pizza', 'parrilla', 'comecomodines'];
+const TARGETED_ACTIONS = ['tenedor', 'ladron', 'intercambio_sombreros', 'intercambio_hamburguesa', 'gloton'];
+const ACTION_LABELS = {
+  milanesa: 'La milanesa',
+  ensalada: 'La ensalada',
+  pizza: 'La pizza',
+  parrilla: 'La parrilla',
+  comecomodines: 'Come comodines',
+  tenedor: 'El tenedor',
+  ladron: 'Ladron sombreros',
+  intercambio_sombreros: 'Intercambio sombreros',
+  intercambio_hamburguesa: 'Intercambio mesa',
+  basurero: 'Basurero',
+  negacion: 'Negacion',
+};
 
 export function NativeGameScreen({ setup, online, gameSession, chatMessages = [], onSendChat, onSendAction, onBackToLobby, onOpenWebGame, onLeaveRoom }) {
   const objectivesByPlayer = useMemo(() => buildObjectives(gameSession), [gameSession]);
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [chatInput, setChatInput] = useState('');
   const [selectedCardIdx, setSelectedCardIdx] = useState(null);
+  const [actionDraft, setActionDraft] = useState(null);
+  const [hatDraft, setHatDraft] = useState(null);
   const currentObjective = objectivesByPlayer[selectedIdx] || objectivesByPlayer[0];
   const currentPlayerName = setup.playerName;
   const livePlayers = gameSession.liveState?.players || [];
   const liveCp = gameSession.liveState?.cp ?? null;
   const liveDeckCount = gameSession.liveState?.deck?.length ?? null;
   const liveDiscardCount = gameSession.liveState?.discard?.length ?? null;
+  const liveDiscardCards = gameSession.liveState?.discard || [];
   const liveWinner = gameSession.liveState?.winner || null;
   const myLivePlayer = livePlayers.find((player) => player?.name === currentPlayerName);
   const isMyTurn = online.myIdx === liveCp;
@@ -132,6 +149,67 @@ export function NativeGameScreen({ setup, online, gameSession, chatMessages = []
   const myTarget = myLivePlayer?.burgers?.[myLivePlayer?.currentBurger || 0] || [];
   const neededIngredients = resolveNeededIngredients(myTarget, myLivePlayer?.table || []);
   const wildcardOptions = [...new Set(neededIngredients)].filter(Boolean);
+  const discardIngredients = liveDiscardCards.filter((card) => card?.type === 'ingredient');
+  const urgentHatReplace = !isMyTurn && myLivePlayer && (myLivePlayer.mainHats?.length || 0) === 0 && (myLivePlayer.perchero?.length || 0) > 0;
+  const targetedPlayers = TARGETED_ACTIONS.includes(selectedCard?.action)
+    ? livePlayers.filter((player) => {
+      if (!player || player.name === currentPlayerName) return false;
+      if (selectedCard.action === 'tenedor') return (player.table?.length || 0) > 0;
+      if (selectedCard.action === 'ladron') return (player.mainHats?.length || 0) > 0;
+      if (selectedCard.action === 'intercambio_sombreros') return (myLivePlayer?.mainHats?.length || 0) > 0 && (player.mainHats?.length || 0) > 0;
+      if (selectedCard.action === 'gloton') return (player.table?.length || 0) > 0;
+      return true;
+    })
+    : [];
+  const targetPlayer = actionDraft?.targetIdx != null ? livePlayers[actionDraft.targetIdx] : null;
+  const manualCambiarCost = Math.ceil((myLivePlayer?.hand?.length || 0) / 2);
+
+  useEffect(() => {
+    setActionDraft(null);
+  }, [selectedCardIdx]);
+
+  useEffect(() => {
+    if (!urgentHatReplace && hatDraft?.mode === 'replace') {
+      setHatDraft(null);
+    }
+  }, [urgentHatReplace, hatDraft]);
+
+  function resetCardFlow() {
+    setSelectedCardIdx(null);
+    setActionDraft(null);
+  }
+
+  function submitTargetAction(base = {}) {
+    if (!selectedCard) return;
+    onSendAction?.({
+      type: 'playActionTarget',
+      cardIdx: selectedCardIdx,
+      targetIdx: actionDraft?.targetIdx,
+      action: selectedCard.action,
+      ...base,
+    });
+    resetCardFlow();
+  }
+
+  function toggleCambiarCard(index) {
+    setHatDraft((prev) => {
+      if (!prev || prev.mode !== 'cambiar') return prev;
+      const exists = prev.cardIndices.includes(index);
+      if (exists) {
+        return { ...prev, cardIndices: prev.cardIndices.filter((item) => item !== index) };
+      }
+      if (prev.cardIndices.length >= manualCambiarCost) return prev;
+      return { ...prev, cardIndices: [...prev.cardIndices, index] };
+    });
+  }
+
+  function startHatDraft(mode, hatLang) {
+    if (mode === 'agregar') {
+      setHatDraft({ mode, hatLang });
+      return;
+    }
+    setHatDraft({ mode, hatLang, cardIndices: [] });
+  }
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
@@ -192,6 +270,79 @@ export function NativeGameScreen({ setup, online, gameSession, chatMessages = []
                 <Text style={styles.myStateText}>Sombreros principales: {myLivePlayer.mainHats?.length ?? 0}</Text>
                 <Text style={styles.myStateText}>Sombreros en perchero: {myLivePlayer.perchero?.length ?? 0}</Text>
                 <Text style={styles.myStateText}>Hamburguesas cerradas: {myLivePlayer.completed || 0}</Text>
+                {urgentHatReplace && (
+                  <View style={styles.urgentPanel}>
+                    <Text style={styles.urgentTitle}>Te robaron el sombrero principal</Text>
+                    <Text style={styles.actionHint}>Elige ahora un sombrero del perchero para seguir jugando.</Text>
+                    <View style={styles.optionWrap}>
+                      {(myLivePlayer.perchero || []).map((hatLang) => (
+                        <Pressable key={`replace-${hatLang}`} style={styles.optionChip} onPress={() => onSendAction?.({ type: 'pickHatReplace', hatLang })}>
+                          <Text style={styles.optionChipText}>{HAT_LABELS[hatLang] || hatLang}</Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  </View>
+                )}
+                {isMyTurn && (myLivePlayer.perchero?.length || 0) > 0 && (
+                  <View style={styles.actionPanel}>
+                    <Text style={styles.actionPanelTitle}>Sombreros del perchero</Text>
+                    <Text style={styles.actionHint}>Ya puedes usar Cambiar o Agregar sin salir a la web.</Text>
+                    <View style={styles.optionWrap}>
+                      {(myLivePlayer.perchero || []).map((hatLang) => (
+                        <View key={`hat-${hatLang}`} style={styles.hatActionCard}>
+                          <Text style={styles.hatActionName}>{HAT_LABELS[hatLang] || hatLang}</Text>
+                          <View style={styles.hatActionButtons}>
+                            <Pressable style={styles.smallActionButton} onPress={() => startHatDraft('cambiar', hatLang)}>
+                              <Text style={styles.smallActionButtonText}>Cambiar</Text>
+                            </Pressable>
+                            <Pressable style={styles.smallActionButtonAlt} onPress={() => startHatDraft('agregar', hatLang)}>
+                              <Text style={styles.smallActionButtonAltText}>Agregar</Text>
+                            </Pressable>
+                          </View>
+                        </View>
+                      ))}
+                    </View>
+                    {hatDraft?.mode === 'agregar' && (
+                      <View style={styles.inlineActionGroup}>
+                        <Text style={styles.actionHint}>Agregar {HAT_LABELS[hatDraft.hatLang] || hatDraft.hatLang} vacia tu mano y reduce tu mano maxima.</Text>
+                        <Pressable
+                          style={styles.inlineActionButton}
+                          onPress={() => {
+                            onSendAction?.({ type: 'manualAgregar', hatLang: hatDraft.hatLang });
+                            setHatDraft(null);
+                          }}
+                        >
+                          <Text style={styles.inlineActionButtonText}>Confirmar agregar</Text>
+                        </Pressable>
+                      </View>
+                    )}
+                    {hatDraft?.mode === 'cambiar' && (
+                      <View style={styles.inlineActionGroup}>
+                        <Text style={styles.actionHint}>Selecciona {manualCambiarCost} carta{manualCambiarCost !== 1 ? 's' : ''} para descartar.</Text>
+                        <View style={styles.optionWrap}>
+                          {(myLivePlayer.hand || []).map((card, index) => {
+                            const active = hatDraft.cardIndices.includes(index);
+                            return (
+                              <Pressable key={`cambiar-card-${card.id || index}`} style={[styles.optionChip, active && styles.optionChipActive]} onPress={() => toggleCambiarCard(index)}>
+                                <Text style={[styles.optionChipText, active && styles.optionChipTextActive]}>{formatCard(card)}</Text>
+                              </Pressable>
+                            );
+                          })}
+                        </View>
+                        <Pressable
+                          style={[styles.inlineActionButton, hatDraft.cardIndices.length !== manualCambiarCost && styles.inlineActionButtonDisabled]}
+                          disabled={hatDraft.cardIndices.length !== manualCambiarCost}
+                          onPress={() => {
+                            onSendAction?.({ type: 'manualCambiar', hatLang: hatDraft.hatLang, cardIndices: hatDraft.cardIndices });
+                            setHatDraft(null);
+                          }}
+                        >
+                          <Text style={styles.inlineActionButtonText}>Confirmar cambiar</Text>
+                        </Pressable>
+                      </View>
+                    )}
+                  </View>
+                )}
               </View>
             )}
 
@@ -222,7 +373,13 @@ export function NativeGameScreen({ setup, online, gameSession, chatMessages = []
                       ) : (
                         <>
                           {selectedCard.type === 'ingredient' && selectedCard.ingredient !== 'perrito' && (
-                            <Pressable style={styles.inlineActionButton} onPress={() => onSendAction?.({ type: 'playIngredient', cardIdx: selectedCardIdx })}>
+                            <Pressable
+                              style={styles.inlineActionButton}
+                              onPress={() => {
+                                onSendAction?.({ type: 'playIngredient', cardIdx: selectedCardIdx });
+                                resetCardFlow();
+                              }}
+                            >
                               <Text style={styles.inlineActionButtonText}>Jugar ingrediente</Text>
                             </Pressable>
                           )}
@@ -237,7 +394,10 @@ export function NativeGameScreen({ setup, online, gameSession, chatMessages = []
                                     <Pressable
                                       key={`wild-${ingredient}`}
                                       style={styles.optionChip}
-                                      onPress={() => onSendAction?.({ type: 'playWildcard', cardIdx: selectedCardIdx, ingredient })}
+                                      onPress={() => {
+                                        onSendAction?.({ type: 'playWildcard', cardIdx: selectedCardIdx, ingredient });
+                                        resetCardFlow();
+                                      }}
                                     >
                                       <Text style={styles.optionChipText}>{INGREDIENT_LABELS[ingredient] || ingredient}</Text>
                                     </Pressable>
@@ -247,14 +407,158 @@ export function NativeGameScreen({ setup, online, gameSession, chatMessages = []
                             </View>
                           )}
                           {selectedCard.type === 'action' && MASS_ACTIONS.includes(selectedCard.action) && (
-                            <Pressable style={styles.inlineActionButton} onPress={() => onSendAction?.({ type: 'playMass', cardIdx: selectedCardIdx })}>
+                            <Pressable
+                              style={styles.inlineActionButton}
+                              onPress={() => {
+                                onSendAction?.({ type: 'playMass', cardIdx: selectedCardIdx });
+                                resetCardFlow();
+                              }}
+                            >
                               <Text style={styles.inlineActionButtonText}>Jugar accion masiva</Text>
                             </Pressable>
                           )}
-                          {selectedCard.type === 'action' && !MASS_ACTIONS.includes(selectedCard.action) && (
-                            <Text style={styles.actionHint}>Esta accion todavia necesita la version web para elegir objetivo.</Text>
+                          {selectedCard.type === 'action' && selectedCard.action === 'basurero' && (
+                            <View style={styles.inlineActionGroup}>
+                              <Text style={styles.actionHint}>Elige una carta de ingrediente del descarte.</Text>
+                              <View style={styles.optionWrap}>
+                                {discardIngredients.length === 0 ? (
+                                  <Text style={styles.emptyText}>No hay ingredientes en el basurero.</Text>
+                                ) : (
+                                  discardIngredients.map((card) => {
+                                    const active = actionDraft?.pickedCardId === card.id;
+                                    return (
+                                      <Pressable
+                                        key={`discard-ing-${card.id}`}
+                                        style={[styles.optionChip, active && styles.optionChipActive]}
+                                        onPress={() => setActionDraft({ type: 'basurero', pickedCardId: card.id })}
+                                      >
+                                        <Text style={[styles.optionChipText, active && styles.optionChipTextActive]}>{formatCard(card)}</Text>
+                                      </Pressable>
+                                    );
+                                  })
+                                )}
+                              </View>
+                              <Pressable
+                                style={[styles.inlineActionButton, !actionDraft?.pickedCardId && styles.inlineActionButtonDisabled]}
+                                disabled={!actionDraft?.pickedCardId}
+                                onPress={() => {
+                                  onSendAction?.({ type: 'playBasurero', cardIdx: selectedCardIdx, pickedCardId: actionDraft.pickedCardId });
+                                  resetCardFlow();
+                                }}
+                              >
+                                <Text style={styles.inlineActionButtonText}>Rescatar del basurero</Text>
+                              </Pressable>
+                            </View>
                           )}
-                          <Pressable style={styles.inlineDiscardButton} onPress={() => onSendAction?.({ type: 'discard', cardIdx: selectedCardIdx })}>
+                          {selectedCard.type === 'action' && TARGETED_ACTIONS.includes(selectedCard.action) && (
+                            <View style={styles.inlineActionGroup}>
+                              <Text style={styles.actionHint}>Selecciona el objetivo para {ACTION_LABELS[selectedCard.action] || selectedCard.action}.</Text>
+                              <View style={styles.optionWrap}>
+                                {targetedPlayers.length === 0 ? (
+                                  <Text style={styles.emptyText}>No hay objetivos validos en este momento.</Text>
+                                ) : (
+                                  targetedPlayers.map((player) => {
+                                    const active = actionDraft?.targetIdx === player.idx;
+                                    return (
+                                      <Pressable
+                                        key={`target-${player.idx}`}
+                                        style={[styles.optionChip, active && styles.optionChipActive]}
+                                        onPress={() => setActionDraft({ type: 'targeted', targetIdx: player.idx })}
+                                      >
+                                        <Text style={[styles.optionChipText, active && styles.optionChipTextActive]}>{player.name}</Text>
+                                      </Pressable>
+                                    );
+                                  })
+                                )}
+                              </View>
+
+                              {targetPlayer && selectedCard.action === 'tenedor' && (
+                                <View style={styles.inlineActionGroup}>
+                                  <Text style={styles.actionHint}>Elige el ingrediente que vas a robar de la mesa de {targetPlayer.name}.</Text>
+                                  <View style={styles.optionWrap}>
+                                    {(targetPlayer.table || []).map((item, index) => {
+                                      const active = actionDraft?.ingIdx === index;
+                                      return (
+                                        <Pressable
+                                          key={`tenedor-${index}-${item}`}
+                                          style={[styles.optionChip, active && styles.optionChipActive]}
+                                          onPress={() => setActionDraft((prev) => ({ ...(prev || {}), type: 'targeted', targetIdx: targetPlayer.idx, ingIdx: index }))}
+                                        >
+                                          <Text style={[styles.optionChipText, active && styles.optionChipTextActive]}>{formatTableItem(item)}</Text>
+                                        </Pressable>
+                                      );
+                                    })}
+                                  </View>
+                                  <Pressable
+                                    style={[styles.inlineActionButton, actionDraft?.ingIdx == null && styles.inlineActionButtonDisabled]}
+                                    disabled={actionDraft?.ingIdx == null}
+                                    onPress={() => submitTargetAction({ ingIdx: actionDraft.ingIdx })}
+                                  >
+                                    <Text style={styles.inlineActionButtonText}>Jugar tenedor</Text>
+                                  </Pressable>
+                                </View>
+                              )}
+
+                              {targetPlayer && selectedCard.action === 'intercambio_sombreros' && (
+                                <View style={styles.inlineActionGroup}>
+                                  <Text style={styles.actionHint}>Elige el sombrero tuyo y el del rival que se van a intercambiar.</Text>
+                                  <Text style={styles.actionHint}>Tus sombreros principales</Text>
+                                  <View style={styles.optionWrap}>
+                                    {(myLivePlayer?.mainHats || []).map((hatLang) => {
+                                      const active = actionDraft?.myHat === hatLang;
+                                      return (
+                                        <Pressable
+                                          key={`myhat-${hatLang}`}
+                                          style={[styles.optionChip, active && styles.optionChipActive]}
+                                          onPress={() => setActionDraft((prev) => ({ ...(prev || {}), type: 'targeted', targetIdx: targetPlayer.idx, myHat: hatLang }))}
+                                        >
+                                          <Text style={[styles.optionChipText, active && styles.optionChipTextActive]}>{HAT_LABELS[hatLang] || hatLang}</Text>
+                                        </Pressable>
+                                      );
+                                    })}
+                                  </View>
+                                  <Text style={styles.actionHint}>Sombreros principales de {targetPlayer.name}</Text>
+                                  <View style={styles.optionWrap}>
+                                    {(targetPlayer.mainHats || []).map((hatLang) => {
+                                      const active = actionDraft?.theirHat === hatLang;
+                                      return (
+                                        <Pressable
+                                          key={`theirhat-${hatLang}`}
+                                          style={[styles.optionChip, active && styles.optionChipActive]}
+                                          onPress={() => setActionDraft((prev) => ({ ...(prev || {}), type: 'targeted', targetIdx: targetPlayer.idx, theirHat: hatLang }))}
+                                        >
+                                          <Text style={[styles.optionChipText, active && styles.optionChipTextActive]}>{HAT_LABELS[hatLang] || hatLang}</Text>
+                                        </Pressable>
+                                      );
+                                    })}
+                                  </View>
+                                  <Pressable
+                                    style={[styles.inlineActionButton, (!actionDraft?.myHat || !actionDraft?.theirHat) && styles.inlineActionButtonDisabled]}
+                                    disabled={!actionDraft?.myHat || !actionDraft?.theirHat}
+                                    onPress={() => submitTargetAction({ myHat: actionDraft.myHat, theirHat: actionDraft.theirHat })}
+                                  >
+                                    <Text style={styles.inlineActionButtonText}>Intercambiar sombreros</Text>
+                                  </Pressable>
+                                </View>
+                              )}
+
+                              {targetPlayer && ['gloton', 'ladron', 'intercambio_hamburguesa'].includes(selectedCard.action) && (
+                                <Pressable style={styles.inlineActionButton} onPress={() => submitTargetAction()}>
+                                  <Text style={styles.inlineActionButtonText}>Confirmar accion</Text>
+                                </Pressable>
+                              )}
+                            </View>
+                          )}
+                          {selectedCard.type === 'action' && selectedCard.action === 'negacion' && (
+                            <Text style={styles.actionHint}>Negacion sigue siendo automatica cuando otro jugador hace una accion.</Text>
+                          )}
+                          <Pressable
+                            style={styles.inlineDiscardButton}
+                            onPress={() => {
+                              onSendAction?.({ type: 'discard', cardIdx: selectedCardIdx });
+                              resetCardFlow();
+                            }}
+                          >
                             <Text style={styles.inlineDiscardButtonText}>Descartar</Text>
                           </Pressable>
                         </>
@@ -299,7 +603,14 @@ export function NativeGameScreen({ setup, online, gameSession, chatMessages = []
           <Text style={styles.bodyText}>Esperando el primer `stateUpdate` del host para mostrar la partida en vivo.</Text>
         )}
         {isMyTurn && (
-          <Pressable style={styles.passTurnButton} onPress={() => onSendAction?.({ type: 'passTurn' })}>
+          <Pressable
+            style={styles.passTurnButton}
+            onPress={() => {
+              onSendAction?.({ type: 'passTurn' });
+              resetCardFlow();
+              setHatDraft(null);
+            }}
+          >
             <Text style={styles.passTurnButtonText}>Pasar turno</Text>
           </Pressable>
         )}
@@ -435,10 +746,22 @@ const styles = StyleSheet.create({
   optionWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   optionChip: { backgroundColor: 'rgba(78,205,196,0.08)', borderRadius: 999, borderWidth: 1, borderColor: 'rgba(78,205,196,0.22)', paddingHorizontal: 10, paddingVertical: 8 },
   optionChipText: { color: '#9ff6ef', fontSize: 12, fontWeight: '700' },
+  optionChipActive: { backgroundColor: 'rgba(255,215,0,0.14)', borderColor: '#FFD700' },
+  optionChipTextActive: { color: '#FFD700' },
   inlineActionButton: { backgroundColor: '#FFD700', borderRadius: 12, paddingVertical: 10, alignItems: 'center' },
   inlineActionButtonText: { color: '#111', fontSize: 13, fontWeight: '900' },
+  inlineActionButtonDisabled: { opacity: 0.4 },
   inlineDiscardButton: { backgroundColor: '#2a2a4a', borderRadius: 12, paddingVertical: 10, alignItems: 'center' },
   inlineDiscardButtonText: { color: '#d8ddf3', fontSize: 13, fontWeight: '800' },
+  urgentPanel: { marginTop: 14, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,138,128,0.30)', backgroundColor: 'rgba(255,138,128,0.08)', padding: 12, gap: 8 },
+  urgentTitle: { color: '#ffb3ac', fontSize: 13, fontWeight: '800' },
+  hatActionCard: { minWidth: 150, backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', padding: 10, gap: 8 },
+  hatActionName: { color: '#fff1b3', fontSize: 13, fontWeight: '800' },
+  hatActionButtons: { flexDirection: 'row', gap: 8 },
+  smallActionButton: { flex: 1, backgroundColor: '#FFD700', borderRadius: 10, paddingVertical: 8, alignItems: 'center' },
+  smallActionButtonText: { color: '#111', fontSize: 12, fontWeight: '900' },
+  smallActionButtonAlt: { flex: 1, backgroundColor: '#4ecdc4', borderRadius: 10, paddingVertical: 8, alignItems: 'center' },
+  smallActionButtonAltText: { color: '#04101c', fontSize: 12, fontWeight: '900' },
   tabsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 },
   playerTab: { paddingHorizontal: 12, paddingVertical: 10, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)' },
   playerTabActive: { borderColor: '#FFD700', backgroundColor: 'rgba(255,215,0,0.08)' },
