@@ -94,12 +94,15 @@ const INSTALL_PROMPT_COPY = {
 };
 
 export default function App() {
-  const initialSalaCode = new URLSearchParams(window.location.search).get('sala') || '';
+  const initialParams = new URLSearchParams(window.location.search);
+  const initialSalaCode = initialParams.get('sala') || '';
+  const initialView = initialParams.get('view') || '';
   const appDownloadUrl = typeof window !== 'undefined' ? new URL('/', window.location.href).toString() : 'https://hungry-poly.up.railway.app/';
   const hasRoomSession = !!sessionStorage.getItem('hp_room_session');
   const [phase, setPhase] = useState(
     hasRoomSession ? 'reconnecting'
     : initialSalaCode ? 'onlineMenu'
+    : initialView === 'friends' && getSavedUser() ? 'friends'
     : (getSavedUser() ? 'setup' : 'auth')
   );
   const [players, setPlayers] = useState([]);
@@ -412,6 +415,26 @@ export default function App() {
     setOnlineMenuTab('');
     setShowQuickMenu(false);
     setPhase(getSavedUser() ? 'setup' : 'auth');
+  }
+
+  function goToFriends() {
+    if (phase === 'playing' && !isOnline) {
+      resetLocalGameState();
+    }
+    if (isOnline && roomCode) {
+      socket.emit('leaveRoom');
+      socket.disconnect();
+      resetOnlineRoomState();
+    }
+    setInviteJoinCode('');
+    setOnlineMenuTab('');
+    setShowQuickMenu(false);
+    if (getSavedUser()) {
+      socket.connect();
+      setPhase('friends');
+    } else {
+      setPhase('auth');
+    }
   }
 
   function handleQuickLeaveGame() {
@@ -1736,6 +1759,9 @@ export default function App() {
           }}>
             <Btn onClick={goToHome} color="#4ecdc4" style={{ color: '#0f1117', width: '100%', justifyContent: 'center' }}>
               {T('homeMenu')}
+            </Btn>
+            <Btn onClick={goToFriends} color="#7ad8ff" style={{ color: '#102033', width: '100%', justifyContent: 'center' }}>
+              {T('friends')}
             </Btn>
             {phase === 'playing' && (
               <Btn onClick={handleQuickLeaveGame} color="#ff4444" style={{ color: '#fff', width: '100%', justifyContent: 'center' }}>

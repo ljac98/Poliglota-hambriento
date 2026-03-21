@@ -73,6 +73,7 @@ export default function App() {
   const [currentScreen, setCurrentScreen] = useState('home');
   const [loadingGame, setLoadingGame] = useState(true);
   const [showAppMenu, setShowAppMenu] = useState(false);
+  const [currentWebUrl, setCurrentWebUrl] = useState('');
   const [setupState, setSetupState] = useState(DEFAULT_SETUP);
   const [onlineState, setOnlineState] = useState(DEFAULT_ONLINE);
   const [gameSession, setGameSession] = useState(DEFAULT_GAME_SESSION);
@@ -733,6 +734,13 @@ export default function App() {
     setCurrentScreen('nativeSetup');
   }
 
+  function openFriendsWebView() {
+    setLoadingGame(true);
+    setCurrentWebUrl(`${gameUrl}?view=friends`);
+    setShowAppMenu(false);
+    setCurrentScreen('web');
+  }
+
   function renderAppMenu() {
     const inMatch = currentScreen === 'web' || currentScreen === 'nativeGame';
     return (
@@ -748,6 +756,9 @@ export default function App() {
             <View style={styles.appMenuPanel}>
               <Pressable onPress={goToAppHome} style={[styles.appMenuButton, styles.appMenuHome]}>
                 <Text style={styles.appMenuButtonTextDark}>Inicio</Text>
+              </Pressable>
+              <Pressable onPress={openFriendsWebView} style={[styles.appMenuButton, styles.appMenuFriends]}>
+                <Text style={styles.appMenuButtonTextDark}>Amigos</Text>
               </Pressable>
               {inMatch ? (
                 <Pressable onPress={leaveCurrentMatchFromMenu} style={[styles.appMenuButton, styles.appMenuLeave]}>
@@ -792,6 +803,7 @@ export default function App() {
 
   function goToWebGame() {
     setLoadingGame(true);
+    setCurrentWebUrl(gameUrl);
     setCurrentScreen('web');
   }
 
@@ -845,7 +857,7 @@ export default function App() {
             <Text style={styles.secondaryButtonText}>{isLocalWebGame ? 'Salir partida' : 'Lobby'}</Text>
           </Pressable>
           <Text style={styles.webviewTitle}>Hungry Poly Mobile</Text>
-          <Pressable onPress={() => Linking.openURL(gameUrl)} style={styles.secondaryButton}>
+          <Pressable onPress={() => Linking.openURL(currentWebUrl || gameUrl)} style={styles.secondaryButton}>
             <Text style={styles.secondaryButtonText}>Abrir web</Text>
           </Pressable>
         </View>
@@ -857,7 +869,7 @@ export default function App() {
             </View>
           )}
           <WebView
-            source={{ uri: gameUrl }}
+            source={{ uri: currentWebUrl || gameUrl }}
             style={styles.webview}
             startInLoadingState
             javaScriptEnabled
@@ -1019,6 +1031,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   appMenuHome: { backgroundColor: '#4ecdc4' },
+  appMenuFriends: { backgroundColor: '#7ad8ff' },
   appMenuLeave: { backgroundColor: '#ff4444' },
   appMenuCreate: { backgroundColor: '#FFD700' },
   appMenuJoin: { backgroundColor: '#00BCD4' },
