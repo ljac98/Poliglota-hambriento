@@ -1835,10 +1835,11 @@ export default function App() {
                   width: '100%',
                   padding: '10px 12px',
                   borderRadius: 14,
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,215,0,0.22)',
+                  background: 'linear-gradient(180deg, rgba(255,215,0,0.12), rgba(255,255,255,0.04))',
                   cursor: 'pointer',
                   textAlign: 'left',
+                  boxShadow: '0 12px 24px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,0.08)',
                 }}
               >
                 <UserAvatar

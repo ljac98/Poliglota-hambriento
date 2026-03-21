@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { getProfile, getHistory, saveUserLocally, sendFriendRequest, updateProfileAvatar } from '../../src/api.js';
+import { getProfile, getHistory, getProfileFriends, saveUserLocally, sendFriendRequest, updateProfileAvatar } from '../../src/api.js';
 import { getUILang } from '../../src/translations.js';
 import { Btn } from '../components/Btn.jsx';
+import { Modal } from '../components/Modal.jsx';
 import { UserAvatar } from '../components/UserAvatar.jsx';
 
 const COPY = {
@@ -28,6 +29,8 @@ const COPY = {
     changePhoto: 'Cambiar foto',
     removePhoto: 'Quitar foto',
     photoHint: 'Puedes subir una imagen cuadrada o rectangular.',
+    friendsList: 'Lista de amigos',
+    openFriendsList: 'Ver amigos',
   },
   en: {
     title: 'Profile',
@@ -52,6 +55,8 @@ const COPY = {
     changePhoto: 'Change photo',
     removePhoto: 'Remove photo',
     photoHint: 'You can upload a square or rectangular image.',
+    friendsList: 'Friends list',
+    openFriendsList: 'View friends',
   },
 };
 
@@ -85,7 +90,7 @@ function formatDate(dateValue) {
   }
 }
 
-export function ProfileScreen({ profileUserId, user, onUserUpdate, onBack, onOpenFriends, T }) {
+export function ProfileScreen({ profileUserId, user, onUserUpdate, onOpenProfile, onBack, onOpenFriends, T }) {
   const uiKey = getUILang();
   const text = getCopy();
   const [profile, setProfile] = useState(null);
@@ -93,6 +98,9 @@ export function ProfileScreen({ profileUserId, user, onUserUpdate, onBack, onOpe
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [savingAvatar, setSavingAvatar] = useState(false);
+  const [showFriendsModal, setShowFriendsModal] = useState(false);
+  const [friendsLoading, setFriendsLoading] = useState(false);
+  const [profileFriends, setProfileFriends] = useState([]);
   const [statusMessage, setStatusMessage] = useState('');
   const fileInputRef = useRef(null);
 
@@ -200,6 +208,20 @@ export function ProfileScreen({ profileUserId, user, onUserUpdate, onBack, onOpe
       setStatusMessage(err.message || 'Error');
     } finally {
       setSavingAvatar(false);
+    }
+  }
+
+  async function openFriendsModal() {
+    if (!profile) return;
+    setShowFriendsModal(true);
+    setFriendsLoading(true);
+    try {
+      const items = await getProfileFriends(profile.id);
+      setProfileFriends(Array.isArray(items) ? items : []);
+    } catch (err) {
+      setStatusMessage(err.message || 'Error');
+    } finally {
+      setFriendsLoading(false);
     }
   }
 
@@ -341,62 +363,74 @@ export function ProfileScreen({ profileUserId, user, onUserUpdate, onBack, onOpe
                     { label: text.wins, value: profile.wins },
                     { label: text.losses, value: profile.losses },
                     { label: text.games, value: profile.gamesPlayed },
-                    { label: text.friends, value: profile.friendsCount },
-                    { label: text.mutual, value: profile.mutualFriendsCount },
+                    { label: text.friends, value: profile.friendsCount, clickable: true },
+                    ...(!isOwnProfile ? [{ label: text.mutual, value: profile.mutualFriendsCount }] : []),
                   ].map((item) => (
-                    <div
+                    <button
                       key={item.label}
+                      type="button"
+                      onClick={item.clickable ? openFriendsModal : undefined}
                       style={{
                         borderRadius: 16,
                         padding: '14px 16px',
                         background: 'rgba(255,255,255,0.04)',
                         border: '1px solid rgba(255,255,255,0.08)',
+                        textAlign: 'left',
+                        cursor: item.clickable ? 'pointer' : 'default',
+                        boxShadow: item.clickable ? '0 0 0 1px rgba(255,215,0,0.08) inset' : 'none',
+                        fontFamily: "'Fredoka',sans-serif",
+                        outline: 'none',
                       }}
                     >
                       <div style={{ color: '#8a8fa8', fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.6 }}>{item.label}</div>
                       <div style={{ color: '#FFD700', fontSize: 24, fontWeight: 900, marginTop: 4 }}>{item.value}</div>
-                    </div>
+                      {item.clickable && (
+                        <div style={{ color: '#7ad8ff', fontSize: 11, fontWeight: 800, marginTop: 4 }}>{text.openFriendsList}</div>
+                      )}
+                    </button>
                   ))}
                 </div>
               </div>
 
-              <div style={{
-                borderRadius: 22,
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                padding: 20,
-              }}>
-                <div style={{ color: '#fff3bf', fontSize: 18, fontWeight: 900, marginBottom: 12 }}>{text.mutual}</div>
-                {profile.mutualFriendsCount > 0 ? (
-                  <>
-                    <div style={{ color: '#9ee6d8', fontSize: 14, fontWeight: 800, marginBottom: 12 }}>
-                      {profile.mutualFriendsCount} {text.mutual.toLowerCase()}
-                    </div>
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                      {profile.mutualFriends.map((name) => (
-                        <span
-                          key={name}
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            padding: '8px 12px',
-                            borderRadius: 999,
-                            background: 'rgba(78,205,196,0.12)',
-                            border: '1px solid rgba(78,205,196,0.24)',
-                            color: '#9ee6d8',
-                            fontSize: 12,
-                            fontWeight: 800,
-                          }}
-                        >
-                          {name}
-                        </span>
-                      ))}
-                    </div>
-                  </>
-                ) : (
-                  <div style={{ color: '#8a8fa8', fontSize: 13, fontWeight: 700 }}>{text.mutualNone}</div>
-                )}
-              </div>
+              {!isOwnProfile && (
+                <div style={{
+                  borderRadius: 22,
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  padding: 20,
+                }}>
+                  <div style={{ color: '#fff3bf', fontSize: 18, fontWeight: 900, marginBottom: 12 }}>{text.mutual}</div>
+                  {profile.mutualFriendsCount > 0 ? (
+                    <>
+                      <div style={{ color: '#9ee6d8', fontSize: 14, fontWeight: 800, marginBottom: 12 }}>
+                        {profile.mutualFriendsCount} {text.mutual.toLowerCase()}
+                      </div>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        {profile.mutualFriends.map((name) => (
+                          <span
+                            key={name}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              padding: '8px 12px',
+                              borderRadius: 999,
+                              background: 'rgba(78,205,196,0.12)',
+                              border: '1px solid rgba(78,205,196,0.24)',
+                              color: '#9ee6d8',
+                              fontSize: 12,
+                              fontWeight: 800,
+                            }}
+                          >
+                            {name}
+                          </span>
+                        ))}
+                      </div>
+                    </>
+                  ) : (
+                    <div style={{ color: '#8a8fa8', fontSize: 13, fontWeight: 700 }}>{text.mutualNone}</div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div style={{
@@ -447,6 +481,51 @@ export function ProfileScreen({ profileUserId, user, onUserUpdate, onBack, onOpe
           </>
         )}
       </div>
+      {showFriendsModal && (
+        <Modal title={text.friendsList} maxWidth={560}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {friendsLoading ? (
+              <div style={{ color: '#a6abc2', textAlign: 'center', padding: '24px 0', fontSize: 14 }}>{T('loading')}</div>
+            ) : profileFriends.length === 0 ? (
+              <div style={{ color: '#8a8fa8', textAlign: 'center', padding: '24px 0', fontSize: 14 }}>{T('noFriends')}</div>
+            ) : profileFriends.map((friend) => (
+              <button
+                key={friend.id}
+                type="button"
+                onClick={() => {
+                  setShowFriendsModal(false);
+                  onOpenProfile?.(friend.id);
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  padding: '10px 12px',
+                  borderRadius: 14,
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  background: 'rgba(255,255,255,0.04)',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                }}
+              >
+                <UserAvatar name={friend.displayName} username={friend.username} avatarUrl={friend.avatarUrl} size={42} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ color: '#fff3bf', fontSize: 14, fontWeight: 900 }}>{friend.displayName}</div>
+                  <div style={{ color: '#8a8fa8', fontSize: 12, fontWeight: 700 }}>@{friend.username}</div>
+                </div>
+                <div style={{ color: friend.online ? '#7ef0a2' : '#8a8fa8', fontSize: 12, fontWeight: 800 }}>
+                  {friend.online ? T('onlineStatus') : T('offlineStatus')}
+                </div>
+              </button>
+            ))}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+              <Btn onClick={() => setShowFriendsModal(false)} color="#2a2a4a" style={{ color: '#fff' }}>
+                {T('close')}
+              </Btn>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

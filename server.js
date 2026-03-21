@@ -248,6 +248,30 @@ app.get('/api/friends', requireDB, requireAuth, async (req, res) => {
 });
 
 // ── Send friend request ──
+app.get('/api/profile/:id/friends', requireDB, async (req, res) => {
+  try {
+    const targetUserId = parseInt(req.params.id, 10);
+    if (!Number.isFinite(targetUserId)) return res.status(400).json({ error: 'Usuario invalido' });
+    const result = await pool.query(
+      `SELECT u.id, u.username, u.display_name, u.avatar_url, u.wins, u.games_played
+       FROM friendships f JOIN users u ON u.id = f.friend_id
+       WHERE f.user_id = $1 ORDER BY u.display_name`,
+      [targetUserId]
+    );
+    res.json(result.rows.map(u => ({
+      id: u.id,
+      username: u.username,
+      displayName: u.display_name,
+      avatarUrl: u.avatar_url,
+      wins: u.wins,
+      gamesPlayed: u.games_played,
+      online: onlineUsers.has(u.id),
+    })));
+  } catch {
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
 app.post('/api/friends/request', requireDB, requireAuth, async (req, res) => {
   try {
     const { username } = req.body;

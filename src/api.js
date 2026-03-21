@@ -89,6 +89,10 @@ export async function getFriends() {
   return request('/api/friends');
 }
 
+export async function getProfileFriends(userId) {
+  return request(`/api/profile/${userId}/friends`);
+}
+
 export async function sendFriendRequest(username) {
   return request('/api/friends/request', { method: 'POST', body: JSON.stringify({ username }) });
 }

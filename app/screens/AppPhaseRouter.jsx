@@ -121,6 +121,7 @@ export function AppPhaseRouter({
           user={user}
           T={T}
           onUserUpdate={setUser}
+          onOpenProfile={(id) => openProfile(id, 'profile')}
           onBack={() => setPhase(profileReturnPhase || (user ? 'setup' : 'auth'))}
           onOpenFriends={() => setPhase(user ? 'friends' : 'auth')}
         />

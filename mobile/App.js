@@ -1063,9 +1063,9 @@ const styles = StyleSheet.create({
     gap: 10,
     borderRadius: 14,
     padding: 10,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: 'rgba(255,215,0,0.12)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: 'rgba(255,215,0,0.22)',
     marginBottom: 2,
   },
   appMenuProfileAvatar: {
