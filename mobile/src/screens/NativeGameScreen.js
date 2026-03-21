@@ -213,13 +213,27 @@ function RenderBurgerVisual({ target = [], table = [], badge, compact = false })
 
 function RenderHandCard({ card, active, onPress }) {
   const visual = getCardVisual(card);
+  const isIngredient = card?.type === 'ingredient';
   return (
     <Pressable style={[styles.handCard, active && styles.handCardActive]} onPress={onPress}>
+      <View style={styles.handCardTop}>
+        <Text style={[styles.handCardTypeBadge, { color: visual.accent }]}>
+          {isIngredient ? 'ING' : 'ACC'}
+        </Text>
+        <Text style={styles.handCardLangBadge}>
+          {isIngredient ? ((card?.language || '').slice(0, 3).toUpperCase() || 'LANG') : 'PLAY'}
+        </Text>
+      </View>
       <View style={[styles.handCardIconWrap, { borderColor: visual.accent }]}>
         <Image source={visual.icon} style={styles.handCardIcon} resizeMode="contain" />
       </View>
       <Text style={[styles.handCardTitle, active && styles.handCardTitleActive]} numberOfLines={2}>{visual.title}</Text>
       <Text style={styles.handCardSubtitle}>{visual.subtitle}</Text>
+      <View style={[styles.handCardFooter, { borderTopColor: `${visual.accent}55` }]}>
+        <Text style={styles.handCardFooterText}>
+          {isIngredient ? 'Ingrediente jugable' : 'Carta de accion'}
+        </Text>
+      </View>
     </Pressable>
   );
 }
@@ -231,6 +245,17 @@ function RenderTableTile({ item }) {
     <View style={styles.tableTile}>
       <Image source={INGREDIENT_ICON_SOURCES[key] || INGREDIENT_ICON_SOURCES.wildcard} style={styles.tableTileIcon} resizeMode="contain" />
       <Text style={styles.tableTileText} numberOfLines={2}>{title}</Text>
+    </View>
+  );
+}
+
+function RenderDiscardCard({ card }) {
+  const visual = getCardVisual(card);
+  return (
+    <View style={styles.discardCard}>
+      <Image source={visual.icon} style={styles.discardCardIcon} resizeMode="contain" />
+      <Text style={styles.discardCardTitle} numberOfLines={2}>{visual.title}</Text>
+      <Text style={styles.discardCardSubtitle}>{visual.subtitle}</Text>
     </View>
   );
 }
@@ -302,6 +327,7 @@ export function NativeGameScreen({ setup, online, gameSession, chatMessages = []
   const currentBurgerIndex = (myLivePlayer?.currentBurger || 0) + 1;
   const currentTurnPlayer = liveCp != null ? livePlayers[liveCp] : null;
   const discardIngredients = liveDiscardCards.filter((card) => card?.type === 'ingredient');
+  const recentDiscard = liveDiscardCards.slice(-6).reverse();
   const pendingNeg = gameSession.liveState?.pendingNeg || null;
   const canRespondNegation = pendingNeg?.eligibleIdxs?.includes(online.myIdx) && !(online.myIdx in (pendingNeg?.responses || {}));
   const negationAnswered = pendingNeg?.eligibleIdxs?.includes(online.myIdx) && (online.myIdx in (pendingNeg?.responses || {}));
@@ -484,10 +510,10 @@ export function NativeGameScreen({ setup, online, gameSession, chatMessages = []
             </View>
           </View>
 
-          <View style={styles.boardSplit}>
-            <View style={styles.boardPanel}>
-              <Text style={styles.liveColumnTitle}>Ingredientes que faltan</Text>
-              <View style={styles.ingredientIconRow}>
+            <View style={styles.boardSplit}>
+              <View style={styles.boardPanel}>
+                <Text style={styles.liveColumnTitle}>Ingredientes que faltan</Text>
+                <View style={styles.ingredientIconRow}>
                 {neededIngredients.length === 0 ? (
                   <Text style={styles.emptyText}>Ya no faltan ingredientes para esta hamburguesa.</Text>
                 ) : (
@@ -501,9 +527,9 @@ export function NativeGameScreen({ setup, online, gameSession, chatMessages = []
               </View>
             </View>
 
-            <View style={styles.boardPanel}>
-              <Text style={styles.liveColumnTitle}>Sombreros activos</Text>
-              <View style={styles.hatBoardRow}>
+              <View style={styles.boardPanel}>
+                <Text style={styles.liveColumnTitle}>Sombreros activos</Text>
+                <View style={styles.hatBoardRow}>
                 {(myLivePlayer.mainHats || []).map((hatLang) => (
                   <View key={`mainhat-${hatLang}`} style={styles.hatBoardCard}>
                     <Image source={HAT_IMAGE_SOURCES[hatLang]} style={styles.hatBoardImage} resizeMode="contain" />
@@ -524,6 +550,24 @@ export function NativeGameScreen({ setup, online, gameSession, chatMessages = []
                   </View>
                 </>
               )}
+            </View>
+
+            <View style={styles.boardPanel}>
+              <Text style={styles.liveColumnTitle}>Resumen de progreso</Text>
+              <View style={styles.progressSummaryRow}>
+                <View style={styles.progressSummaryCard}>
+                  <Text style={styles.progressSummaryValue}>{myLivePlayer.completed || 0}</Text>
+                  <Text style={styles.progressSummaryLabel}>Completadas</Text>
+                </View>
+                <View style={styles.progressSummaryCard}>
+                  <Text style={styles.progressSummaryValue}>{currentBurgerIndex}</Text>
+                  <Text style={styles.progressSummaryLabel}>Actual</Text>
+                </View>
+                <View style={styles.progressSummaryCard}>
+                  <Text style={styles.progressSummaryValue}>{myLivePlayer.totalBurgers || myLivePlayer.burgers?.length || 0}</Text>
+                  <Text style={styles.progressSummaryLabel}>Objetivo total</Text>
+                </View>
+              </View>
             </View>
           </View>
         </View>
@@ -910,6 +954,19 @@ export function NativeGameScreen({ setup, online, gameSession, chatMessages = []
                 );
               })}
             </ScrollView>
+
+            <View style={styles.boardPanel}>
+              <Text style={styles.liveColumnTitle}>Descarte visible</Text>
+              {recentDiscard.length === 0 ? (
+                <Text style={styles.emptyText}>Todavia no hay cartas en el descarte.</Text>
+              ) : (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.discardRow}>
+                  {recentDiscard.map((card, index) => (
+                    <RenderDiscardCard key={`discard-${card.id || index}`} card={card} />
+                  ))}
+                </ScrollView>
+              )}
+            </View>
           </>
         ) : (
           <Text style={styles.bodyText}>Esperando el primer `stateUpdate` del host para mostrar la partida en vivo.</Text>
@@ -1043,6 +1100,10 @@ const styles = StyleSheet.create({
   boardHeroSubtext: { color: '#8a8fa8', fontSize: 12, marginTop: 4, marginBottom: 8 },
   boardSplit: { gap: 12 },
   boardPanel: { backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', padding: 12 },
+  progressSummaryRow: { flexDirection: 'row', gap: 10 },
+  progressSummaryCard: { flex: 1, backgroundColor: '#1d2a4a', borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', paddingVertical: 12, paddingHorizontal: 8, alignItems: 'center' },
+  progressSummaryValue: { color: '#FFD700', fontSize: 22, fontWeight: '900' },
+  progressSummaryLabel: { color: '#d8ddf3', fontSize: 11, fontWeight: '700', textAlign: 'center', marginTop: 4 },
   rivalsBoard: { gap: 10, marginTop: 12, paddingRight: 12 },
   rivalBoardCard: { width: 220, backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', padding: 12 },
   rivalBoardTitle: { color: '#fff1b3', fontSize: 14, fontWeight: '800', marginBottom: 8 },
@@ -1073,13 +1134,18 @@ const styles = StyleSheet.create({
   liveColumnCard: { backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', padding: 14 },
   liveColumnTitle: { color: '#fff1b3', fontSize: 14, fontWeight: '800', marginBottom: 10 },
   handRow: { gap: 10, paddingRight: 12 },
-  handCard: { width: 112, minHeight: 148, backgroundColor: '#1d2a4a', borderRadius: 18, borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)', padding: 12, alignItems: 'center', justifyContent: 'center' },
-  handCardActive: { borderColor: '#FFD700', backgroundColor: 'rgba(255,215,0,0.10)' },
-  handCardIconWrap: { width: 54, height: 54, borderRadius: 18, borderWidth: 1, backgroundColor: 'rgba(255,255,255,0.04)', alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
-  handCardIcon: { width: 38, height: 38 },
+  handCard: { width: 126, minHeight: 186, backgroundColor: '#1d2a4a', borderRadius: 18, borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)', padding: 12, alignItems: 'center' },
+  handCardActive: { borderColor: '#FFD700', backgroundColor: 'rgba(255,215,0,0.10)', transform: [{ translateY: -4 }] },
+  handCardTop: { width: '100%', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  handCardTypeBadge: { fontSize: 11, fontWeight: '900' },
+  handCardLangBadge: { color: '#8a8fa8', fontSize: 10, fontWeight: '800' },
+  handCardIconWrap: { width: 62, height: 62, borderRadius: 20, borderWidth: 1, backgroundColor: 'rgba(255,255,255,0.04)', alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
+  handCardIcon: { width: 44, height: 44 },
   handCardTitle: { color: '#fff', fontSize: 13, fontWeight: '800', textAlign: 'center' },
   handCardTitleActive: { color: '#FFD700' },
   handCardSubtitle: { color: '#8a8fa8', fontSize: 11, fontWeight: '700', marginTop: 6, textAlign: 'center' },
+  handCardFooter: { marginTop: 'auto', width: '100%', borderTopWidth: 1, paddingTop: 8, alignItems: 'center' },
+  handCardFooterText: { color: '#aeb4d0', fontSize: 10, fontWeight: '700', textAlign: 'center' },
   cardChipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   cardChip: { backgroundColor: 'rgba(255,215,0,0.08)', borderRadius: 999, borderWidth: 1, borderColor: 'rgba(255,215,0,0.22)', paddingHorizontal: 10, paddingVertical: 8 },
   cardChipActive: { backgroundColor: 'rgba(255,215,0,0.18)', borderColor: '#FFD700' },
@@ -1093,6 +1159,11 @@ const styles = StyleSheet.create({
   tableTile: { width: 94, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(78,205,196,0.22)', backgroundColor: 'rgba(78,205,196,0.08)', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 8 },
   tableTileIcon: { width: 36, height: 36, marginBottom: 8 },
   tableTileText: { color: '#9ff6ef', fontSize: 11, fontWeight: '700', textAlign: 'center' },
+  discardRow: { gap: 10, paddingRight: 12 },
+  discardCard: { width: 108, backgroundColor: '#1d2a4a', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)', paddingVertical: 12, paddingHorizontal: 10, alignItems: 'center' },
+  discardCardIcon: { width: 40, height: 40, marginBottom: 10 },
+  discardCardTitle: { color: '#fff', fontSize: 12, fontWeight: '800', textAlign: 'center' },
+  discardCardSubtitle: { color: '#8a8fa8', fontSize: 10, fontWeight: '700', textAlign: 'center', marginTop: 6 },
   emptyText: { color: '#8a8fa8', fontSize: 12, lineHeight: 18 },
   actionPanel: { marginTop: 14, paddingTop: 12, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.08)', gap: 10 },
   actionPanelTitle: { color: '#FFD700', fontSize: 13, fontWeight: '800' },
