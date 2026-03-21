@@ -10,7 +10,12 @@
     "build": "vite build",
     "preview": "vite preview",
     "server": "node server.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "mobile:install": "npm install --prefix mobile",
+    "mobile:start": "npm run start --prefix mobile",
+    "mobile:android": "npm run android --prefix mobile",
+    "mobile:web": "npm run web --prefix mobile",
+    "mobile:config": "cd mobile && npx expo config --type public"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",

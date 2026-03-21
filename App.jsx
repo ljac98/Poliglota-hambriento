@@ -48,6 +48,51 @@ import {
 } from './app/utils/gameHelpers.js';
 import { clearRoomSession, getRoomSession, saveRoomSession } from './app/utils/roomSession.js';
 
+const INSTALL_PROMPT_COPY = {
+  es: {
+    title: 'Instala Hungry Poly',
+    descPrompt: 'Descarga el juego en tu teléfono para abrirlo como app.',
+    descIos: 'En iPhone usa Compartir y luego "Agregar a pantalla de inicio".',
+    install: 'Instalar',
+    later: 'Ahora no',
+  },
+  en: {
+    title: 'Install Hungry Poly',
+    descPrompt: 'Download the game on your phone and open it like an app.',
+    descIos: 'On iPhone tap Share and then "Add to Home Screen".',
+    install: 'Install',
+    later: 'Not now',
+  },
+  fr: {
+    title: 'Installer Hungry Poly',
+    descPrompt: 'Télécharge le jeu sur ton téléphone pour l’ouvrir comme une app.',
+    descIos: 'Sur iPhone, appuie sur Partager puis "Sur l’écran d’accueil".',
+    install: 'Installer',
+    later: 'Plus tard',
+  },
+  it: {
+    title: 'Installa Hungry Poly',
+    descPrompt: 'Scarica il gioco sul telefono e aprilo come un’app.',
+    descIos: 'Su iPhone tocca Condividi e poi "Aggiungi alla schermata Home".',
+    install: 'Installa',
+    later: 'Dopo',
+  },
+  de: {
+    title: 'Hungry Poly installieren',
+    descPrompt: 'Lade das Spiel auf dein Handy und öffne es wie eine App.',
+    descIos: 'Auf dem iPhone tippe auf Teilen und dann "Zum Home-Bildschirm".',
+    install: 'Installieren',
+    later: 'Später',
+  },
+  pt: {
+    title: 'Instalar Hungry Poly',
+    descPrompt: 'Baixa o jogo no teu telemóvel e abre como app.',
+    descIos: 'No iPhone toca em Partilhar e depois "Adicionar ao ecrã inicial".',
+    install: 'Instalar',
+    later: 'Agora não',
+  },
+};
+
 export default function App() {
   const initialSalaCode = new URLSearchParams(window.location.search).get('sala') || '';
   const hasRoomSession = !!sessionStorage.getItem('hp_room_session');
@@ -69,6 +114,9 @@ export default function App() {
   const [mobileTab, setMobileTab] = useState('mesa');
   const [showPercheroModal, setShowPercheroModal] = useState(false);
   const [howToPlayPage, setHowToPlayPage] = useState(0);
+  const [deferredInstallPrompt, setDeferredInstallPrompt] = useState(null);
+  const [showInstallPrompt, setShowInstallPrompt] = useState(false);
+  const [showIosInstallHint, setShowIosInstallHint] = useState(false);
   const aiRunning = useRef(false);
   const [turnTime, setTurnTime] = useState(60);
   const [currentGameConfig, setCurrentGameConfig] = useState(null);
@@ -99,6 +147,7 @@ export default function App() {
   const [uiLang, setUiLangState] = useState(() => getUILang());
   const T = useCallback((key) => t(key, uiLang), [uiLang]);
   const uiGameLang = KEY_TO_LANG[uiLang] || LANGUAGES[0];
+  const installCopy = INSTALL_PROMPT_COPY[uiLang] || INSTALL_PROMPT_COPY.en;
   const handleSetLang = (lang) => { setUILang(lang); setUiLangState(lang); };
   const getActionText = useCallback((actionId) => {
     const base = getActionInfo(actionId);
@@ -150,6 +199,117 @@ export default function App() {
     socket.on('friendRequestReceived', handleFriendReq);
     return () => socket.off('friendRequestReceived', handleFriendReq);
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const isStandalone = window.matchMedia?.('(display-mode: standalone)')?.matches || window.navigator.standalone === true;
+    if (isStandalone) return undefined;
+
+    const ua = window.navigator.userAgent || '';
+    const isIos = /iPad|iPhone|iPod/.test(ua);
+    const isTouchDevice = window.matchMedia?.('(pointer: coarse)')?.matches;
+
+    const handleBeforeInstallPrompt = (event) => {
+      event.preventDefault();
+      setDeferredInstallPrompt(event);
+      setShowInstallPrompt(true);
+      setShowIosInstallHint(false);
+    };
+
+    const handleInstalled = () => {
+      setDeferredInstallPrompt(null);
+      setShowInstallPrompt(false);
+      setShowIosInstallHint(false);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleInstalled);
+
+    if (isIos && isTouchDevice) {
+      setShowIosInstallHint(true);
+      setShowInstallPrompt(true);
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleInstalled);
+    };
+  }, []);
+
+  const handleInstallApp = useCallback(async () => {
+    if (!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    const choice = await deferredInstallPrompt.userChoice.catch(() => null);
+    setDeferredInstallPrompt(null);
+    if (choice?.outcome === 'accepted') {
+      setShowInstallPrompt(false);
+      return;
+    }
+    setShowInstallPrompt(false);
+  }, [deferredInstallPrompt]);
+
+  const installBanner = showInstallPrompt && (
+    <div
+      style={{
+        position: 'fixed',
+        left: 16,
+        right: isMobile ? 16 : 'auto',
+        bottom: isMobile ? 16 : 20,
+        width: isMobile ? 'auto' : 360,
+        zIndex: 10000,
+        padding: isMobile ? '12px 14px' : '14px 16px',
+        borderRadius: 18,
+        background: 'rgba(12, 16, 28, 0.96)',
+        border: '1px solid rgba(255, 215, 0, 0.22)',
+        boxShadow: '0 20px 50px rgba(0,0,0,.42)',
+        backdropFilter: 'blur(10px)',
+      }}
+    >
+      <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+        <div
+          style={{
+            width: 42,
+            height: 42,
+            borderRadius: 14,
+            background: 'rgba(255, 215, 0, 0.16)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            fontSize: 22,
+          }}
+        >
+          {'\u{1F4F1}'}
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ color: '#FFD700', fontWeight: 900, fontSize: 16, lineHeight: 1.1, marginBottom: 4 }}>
+            {installCopy.title}
+          </div>
+          <div style={{ color: '#d5d8e4', fontSize: 13, lineHeight: 1.35 }}>
+            {showIosInstallHint ? installCopy.descIos : installCopy.descPrompt}
+          </div>
+          <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+            {!showIosInstallHint && deferredInstallPrompt && (
+              <Btn onClick={handleInstallApp} color="#FFD700" style={{ color: '#0f1117', fontWeight: 900 }}>
+                {installCopy.install}
+              </Btn>
+            )}
+            <Btn
+              onClick={() => {
+                setShowInstallPrompt(false);
+                setShowIosInstallHint(false);
+                setDeferredInstallPrompt(null);
+              }}
+              color="#2a2a4a"
+              style={{ color: '#c5cada', fontWeight: 800 }}
+            >
+              {installCopy.later}
+            </Btn>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   function acceptRoomInvite() {
     if (!roomInvite) return;
@@ -1446,45 +1606,48 @@ export default function App() {
 
   if (phase !== 'playing') {
     return (
-      <AppPhaseRouter
-        phase={phase}
-        T={T}
-        roomCode={roomCode}
-        user={user}
-        uiLang={uiLang}
-        handleSetLang={handleSetLang}
-        inviteToast={inviteToast}
-        friendReqToast={friendReqToast}
-        setUser={setUser}
-        setPhase={setPhase}
-        startGame={startGame}
-        socket={socket}
-        setInviteJoinCode={setInviteJoinCode}
-        inviteJoinCode={inviteJoinCode}
-        initialSalaCode={initialSalaCode}
-        setIsOnline={setIsOnline}
-        setIsHost={setIsHost}
-        setMyPlayerIdx={setMyPlayerIdx}
-        setRoomCode={setRoomCode}
-        setRoomIsPublic={setRoomIsPublic}
-        setRoomDisplayName={setRoomDisplayName}
-        setLobbyPlayers={setLobbyPlayers}
-        saveRoomSession={saveRoomSession}
-        lobbyPlayers={lobbyPlayers}
-        myPlayerIdx={myPlayerIdx}
-        isHost={isHost}
-        roomIsPublic={roomIsPublic}
-        roomDisplayName={roomDisplayName}
-        startOnlineGame={startOnlineGame}
-        clearRoomSession={clearRoomSession}
-        players={players}
-        HI={HI}
-        extraPlay={extraPlay}
-        winner={winner}
-        isOnline={isOnline}
-        onLeftRoomReturn={handleLeftRoomReturn}
-        onLeftRoomLeave={handleLeftRoomLeave}
-      />
+      <>
+        <AppPhaseRouter
+          phase={phase}
+          T={T}
+          roomCode={roomCode}
+          user={user}
+          uiLang={uiLang}
+          handleSetLang={handleSetLang}
+          inviteToast={inviteToast}
+          friendReqToast={friendReqToast}
+          setUser={setUser}
+          setPhase={setPhase}
+          startGame={startGame}
+          socket={socket}
+          setInviteJoinCode={setInviteJoinCode}
+          inviteJoinCode={inviteJoinCode}
+          initialSalaCode={initialSalaCode}
+          setIsOnline={setIsOnline}
+          setIsHost={setIsHost}
+          setMyPlayerIdx={setMyPlayerIdx}
+          setRoomCode={setRoomCode}
+          setRoomIsPublic={setRoomIsPublic}
+          setRoomDisplayName={setRoomDisplayName}
+          setLobbyPlayers={setLobbyPlayers}
+          saveRoomSession={saveRoomSession}
+          lobbyPlayers={lobbyPlayers}
+          myPlayerIdx={myPlayerIdx}
+          isHost={isHost}
+          roomIsPublic={roomIsPublic}
+          roomDisplayName={roomDisplayName}
+          startOnlineGame={startOnlineGame}
+          clearRoomSession={clearRoomSession}
+          players={players}
+          HI={HI}
+          extraPlay={extraPlay}
+          winner={winner}
+          isOnline={isOnline}
+          onLeftRoomReturn={handleLeftRoomReturn}
+          onLeftRoomLeave={handleLeftRoomLeave}
+        />
+        {installBanner}
+      </>
     );
   }
 
@@ -1948,6 +2111,7 @@ export default function App() {
       height: '100vh', display: 'flex', flexDirection: 'column',
       background: '#0f1117', fontFamily: "'Fredoka',sans-serif", overflow: 'hidden', position: 'relative',
     }}>
+      {installBanner}
 
       {/* â”€â”€ Header â”€â”€ */}
       <div style={{
