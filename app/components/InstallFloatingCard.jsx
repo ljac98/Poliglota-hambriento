@@ -16,7 +16,7 @@ export function InstallFloatingCard({
       className="hp-install-floating-card"
       style={{
         position: 'fixed',
-        top: 84,
+        bottom: 18,
         right: 18,
         width: 'min(280px, calc(100vw - 32px))',
         padding: '12px 12px 10px',
