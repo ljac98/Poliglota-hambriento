@@ -788,9 +788,6 @@ export default function App() {
               <Pressable onPress={openFriendsWebView} style={[styles.appMenuButton, styles.appMenuFriends]}>
                 <Text style={styles.appMenuButtonTextDark}>Amigos</Text>
               </Pressable>
-              <Pressable onPress={openProfileWebView} style={[styles.appMenuButton, styles.appMenuProfile]}>
-                <Text style={styles.appMenuButtonTextDark}>Perfil</Text>
-              </Pressable>
               {inMatch ? (
                 <Pressable onPress={leaveCurrentMatchFromMenu} style={[styles.appMenuButton, styles.appMenuLeave]}>
                   <Text style={styles.appMenuButtonTextLight}>Salir partida</Text>

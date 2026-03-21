@@ -1860,9 +1860,6 @@ export default function App() {
             <Btn onClick={goToFriends} color="#7ad8ff" style={{ color: '#102033', width: '100%', justifyContent: 'center' }}>
               {T('friends')}
             </Btn>
-            <Btn onClick={goToProfile} color="#c8a2ff" style={{ color: '#1f1530', width: '100%', justifyContent: 'center' }}>
-              {T('profileMenu')}
-            </Btn>
             {phase === 'playing' && (
               <Btn onClick={handleQuickLeaveGame} color="#ff4444" style={{ color: '#fff', width: '100%', justifyContent: 'center' }}>
                 {T('leaveLocal')}
