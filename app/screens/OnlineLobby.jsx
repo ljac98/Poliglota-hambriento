@@ -438,6 +438,12 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
     boxShadow: '0 18px 40px rgba(0,0,0,0.32)',
     backdropFilter: 'blur(8px)',
   };
+  const modalDesktopColumns = isDesktopWide ? {
+    display: 'grid',
+    gridTemplateColumns: 'minmax(0, 1.1fr) minmax(280px, 0.9fr)',
+    gap: 18,
+    alignItems: 'start',
+  } : null;
 
   function pickHat(lang) {
     const taken = Object.values(hatPicks);
@@ -966,70 +972,72 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
       </div>
       {isHost && showModeConfig && (
         <Modal title={`${T('gameMode')}: ${gameModes.find(m => m.id === gameMode)?.label || ''}`}>
-          <div style={{
-            marginBottom: 16,
-            borderRadius: 14,
-            padding: '12px 12px 10px',
-            background: 'linear-gradient(180deg, rgba(255,215,0,0.1), rgba(255,255,255,0.03))',
-            border: '1px solid rgba(255,215,0,0.16)',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-              <img src={selectedMode.img} alt={selectedMode.label} style={{ width: 52, height: 52, objectFit: 'cover', borderRadius: 12 }} />
-              <div>
-                <div style={{ color: '#FFD700', fontWeight: 900, fontSize: 15 }}>{selectedMode.label}</div>
-                <div style={{ color: '#9ea4be', fontSize: 11 }}>{selectedMode.desc}</div>
-              </div>
-            </div>
+          <div style={modalDesktopColumns || undefined}>
             <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 14,
-              padding: '14px 16px',
-              borderRadius: 12,
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(255,255,255,0.08)',
+              marginBottom: isDesktopWide ? 0 : 16,
+              borderRadius: 14,
+              padding: '12px 12px 10px',
+              background: 'linear-gradient(180deg, rgba(255,215,0,0.1), rgba(255,255,255,0.03))',
+              border: '1px solid rgba(255,215,0,0.16)',
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-                <div style={{ color: '#FFD700', fontSize: 18, fontWeight: 900, letterSpacing: 0.3 }}>
-                  {T('burgerCount')}
-                </div>
-                <div style={{ color: '#9ea4be', fontSize: 15, lineHeight: 1.45, fontWeight: 700 }}>
-                  {T('ingredientsLabelShort')}: <span style={{ color: '#fff1b3', fontWeight: 900, fontSize: 18 }}>{modePreview.ingredients}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                <img src={selectedMode.img} alt={selectedMode.label} style={{ width: 52, height: 52, objectFit: 'cover', borderRadius: 12 }} />
+                <div>
+                  <div style={{ color: '#FFD700', fontWeight: 900, fontSize: 15 }}>{selectedMode.label}</div>
+                  <div style={{ color: '#9ea4be', fontSize: 11 }}>{selectedMode.desc}</div>
                 </div>
               </div>
-              {gameMode === 'escalera'
-                ? renderEscaleraPlayers(false)
-                : (
-                  <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'flex-end', justifyContent: 'center' }}>
-                    {previewBurgers.map((burger, burgerIndex) => renderBurgerPreview(burger, burgerIndex, { hiddenIngredients: gameMode === 'caotico' }))}
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 14,
+                padding: '14px 16px',
+                borderRadius: 12,
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.08)',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                  <div style={{ color: '#FFD700', fontSize: 18, fontWeight: 900, letterSpacing: 0.3 }}>
+                    {T('burgerCount')}
+                  </div>
+                  <div style={{ color: '#9ea4be', fontSize: 15, lineHeight: 1.45, fontWeight: 700 }}>
+                    {T('ingredientsLabelShort')}: <span style={{ color: '#fff1b3', fontWeight: 900, fontSize: 18 }}>{modePreview.ingredients}</span>
+                  </div>
+                </div>
+                {gameMode === 'escalera'
+                  ? renderEscaleraPlayers(false)
+                  : (
+                    <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'flex-end', justifyContent: 'center' }}>
+                      {previewBurgers.map((burger, burgerIndex) => renderBurgerPreview(burger, burgerIndex, { hiddenIngredients: gameMode === 'caotico' }))}
+                    </div>
+                  )}
+                {gameMode === 'clon' && !isDesktopWide && (
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+                    {ingredientPool.map((ing) => (
+                      <span
+                        key={`pool-preview-${ing}`}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          padding: '5px 10px',
+                          borderRadius: 999,
+                          background: 'rgba(255,255,255,0.06)',
+                          border: '1px solid rgba(255,255,255,0.08)',
+                        }}
+                      >
+                        <img src={ING_IMG[ing]} alt={ing} style={{ width: 20, height: 20, objectFit: 'contain' }} />
+                        <span style={{ color: '#d8ddf3', fontSize: 11, fontWeight: 700 }}>{getIngName(ing, uiGameLang)}</span>
+                      </span>
+                    ))}
                   </div>
                 )}
-              {gameMode === 'clon' && (
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
-                  {ingredientPool.map((ing) => (
-                    <span
-                      key={`pool-preview-${ing}`}
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 6,
-                        padding: '5px 10px',
-                        borderRadius: 999,
-                        background: 'rgba(255,255,255,0.06)',
-                        border: '1px solid rgba(255,255,255,0.08)',
-                      }}
-                    >
-                      <img src={ING_IMG[ing]} alt={ing} style={{ width: 20, height: 20, objectFit: 'contain' }} />
-                      <span style={{ color: '#d8ddf3', fontSize: 11, fontWeight: 700 }}>{getIngName(ing, uiGameLang)}</span>
-                    </span>
-                  ))}
+                <div style={{ color: '#9ea4be', fontSize: 15, lineHeight: 1.45, fontWeight: 700, textAlign: 'center' }}>
+                  {T('perPlayerLabel')}
                 </div>
-              )}
-              <div style={{ color: '#9ea4be', fontSize: 15, lineHeight: 1.45, fontWeight: 700, textAlign: 'center' }}>
-                {T('perPlayerLabel')}
               </div>
             </div>
-          </div>
+            <div>
           {gameMode !== 'caotico' && (
             <div style={{ marginBottom: 16 }}>
               <label style={{ color: '#aaa', fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 6 }}>
@@ -1121,7 +1129,9 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
               <div style={{ color: '#6f7697', fontSize: 11 }}>{T('cloneIngredientPoolLocked')}</div>
             </div>
           )}
-          <Btn onClick={() => setShowModeConfig(false)} color="#333" style={{ color: '#aaa' }}>{T('close')}</Btn>
+            </div>
+          </div>
+          <Btn onClick={() => setShowModeConfig(false)} color="#333" style={{ color: '#aaa', marginTop: 16 }}>{T('close')}</Btn>
         </Modal>
       )}
       </div>
