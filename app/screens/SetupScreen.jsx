@@ -291,8 +291,8 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
                 key={`desktop-mode-${m.id}`}
                 onClick={() => { setGameMode(m.id); setShowModeConfig(true); }}
                 style={{
-                  minHeight: 68,
-                  padding: '8px 8px',
+                  minHeight: 84,
+                  padding: '10px 10px',
                   borderRadius: 10,
                   cursor: 'pointer',
                   border: gameMode === m.id ? '2px solid #FFD700' : '1px solid rgba(255,255,255,0.08)',
@@ -304,9 +304,9 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
                   boxShadow: gameMode === m.id ? '0 0 12px rgba(255,215,0,.22)' : 'none',
                 }}
               >
-                <img src={m.img} alt={m.label} style={{ width: 42, height: 42, objectFit: 'cover', borderRadius: 10, flexShrink: 0 }} />
+                <img src={m.img} alt={m.label} style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 12, flexShrink: 0 }} />
                 <div style={{ minWidth: 0 }}>
-                  <div style={{ color: gameMode === m.id ? '#FFD700' : '#f3f4ff', fontSize: 11, fontWeight: 900, lineHeight: 1.05 }}>
+                  <div style={{ color: gameMode === m.id ? '#FFD700' : '#f3f4ff', fontSize: 12, fontWeight: 900, lineHeight: 1.05 }}>
                     {m.label}
                   </div>
                   <div style={{ color: '#8a8fa8', fontSize: 9, fontWeight: 700, marginTop: 2, lineHeight: 1.1 }}>
@@ -495,7 +495,7 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
         </div>
       </div>
       {isDesktopWide && (
-        <div style={{ paddingTop: 266 }}>
+        <div>
           {renderDesktopSidebar()}
         </div>
       )}

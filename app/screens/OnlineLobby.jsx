@@ -401,8 +401,8 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
                 key={`sidebar-mode-${m.id}`}
                 onClick={() => { setGameMode(m.id); setShowModeConfig(true); }}
                 style={{
-                  minHeight: 84,
-                  padding: '7px 4px',
+                  minHeight: 98,
+                  padding: '9px 6px',
                   borderRadius: 12,
                   cursor: 'pointer',
                   border: gameMode === m.id ? '2px solid #FFD700' : '1px solid rgba(255,255,255,0.08)',
@@ -416,8 +416,8 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
                   transition: 'all .15s',
                 }}
               >
-                <img src={m.img} alt={m.label} style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 12 }} />
-                <div style={{ color: gameMode === m.id ? '#FFD700' : '#f3f4ff', fontSize: 11, fontWeight: 900, lineHeight: 1, textAlign: 'center' }}>
+                <img src={m.img} alt={m.label} style={{ width: 62, height: 62, objectFit: 'cover', borderRadius: 14 }} />
+                <div style={{ color: gameMode === m.id ? '#FFD700' : '#f3f4ff', fontSize: 12, fontWeight: 900, lineHeight: 1, textAlign: 'center' }}>
                   {m.label}
                 </div>
               </div>
@@ -599,9 +599,6 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
             <div style={{ fontSize: 11, color: '#555', marginTop: 6 }}>
               {T('codeLabel')}: {roomCode}
             </div>
-            <div style={{ marginTop: 18, textAlign: 'left' }}>
-              {renderDesktopSidebar()}
-            </div>
           </div>
         </div>
       ) : (
@@ -739,6 +736,14 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
     }}>
       <div style={{ width: '100%' }}>
         {roomHeader}
+      <div style={isDesktopWide ? {
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: 60,
+        width: '100%',
+        maxWidth: 1120,
+        margin: '0 auto',
+      } : {}}>
       <div style={{
         background: '#16213e', borderRadius: 20,
         padding: 'clamp(18px, 4vw, 32px) clamp(14px, 4vw, 36px)',
@@ -835,7 +840,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
 
         {/* Game Mode (host only) */}
         {isHost && (
-          <div style={{ marginBottom: 16, position: 'relative', paddingRight: isDesktopWide ? 560 : 0 }}>
+          <div style={{ marginBottom: 16, position: 'relative', paddingRight: 0 }}>
             {!isDesktopWide && <label style={{ color: '#aaa', fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 8 }}>{T('gameMode')}</label>}
             <div style={{ display: 'flex', gap: 12, alignItems: 'stretch', flexWrap: 'wrap' }}>
               {!isDesktopWide && (
@@ -952,6 +957,12 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
             {T('leaveRoom')}
           </button>
         </div>
+      </div>
+      {isDesktopWide && (
+        <div style={{ width: 560 }}>
+          {renderDesktopSidebar()}
+        </div>
+      )}
       </div>
       {isHost && showModeConfig && (
         <Modal title={`${T('gameMode')}: ${gameModes.find(m => m.id === gameMode)?.label || ''}`}>
