@@ -1,4 +1,4 @@
-# Poliglota-hambriento
+﻿# Poliglota-hambriento
 
 Repositorio de Hungry Poly.
 
@@ -56,6 +56,9 @@ Archivos importantes:
 - `mobile/src/screens/HomeScreen.js`
 - `mobile/src/screens/NativeOnlineScreen.js`
 - `mobile/src/screens/NativeSetupScreen.js`
+- `mobile/src/screens/NativeGameScreen.js`
+- `mobile/src/lib/nativeGameEngine.js`
+- `mobile/src/lib/gameMapping.js`
 - `mobile/app.json`
 - `mobile/eas.json`
 - `mobile/README.md`
@@ -64,13 +67,12 @@ Nota:
 
 - Expo/React Native recomiendan Node `>= 20.19.4`
 - la maquina actual sigue en `20.16.0`, asi que antes de compilar APK final conviene actualizar Node
+- checklist de QA movil: [mobile/QA_CHECKLIST.md](C:\Users\luisj\OneDrive\Documents\New project\mobile\QA_CHECKLIST.md)
 
 ## Mobile Native Progress
-- Native online now connects to the real Socket.IO server for room creation, join by code, public lobby browsing, hat picks and start events.
-- Native setup now drives the real mobile game configuration sent to the server.
-- The React Native app already includes native home, setup and online flows, plus the web game fallback.
 
-
-- Native game screen now opens automatically after the real server gameStarted event and shows players, hats and generated burger objectives.
-
-- Mobile native match screen now consumes `stateUpdate` to show live match progress from the host.
+- Native online connects to the real Socket.IO server for room creation, join by code, public lobby browsing, hat picks and start events.
+- Native setup drives the real mobile game configuration sent to the server.
+- Native game screen opens automatically after `gameStarted`.
+- Native match screen consumes `stateUpdate` and shows live match progress.
+- Native mobile host now processes actions and emits `syncState`, so a room can be played from mobile without depending on a web host.
