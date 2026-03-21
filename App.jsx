@@ -2336,9 +2336,10 @@ export default function App() {
     }}>
       <div style={{ flex: 1 }}>
         <div style={{ fontWeight: 900, fontSize: 16, color: humanColor }}>{human.name}</div>
-        <div style={{ fontSize: 11, color: '#777' }}>
-          {'\u{1F354}'} {human.currentBurger}/{human.totalBurgers} {String(T('burgersLabel')).toLowerCase()}
-          {extraPlay && <span style={{ color: '#FFD700', marginLeft: 8 }}>{T('extraPlayLabel')}</span>}
+        <div style={{ fontSize: 11, color: '#777', display: 'inline-flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
+          <img src={ingredientCardIcon} alt="hamburguesa" style={{ width: 14, height: 14, objectFit: 'contain' }} />
+          <span>{human.currentBurger}/{human.totalBurgers} {String(T('burgersLabel')).toLowerCase()}</span>
+          {extraPlay && <span style={{ color: '#FFD700', marginLeft: 4 }}>{T('extraPlayLabel')}</span>}
         </div>
         {hasSharedGoals && (
           <div style={{

@@ -4,6 +4,7 @@ import { BurgerTarget } from '../../components/GameUI.jsx';
 import { HatBadge } from '../../components/HatComponents.jsx';
 import HatSVG from '../../components/HatSVG.jsx';
 import { ING_IMG, ingChosen, ingKey } from '../utils/gameHelpers.js';
+import burgerIcon from '../../imagenes/hamburguesas/ham.png';
 
 export function OpponentCard({ player, index, color, isActive, onIngredientClick, T }) {
   const burger = player.burgers[player.currentBurger];
@@ -17,8 +18,9 @@ export function OpponentCard({ player, index, color, isActive, onIngredientClick
         <HatSVG lang={player.mainHats[0] || LANGUAGES[0]} size={22} />
         <span style={{ fontWeight: 800, color, fontSize: 13 }}>{player.name}</span>
         {isActive && <span style={{ fontSize: 10, color: '#FFD700', marginLeft: 'auto' }}>{T('turn')}</span>}
-        <span style={{ marginLeft: isActive ? 0 : 'auto', fontSize: 11, color: '#777' }}>
-          🍔 {player.currentBurger}/{player.totalBurgers}
+        <span style={{ marginLeft: isActive ? 0 : 'auto', fontSize: 11, color: '#777', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+          <img src={burgerIcon} alt="hamburguesa" style={{ width: 14, height: 14, objectFit: 'contain' }} />
+          {player.currentBurger}/{player.totalBurgers}
         </span>
       </div>
 
@@ -78,4 +80,6 @@ export function OpponentCard({ player, index, color, isActive, onIngredientClick
     </div>
   );
 }
+
+
 

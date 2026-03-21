@@ -1,8 +1,10 @@
 import React from 'react';
 import { Btn } from '../components/Btn.jsx';
+import { LANGUAGES } from '../../constants/index.js';
 import HatSVG from '../../components/HatSVG.jsx';
 import ganador from '../../imagenes/campeon.png';
 import perdedor from '../../imagenes/perdedor.png';
+import burgerIcon from '../../imagenes/hamburguesas/ham.png';
 
 export function GameOverScreen({ winner, players, onRestart, user, onHistory, T }) {
   return (
@@ -25,8 +27,9 @@ export function GameOverScreen({ winner, players, onRestart, user, onHistory, T 
           }}>
             <HatSVG lang={p.mainHats[0] || LANGUAGES[0]} size={24} />
             <span style={{ fontWeight: 700, color: p.name === winner.name ? '#FFD700' : '#ccc' }}>{p.name}</span>
-            <span style={{ marginLeft: 'auto', fontSize: 12, color: '#777' }}>
-              🍔 {p.currentBurger}/{p.totalBurgers}
+            <span style={{ marginLeft: 'auto', fontSize: 12, color: '#777', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              <img src={burgerIcon} alt="hamburguesa" style={{ width: 15, height: 15, objectFit: 'contain' }} />
+              {p.currentBurger}/{p.totalBurgers}
             </span>
           </div>
         ))}
