@@ -326,7 +326,36 @@ export default function App() {
     setPhase('onlineMenu');
   }
 
-  // â”€â”€ Handle voluntary leave from room â”€â”€
+  // â”€â”€ Handle voluntary leave from room / local match â”€â”€
+  function handleLeaveLocalGame() {
+    if (isOnline || phase !== 'playing') return;
+    const fallbackConfirm = 'Exit the AI match and return to setup?';
+    const confirmText = T('leaveLocalConfirm');
+    if (typeof window !== 'undefined' && !window.confirm(confirmText === 'leaveLocalConfirm' ? fallbackConfirm : confirmText)) return;
+    aiRunning.current = false;
+    setPlayers([]);
+    setDeck([]);
+    setDiscard([]);
+    setCp(0);
+    setSelectedIdx(null);
+    setLog([]);
+    setModal(null);
+    setWinner(null);
+    setExtraPlay(false);
+    setCurrentGameConfig(null);
+    setPendingNeg(null);
+    pendingNegRef.current = null;
+    setGamePaused(false);
+    setPausedMessage('');
+    setShowChat(false);
+    setUnreadChat(0);
+    setShowPercheroModal(false);
+    setHowToPlayPage(0);
+    setMobileTab('mesa');
+    setTurnTime(60);
+    setPhase('setup');
+  }
+
   function handleVoluntaryLeave() {
     if (!isOnline || !roomCode) return;
     socket.emit('voluntaryLeave', { code: roomCode });
@@ -2153,6 +2182,11 @@ export default function App() {
           <Btn onClick={() => setShowLog(l => !l)} color="#2a2a4a" style={{ color: '#aaa', fontSize: 12, padding: '4px 10px' }}>
             {T('log')}
           </Btn>
+          {!isOnline && (
+            <Btn onClick={handleLeaveLocalGame} color="#ff4444" style={{ color: '#fff', fontSize: 12, padding: '4px 10px' }}>
+              {T('leaveLocal')}
+            </Btn>
+          )}
           {isOnline && (
             <>
               <Btn onClick={() => { setShowChat(s => !s); setUnreadChat(0); }} color="#2a2a4a" style={{ color: '#aaa', fontSize: 12, padding: '4px 10px', position: 'relative' }}>

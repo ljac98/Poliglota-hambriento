@@ -1840,6 +1840,19 @@ const translations = {
   },
 };
 
+translations.es.leaveLocal = 'Salir partida';
+translations.es.leaveLocalConfirm = '¿Salir de la partida contra la IA y volver al setup?';
+translations.en.leaveLocal = 'Exit match';
+translations.en.leaveLocalConfirm = 'Exit the AI match and return to setup?';
+translations.fr.leaveLocal = 'Quitter la partie';
+translations.fr.leaveLocalConfirm = 'Quitter la partie contre l’IA et revenir au setup ?';
+translations.it.leaveLocal = 'Esci dalla partita';
+translations.it.leaveLocalConfirm = 'Uscire dalla partita contro l’IA e tornare al setup?';
+translations.de.leaveLocal = 'Partie verlassen';
+translations.de.leaveLocalConfirm = 'Das KI-Spiel verlassen und zum Setup zuruckkehren?';
+translations.pt.leaveLocal = 'Sair da partida';
+translations.pt.leaveLocalConfirm = 'Sair da partida contra a IA e voltar ao setup?';
+
 // Map game language names to translation keys
 const LANG_TO_KEY = {
   español: 'es',

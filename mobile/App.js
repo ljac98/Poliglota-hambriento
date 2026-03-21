@@ -726,6 +726,29 @@ export default function App() {
     setCurrentScreen('web');
   }
 
+  function leaveWebScreen() {
+    if (onlineState.roomCode) {
+      Alert.alert(
+        'Volver al lobby',
+        'Saldras de la vista web y volveras al lobby nativo.',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Ir al lobby', onPress: () => setCurrentScreen('nativeOnline') },
+        ]
+      );
+      return;
+    }
+
+    Alert.alert(
+      'Salir de la partida',
+      'Saldras de la partida contra la IA y volveras al setup.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Salir', style: 'destructive', onPress: () => setCurrentScreen('nativeSetup') },
+      ]
+    );
+  }
+
   function sendNativeChat(text) {
     const clean = (text || '').trim();
     if (!clean || !onlineState.roomCode) return;
@@ -743,12 +766,13 @@ export default function App() {
   }
 
   if (currentScreen === 'web') {
+    const isLocalWebGame = !onlineState.roomCode;
     return (
       <SafeAreaView style={styles.webviewScreen}>
         <StatusBar barStyle="light-content" />
         <View style={styles.webviewHeader}>
-          <Pressable onPress={() => setCurrentScreen('home')} style={styles.secondaryButton}>
-            <Text style={styles.secondaryButtonText}>Volver</Text>
+          <Pressable onPress={leaveWebScreen} style={styles.secondaryButton}>
+            <Text style={styles.secondaryButtonText}>{isLocalWebGame ? 'Salir partida' : 'Lobby'}</Text>
           </Pressable>
           <Text style={styles.webviewTitle}>Hungry Poly Mobile</Text>
           <Pressable onPress={() => Linking.openURL(gameUrl)} style={styles.secondaryButton}>
