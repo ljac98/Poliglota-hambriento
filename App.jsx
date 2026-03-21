@@ -131,6 +131,7 @@ export default function App() {
   const [downloadReturnPhase, setDownloadReturnPhase] = useState('setup');
   const [onlineMenuTab, setOnlineMenuTab] = useState('');
   const [showQuickMenu, setShowQuickMenu] = useState(false);
+  const [showNotificationsPanel, setShowNotificationsPanel] = useState(false);
   const [profileUserId, setProfileUserId] = useState(Number.isFinite(initialProfileId) ? initialProfileId : (savedUserOnLoad?.id || null));
   const [profileReturnPhase, setProfileReturnPhase] = useState('setup');
   const aiRunning = useRef(false);
@@ -821,7 +822,7 @@ export default function App() {
     }
   }
 
-  // ── Start game (local / vs AI) ──
+  // -- Start game (local / vs AI) --
   function buildGameConfig(gameConfig) {
     if (!gameConfig || gameConfig.mode !== 'clon') return gameConfig;
     if (Array.isArray(gameConfig.sharedBurgers) && gameConfig.sharedBurgers.length > 0) {
@@ -1675,7 +1676,7 @@ export default function App() {
     roomInvite && {
       key: `room-${roomInvite.roomCode}`,
       color: '#4ecdc4',
-      icon: '🎮',
+      icon: '??',
       message: `${roomInvite.fromDisplayName} ${T('roomInvite')}`,
       sub: roomInvite.roomName || roomInvite.roomCode || '',
       actionLabel: T('joinRoom'),
@@ -1685,7 +1686,7 @@ export default function App() {
     friendReqNotif && {
       key: `req-${friendReqNotif.fromUserId || friendReqNotif.fromDisplayName}`,
       color: '#FFD700',
-      icon: '🤝',
+      icon: '??',
       message: `${friendReqNotif.fromDisplayName} ${T('friendRequestNotif')}`,
       sub: '',
       actionLabel: T('viewRequest'),
@@ -1695,7 +1696,7 @@ export default function App() {
     friendAddedNotif && {
       key: `added-${friendAddedNotif.userId || friendAddedNotif.displayName}`,
       color: '#7ef0a2',
-      icon: '🎉',
+      icon: '??',
       message: `${friendAddedNotif.displayName || 'Jugador'} ${T('friendAccepted')}`,
       sub: '',
       actionLabel: T('friends'),
@@ -1705,7 +1706,7 @@ export default function App() {
     friendRemovedNotif && {
       key: `removed-${friendRemovedNotif.userId || friendRemovedNotif.displayName}`,
       color: '#ff8a80',
-      icon: '💔',
+      icon: '??',
       message: `${friendRemovedNotif.displayName || 'Jugador'} ${T('friendRemovedNotif')}`,
       sub: '',
       actionLabel: T('friends'),
@@ -1797,13 +1798,19 @@ export default function App() {
       {showQuickMenu && (
         <button
           aria-label="Close menu"
-          onClick={() => setShowQuickMenu(false)}
+          onClick={() => { setShowQuickMenu(false); setShowNotificationsPanel(false); }}
           style={{ position: 'fixed', inset: 0, border: 'none', background: 'transparent', cursor: 'default' }}
         />
       )}
       <div style={{ position: 'relative' }}>
         <button
-          onClick={() => setShowQuickMenu(v => !v)}
+          onClick={() => {
+            setShowQuickMenu(v => {
+              const next = !v;
+              if (!next) setShowNotificationsPanel(false);
+              return next;
+            });
+          }}
           style={{
             width: isMobile ? 42 : 46,
             height: isMobile ? 42 : 46,
@@ -1818,55 +1825,7 @@ export default function App() {
             position: 'relative',
           }}
         >
-          ☰
-          <div style={{
-            position: 'absolute',
-            left: isMobile ? -10 : -12,
-            bottom: isMobile ? -10 : -12,
-            width: isMobile ? 30 : 34,
-            height: isMobile ? 30 : 34,
-            borderRadius: 999,
-            background: noticeCards.length > 0 ? 'rgba(255,215,0,0.16)' : 'rgba(255,255,255,0.06)',
-            border: noticeCards.length > 0 ? '2px solid rgba(255,215,0,0.55)' : '1px solid rgba(255,255,255,0.10)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            overflow: 'hidden',
-            boxShadow: noticeCards.length > 0 ? '0 8px 18px rgba(255,215,0,.18)' : 'none',
-          }}>
-            <img
-              src={ingredientCardIcon}
-              alt="notificaciones"
-              style={{
-                width: isMobile ? 22 : 24,
-                height: isMobile ? 22 : 24,
-                objectFit: 'contain',
-                opacity: noticeCards.length > 0 ? 1 : 0.42,
-                filter: noticeCards.length > 0 ? 'drop-shadow(0 0 8px rgba(255,215,0,.35)) saturate(1.15)' : 'grayscale(.2)',
-              }}
-            />
-            {noticeCards.length > 0 && (
-              <div style={{
-                position: 'absolute',
-                top: -4,
-                right: -4,
-                minWidth: 18,
-                height: 18,
-                padding: '0 4px',
-                borderRadius: 999,
-                background: '#ff5f57',
-                color: '#fff',
-                fontSize: 11,
-                fontWeight: 900,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                border: '2px solid rgba(18,25,46,.96)',
-              }}>
-                {noticeCards.length}
-              </div>
-            )}
-          </div>
+          ?
         </button>
         {showQuickMenu && (
           <div style={{
@@ -1884,36 +1843,219 @@ export default function App() {
             gap: 8,
           }}>
             {user && (
-              <button
-                type="button"
-                onClick={goToProfile}
-                style={{
+              <>
+                <div style={{
                   display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  width: '100%',
-                  padding: '10px 12px',
-                  borderRadius: 14,
-                  border: '1px solid rgba(255,215,0,0.22)',
-                  background: 'linear-gradient(180deg, rgba(255,215,0,0.12), rgba(255,255,255,0.04))',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  boxShadow: '0 12px 24px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,0.08)',
-                }}
-              >
-                <UserAvatar
-                  name={user.displayName}
-                  username={user.username}
-                  avatarUrl={user.avatarUrl}
-                  size={38}
-                />
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ color: '#fff3bf', fontSize: 14, fontWeight: 900, lineHeight: 1.05 }}>{user.displayName || user.username}</div>
-                  <div style={{ color: '#8a8fa8', fontSize: 11, fontWeight: 700, marginTop: 2 }}>@{user.username}</div>
+                  alignItems: 'stretch',
+                  gap: 8,
+                }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowNotificationsPanel(false);
+                      goToProfile();
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
+                      flex: 1,
+                      padding: '10px 12px',
+                      borderRadius: 14,
+                      border: '1px solid rgba(255,215,0,0.22)',
+                      background: 'linear-gradient(180deg, rgba(255,215,0,0.12), rgba(255,255,255,0.04))',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      boxShadow: '0 12px 24px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,0.08)',
+                    }}
+                  >
+                    <UserAvatar
+                      name={user.displayName}
+                      username={user.username}
+                      avatarUrl={user.avatarUrl}
+                      size={38}
+                    />
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ color: '#fff3bf', fontSize: 14, fontWeight: 900, lineHeight: 1.05 }}>{user.displayName || user.username}</div>
+                      <div style={{ color: '#8a8fa8', fontSize: 11, fontWeight: 700, marginTop: 2 }}>@{user.username}</div>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowNotificationsPanel((v) => !v)}
+                    style={{
+                      width: isMobile ? 54 : 58,
+                      borderRadius: 14,
+                      border: showNotificationsPanel ? '2px solid rgba(255,215,0,0.5)' : '1px solid rgba(255,215,0,0.22)',
+                      background: showNotificationsPanel ? 'rgba(255,215,0,0.12)' : 'rgba(255,255,255,0.05)',
+                      cursor: 'pointer',
+                      position: 'relative',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: showNotificationsPanel ? '0 10px 24px rgba(255,215,0,.12)' : 'none',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <img
+                      src={ingredientCardIcon}
+                      alt="notificaciones"
+                      style={{
+                        width: isMobile ? 28 : 30,
+                        height: isMobile ? 28 : 30,
+                        objectFit: 'contain',
+                        opacity: noticeCards.length > 0 ? 1 : 0.4,
+                        filter: noticeCards.length > 0 ? 'drop-shadow(0 0 8px rgba(255,215,0,.35)) saturate(1.15)' : 'grayscale(.25)',
+                      }}
+                    />
+                    {noticeCards.length > 0 && (
+                      <div style={{
+                        position: 'absolute',
+                        top: 4,
+                        right: 4,
+                        minWidth: 18,
+                        height: 18,
+                        padding: '0 4px',
+                        borderRadius: 999,
+                        background: '#ff5f57',
+                        color: '#fff',
+                        fontSize: 11,
+                        fontWeight: 900,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        border: '2px solid rgba(22,33,62,.98)',
+                      }}>
+                        {noticeCards.length}
+                      </div>
+                    )}
+                  </button>
                 </div>
-              </button>
-            )}
-            <Btn onClick={goToHome} color="#4ecdc4" style={{ color: '#0f1117', width: '100%', justifyContent: 'center' }}>
+                {showNotificationsPanel && (
+                  <div style={{
+                    borderRadius: 14,
+                    border: '1px solid rgba(255,215,0,0.16)',
+                    background: 'rgba(255,255,255,0.035)',
+                    padding: 10,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 8,
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{
+                        position: 'relative',
+                        width: 40,
+                        height: 40,
+                        borderRadius: 999,
+                        background: noticeCards.length > 0 ? 'rgba(255,215,0,0.14)' : 'rgba(255,255,255,0.06)',
+                        border: noticeCards.length > 0 ? '2px solid rgba(255,215,0,0.45)' : '1px solid rgba(255,255,255,0.08)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                      }}>
+                        <img
+                          src={ingredientCardIcon}
+                          alt="hamburguesa"
+                          style={{
+                            width: 25,
+                            height: 25,
+                            objectFit: 'contain',
+                            opacity: noticeCards.length > 0 ? 1 : 0.42,
+                            filter: noticeCards.length > 0 ? 'drop-shadow(0 0 8px rgba(255,215,0,.35)) saturate(1.15)' : 'grayscale(.2)',
+                          }}
+                        />
+                        {noticeCards.length > 0 && (
+                          <div style={{
+                            position: 'absolute',
+                            top: -3,
+                            right: -3,
+                            minWidth: 18,
+                            height: 18,
+                            padding: '0 4px',
+                            borderRadius: 999,
+                            background: '#ff5f57',
+                            color: '#fff',
+                            fontSize: 11,
+                            fontWeight: 900,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            border: '2px solid rgba(22,33,62,.98)',
+                          }}>
+                            {noticeCards.length}
+                          </div>
+                        )}
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ color: '#fff3bf', fontSize: 13, fontWeight: 900 }}>Notificaciones</div>
+                        <div style={{ color: '#8a8fa8', fontSize: 11, fontWeight: 700 }}>
+                          {noticeCards.length > 0 ? `${noticeCards.length} pendientes` : 'No tienes notificaciones'}
+                        </div>
+                      </div>
+                    </div>
+                    {noticeCards.length === 0 ? (
+                      <div style={{
+                        color: '#9ea6c7',
+                        fontSize: 12,
+                        fontWeight: 700,
+                        padding: '4px 2px 0',
+                      }}>
+                        No tienes notificaciones
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {noticeCards.map((notice) => (
+                          <div
+                            key={notice.key}
+                            style={{
+                              borderRadius: 12,
+                              border: `1px solid ${notice.color}`,
+                              background: 'rgba(18,26,48,0.9)',
+                              padding: 10,
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: 8,
+                            }}>
+                            <div style={{ color: '#f8f4cf', fontSize: 12, fontWeight: 800, lineHeight: 1.25 }}>{notice.message}</div>
+                            {notice.sub ? <div style={{ color: '#8a8fa8', fontSize: 11, fontWeight: 700 }}>{notice.sub}</div> : null}
+                            <div style={{ display: 'flex', gap: 6 }}>
+                              <button onClick={() => { setShowNotificationsPanel(false); notice.onAction(); }} style={{
+                                flex: 1,
+                                padding: '8px 10px',
+                                borderRadius: 10,
+                                border: 'none',
+                                background: notice.color,
+                                color: '#0f1117',
+                                fontFamily: "'Fredoka',sans-serif",
+                                fontWeight: 800,
+                                fontSize: 12,
+                                cursor: 'pointer',
+                              }}>
+                                {notice.actionLabel}
+                              </button>
+                              <button onClick={notice.onClose} style={{
+                                padding: '8px 10px',
+                                borderRadius: 10,
+                                border: '1px solid rgba(255,255,255,0.12)',
+                                background: 'transparent',
+                                color: '#9ea6c7',
+                                fontFamily: "'Fredoka',sans-serif",
+                                fontWeight: 800,
+                                fontSize: 12,
+                                cursor: 'pointer',
+                              }}>
+                                ×
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
+            )}            <Btn onClick={goToHome} color="#4ecdc4" style={{ color: '#0f1117', width: '100%', justifyContent: 'center' }}>
               {T('homeMenu')}
             </Btn>
             <Btn onClick={goToFriends} color="#7ad8ff" style={{ color: '#102033', width: '100%', justifyContent: 'center' }}>
@@ -2593,7 +2735,7 @@ export default function App() {
         display: 'flex', alignItems: 'center', gap: isMobile ? 6 : 12, padding: isMobile ? '6px 10px' : '8px 16px',
         background: '#16213e', borderBottom: '2px solid #2a2a4a', flexShrink: 0,
       }}>
-        <span style={{ fontSize: 22 }}>{'\u{1F354}'}</span>
+        <img src={ingredientCardIcon} alt="hamburguesa" style={{ width: 22, height: 22, objectFit: 'contain' }} />
         {!isMobile && <span style={{ fontWeight: 900, fontSize: 16, color: '#FFD700' }}>HUNGRY POLY</span>}
         <div style={{ marginLeft: 'auto', display: 'flex', gap: isMobile ? 6 : 12, alignItems: 'center' }}>
           <span style={{ fontSize: 12, color: '#555' }}>Deck: {deck.length}</span>
@@ -2967,7 +3109,7 @@ export default function App() {
       {isMobile && isHumanTurn && selectedIdx !== null && human.hand[selectedIdx] && (() => {
         const card = human.hand[selectedIdx];
         const playable = card.type === 'ingredient' ? canPlayCard(human, card) : (extraPlay ? false : null);
-        const cleanTitle = (txt) => String(txt).replace('🃏 ', '').replace('🃏', '').replace('⚡ ', '').replace('⚡', '');
+        const cleanTitle = (txt) => String(txt).replace('?? ', '').replace('??', '').replace('? ', '').replace('?', '');
         const actionTypeIcon = (() => {
           if (card.type !== 'action') return null;
           if (['tenedor', 'ladron', 'intercambio_sombreros', 'intercambio_hamburguesa', 'gloton'].includes(card.action)) return eqRightSingle;
@@ -3878,6 +4020,9 @@ export default function App() {
     </div>
   );
 }
+
+
+
 
 
 
