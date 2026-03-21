@@ -430,9 +430,6 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
     </div>
   );
   const floatingCardStyle = {
-    position: isDesktopWide ? 'absolute' : 'static',
-    right: isDesktopWide ? -518 : 'auto',
-    top: isDesktopWide ? -8 : 0,
     width: isDesktopWide ? 560 : 'auto',
     borderRadius: 18,
     padding: '14px 14px 16px',
@@ -601,6 +598,9 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
             </div>
             <div style={{ fontSize: 11, color: '#555', marginTop: 6 }}>
               {T('codeLabel')}: {roomCode}
+            </div>
+            <div style={{ marginTop: 18, textAlign: 'left' }}>
+              {renderDesktopSidebar()}
             </div>
           </div>
         </div>
@@ -858,7 +858,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
                   ))}
                 </div>
               )}
-              {isDesktopWide ? renderDesktopSidebar() : (
+              {!isDesktopWide && (
                 <div style={{ ...floatingCardStyle, marginTop: 12 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                     <img src={selectedMode.img} alt={selectedMode.label} style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 10 }} />

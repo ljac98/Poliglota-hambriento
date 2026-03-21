@@ -246,108 +246,84 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
     );
   };
   const renderDesktopSidebar = () => (
-    <>
-      <div style={{
-        position: 'absolute',
-        right: -344,
-        top: -34,
-        width: 320,
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        color: '#ffd24a',
-        fontSize: 12,
-        fontWeight: 900,
-        letterSpacing: 0.8,
-        textTransform: 'uppercase',
-      }}>
-        <span>{T('chooseLanguage')}</span>
-        <span>{T('gameMode')}</span>
-      </div>
-      <div style={{ ...floatingCardStyle, marginTop: 0 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
-          <div>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-              gap: 8,
-            }}>
-              {LANGUAGES.map(lang => (
-                <div
-                  key={`desktop-hat-${lang}`}
-                  onClick={() => setHat(lang)}
-                  style={{
-                    minHeight: 68,
-                    padding: '8px 6px',
-                    borderRadius: 10,
-                    cursor: 'pointer',
-                    border: hat === lang ? '2px solid #FFD700' : `1px solid ${LANG_BORDER[lang]}55`,
-                    background: hat === lang ? 'rgba(255,215,0,.1)' : 'rgba(255,255,255,.025)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 4,
-                    transition: 'all .15s',
-                    boxShadow: hat === lang ? '0 0 12px rgba(255,215,0,.22)' : 'none',
-                  }}
-                >
-                  <HatSVG lang={lang} size={30} />
-                  <span style={{ fontSize: 10, fontWeight: 800, color: hat === lang ? '#FFD700' : LANG_TEXT[lang], textAlign: 'center', lineHeight: 1 }}>
-                    {T(lang)}
-                  </span>
-                </div>
-              ))}
-            </div>
+    <div style={floatingCardStyle}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
+        <div>
+          <div style={{ color: '#ffd24a', fontSize: 12, fontWeight: 900, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 8 }}>
+            {T('chooseLanguage')}
           </div>
-          <div>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr',
-              gap: 8,
-            }}>
-              {gameModes.map(m => (
-                <div
-                  key={`desktop-mode-${m.id}`}
-                  onClick={() => { setGameMode(m.id); setShowModeConfig(true); }}
-                  style={{
-                    minHeight: 68,
-                    padding: '8px 8px',
-                    borderRadius: 10,
-                    cursor: 'pointer',
-                    border: gameMode === m.id ? '2px solid #FFD700' : '1px solid rgba(255,255,255,0.08)',
-                    background: gameMode === m.id ? 'rgba(255,215,0,.1)' : 'rgba(255,255,255,.025)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    transition: 'all .15s',
-                    boxShadow: gameMode === m.id ? '0 0 12px rgba(255,215,0,.22)' : 'none',
-                  }}
-                >
-                  <img src={m.img} alt={m.label} style={{ width: 42, height: 42, objectFit: 'cover', borderRadius: 10, flexShrink: 0 }} />
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ color: gameMode === m.id ? '#FFD700' : '#f3f4ff', fontSize: 11, fontWeight: 900, lineHeight: 1.05 }}>
-                      {m.label}
-                    </div>
-                    <div style={{ color: '#8a8fa8', fontSize: 9, fontWeight: 700, marginTop: 2, lineHeight: 1.1 }}>
-                      {m.desc}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
+            {LANGUAGES.map(lang => (
+              <div
+                key={`desktop-hat-${lang}`}
+                onClick={() => setHat(lang)}
+                style={{
+                  minHeight: 68,
+                  padding: '8px 6px',
+                  borderRadius: 10,
+                  cursor: 'pointer',
+                  border: hat === lang ? '2px solid #FFD700' : `1px solid ${LANG_BORDER[lang]}55`,
+                  background: hat === lang ? 'rgba(255,215,0,.1)' : 'rgba(255,255,255,.025)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 4,
+                  transition: 'all .15s',
+                  boxShadow: hat === lang ? '0 0 12px rgba(255,215,0,.22)' : 'none',
+                }}
+              >
+                <HatSVG lang={lang} size={30} />
+                <span style={{ fontSize: 10, fontWeight: 800, color: hat === lang ? '#FFD700' : LANG_TEXT[lang], textAlign: 'center', lineHeight: 1 }}>
+                  {T(lang)}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
-        <div style={{ height: 1, background: 'linear-gradient(90deg, rgba(255,255,255,0), rgba(255,215,0,0.22), rgba(255,255,255,0))', margin: '0 0 12px' }} />
-        {renderModeSummary()}
+        <div>
+          <div style={{ color: '#ffd24a', fontSize: 12, fontWeight: 900, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 8 }}>
+            {T('gameMode')}
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
+            {gameModes.map(m => (
+              <div
+                key={`desktop-mode-${m.id}`}
+                onClick={() => { setGameMode(m.id); setShowModeConfig(true); }}
+                style={{
+                  minHeight: 68,
+                  padding: '8px 8px',
+                  borderRadius: 10,
+                  cursor: 'pointer',
+                  border: gameMode === m.id ? '2px solid #FFD700' : '1px solid rgba(255,255,255,0.08)',
+                  background: gameMode === m.id ? 'rgba(255,215,0,.1)' : 'rgba(255,255,255,.025)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  transition: 'all .15s',
+                  boxShadow: gameMode === m.id ? '0 0 12px rgba(255,215,0,.22)' : 'none',
+                }}
+              >
+                <img src={m.img} alt={m.label} style={{ width: 42, height: 42, objectFit: 'cover', borderRadius: 10, flexShrink: 0 }} />
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ color: gameMode === m.id ? '#FFD700' : '#f3f4ff', fontSize: 11, fontWeight: 900, lineHeight: 1.05 }}>
+                    {m.label}
+                  </div>
+                  <div style={{ color: '#8a8fa8', fontSize: 9, fontWeight: 700, marginTop: 2, lineHeight: 1.1 }}>
+                    {m.desc}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
-    </>
+      <div style={{ height: 1, background: 'linear-gradient(90deg, rgba(255,255,255,0), rgba(255,215,0,0.22), rgba(255,255,255,0))', margin: '0 0 12px' }} />
+      {renderModeSummary()}
+    </div>
   );
   const floatingCardStyle = {
-    position: isDesktopWide ? 'absolute' : 'static',
-    right: isDesktopWide ? -344 : 'auto',
-    top: isDesktopWide ? -2 : 0,
-    width: isDesktopWide ? 320 : 'auto',
+    width: isDesktopWide ? 360 : 'auto',
     borderRadius: 14,
     padding: '12px 12px 14px',
     background: 'linear-gradient(180deg, rgba(255,215,0,0.08), rgba(255,255,255,0.03))',
@@ -361,6 +337,14 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
       fontFamily: "'Fredoka',sans-serif",
       overflowY: 'auto', padding: '20px 0',
     }}>
+      <div style={{
+        display: isDesktopWide ? 'flex' : 'block',
+        alignItems: 'flex-start',
+        gap: isDesktopWide ? 26 : 0,
+        width: 'fit-content',
+        maxWidth: '96vw',
+        margin: '0 auto',
+      }}>
       <div style={{
         background: '#16213e', borderRadius: 20,
         padding: 'clamp(20px, 5vw, 36px) clamp(16px, 5vw, 40px)',
@@ -414,7 +398,7 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
           </div>
         )}
 
-        <div style={{ position: 'relative', paddingRight: isDesktopWide ? 344 : 0 }}>
+        <div style={{ position: 'relative' }}>
         {/* Hat selection */}
         <div style={{ marginBottom: isDesktopWide ? 8 : 20 }}>
           {!isDesktopWide && (
@@ -481,7 +465,6 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
             )}
           </div>
         </div>
-        {isDesktopWide && renderDesktopSidebar()}
         </div>
 
         <div style={{ marginBottom: 28 }} />
@@ -510,6 +493,12 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
             {T('online')}
           </Btn>
         </div>
+      </div>
+      {isDesktopWide && (
+        <div style={{ paddingTop: 266 }}>
+          {renderDesktopSidebar()}
+        </div>
+      )}
       </div>
       {showModeConfig && (
         <Modal title={`${T('gameMode')}: ${gameModes.find(m => m.id === gameMode)?.label || ''}`}>
