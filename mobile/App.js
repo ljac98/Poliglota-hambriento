@@ -69,6 +69,10 @@ function buildGameConfig(setup) {
   return buildNativeGameConfig(setup);
 }
 
+function getMenuInitial(name = '') {
+  return String(name || '?').trim().charAt(0).toUpperCase() || '?';
+}
+
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState('home');
   const [loadingGame, setLoadingGame] = useState(true);
@@ -748,6 +752,14 @@ export default function App() {
     setCurrentScreen('web');
   }
 
+  function logoutFromAppMenu() {
+    leaveRoom();
+    setLoadingGame(true);
+    setCurrentWebUrl(`${gameUrl}?view=auth&logout=1`);
+    setShowAppMenu(false);
+    setCurrentScreen('web');
+  }
+
   function renderAppMenu() {
     const inMatch = currentScreen === 'web' || currentScreen === 'nativeGame';
     return (
@@ -761,6 +773,15 @@ export default function App() {
           </Pressable>
           {showAppMenu ? (
             <View style={styles.appMenuPanel}>
+              <Pressable onPress={openProfileWebView} style={styles.appMenuProfileCard}>
+                <View style={styles.appMenuProfileAvatar}>
+                  <Text style={styles.appMenuProfileAvatarText}>{getMenuInitial(setupState.playerName)}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text numberOfLines={1} style={styles.appMenuProfileName}>{setupState.playerName || 'Jugador'}</Text>
+                  <Text style={styles.appMenuProfileSubtext}>Perfil</Text>
+                </View>
+              </Pressable>
               <Pressable onPress={goToAppHome} style={[styles.appMenuButton, styles.appMenuHome]}>
                 <Text style={styles.appMenuButtonTextDark}>Inicio</Text>
               </Pressable>
@@ -783,6 +804,9 @@ export default function App() {
               </Pressable>
               <Pressable onPress={() => goToNativeOnlineTab('lobby')} style={[styles.appMenuButton, styles.appMenuLobby]}>
                 <Text style={styles.appMenuButtonTextLight}>Lobby</Text>
+              </Pressable>
+              <Pressable onPress={logoutFromAppMenu} style={[styles.appMenuButton, styles.appMenuLogout]}>
+                <Text style={styles.appMenuButtonTextDark}>Logout</Text>
               </Pressable>
             </View>
           ) : null}
@@ -1033,6 +1057,41 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: 'rgba(255,215,0,0.18)',
   },
+  appMenuProfileCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderRadius: 14,
+    padding: 10,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    marginBottom: 2,
+  },
+  appMenuProfileAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#c8a2ff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  appMenuProfileAvatarText: {
+    color: '#1f1530',
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  appMenuProfileName: {
+    color: '#fff3bf',
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  appMenuProfileSubtext: {
+    color: '#8a8fa8',
+    fontSize: 11,
+    fontWeight: '700',
+    marginTop: 2,
+  },
   appMenuButton: {
     borderRadius: 12,
     paddingVertical: 11,
@@ -1047,6 +1106,7 @@ const styles = StyleSheet.create({
   appMenuCreate: { backgroundColor: '#FFD700' },
   appMenuJoin: { backgroundColor: '#00BCD4' },
   appMenuLobby: { backgroundColor: '#2a2a4a' },
+  appMenuLogout: { backgroundColor: '#ff8a80' },
   appMenuButtonTextDark: {
     color: '#0f1117',
     fontSize: 15,

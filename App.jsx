@@ -1,6 +1,6 @@
 ﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
 import socket from './src/socket.js';
-import { getSavedUser } from './src/api.js';
+import { clearAuth, getSavedUser } from './src/api.js';
 import {
   LANGUAGES, LANG_BORDER, LANG_BG, LANG_TEXT,
   ING_EMOJI, ING_BG, AI_NAMES, getIngName, getActionInfo,
@@ -31,6 +31,7 @@ import eqRightGlobal from './imagenes/acciones/esquina derecha/global.png';
 import eqRightSingle from './imagenes/acciones/esquina derecha/singular.png';
 import eqRightDiscard from './imagenes/acciones/esquina derecha/descarte.png';
 import eqRightNegation from './imagenes/acciones/esquina derecha/negacion.png';
+import { UserAvatar } from './app/components/UserAvatar.jsx';
 
 import { Btn, Modal, OpponentCard } from './app/components/index.js';
 import { AppPhaseRouter } from './app/screens/index.js';
@@ -98,13 +99,16 @@ export default function App() {
   const initialSalaCode = initialParams.get('sala') || '';
   const initialView = initialParams.get('view') || '';
   const initialProfileId = parseInt(initialParams.get('id') || '', 10);
+  const shouldLogoutOnLoad = initialParams.get('logout') === '1';
   const savedUserOnLoad = getSavedUser();
   const appDownloadUrl = typeof window !== 'undefined' ? new URL('/', window.location.href).toString() : 'https://hungry-poly.up.railway.app/';
   const hasRoomSession = !!sessionStorage.getItem('hp_room_session');
   const [phase, setPhase] = useState(
-    hasRoomSession ? 'reconnecting'
+    shouldLogoutOnLoad ? 'auth'
+    : hasRoomSession ? 'reconnecting'
     : initialSalaCode ? 'onlineMenu'
     : initialView === 'profile' && savedUserOnLoad && (Number.isFinite(initialProfileId) || savedUserOnLoad?.id) ? 'profile'
+    : initialView === 'auth' ? 'auth'
     : initialView === 'friends' && savedUserOnLoad ? 'friends'
     : (savedUserOnLoad ? 'setup' : 'auth')
   );
@@ -154,7 +158,7 @@ export default function App() {
   const HI = isOnline ? myPlayerIdx : 0;
 
   // â”€â”€ Auth state â”€â”€
-  const [user, setUser] = useState(() => getSavedUser());
+  const [user, setUser] = useState(() => (shouldLogoutOnLoad ? null : getSavedUser()));
   // â”€â”€ UI language state â”€â”€
   const [uiLang, setUiLangState] = useState(() => getUILang());
   const T = useCallback((key) => t(key, uiLang), [uiLang]);
@@ -216,6 +220,14 @@ export default function App() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
+    if (shouldLogoutOnLoad) {
+      clearAuth();
+      const cleanUrl = new URL(window.location.href);
+      cleanUrl.searchParams.delete('logout');
+      cleanUrl.searchParams.delete('view');
+      cleanUrl.searchParams.delete('id');
+      window.history.replaceState({}, '', cleanUrl.pathname + cleanUrl.search + cleanUrl.hash);
+    }
     const isStandalone = window.matchMedia?.('(display-mode: standalone)')?.matches || window.navigator.standalone === true;
     if (isStandalone) return undefined;
 
@@ -464,6 +476,24 @@ export default function App() {
     } else {
       setPhase('auth');
     }
+  }
+
+  function handleMenuLogout() {
+    if (isOnline && roomCode) {
+      socket.emit('leaveRoom');
+      socket.disconnect();
+      resetOnlineRoomState();
+    }
+    if (phase === 'playing' && !isOnline) {
+      resetLocalGameState();
+    }
+    clearAuth();
+    setUser(null);
+    setProfileUserId(null);
+    setInviteJoinCode('');
+    setOnlineMenuTab('');
+    setShowQuickMenu(false);
+    setPhase('auth');
   }
 
   function openProfile(targetUserId, returnPhase = phase) {
@@ -1794,6 +1824,35 @@ export default function App() {
             flexDirection: 'column',
             gap: 8,
           }}>
+            {user && (
+              <button
+                type="button"
+                onClick={goToProfile}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  width: '100%',
+                  padding: '10px 12px',
+                  borderRadius: 14,
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  background: 'rgba(255,255,255,0.04)',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                }}
+              >
+                <UserAvatar
+                  name={user.displayName}
+                  username={user.username}
+                  avatarUrl={user.avatarUrl}
+                  size={38}
+                />
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ color: '#fff3bf', fontSize: 14, fontWeight: 900, lineHeight: 1.05 }}>{user.displayName || user.username}</div>
+                  <div style={{ color: '#8a8fa8', fontSize: 11, fontWeight: 700, marginTop: 2 }}>@{user.username}</div>
+                </div>
+              </button>
+            )}
             <Btn onClick={goToHome} color="#4ecdc4" style={{ color: '#0f1117', width: '100%', justifyContent: 'center' }}>
               {T('homeMenu')}
             </Btn>
@@ -1817,6 +1876,11 @@ export default function App() {
             <Btn onClick={() => goToOnlineHub('lobby')} color="#2a2a4a" style={{ color: '#fff', width: '100%', justifyContent: 'center' }}>
               {T('lobby')}
             </Btn>
+            {user && (
+              <Btn onClick={handleMenuLogout} color="#ff8a80" style={{ color: '#2b1111', width: '100%', justifyContent: 'center' }}>
+                {T('logout')}
+              </Btn>
+            )}
           </div>
         )}
       </div>
