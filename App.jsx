@@ -151,6 +151,7 @@ export default function App() {
   const uiGameLang = KEY_TO_LANG[uiLang] || LANGUAGES[0];
   const installCopy = INSTALL_PROMPT_COPY[uiLang] || INSTALL_PROMPT_COPY.en;
   const canOpenInstallPrompt = showIosInstallHint || !!deferredInstallPrompt;
+  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 640;
   const handleSetLang = (lang) => { setUILang(lang); setUiLangState(lang); };
   const getActionText = useCallback((actionId) => {
     const base = getActionInfo(actionId);
@@ -1684,7 +1685,6 @@ export default function App() {
     return null; // action cards always selectable
   };
 
-  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 640;
   const handN = human.hand.length;
   const MAX_ANGLE = isMobile ? 12 : 14;
   const OVERLAP = isMobile ? 20 : 18;
