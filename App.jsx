@@ -2055,134 +2055,13 @@ export default function App() {
                   </div>
                 )}
               </>
-            )}            <Btn onClick={goToHome} color="#4ecdc4" style={{ color: '#0f1117', width: '100%', justifyContent: 'center' }}>
+            )}
+            <Btn onClick={goToHome} color="#4ecdc4" style={{ color: '#0f1117', width: '100%', justifyContent: 'center' }}>
               {T('homeMenu')}
             </Btn>
             <Btn onClick={goToFriends} color="#7ad8ff" style={{ color: '#102033', width: '100%', justifyContent: 'center' }}>
               {T('friends')}
             </Btn>
-            <div style={{
-              borderRadius: 14,
-              border: '1px solid rgba(255,215,0,0.16)',
-              background: 'rgba(255,255,255,0.035)',
-              padding: 10,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 8,
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{
-                  position: 'relative',
-                  width: 40,
-                  height: 40,
-                  borderRadius: 999,
-                  background: noticeCards.length > 0 ? 'rgba(255,215,0,0.14)' : 'rgba(255,255,255,0.06)',
-                  border: noticeCards.length > 0 ? '2px solid rgba(255,215,0,0.45)' : '1px solid rgba(255,255,255,0.08)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}>
-                  <img
-                    src={ingredientCardIcon}
-                    alt="hamburguesa"
-                    style={{
-                      width: 25,
-                      height: 25,
-                      objectFit: 'contain',
-                      opacity: noticeCards.length > 0 ? 1 : 0.42,
-                      filter: noticeCards.length > 0 ? 'drop-shadow(0 0 8px rgba(255,215,0,.35)) saturate(1.15)' : 'grayscale(.2)',
-                    }}
-                  />
-                  {noticeCards.length > 0 && (
-                    <div style={{
-                      position: 'absolute',
-                      top: -3,
-                      right: -3,
-                      minWidth: 18,
-                      height: 18,
-                      padding: '0 4px',
-                      borderRadius: 999,
-                      background: '#ff5f57',
-                      color: '#fff',
-                      fontSize: 11,
-                      fontWeight: 900,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      border: '2px solid rgba(22,33,62,.98)',
-                    }}>
-                      {noticeCards.length}
-                    </div>
-                  )}
-                </div>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ color: '#fff3bf', fontSize: 13, fontWeight: 900 }}>Notificaciones</div>
-                  <div style={{ color: '#8a8fa8', fontSize: 11, fontWeight: 700 }}>
-                    {noticeCards.length > 0 ? `${noticeCards.length} pendientes` : 'No tienes notificaciones'}
-                  </div>
-                </div>
-              </div>
-              {noticeCards.length === 0 ? (
-                <div style={{
-                  color: '#9ea6c7',
-                  fontSize: 12,
-                  fontWeight: 700,
-                  padding: '4px 2px 0',
-                }}>
-                  No tienes notificaciones
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {noticeCards.map((notice) => (
-                    <div
-                      key={notice.key}
-                      style={{
-                        borderRadius: 12,
-                        border: `1px solid ${notice.color}`,
-                        background: 'rgba(18,26,48,0.9)',
-                        padding: 10,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 8,
-                      }}
-                    >
-                      <div style={{ color: '#f8f4cf', fontSize: 12, fontWeight: 800, lineHeight: 1.25 }}>{notice.message}</div>
-                      {notice.sub ? <div style={{ color: '#8a8fa8', fontSize: 11, fontWeight: 700 }}>{notice.sub}</div> : null}
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        <button onClick={notice.onAction} style={{
-                          flex: 1,
-                          padding: '8px 10px',
-                          borderRadius: 10,
-                          border: 'none',
-                          background: notice.color,
-                          color: '#0f1117',
-                          fontFamily: "'Fredoka',sans-serif",
-                          fontWeight: 800,
-                          fontSize: 12,
-                          cursor: 'pointer',
-                        }}>
-                          {notice.actionLabel}
-                        </button>
-                        <button onClick={notice.onClose} style={{
-                          padding: '8px 10px',
-                          borderRadius: 10,
-                          border: '1px solid rgba(255,255,255,0.12)',
-                          background: 'transparent',
-                          color: '#9ea6c7',
-                          fontFamily: "'Fredoka',sans-serif",
-                          fontWeight: 800,
-                          fontSize: 12,
-                          cursor: 'pointer',
-                        }}>
-                          ×
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
             {phase === 'playing' && (
               <Btn onClick={handleQuickLeaveGame} color="#ff4444" style={{ color: '#fff', width: '100%', justifyContent: 'center' }}>
                 {T('leaveLocal')}
@@ -4021,6 +3900,8 @@ export default function App() {
     </div>
   );
 }
+
+
 
 
 
