@@ -1,4 +1,4 @@
-# Hungry Poly Mobile
+﻿# Hungry Poly Mobile
 
 Base mobile hecha con Expo + React Native.
 
@@ -78,3 +78,4 @@ Si luego quieres apuntarla a otro backend/web, cambia `expo.extra.gameUrl` en `m
 - Native game screen now opens after gameStarted and gives a first in-app match overview before jumping to WebView gameplay if needed.
 
 - Native game screen now listens to `stateUpdate` and shows live turn, deck, discard and player progress while the match runs.
+- Native match screen now shows your live hand, your table and a native in-match chat powered by the same socket room.`r`n

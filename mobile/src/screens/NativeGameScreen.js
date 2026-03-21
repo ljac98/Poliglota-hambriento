@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 const HAT_LABELS = {
   espanol: 'Espanol',
@@ -72,9 +72,33 @@ function summarizeMode(config) {
   return `Clon - ${config.burgerCount || 2} burgers compartidas`;
 }
 
-export function NativeGameScreen({ setup, online, gameSession, onBackToLobby, onOpenWebGame, onLeaveRoom }) {
+function formatCard(card) {
+  if (!card) return 'Carta';
+  if (card.type === 'ingredient') {
+    const ing = INGREDIENT_LABELS[card.ingredient] || card.ingredient || 'Ingrediente';
+    return `${ing} - ${card.language || 'lang'}`;
+  }
+  if (card.type === 'action') {
+    return `Action - ${card.action || 'accion'}`;
+  }
+  return card.name || 'Carta';
+}
+
+function formatTableItem(item) {
+  if (!item) return 'Ingrediente';
+  if (typeof item !== 'string') return String(item);
+  if (item.startsWith('perrito|')) {
+    const chosen = item.split('|')[1];
+    return `Comodin - ${INGREDIENT_LABELS[chosen] || chosen}`;
+  }
+  if (item === 'perrito') return 'Comodin';
+  return INGREDIENT_LABELS[item] || item;
+}
+
+export function NativeGameScreen({ setup, online, gameSession, chatMessages = [], onSendChat, onBackToLobby, onOpenWebGame, onLeaveRoom }) {
   const objectivesByPlayer = useMemo(() => buildObjectives(gameSession), [gameSession]);
   const [selectedIdx, setSelectedIdx] = useState(0);
+  const [chatInput, setChatInput] = useState('');
   const currentObjective = objectivesByPlayer[selectedIdx] || objectivesByPlayer[0];
   const currentPlayerName = setup.playerName;
   const livePlayers = gameSession.liveState?.players || [];
@@ -146,6 +170,40 @@ export function NativeGameScreen({ setup, online, gameSession, onBackToLobby, on
               </View>
             )}
 
+            {myLivePlayer && (
+              <View style={styles.liveColumns}>
+                <View style={styles.liveColumnCard}>
+                  <Text style={styles.liveColumnTitle}>Tu mano</Text>
+                  <View style={styles.cardChipWrap}>
+                    {(myLivePlayer.hand || []).length === 0 ? (
+                      <Text style={styles.emptyText}>Sin cartas visibles todavia.</Text>
+                    ) : (
+                      myLivePlayer.hand.map((card, index) => (
+                        <View key={`hand-${card.id || index}`} style={styles.cardChip}>
+                          <Text style={styles.cardChipText}>{formatCard(card)}</Text>
+                        </View>
+                      ))
+                    )}
+                  </View>
+                </View>
+
+                <View style={styles.liveColumnCard}>
+                  <Text style={styles.liveColumnTitle}>Tu mesa</Text>
+                  <View style={styles.cardChipWrap}>
+                    {(myLivePlayer.table || []).length === 0 ? (
+                      <Text style={styles.emptyText}>Tu mesa esta vacia.</Text>
+                    ) : (
+                      myLivePlayer.table.map((item, index) => (
+                        <View key={`table-${item}-${index}`} style={styles.tableChip}>
+                          <Text style={styles.tableChipText}>{formatTableItem(item)}</Text>
+                        </View>
+                      ))
+                    )}
+                  </View>
+                </View>
+              </View>
+            )}
+
             <View style={styles.playerList}>
               {livePlayers.map((player, index) => (
                 <View key={`${player.name}-${index}-live`} style={styles.livePlayerCard}>
@@ -203,6 +261,42 @@ export function NativeGameScreen({ setup, online, gameSession, onBackToLobby, on
         <Text style={styles.bodyText}>Todavia el gameplay completo sigue mejor en la version web, asi que deje el salto rapido abajo.</Text>
       </View>
 
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Chat nativo</Text>
+        <View style={styles.chatList}>
+          {chatMessages.length === 0 ? (
+            <Text style={styles.emptyText}>Todavia no hay mensajes.</Text>
+          ) : (
+            chatMessages.map((msg, index) => (
+              <View key={`${msg.timestamp || index}-${index}`} style={styles.chatBubble}>
+                <Text style={styles.chatAuthor}>{msg.playerName || 'Jugador'}</Text>
+                <Text style={styles.chatText}>{msg.text || ''}</Text>
+              </View>
+            ))
+          )}
+        </View>
+        <View style={styles.chatComposer}>
+          <TextInput
+            value={chatInput}
+            onChangeText={setChatInput}
+            placeholder="Escribe un mensaje"
+            placeholderTextColor="#6f7697"
+            style={styles.chatInput}
+          />
+          <Pressable
+            style={styles.chatSendButton}
+            onPress={() => {
+              const clean = chatInput.trim();
+              if (!clean) return;
+              onSendChat?.(clean);
+              setChatInput('');
+            }}
+          >
+            <Text style={styles.chatSendButtonText}>Enviar</Text>
+          </Pressable>
+        </View>
+      </View>
+
       <Pressable style={styles.primaryButton} onPress={onOpenWebGame}>
         <Text style={styles.primaryButtonText}>Abrir gameplay web completo</Text>
       </Pressable>
@@ -241,6 +335,15 @@ const styles = StyleSheet.create({
   myStateCard: { backgroundColor: 'rgba(78,205,196,0.08)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(78,205,196,0.25)', padding: 14, marginBottom: 12 },
   myStateTitle: { color: '#4ecdc4', fontSize: 14, fontWeight: '800', marginBottom: 8 },
   myStateText: { color: '#d8ddf3', fontSize: 13, lineHeight: 20, marginBottom: 4 },
+  liveColumns: { gap: 12, marginBottom: 12 },
+  liveColumnCard: { backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', padding: 14 },
+  liveColumnTitle: { color: '#fff1b3', fontSize: 14, fontWeight: '800', marginBottom: 10 },
+  cardChipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  cardChip: { backgroundColor: 'rgba(255,215,0,0.08)', borderRadius: 999, borderWidth: 1, borderColor: 'rgba(255,215,0,0.22)', paddingHorizontal: 10, paddingVertical: 8 },
+  cardChipText: { color: '#fff1b3', fontSize: 12, fontWeight: '700' },
+  tableChip: { backgroundColor: 'rgba(78,205,196,0.08)', borderRadius: 999, borderWidth: 1, borderColor: 'rgba(78,205,196,0.22)', paddingHorizontal: 10, paddingVertical: 8 },
+  tableChipText: { color: '#9ff6ef', fontSize: 12, fontWeight: '700' },
+  emptyText: { color: '#8a8fa8', fontSize: 12, lineHeight: 18 },
   tabsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 },
   playerTab: { paddingHorizontal: 12, paddingVertical: 10, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)' },
   playerTabActive: { borderColor: '#FFD700', backgroundColor: 'rgba(255,215,0,0.08)' },
@@ -253,6 +356,14 @@ const styles = StyleSheet.create({
   burgerBadge: { position: 'absolute', top: 6, right: 6, backgroundColor: '#FFD700', color: '#111', width: 24, height: 24, borderRadius: 12, textAlign: 'center', lineHeight: 24, fontWeight: '900', fontSize: 12, overflow: 'hidden' },
   burgerItem: { color: '#d8ddf3', fontSize: 11, lineHeight: 16, marginVertical: 1, fontWeight: '700', textAlign: 'center' },
   bodyText: { color: '#d8ddf3', fontSize: 14, lineHeight: 21, marginBottom: 8 },
+  chatList: { gap: 8, marginBottom: 12 },
+  chatBubble: { backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', padding: 12 },
+  chatAuthor: { color: '#4ecdc4', fontSize: 12, fontWeight: '800', marginBottom: 4 },
+  chatText: { color: '#d8ddf3', fontSize: 13, lineHeight: 19 },
+  chatComposer: { gap: 10 },
+  chatInput: { backgroundColor: '#0f1117', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 14, color: '#fff', paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
+  chatSendButton: { backgroundColor: '#4ecdc4', borderRadius: 14, paddingVertical: 12, alignItems: 'center' },
+  chatSendButtonText: { color: '#04101c', fontSize: 15, fontWeight: '900' },
   primaryButton: { backgroundColor: '#FFD700', borderRadius: 16, paddingVertical: 16, alignItems: 'center' },
   primaryButtonText: { color: '#111', fontSize: 16, fontWeight: '900' },
   secondaryButton: { backgroundColor: '#00BCD4', borderRadius: 16, paddingVertical: 16, alignItems: 'center' },

@@ -62,6 +62,7 @@ export default function App() {
   const [setupState, setSetupState] = useState(DEFAULT_SETUP);
   const [onlineState, setOnlineState] = useState(DEFAULT_ONLINE);
   const [gameSession, setGameSession] = useState(DEFAULT_GAME_SESSION);
+  const [chatMessages, setChatMessages] = useState([]);
   const gameUrl = useMemo(() => Constants.expoConfig?.extra?.gameUrl || FALLBACK_URL, []);
   const socketRef = useRef(null);
   const setupRef = useRef(DEFAULT_SETUP);
@@ -89,6 +90,7 @@ export default function App() {
     };
     const handleRoomCreated = ({ code, isPublic, roomName }) => {
       const currentSetup = setupRef.current;
+      setChatMessages([]);
       setGameSession(DEFAULT_GAME_SESSION);
       setOnlineState((prev) => ({
         ...prev,
@@ -106,6 +108,7 @@ export default function App() {
       }));
     };
     const handleRoomJoined = ({ code, myIdx, isPublic, roomName }) => {
+      setChatMessages([]);
       setGameSession(DEFAULT_GAME_SESSION);
       setOnlineState((prev) => ({
         ...prev,
@@ -179,6 +182,10 @@ export default function App() {
         }));
       }
     };
+    const handleChatMessage = (msg) => {
+      if (!msg) return;
+      setChatMessages((prev) => [...prev, msg].slice(-80));
+    };
     const handleBecameHost = () => {
       setOnlineState((prev) => ({ ...prev, isHost: true, status: 'Ahora eres host de la sala.' }));
     };
@@ -193,6 +200,7 @@ export default function App() {
     socket.on('lobbyListUpdate', handleLobbyListUpdate);
     socket.on('gameStarted', handleGameStarted);
     socket.on('stateUpdate', handleStateUpdate);
+    socket.on('chatMessage', handleChatMessage);
     socket.on('becameHost', handleBecameHost);
 
     return () => {
@@ -206,6 +214,7 @@ export default function App() {
       socket.off('lobbyListUpdate', handleLobbyListUpdate);
       socket.off('gameStarted', handleGameStarted);
       socket.off('stateUpdate', handleStateUpdate);
+      socket.off('chatMessage', handleChatMessage);
       socket.off('becameHost', handleBecameHost);
       socket.disconnect();
     };
@@ -283,6 +292,7 @@ export default function App() {
   function leaveRoom() {
     socket.emit('leaveRoom');
     socket.disconnect();
+    setChatMessages([]);
     setGameSession(DEFAULT_GAME_SESSION);
     setOnlineState(DEFAULT_ONLINE);
     setCurrentScreen('nativeOnline');
@@ -311,6 +321,13 @@ export default function App() {
   function goToWebGame() {
     setLoadingGame(true);
     setCurrentScreen('web');
+  }
+
+  function sendNativeChat(text) {
+    const clean = (text || '').trim();
+    if (!clean || !onlineState.roomCode) return;
+    const playerName = setupState.playerName || 'Jugador';
+    socket.emit('chatMessage', { code: onlineState.roomCode, playerName, text: clean });
   }
 
   if (currentScreen === 'web') {
@@ -405,6 +422,8 @@ export default function App() {
           setup={setupState}
           online={onlineState}
           gameSession={gameSession}
+          chatMessages={chatMessages}
+          onSendChat={sendNativeChat}
           onBackToLobby={() => setCurrentScreen('nativeOnline')}
           onOpenWebGame={goToWebGame}
           onLeaveRoom={leaveRoom}
