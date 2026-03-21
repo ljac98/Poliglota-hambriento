@@ -559,6 +559,9 @@ export default function App() {
     };
     const handleStateUpdate = ({ state }) => {
       if (!state) return;
+      if (onlineRef.current.isHost) {
+        hostStateRef.current = state;
+      }
       setGameSession((prev) => ({
         ...prev,
         liveState: state,
@@ -576,6 +579,9 @@ export default function App() {
     };
     const handleBecameHost = () => {
       setOnlineState((prev) => ({ ...prev, isHost: true, status: 'Ahora eres host de la sala.' }));
+      if (gameSessionRef.current?.liveState) {
+        hostStateRef.current = clone(gameSessionRef.current.liveState);
+      }
     };
     const handleRemoteAction = ({ playerIdx, action }) => {
       if (!onlineRef.current.isHost) return;

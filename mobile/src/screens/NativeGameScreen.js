@@ -982,10 +982,9 @@ export function NativeGameScreen({ setup, online, gameSession, chatMessages = []
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Estado del port nativo</Text>
-        <Text style={styles.bodyText}>Ya abrimos automatico esta vista con el evento real `gameStarted` del servidor.</Text>
-        <Text style={styles.bodyText}>Aqui se muestran jugadores, sombreros y objetivos generados desde la configuracion real de la sala.</Text>
-        <Text style={styles.bodyText}>Todavia el gameplay completo sigue mejor en la version web, asi que deje el salto rapido abajo.</Text>
+        <Text style={styles.sectionTitle}>Estado de la partida nativa</Text>
+        <Text style={styles.bodyText}>Esta vista ya usa el estado real del servidor y permite jugar una partida desde movil con acciones, negacion, chat y tablero vivo.</Text>
+        <Text style={styles.bodyText}>La version web sigue disponible como respaldo, pero la experiencia principal aqui ya es la nativa.</Text>
       </View>
 
       <View style={styles.section}>
@@ -1024,12 +1023,12 @@ export function NativeGameScreen({ setup, online, gameSession, chatMessages = []
         </View>
       </View>
 
-      <Pressable style={styles.primaryButton} onPress={onOpenWebGame}>
-        <Text style={styles.primaryButtonText}>Abrir gameplay web completo</Text>
+      <Pressable style={styles.primaryButton} onPress={onBackToLobby}>
+        <Text style={styles.primaryButtonText}>Volver al lobby nativo</Text>
       </Pressable>
 
-      <Pressable style={styles.secondaryButton} onPress={onBackToLobby}>
-        <Text style={styles.secondaryButtonText}>Volver al lobby nativo</Text>
+      <Pressable style={styles.secondaryButton} onPress={onOpenWebGame}>
+        <Text style={styles.secondaryButtonText}>Abrir version web</Text>
       </Pressable>
 
       <Pressable style={styles.ghostButton} onPress={onLeaveRoom}>
