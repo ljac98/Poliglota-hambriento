@@ -1,24 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { getHatLabel, getIngredientLabel, toUiHat, toUiIngredient } from '../lib/gameMapping';
 
-const HAT_LABELS = {
-  espanol: 'Espanol',
-  ingles: 'English',
-  frances: 'Francais',
-  italiano: 'Italiano',
-  aleman: 'Deutsch',
-  portugues: 'Portugues',
-};
-const INGREDIENT_LABELS = {
-  lettuce: 'Lettuce',
-  tomato: 'Tomato',
-  beef: 'Beef',
-  cheese: 'Cheese',
-  chicken: 'Chicken',
-  egg: 'Egg',
-  onion: 'Onion',
-  avocado: 'Avocado',
-};
 const FALLBACK_POOL = ['lettuce', 'tomato', 'beef', 'cheese', 'chicken', 'egg', 'onion', 'avocado'];
 const INGREDIENT_IMAGE_SOURCES = {
   lettuce: require('../../assets/game/lettuce.png'),
@@ -82,7 +65,7 @@ function buildBurgerStack(mode, pool, ingredientCount, burgerIndex, playerIndex)
       continue;
     }
     const ingredient = safePool[(playerIndex + burgerIndex + index) % safePool.length];
-    selected.push(INGREDIENT_LABELS[ingredient] || ingredient);
+    selected.push(getIngredientLabel(ingredient));
   }
   return ['BUN TOP', ...selected, 'BUN BOT'];
 }
@@ -123,7 +106,7 @@ function summarizeMode(config) {
 function formatCard(card) {
   if (!card) return 'Carta';
   if (card.type === 'ingredient') {
-    const ing = INGREDIENT_LABELS[card.ingredient] || card.ingredient || 'Ingrediente';
+    const ing = getIngredientLabel(card.ingredient) || card.ingredient || 'Ingrediente';
     return `${ing} - ${card.language || 'lang'}`;
   }
   if (card.type === 'action') {
@@ -137,10 +120,10 @@ function formatTableItem(item) {
   if (typeof item !== 'string') return String(item);
   if (item.startsWith('perrito|')) {
     const chosen = item.split('|')[1];
-    return `Comodin - ${INGREDIENT_LABELS[chosen] || chosen}`;
+    return `Comodin - ${getIngredientLabel(chosen) || chosen}`;
   }
   if (item === 'perrito') return 'Comodin';
-  return INGREDIENT_LABELS[item] || item;
+  return getIngredientLabel(item) || item;
 }
 
 function resolveNeededIngredients(target = [], table = []) {
@@ -168,7 +151,7 @@ function normalizeIngredientKey(item) {
   if (item === 'bread' || item === 'pan') return 'bread';
   if (item.startsWith('perrito|')) return item.split('|')[1];
   if (item === 'perrito') return 'wildcard';
-  return item;
+  return toUiIngredient(item);
 }
 
 function getCardVisual(card) {
@@ -176,9 +159,9 @@ function getCardVisual(card) {
   if (card.type === 'ingredient') {
     const key = card.ingredient === 'perrito' ? 'wildcard' : card.ingredient;
     return {
-      title: INGREDIENT_LABELS[card.ingredient] || 'Ingrediente',
+      title: getIngredientLabel(card.ingredient) || 'Ingrediente',
       subtitle: (card.language || '').toUpperCase(),
-      icon: INGREDIENT_ICON_SOURCES[key] || INGREDIENT_ICON_SOURCES.wildcard,
+      icon: INGREDIENT_ICON_SOURCES[toUiIngredient(key)] || INGREDIENT_ICON_SOURCES.wildcard,
       accent: '#4ecdc4',
     };
   }
@@ -273,7 +256,7 @@ function RenderTargetPlayerCard({ player, active, onPress, liveCp }) {
             {player?.idx === liveCp ? ' - turno' : ''}
           </Text>
         </View>
-        {hat ? <Image source={HAT_IMAGE_SOURCES[hat]} style={styles.targetPlayerHat} resizeMode="contain" /> : null}
+          {hat ? <Image source={HAT_IMAGE_SOURCES[toUiHat(hat)]} style={styles.targetPlayerHat} resizeMode="contain" /> : null}
       </View>
       <View style={styles.targetPlayerBody}>
         <RenderBurgerVisual target={target} table={player?.table || []} compact badge={(player?.currentBurger || 0) + 1} />
@@ -484,9 +467,9 @@ export function NativeGameScreen({ setup, online, gameSession, chatMessages = []
                 <View style={styles.playerHeaderRow}>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.playerName}>{player.name}{isMe ? ' (tu)' : ''}</Text>
-                    <Text style={styles.playerMeta}>Sombrero: {HAT_LABELS[hat] || hat || 'pendiente'}</Text>
+                    <Text style={styles.playerMeta}>Sombrero: {getHatLabel(hat) || hat || 'pendiente'}</Text>
                   </View>
-                  {hat ? <Image source={HAT_IMAGE_SOURCES[hat]} style={styles.playerHatImage} resizeMode="contain" /> : null}
+                  {hat ? <Image source={HAT_IMAGE_SOURCES[toUiHat(hat)]} style={styles.playerHatImage} resizeMode="contain" /> : null}
                 </View>
               </View>
             );
@@ -520,7 +503,7 @@ export function NativeGameScreen({ setup, online, gameSession, chatMessages = []
                   neededIngredients.map((ingredient, index) => (
                     <View key={`need-${ingredient}-${index}`} style={styles.ingredientNeedCard}>
                       <Image source={INGREDIENT_IMAGE_SOURCES[ingredient] || INGREDIENT_IMAGE_SOURCES.wildcard} style={styles.ingredientNeedImage} resizeMode="contain" />
-                      <Text style={styles.ingredientNeedText}>{INGREDIENT_LABELS[ingredient] || ingredient}</Text>
+                    <Text style={styles.ingredientNeedText}>{getIngredientLabel(ingredient) || ingredient}</Text>
                     </View>
                   ))
                 )}
@@ -532,8 +515,8 @@ export function NativeGameScreen({ setup, online, gameSession, chatMessages = []
                 <View style={styles.hatBoardRow}>
                 {(myLivePlayer.mainHats || []).map((hatLang) => (
                   <View key={`mainhat-${hatLang}`} style={styles.hatBoardCard}>
-                    <Image source={HAT_IMAGE_SOURCES[hatLang]} style={styles.hatBoardImage} resizeMode="contain" />
-                    <Text style={styles.hatBoardText}>{HAT_LABELS[hatLang] || hatLang}</Text>
+                    <Image source={HAT_IMAGE_SOURCES[toUiHat(hatLang)]} style={styles.hatBoardImage} resizeMode="contain" />
+                    <Text style={styles.hatBoardText}>{getHatLabel(hatLang) || hatLang}</Text>
                   </View>
                 ))}
               </View>
@@ -543,8 +526,8 @@ export function NativeGameScreen({ setup, online, gameSession, chatMessages = []
                   <View style={styles.hatBoardRow}>
                     {(myLivePlayer.perchero || []).map((hatLang) => (
                       <View key={`perchero-${hatLang}`} style={styles.hatBoardCardMuted}>
-                        <Image source={HAT_IMAGE_SOURCES[hatLang]} style={styles.hatBoardImage} resizeMode="contain" />
-                        <Text style={styles.hatBoardTextMuted}>{HAT_LABELS[hatLang] || hatLang}</Text>
+                        <Image source={HAT_IMAGE_SOURCES[toUiHat(hatLang)]} style={styles.hatBoardImage} resizeMode="contain" />
+                        <Text style={styles.hatBoardTextMuted}>{getHatLabel(hatLang) || hatLang}</Text>
                       </View>
                     ))}
                   </View>
@@ -615,7 +598,7 @@ export function NativeGameScreen({ setup, online, gameSession, chatMessages = []
                     <View style={styles.optionWrap}>
                       {(myLivePlayer.perchero || []).map((hatLang) => (
                         <Pressable key={`replace-${hatLang}`} style={styles.optionChip} onPress={() => onSendAction?.({ type: 'pickHatReplace', hatLang })}>
-                          <Text style={styles.optionChipText}>{HAT_LABELS[hatLang] || hatLang}</Text>
+                          <Text style={styles.optionChipText}>{getHatLabel(hatLang) || hatLang}</Text>
                         </Pressable>
                       ))}
                     </View>
@@ -628,7 +611,7 @@ export function NativeGameScreen({ setup, online, gameSession, chatMessages = []
                     <View style={styles.optionWrap}>
                       {(myLivePlayer.perchero || []).map((hatLang) => (
                         <View key={`hat-${hatLang}`} style={styles.hatActionCard}>
-                          <Text style={styles.hatActionName}>{HAT_LABELS[hatLang] || hatLang}</Text>
+                          <Text style={styles.hatActionName}>{getHatLabel(hatLang) || hatLang}</Text>
                           <View style={styles.hatActionButtons}>
                             <Pressable style={styles.smallActionButton} onPress={() => startHatDraft('cambiar', hatLang)}>
                               <Text style={styles.smallActionButtonText}>Cambiar</Text>
@@ -642,7 +625,7 @@ export function NativeGameScreen({ setup, online, gameSession, chatMessages = []
                     </View>
                     {hatDraft?.mode === 'agregar' && (
                       <View style={styles.inlineActionGroup}>
-                        <Text style={styles.actionHint}>Agregar {HAT_LABELS[hatDraft.hatLang] || hatDraft.hatLang} vacia tu mano y reduce tu mano maxima.</Text>
+                        <Text style={styles.actionHint}>Agregar {getHatLabel(hatDraft.hatLang) || hatDraft.hatLang} vacia tu mano y reduce tu mano maxima.</Text>
                         <Pressable
                           style={styles.inlineActionButton}
                           onPress={() => {
@@ -738,7 +721,7 @@ export function NativeGameScreen({ setup, online, gameSession, chatMessages = []
                                         resetCardFlow();
                                       }}
                                     >
-                                      <Text style={styles.optionChipText}>{INGREDIENT_LABELS[ingredient] || ingredient}</Text>
+                                      <Text style={styles.optionChipText}>{getIngredientLabel(ingredient) || ingredient}</Text>
                                     </Pressable>
                                   ))
                                 )}
@@ -851,7 +834,7 @@ export function NativeGameScreen({ setup, online, gameSession, chatMessages = []
                                           style={[styles.optionChip, active && styles.optionChipActive]}
                                           onPress={() => setActionDraft((prev) => ({ ...(prev || {}), type: 'targeted', targetIdx: targetPlayer.idx, myHat: hatLang }))}
                                         >
-                                          <Text style={[styles.optionChipText, active && styles.optionChipTextActive]}>{HAT_LABELS[hatLang] || hatLang}</Text>
+                                          <Text style={[styles.optionChipText, active && styles.optionChipTextActive]}>{getHatLabel(hatLang) || hatLang}</Text>
                                         </Pressable>
                                       );
                                     })}
@@ -866,7 +849,7 @@ export function NativeGameScreen({ setup, online, gameSession, chatMessages = []
                                           style={[styles.optionChip, active && styles.optionChipActive]}
                                           onPress={() => setActionDraft((prev) => ({ ...(prev || {}), type: 'targeted', targetIdx: targetPlayer.idx, theirHat: hatLang }))}
                                         >
-                                          <Text style={[styles.optionChipText, active && styles.optionChipTextActive]}>{HAT_LABELS[hatLang] || hatLang}</Text>
+                                          <Text style={[styles.optionChipText, active && styles.optionChipTextActive]}>{getHatLabel(hatLang) || hatLang}</Text>
                                         </Pressable>
                                       );
                                     })}

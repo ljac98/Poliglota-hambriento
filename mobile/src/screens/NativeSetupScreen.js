@@ -1,13 +1,14 @@
 import React, { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { getHatLabel, getIngredientLabel, toUiHat } from '../lib/gameMapping';
 
 const LANGS = [
-  { id: 'espanol', label: 'Espanol', accent: '#FFB703' },
-  { id: 'ingles', label: 'English', accent: '#9CA3AF' },
-  { id: 'frances', label: 'Francais', accent: '#FF6B4A' },
-  { id: 'italiano', label: 'Italiano', accent: '#E9D8A6' },
-  { id: 'aleman', label: 'Deutsch', accent: '#4CAF50' },
-  { id: 'portugues', label: 'Portugues', accent: '#9D6B53' },
+  { id: 'espanol', accent: '#FFB703' },
+  { id: 'ingles', accent: '#9CA3AF' },
+  { id: 'frances', accent: '#FF6B4A' },
+  { id: 'italiano', accent: '#E9D8A6' },
+  { id: 'aleman', accent: '#4CAF50' },
+  { id: 'portugues', accent: '#9D6B53' },
 ];
 
 const MODES = [
@@ -17,11 +18,6 @@ const MODES = [
 ];
 
 const CLONE_INGS = ['lettuce', 'tomato', 'beef', 'cheese', 'chicken', 'egg', 'onion', 'avocado'];
-const ING_LABELS = {
-  lettuce: 'Lettuce', tomato: 'Tomato', beef: 'Beef', cheese: 'Cheese',
-  chicken: 'Chicken', egg: 'Egg', onion: 'Onion', avocado: 'Avocado',
-};
-
 function buildPreview(setup) {
   const makeBurger = (count, hidden = false) => {
     const selected = setup.ingredientPool.slice(0, Math.max(2, Math.min(count, setup.ingredientPool.length)));
@@ -87,14 +83,14 @@ export function NativeSetupScreen({ setup, onChangeSetup, onContinueOnline, onOp
         <Text style={styles.sectionTitle}>Sombrero principal</Text>
         <View style={styles.grid}>
           {LANGS.map((lang) => {
-            const active = setup.hat === lang.id;
+            const active = toUiHat(setup.hat) === lang.id;
             return (
               <Pressable
                 key={lang.id}
                 onPress={() => onChangeSetup({ hat: lang.id })}
                 style={[styles.langCard, active && { borderColor: '#FFD700', backgroundColor: 'rgba(255,215,0,0.08)' }]}
               >
-                <Text style={[styles.langLabel, { color: active ? '#FFD700' : lang.accent }]}>{lang.label}</Text>
+                <Text style={[styles.langLabel, { color: active ? '#FFD700' : lang.accent }]}>{getHatLabel(lang.id)}</Text>
               </Pressable>
             );
           })}
@@ -177,7 +173,7 @@ export function NativeSetupScreen({ setup, onChangeSetup, onContinueOnline, onOp
                   }}
                   style={[styles.poolChip, active && styles.poolChipActive]}
                 >
-                  <Text style={[styles.poolChipText, active && styles.poolChipTextActive]}>{ING_LABELS[ingredient]}</Text>
+                  <Text style={[styles.poolChipText, active && styles.poolChipTextActive]}>{getIngredientLabel(ingredient)}</Text>
                 </Pressable>
               );
             })}
@@ -187,7 +183,7 @@ export function NativeSetupScreen({ setup, onChangeSetup, onContinueOnline, onOp
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Preview local</Text>
-        <Text style={styles.previewHint}>Modo {setup.gameMode} · Sombrero {setup.hat}</Text>
+        <Text style={styles.previewHint}>Modo {setup.gameMode} · Sombrero {getHatLabel(setup.hat)}</Text>
         <View style={styles.burgerRow}>
           {previewBurgers.map((burger, index) => (
             <View key={`native-preview-${index}`} style={styles.previewBurger}>

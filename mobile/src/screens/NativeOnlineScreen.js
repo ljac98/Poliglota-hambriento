@@ -1,23 +1,24 @@
-import React, { useMemo, useState } from 'react';
+ï»¿import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { getHatLabel, toUiHat } from '../lib/gameMapping';
 
 const HAT_OPTIONS = [
-  { id: 'espanol', label: 'Espanol' },
-  { id: 'ingles', label: 'English' },
-  { id: 'frances', label: 'Francais' },
-  { id: 'italiano', label: 'Italiano' },
-  { id: 'aleman', label: 'Deutsch' },
-  { id: 'portugues', label: 'Portugues' },
+  { id: 'espanol' },
+  { id: 'ingles' },
+  { id: 'frances' },
+  { id: 'italiano' },
+  { id: 'aleman' },
+  { id: 'portugues' },
 ];
 
 function summarizeConfig(setup) {
   if (setup.gameMode === 'caotico') {
-    return `Caotico · caos ${setup.chaosLevel} · ${setup.burgerCount} burgers ref`;
+    return `Caotico Â· caos ${setup.chaosLevel} Â· ${setup.burgerCount} burgers ref`;
   }
   if (setup.gameMode === 'escalera') {
-    return `Escalera · ${setup.burgerCount} burgers · ascendente`;
+    return `Escalera Â· ${setup.burgerCount} burgers Â· ascendente`;
   }
-  return `Clon · ${setup.burgerCount} burgers · ${setup.ingredientCount} ingredientes`;
+  return `Clon Â· ${setup.burgerCount} burgers Â· ${setup.ingredientCount} ingredientes`;
 }
 
 export function NativeOnlineScreen({
@@ -36,7 +37,7 @@ export function NativeOnlineScreen({
   const [joinCodeInput, setJoinCodeInput] = useState('');
   const myPlayer = online.players.find((player) => player.idx === online.myIdx);
   const summary = useMemo(() => summarizeConfig(setup), [setup]);
-  const myHat = online.hatPicks[setup.playerName] || setup.hat;
+  const myHat = toUiHat(online.hatPicks[setup.playerName] || setup.hat);
   const everyoneReady = online.players.length > 0 && online.players.every((player) => online.hatPicks[player.name]);
 
   if (online.roomCode) {
@@ -44,8 +45,8 @@ export function NativeOnlineScreen({
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.heroCard}>
           <Text style={styles.heroTitle}>Lobby nativo real</Text>
-          <Text style={styles.heroText}>Sala {online.roomCode} · {online.roomName || setup.roomName || 'Sin nombre'}</Text>
-          <Text style={styles.heroSubtext}>{online.isHost ? 'Eres host' : 'Unido como jugador'} · {summary}</Text>
+          <Text style={styles.heroText}>Sala {online.roomCode} Â· {online.roomName || setup.roomName || 'Sin nombre'}</Text>
+          <Text style={styles.heroSubtext}>{online.isHost ? 'Eres host' : 'Unido como jugador'} Â· {summary}</Text>
         </View>
 
         {online.error ? <Text style={styles.errorText}>{online.error}</Text> : null}
@@ -63,7 +64,7 @@ export function NativeOnlineScreen({
                   <View style={styles.playerAvatar}><Text style={styles.playerAvatarText}>{player.idx + 1}</Text></View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.playerName}>{player.name}{player.host ? ' HOST' : ''}{isMe ? ' (tu)' : ''}</Text>
-                    <Text style={styles.playerMeta}>{pickedHat ? `Sombrero: ${pickedHat}` : 'Falta sombrero'}</Text>
+                    <Text style={styles.playerMeta}>{pickedHat ? `Sombrero: ${getHatLabel(pickedHat)}` : 'Falta sombrero'}</Text>
                   </View>
                 </View>
               );
@@ -78,7 +79,7 @@ export function NativeOnlineScreen({
               const active = myHat === hat.id;
               return (
                 <Pressable key={hat.id} onPress={() => onPickHat(hat.id)} style={[styles.hatChip, active && styles.hatChipActive]}>
-                  <Text style={[styles.hatChipText, active && styles.hatChipTextActive]}>{hat.label}</Text>
+                  <Text style={[styles.hatChipText, active && styles.hatChipTextActive]}>{getHatLabel(hat.id)}</Text>
                 </Pressable>
               );
             })}
@@ -162,7 +163,7 @@ export function NativeOnlineScreen({
               <Pressable key={room.code} onPress={() => onJoinPublicRoom(room.code)} style={styles.roomCard}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.roomName}>{room.roomName || room.code}</Text>
-                  <Text style={styles.roomMeta}>{room.mode || 'clon'} · {room.playerCount}/4</Text>
+                  <Text style={styles.roomMeta}>{room.mode || 'clon'} Â· {room.playerCount}/4</Text>
                 </View>
                 <Text style={styles.roomCode}>{room.code}</Text>
               </Pressable>
@@ -235,3 +236,4 @@ const styles = StyleSheet.create({
   successText: { color: '#4CAF50', fontSize: 13, fontWeight: '800' },
   disabledButton: { opacity: 0.45 },
 });
+
