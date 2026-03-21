@@ -399,6 +399,21 @@ export default function App() {
     setPhase('onlineMenu');
   }
 
+  function goToHome() {
+    if (phase === 'playing' && !isOnline) {
+      resetLocalGameState();
+    }
+    if (isOnline && roomCode) {
+      socket.emit('leaveRoom');
+      socket.disconnect();
+      resetOnlineRoomState();
+    }
+    setInviteJoinCode('');
+    setOnlineMenuTab('');
+    setShowQuickMenu(false);
+    setPhase(getSavedUser() ? 'setup' : 'auth');
+  }
+
   function handleQuickLeaveGame() {
     if (phase !== 'playing') return;
     if (isOnline) {
@@ -1719,6 +1734,9 @@ export default function App() {
             flexDirection: 'column',
             gap: 8,
           }}>
+            <Btn onClick={goToHome} color="#4ecdc4" style={{ color: '#0f1117', width: '100%', justifyContent: 'center' }}>
+              {T('homeMenu')}
+            </Btn>
             {phase === 'playing' && (
               <Btn onClick={handleQuickLeaveGame} color="#ff4444" style={{ color: '#fff', width: '100%', justifyContent: 'center' }}>
                 {T('leaveLocal')}

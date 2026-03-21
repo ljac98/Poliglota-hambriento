@@ -1852,6 +1852,12 @@ translations.de.leaveLocal = 'Partie verlassen';
 translations.de.leaveLocalConfirm = 'Das KI-Spiel verlassen und zum Setup zuruckkehren?';
 translations.pt.leaveLocal = 'Sair da partida';
 translations.pt.leaveLocalConfirm = 'Sair da partida contra a IA e voltar ao setup?';
+translations.es.homeMenu = 'Inicio';
+translations.en.homeMenu = 'Home';
+translations.fr.homeMenu = 'Accueil';
+translations.it.homeMenu = 'Home';
+translations.de.homeMenu = 'Start';
+translations.pt.homeMenu = 'Inicio';
 
 // Map game language names to translation keys
 const LANG_TO_KEY = {
