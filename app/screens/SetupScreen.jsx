@@ -247,75 +247,37 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
   };
   const renderDesktopSidebar = () => (
     <div style={floatingCardStyle}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
-        <div>
-          <div style={{ color: '#ffd24a', fontSize: 12, fontWeight: 900, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 8 }}>
-            {T('chooseLanguage')}
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
-            {LANGUAGES.map(lang => (
-              <div
-                key={`desktop-hat-${lang}`}
-                onClick={() => setHat(lang)}
-                style={{
-                  minHeight: 68,
-                  padding: '8px 6px',
-                  borderRadius: 10,
-                  cursor: 'pointer',
-                  border: hat === lang ? '2px solid #FFD700' : `1px solid ${LANG_BORDER[lang]}55`,
-                  background: hat === lang ? 'rgba(255,215,0,.1)' : 'rgba(255,255,255,.025)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 4,
-                  transition: 'all .15s',
-                  boxShadow: hat === lang ? '0 0 12px rgba(255,215,0,.22)' : 'none',
-                }}
-              >
-                <HatSVG lang={lang} size={30} />
-                <span style={{ fontSize: 10, fontWeight: 800, color: hat === lang ? '#FFD700' : LANG_TEXT[lang], textAlign: 'center', lineHeight: 1 }}>
-                  {T(lang)}
-                </span>
-              </div>
-            ))}
-          </div>
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ color: '#ffd24a', fontSize: 13, fontWeight: 900, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 12 }}>
+          {T('chooseLanguage')}
         </div>
-        <div>
-          <div style={{ color: '#ffd24a', fontSize: 12, fontWeight: 900, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 8 }}>
-            {T('gameMode')}
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
-            {gameModes.map(m => (
-              <div
-                key={`desktop-mode-${m.id}`}
-                onClick={() => { setGameMode(m.id); setShowModeConfig(true); }}
-                style={{
-                  minHeight: 84,
-                  padding: '10px 10px',
-                  borderRadius: 10,
-                  cursor: 'pointer',
-                  border: gameMode === m.id ? '2px solid #FFD700' : '1px solid rgba(255,255,255,0.08)',
-                  background: gameMode === m.id ? 'rgba(255,215,0,.1)' : 'rgba(255,255,255,.025)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  transition: 'all .15s',
-                  boxShadow: gameMode === m.id ? '0 0 12px rgba(255,215,0,.22)' : 'none',
-                }}
-              >
-                <img src={m.img} alt={m.label} style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 12, flexShrink: 0 }} />
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ color: gameMode === m.id ? '#FFD700' : '#f3f4ff', fontSize: 12, fontWeight: 900, lineHeight: 1.05 }}>
-                    {m.label}
-                  </div>
-                  <div style={{ color: '#8a8fa8', fontSize: 9, fontWeight: 700, marginTop: 2, lineHeight: 1.1 }}>
-                    {m.desc}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 14 }}>
+          {LANGUAGES.map(lang => (
+            <div
+              key={`desktop-hat-${lang}`}
+              onClick={() => setHat(lang)}
+              style={{
+                minHeight: 104,
+                padding: '14px 8px 12px',
+                borderRadius: 14,
+                cursor: 'pointer',
+                border: hat === lang ? '2px solid #FFD700' : `1px solid ${LANG_BORDER[lang]}55`,
+                background: hat === lang ? 'rgba(255,215,0,.1)' : 'rgba(255,255,255,.025)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                transition: 'all .15s',
+                boxShadow: hat === lang ? '0 0 12px rgba(255,215,0,.22)' : 'none',
+              }}
+            >
+              <HatSVG lang={lang} size={42} />
+              <span style={{ fontSize: 12, fontWeight: 800, color: hat === lang ? '#FFD700' : LANG_TEXT[lang], textAlign: 'center', lineHeight: 1.1 }}>
+                {T(lang)}
+              </span>
+            </div>
+          ))}
         </div>
       </div>
       <div style={{ height: 1, background: 'linear-gradient(90deg, rgba(255,255,255,0), rgba(255,215,0,0.22), rgba(255,255,255,0))', margin: '0 0 12px' }} />
@@ -323,7 +285,7 @@ export function SetupScreen({ onStart, onOnline, user, onLogout, onHistory, onFr
     </div>
   );
   const floatingCardStyle = {
-    width: isDesktopWide ? 360 : 'auto',
+    width: isDesktopWide ? 320 : 'auto',
     borderRadius: 14,
     padding: '12px 12px 14px',
     background: 'linear-gradient(180deg, rgba(255,215,0,0.08), rgba(255,255,255,0.03))',
