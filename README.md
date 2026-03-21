@@ -73,3 +73,4 @@ Nota:
 
 - Native game screen now opens automatically after the real server gameStarted event and shows players, hats and generated burger objectives.
 
+- Mobile native match screen now consumes `stateUpdate` to show live match progress from the host.

@@ -43,6 +43,7 @@ const DEFAULT_GAME_SESSION = {
   hatPicks: {},
   gameConfig: null,
   startedAt: 0,
+  liveState: null,
 };
 
 function buildGameConfig(setup) {
@@ -161,8 +162,22 @@ export default function App() {
         hatPicks: nextHatPicks,
         gameConfig: gameConfig || buildGameConfig(currentSetup),
         startedAt: Date.now(),
+        liveState: null,
       });
       setCurrentScreen('nativeGame');
+    };
+    const handleStateUpdate = ({ state }) => {
+      if (!state) return;
+      setGameSession((prev) => ({
+        ...prev,
+        liveState: state,
+      }));
+      if (state.winner) {
+        setOnlineState((prev) => ({
+          ...prev,
+          status: `Ganador: ${state.winner?.name || 'Jugador'}.`,
+        }));
+      }
     };
     const handleBecameHost = () => {
       setOnlineState((prev) => ({ ...prev, isHost: true, status: 'Ahora eres host de la sala.' }));
@@ -177,6 +192,7 @@ export default function App() {
     socket.on('joinError', handleJoinError);
     socket.on('lobbyListUpdate', handleLobbyListUpdate);
     socket.on('gameStarted', handleGameStarted);
+    socket.on('stateUpdate', handleStateUpdate);
     socket.on('becameHost', handleBecameHost);
 
     return () => {
@@ -189,6 +205,7 @@ export default function App() {
       socket.off('joinError', handleJoinError);
       socket.off('lobbyListUpdate', handleLobbyListUpdate);
       socket.off('gameStarted', handleGameStarted);
+      socket.off('stateUpdate', handleStateUpdate);
       socket.off('becameHost', handleBecameHost);
       socket.disconnect();
     };

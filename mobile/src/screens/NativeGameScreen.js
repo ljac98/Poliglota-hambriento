@@ -77,6 +77,12 @@ export function NativeGameScreen({ setup, online, gameSession, onBackToLobby, on
   const [selectedIdx, setSelectedIdx] = useState(0);
   const currentObjective = objectivesByPlayer[selectedIdx] || objectivesByPlayer[0];
   const currentPlayerName = setup.playerName;
+  const livePlayers = gameSession.liveState?.players || [];
+  const liveCp = gameSession.liveState?.cp ?? null;
+  const liveDeckCount = gameSession.liveState?.deck?.length ?? null;
+  const liveDiscardCount = gameSession.liveState?.discard?.length ?? null;
+  const liveWinner = gameSession.liveState?.winner || null;
+  const myLivePlayer = livePlayers.find((player) => player?.name === currentPlayerName);
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
@@ -100,6 +106,64 @@ export function NativeGameScreen({ setup, online, gameSession, onBackToLobby, on
             );
           })}
         </View>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Estado vivo de la partida</Text>
+        {gameSession.liveState ? (
+          <>
+            <View style={styles.liveMetrics}>
+              <View style={styles.metricCard}>
+                <Text style={styles.metricLabel}>Turno actual</Text>
+                <Text style={styles.metricValue}>
+                  {liveCp != null && livePlayers[liveCp]?.name ? livePlayers[liveCp].name : `Jugador ${liveCp != null ? liveCp + 1 : '-'}`}
+                </Text>
+              </View>
+              <View style={styles.metricCard}>
+                <Text style={styles.metricLabel}>Mazo</Text>
+                <Text style={styles.metricValue}>{liveDeckCount ?? '-'}</Text>
+              </View>
+              <View style={styles.metricCard}>
+                <Text style={styles.metricLabel}>Descarte</Text>
+                <Text style={styles.metricValue}>{liveDiscardCount ?? '-'}</Text>
+              </View>
+            </View>
+
+            {liveWinner && (
+              <View style={styles.winnerBanner}>
+                <Text style={styles.winnerTitle}>Ganador</Text>
+                <Text style={styles.winnerText}>{liveWinner.name}</Text>
+              </View>
+            )}
+
+            {myLivePlayer && (
+              <View style={styles.myStateCard}>
+                <Text style={styles.myStateTitle}>Tu estado</Text>
+                <Text style={styles.myStateText}>Cartas en mano: {myLivePlayer.hand?.length ?? 0}</Text>
+                <Text style={styles.myStateText}>Sombreros principales: {myLivePlayer.mainHats?.length ?? 0}</Text>
+                <Text style={styles.myStateText}>Sombreros en perchero: {myLivePlayer.perchero?.length ?? 0}</Text>
+                <Text style={styles.myStateText}>Hamburguesas cerradas: {myLivePlayer.completed || 0}</Text>
+              </View>
+            )}
+
+            <View style={styles.playerList}>
+              {livePlayers.map((player, index) => (
+                <View key={`${player.name}-${index}-live`} style={styles.livePlayerCard}>
+                  <Text style={styles.playerName}>
+                    {player.name}
+                    {index === liveCp ? ' - turno' : ''}
+                  </Text>
+                  <Text style={styles.playerMeta}>Mano: {player.hand?.length ?? 0}</Text>
+                  <Text style={styles.playerMeta}>Mesa: {player.table?.length ?? 0} ingredientes</Text>
+                  <Text style={styles.playerMeta}>Perchero: {player.perchero?.length ?? 0}</Text>
+                  <Text style={styles.playerMeta}>Sombreros: {player.mainHats?.length ?? 0}</Text>
+                </View>
+              ))}
+            </View>
+          </>
+        ) : (
+          <Text style={styles.bodyText}>Esperando el primer `stateUpdate` del host para mostrar la partida en vivo.</Text>
+        )}
       </View>
 
       <View style={styles.section}>
@@ -164,8 +228,19 @@ const styles = StyleSheet.create({
   sectionTitle: { color: '#FFD700', fontSize: 20, fontWeight: '800', marginBottom: 12 },
   playerList: { gap: 10 },
   playerCard: { backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', padding: 14 },
+  livePlayerCard: { backgroundColor: '#1d2a4a', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)', padding: 14 },
   playerName: { color: '#fff', fontSize: 15, fontWeight: '800' },
   playerMeta: { color: '#8a8fa8', fontSize: 12, marginTop: 4 },
+  liveMetrics: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 12 },
+  metricCard: { flexGrow: 1, minWidth: 96, backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', padding: 12 },
+  metricLabel: { color: '#8a8fa8', fontSize: 11, fontWeight: '700', marginBottom: 6, textTransform: 'uppercase' },
+  metricValue: { color: '#FFD700', fontSize: 18, fontWeight: '900' },
+  winnerBanner: { backgroundColor: 'rgba(255,215,0,0.10)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,215,0,0.30)', padding: 14, marginBottom: 12 },
+  winnerTitle: { color: '#fff1b3', fontSize: 12, fontWeight: '800', marginBottom: 4, textTransform: 'uppercase' },
+  winnerText: { color: '#FFD700', fontSize: 22, fontWeight: '900' },
+  myStateCard: { backgroundColor: 'rgba(78,205,196,0.08)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(78,205,196,0.25)', padding: 14, marginBottom: 12 },
+  myStateTitle: { color: '#4ecdc4', fontSize: 14, fontWeight: '800', marginBottom: 8 },
+  myStateText: { color: '#d8ddf3', fontSize: 13, lineHeight: 20, marginBottom: 4 },
   tabsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 },
   playerTab: { paddingHorizontal: 12, paddingVertical: 10, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)' },
   playerTabActive: { borderColor: '#FFD700', backgroundColor: 'rgba(255,215,0,0.08)' },
