@@ -302,6 +302,12 @@ export function NativeGameScreen({ setup, online, gameSession, chatMessages = []
   const currentBurgerIndex = (myLivePlayer?.currentBurger || 0) + 1;
   const currentTurnPlayer = liveCp != null ? livePlayers[liveCp] : null;
   const discardIngredients = liveDiscardCards.filter((card) => card?.type === 'ingredient');
+  const pendingNeg = gameSession.liveState?.pendingNeg || null;
+  const canRespondNegation = pendingNeg?.eligibleIdxs?.includes(online.myIdx) && !(online.myIdx in (pendingNeg?.responses || {}));
+  const negationAnswered = pendingNeg?.eligibleIdxs?.includes(online.myIdx) && (online.myIdx in (pendingNeg?.responses || {}));
+  const negationActor = pendingNeg?.actingIdx != null ? livePlayers[pendingNeg.actingIdx] : null;
+  const negationActionLabel = pendingNeg?.cardInfo?.name || ACTION_LABELS[pendingNeg?.cardInfo?.action] || 'Accion';
+  const negationIcon = pendingNeg?.cardInfo?.action ? (ACTION_ICON_SOURCES[pendingNeg.cardInfo.action] || ACTION_ICON_SOURCES.negacion) : ACTION_ICON_SOURCES.negacion;
   const urgentHatReplace = !isMyTurn && myLivePlayer && (myLivePlayer.mainHats?.length || 0) === 0 && (myLivePlayer.perchero?.length || 0) > 0;
   const targetedPlayers = TARGETED_ACTIONS.includes(selectedCard?.action)
     ? livePlayers.filter((player) => {
@@ -370,6 +376,44 @@ export function NativeGameScreen({ setup, online, gameSession, chatMessages = []
         <Text style={styles.heroText}>Sala {gameSession.roomCode || online.roomCode || 'sin codigo'} - {gameSession.roomName || online.roomName || 'Sin nombre'}</Text>
         <Text style={styles.heroSubtext}>{summarizeMode(gameSession.gameConfig)}</Text>
       </View>
+
+      {pendingNeg && (
+        <View style={[styles.section, styles.negationSection]}>
+          <View style={styles.negationHeader}>
+            <Image source={negationIcon} style={styles.negationIcon} resizeMode="contain" />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.negationTitle}>Ventana de negacion</Text>
+              <Text style={styles.negationText}>
+                {negationActor?.name || 'Un jugador'} intento jugar {negationActionLabel}.
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.negationStatusRow}>
+            <Text style={styles.negationStatusText}>
+              Elegibles: {pendingNeg.eligibleIdxs?.length || 0}
+            </Text>
+            <Text style={styles.negationStatusText}>
+              Respuestas: {Object.keys(pendingNeg.responses || {}).length}
+            </Text>
+          </View>
+
+          {canRespondNegation && (
+            <View style={styles.negationActions}>
+              <Pressable style={styles.negateButton} onPress={() => onSendAction?.({ type: 'negationResponse', negar: true })}>
+                <Text style={styles.negateButtonText}>Usar negacion</Text>
+              </Pressable>
+              <Pressable style={styles.passNegationButton} onPress={() => onSendAction?.({ type: 'negationResponse', negar: false })}>
+                <Text style={styles.passNegationButtonText}>Dejar pasar</Text>
+              </Pressable>
+            </View>
+          )}
+
+          {negationAnswered && !canRespondNegation && (
+            <Text style={styles.actionHint}>Ya respondiste esta ventana de negacion. Esperando a los demas.</Text>
+          )}
+        </View>
+      )}
 
       {gameSession.liveState && (
         <View style={[styles.section, styles.turnBannerSection]}>
@@ -962,6 +1006,18 @@ const styles = StyleSheet.create({
   heroText: { color: '#d8ddf3', fontSize: 15, lineHeight: 22 },
   heroSubtext: { color: '#8a8fa8', fontSize: 13, marginTop: 8 },
   section: { backgroundColor: '#16213e', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', padding: 18 },
+  negationSection: { borderColor: 'rgba(255,138,128,0.28)', backgroundColor: 'rgba(255,138,128,0.05)' },
+  negationHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10 },
+  negationIcon: { width: 42, height: 42 },
+  negationTitle: { color: '#ffb3ac', fontSize: 16, fontWeight: '900', marginBottom: 4 },
+  negationText: { color: '#ffd7d2', fontSize: 13, lineHeight: 19 },
+  negationStatusRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 10, marginBottom: 12 },
+  negationStatusText: { color: '#ffcdc5', fontSize: 12, fontWeight: '700' },
+  negationActions: { flexDirection: 'row', gap: 10 },
+  negateButton: { flex: 1, backgroundColor: '#ff8a80', borderRadius: 14, paddingVertical: 12, alignItems: 'center' },
+  negateButtonText: { color: '#2c0d0a', fontSize: 13, fontWeight: '900' },
+  passNegationButton: { flex: 1, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', paddingVertical: 12, alignItems: 'center' },
+  passNegationButtonText: { color: '#ffd7d2', fontSize: 13, fontWeight: '800' },
   turnBannerSection: { paddingTop: 14, paddingBottom: 14 },
   turnBanner: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: 'rgba(255,215,0,0.08)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,215,0,0.18)', padding: 14 },
   turnBannerLabel: { color: '#fff1b3', fontSize: 12, fontWeight: '800', textTransform: 'uppercase', marginBottom: 4 },
