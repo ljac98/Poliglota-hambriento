@@ -2535,6 +2535,7 @@ export default function App() {
   const burger = human.burgers[human.currentBurger];
   const humanColor = PLAYER_COLORS[HI % PLAYER_COLORS.length];
   const hasSharedGoals = currentGameConfig?.mode === 'clon' && Array.isArray(currentGameConfig?.sharedBurgers) && currentGameConfig.sharedBurgers.length > 0;
+  const quickMenuHeaderOffset = isMobile ? 0 : 72;
 
   // Card playability
   const getPlayable = (card, idx) => {
@@ -2996,7 +2997,13 @@ export default function App() {
       }}>
         <img src={ingredientCardIcon} alt="hamburguesa" style={{ width: 22, height: 22, objectFit: 'contain' }} />
         {!isMobile && <span style={{ fontWeight: 900, fontSize: 16, color: '#FFD700' }}>HUNGRY POLY</span>}
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: isMobile ? 6 : 12, alignItems: 'center' }}>
+        <div style={{
+          marginLeft: 'auto',
+          display: 'flex',
+          gap: isMobile ? 6 : 12,
+          alignItems: 'center',
+          paddingRight: quickMenuHeaderOffset,
+        }}>
           <span style={{ fontSize: 12, color: '#555' }}>Deck: {deck.length}</span>
           <span style={{ fontSize: 12, color: '#555' }}>Discard: {discard.length}</span>
           <div style={{
