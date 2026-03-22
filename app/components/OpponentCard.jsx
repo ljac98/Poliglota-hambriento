@@ -6,14 +6,17 @@ import HatSVG from '../../components/HatSVG.jsx';
 import { ING_IMG, ingChosen, ingKey } from '../utils/gameHelpers.js';
 import burgerIcon from '../../imagenes/hamburguesas/ham.png';
 
-export function OpponentCard({ player, index, color, isActive, onIngredientClick, T }) {
+export function OpponentCard({ player, index, color, isActive, onIngredientClick, onRegisterRef, T }) {
   const burger = player.burgers[player.currentBurger];
   return (
-    <div style={{
-      background: isActive ? 'rgba(255,215,0,.06)' : 'rgba(255,255,255,.03)',
-      border: `2px solid ${isActive ? '#FFD700' : color + '44'}`,
-      borderRadius: 12, padding: '10px 12px', transition: 'all .2s',
-    }}>
+    <div
+      ref={(el) => onRegisterRef?.(index, el)}
+      style={{
+        background: isActive ? 'rgba(255,215,0,.06)' : 'rgba(255,255,255,.03)',
+        border: `2px solid ${isActive ? '#FFD700' : color + '44'}`,
+        borderRadius: 12, padding: '10px 12px', transition: 'all .2s',
+      }}
+    >
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
         <HatSVG lang={player.mainHats[0] || LANGUAGES[0]} size={22} />
         <span style={{ fontWeight: 800, color, fontSize: 13 }}>{player.name}</span>

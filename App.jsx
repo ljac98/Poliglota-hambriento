@@ -189,10 +189,13 @@ export default function App() {
   const [lastForkEvent, setLastForkEvent] = useState(null);
   const [negationFx, setNegationFx] = useState(null);
   const [forkFx, setForkFx] = useState(null);
+  const [forkAnim, setForkAnim] = useState(null);
   // Host-only ref that stores the resolve callback (not serializable over socket)
   const pendingNegRef = useRef(null);
   const lastNegationSeenRef = useRef(null);
   const lastForkSeenRef = useRef(null);
+  const playerAreaRefs = useRef({});
+  const humanBurgerAreaRef = useRef(null);
 
   // â”€â”€ Voluntary leave state â”€â”€
   const [gamePaused, setGamePaused] = useState(false);
@@ -256,6 +259,39 @@ export default function App() {
     if (!forkFx) return undefined;
     const timer = setTimeout(() => setForkFx(null), 1500);
     return () => clearTimeout(timer);
+  }, [forkFx]);
+
+  useEffect(() => {
+    if (!forkFx) return undefined;
+
+    const getRectCenter = (el, fallbackX, fallbackY) => {
+      if (!el) return { x: fallbackX, y: fallbackY };
+      const rect = el.getBoundingClientRect();
+      return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+    };
+
+    const sourceEl = forkFx.targetIdx === HI ? humanBurgerAreaRef.current : playerAreaRefs.current[forkFx.targetIdx];
+    const destEl = forkFx.actingIdx === HI ? humanBurgerAreaRef.current : playerAreaRefs.current[forkFx.actingIdx];
+    const source = getRectCenter(sourceEl, window.innerWidth * 0.22, window.innerHeight * 0.38);
+    const dest = getRectCenter(destEl, window.innerWidth * 0.62, window.innerHeight * 0.42);
+
+    setForkAnim({
+      phase: 'hook',
+      source,
+      dest,
+      ingredient: forkFx.ingredient,
+      actorName: forkFx.actorName,
+    });
+
+    const dropTimer = setTimeout(() => {
+      setForkAnim((prev) => (prev ? { ...prev, phase: 'drop' } : prev));
+    }, 420);
+    const clearTimer = setTimeout(() => setForkAnim(null), 1120);
+
+    return () => {
+      clearTimeout(dropTimer);
+      clearTimeout(clearTimer);
+    };
   }, [forkFx]);
 
   useEffect(() => {
@@ -406,6 +442,7 @@ export default function App() {
     setLastForkEvent(null);
     setNegationFx(null);
     setForkFx(null);
+    setForkAnim(null);
     pendingNegRef.current = null;
     setGamePaused(false);
     setPausedMessage('');
@@ -445,6 +482,7 @@ export default function App() {
     setLastForkEvent(null);
     setNegationFx(null);
     setForkFx(null);
+    setForkAnim(null);
     clearRoomSession();
     setGamePaused(false);
     setPausedMessage('');
@@ -1000,6 +1038,7 @@ export default function App() {
         targetIdx: ti,
         actorName: pls[actingIdx]?.name || 'Oponente',
         ingredient: ingKey(stolen),
+        sourceIngIdx: action.ingIdx,
       };
       setLastForkEvent(forkEvent);
       if (ti === HI) {
@@ -1608,6 +1647,7 @@ export default function App() {
                 targetIdx: richest,
                 actorName: newPls[idx]?.name || 'IA',
                 ingredient: ingKey(stolen),
+                sourceIngIdx: si,
               };
               setLastForkEvent(forkEvent);
               if (richest === HI) {
@@ -1783,7 +1823,21 @@ export default function App() {
     if (document.getElementById('pulse-keyframes')) return;
     const style = document.createElement('style');
     style.id = 'pulse-keyframes';
-    style.textContent = '@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}';
+    style.textContent = `
+      @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+      @keyframes forkHook{
+        0%{transform:translate(-50%,-50%) scale(.55) rotate(-22deg);opacity:0}
+        20%{opacity:1}
+        55%{transform:translate(-50%,-58%) scale(1.04) rotate(-8deg);opacity:1}
+        100%{transform:translate(-50%,-50%) scale(.96) rotate(0deg);opacity:1}
+      }
+      @keyframes forkDrop{
+        0%{transform:translate(-50%,-64%) scale(.72);opacity:0}
+        45%{opacity:1}
+        70%{transform:translate(-50%,-52%) scale(1.12);opacity:1}
+        100%{transform:translate(-50%,-50%) scale(1);opacity:1}
+      }
+    `;
     document.head.appendChild(style);
   }, []);
 
@@ -2044,6 +2098,7 @@ export default function App() {
       targetIdx,
       actorName: newPls[HI]?.name || 'Jugador',
       ingredient: ingKey(stolen),
+      sourceIngIdx: ingIdx,
     };
     setLastForkEvent(forkEvent);
     if (targetIdx === HI) {
@@ -2707,6 +2762,10 @@ export default function App() {
             index={realIdx}
             color={PLAYER_COLORS[realIdx % PLAYER_COLORS.length]}
             isActive={cp === realIdx}
+            onRegisterRef={(playerIdx, el) => {
+              if (el) playerAreaRefs.current[playerIdx] = el;
+              else delete playerAreaRefs.current[playerIdx];
+            }}
             onIngredientClick={(ing) => setModal({ type: 'ingredientInfo', ingredient: ing })}
             T={T}
           />
@@ -2779,7 +2838,7 @@ export default function App() {
     <div style={{
       background: 'rgba(255,255,255,.03)', borderRadius: 10, padding: '8px 10px',
       border: '2px solid #1e2a45', flexShrink: 0,
-    }}>
+    }} ref={humanBurgerAreaRef}>
       <div style={{ fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1, marginBottom: 6 }}>{T('table')}</div>
       <div style={{ display: 'flex', flexDirection: isMobile ? 'row' : 'column', gap: 4, flexWrap: 'wrap' }}>
         {human.burgers.slice(0, human.currentBurger + 1).map((b, i) => (
@@ -3263,41 +3322,89 @@ export default function App() {
         </div>
       )}
 
-      {forkFx && (
+      {forkAnim && (
         <div style={{
-          position: 'absolute',
+          position: 'fixed',
           inset: 0,
           zIndex: 9490,
           pointerEvents: 'none',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: 'radial-gradient(circle, rgba(78,205,196,0.12) 0%, rgba(0,0,0,0.45) 70%)',
-          animation: 'pulse 0.45s ease-in-out 2',
+          overflow: 'hidden',
         }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, transform: 'translateY(-16px)' }}>
-            <img
-              src={eqTenedor}
-              alt="Tenedor"
-              style={{ width: isMobile ? 120 : 170, height: isMobile ? 120 : 170, objectFit: 'contain', filter: 'drop-shadow(0 16px 30px rgba(0,0,0,.45))' }}
-            />
+          {forkAnim.phase === 'hook' && (
             <div style={{
-              padding: '10px 18px',
-              borderRadius: 16,
-              background: 'rgba(15,17,23,.88)',
-              border: '2px solid rgba(78,205,196,.55)',
-              color: '#d7fffb',
-              textAlign: 'center',
-              boxShadow: '0 12px 30px rgba(0,0,0,.35)',
+              position: 'fixed',
+              left: forkAnim.source.x,
+              top: forkAnim.source.y,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 8,
+              animation: 'forkHook 0.42s ease forwards',
             }}>
-              <div style={{ fontSize: isMobile ? 18 : 24, fontWeight: 900, lineHeight: 1 }}>
-                ¡Tenedor!
+              <div style={{
+                width: isMobile ? 58 : 74,
+                height: isMobile ? 58 : 74,
+                borderRadius: 18,
+                background: 'rgba(15,17,23,.92)',
+                border: '2px solid rgba(78,205,196,.6)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 12px 28px rgba(0,0,0,.35)',
+              }}>
+                {ING_IMG[forkAnim.ingredient]
+                  ? <img src={ING_IMG[forkAnim.ingredient]} alt={forkAnim.ingredient} style={{ width: isMobile ? 38 : 46, height: isMobile ? 38 : 46, objectFit: 'contain' }} />
+                  : <span style={{ fontSize: isMobile ? 28 : 34 }}>{ING_EMOJI[forkAnim.ingredient] || '🍴'}</span>}
               </div>
-              <div style={{ marginTop: 6, fontSize: isMobile ? 12 : 14, color: '#c9f7f2', fontWeight: 700 }}>
-                {forkFx.actorName} te robó {getIngName(forkFx.ingredient, human.mainHats?.[0] || 'español')}
+              <img
+                src={eqTenedor}
+                alt="Tenedor"
+                style={{ width: isMobile ? 46 : 58, height: isMobile ? 46 : 58, objectFit: 'contain', filter: 'drop-shadow(0 10px 18px rgba(0,0,0,.35))' }}
+              />
+            </div>
+          )}
+
+          {forkAnim.phase === 'drop' && (
+            <div style={{
+              position: 'fixed',
+              left: forkAnim.dest.x,
+              top: forkAnim.dest.y,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 8,
+              animation: 'forkDrop 0.6s cubic-bezier(.17,.84,.44,1) forwards',
+            }}>
+              <div style={{
+                width: isMobile ? 64 : 80,
+                height: isMobile ? 64 : 80,
+                borderRadius: 20,
+                background: 'rgba(15,17,23,.94)',
+                border: '2px solid rgba(78,205,196,.75)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 14px 34px rgba(0,0,0,.42)',
+              }}>
+                {ING_IMG[forkAnim.ingredient]
+                  ? <img src={ING_IMG[forkAnim.ingredient]} alt={forkAnim.ingredient} style={{ width: isMobile ? 42 : 52, height: isMobile ? 42 : 52, objectFit: 'contain' }} />
+                  : <span style={{ fontSize: isMobile ? 30 : 36 }}>{ING_EMOJI[forkAnim.ingredient] || '🍴'}</span>}
+              </div>
+              <div style={{
+                padding: '8px 14px',
+                borderRadius: 14,
+                background: 'rgba(15,17,23,.88)',
+                border: '2px solid rgba(78,205,196,.45)',
+                color: '#c9f7f2',
+                textAlign: 'center',
+                boxShadow: '0 12px 30px rgba(0,0,0,.35)',
+                fontSize: isMobile ? 11 : 13,
+                fontWeight: 800,
+              }}>
+                {forkAnim.actorName} se quedó con {getIngName(forkAnim.ingredient, human.mainHats?.[0] || 'español')}
               </div>
             </div>
-          </div>
+          )}
         </div>
       )}
 
