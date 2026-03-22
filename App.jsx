@@ -21,6 +21,7 @@ import eqEnsalada from './imagenes/acciones/esquina/ensalada2.png';
 import eqPizza from './imagenes/acciones/esquina/pizza2.png';
 import eqParrilla from './imagenes/acciones/esquina/parrilla.png';
 import eqTenedor from './imagenes/acciones/esquina/tenedor2.png';
+import actionTenedor from './imagenes/acciones/tenedor.png';
 import eqLadron from './imagenes/acciones/esquina/robo.png';
 import eqIntercambioSomb from './imagenes/acciones/esquina/intercambiosomb.png';
 import eqIntercambioHamb from './imagenes/acciones/esquina/intercam.png';
@@ -3462,14 +3463,14 @@ export default function App() {
                 : <span style={{ fontSize: isMobile ? 28 : 34 }}>{ING_EMOJI[forkAnim.ingredient] || '🍴'}</span>}
             </div>
             <img
-              src={eqTenedor}
+              src={actionTenedor}
               alt="Tenedor"
               style={{
-                width: isMobile ? 48 : 60,
-                height: isMobile ? 48 : 60,
+                width: isMobile ? 72 : 94,
+                height: isMobile ? 72 : 94,
                 objectFit: 'contain',
                 filter: 'drop-shadow(0 10px 18px rgba(0,0,0,.35))',
-                transform: forkAnim.moving ? 'rotate(18deg)' : 'rotate(-10deg)',
+                transform: forkAnim.moving ? 'rotate(14deg)' : 'rotate(-8deg)',
                 transition: 'transform 0.22s ease',
               }}
             />
