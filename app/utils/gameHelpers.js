@@ -107,21 +107,25 @@ export function filterTable(player, discardArr) {
 export function applyMass(players, discard, actionId, playerIdx) {
   const nextPlayers = clone(players);
   let nextDiscard = [...discard];
+  const affectedTargets = [];
 
   if (actionId === 'comecomodines') {
     nextPlayers.forEach((player, index) => {
       if (index === playerIdx) return;
       const kept = [];
+      let removedCount = 0;
       player.table.forEach(ing => {
         if (ingKey(ing) === 'perrito') {
           nextDiscard.push({ type: 'ingredient', ingredient: 'perrito', id: `d${Date.now()}${Math.random()}` });
+          removedCount += 1;
         } else {
           kept.push(ing);
         }
       });
       player.table = kept;
+      if (removedCount > 0) affectedTargets.push({ targetIdx: index, count: removedCount });
     });
-    return { players: nextPlayers, discard: nextDiscard };
+    return { players: nextPlayers, discard: nextDiscard, affectedTargets };
   }
 
   const targets = {
@@ -144,5 +148,5 @@ export function applyMass(players, discard, actionId, playerIdx) {
     player.table = kept;
   });
 
-  return { players: nextPlayers, discard: nextDiscard };
+  return { players: nextPlayers, discard: nextDiscard, affectedTargets };
 }

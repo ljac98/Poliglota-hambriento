@@ -22,6 +22,7 @@ import eqPizza from './imagenes/acciones/esquina/pizza2.png';
 import eqParrilla from './imagenes/acciones/esquina/parrilla.png';
 import eqTenedor from './imagenes/acciones/esquina/tenedor2.png';
 import actionTenedor from './imagenes/acciones/tenedor.png';
+import actionComeComodines from './imagenes/acciones/comecomodines.png';
 import eqLadron from './imagenes/acciones/esquina/robo.png';
 import eqIntercambioSomb from './imagenes/acciones/esquina/intercambiosomb.png';
 import eqIntercambioHamb from './imagenes/acciones/esquina/intercam.png';
@@ -188,13 +189,17 @@ export default function App() {
   const [pendingNeg, setPendingNeg] = useState(null);
   const [lastNegationEvent, setLastNegationEvent] = useState(null);
   const [lastForkEvent, setLastForkEvent] = useState(null);
+  const [lastComeComodinesEvent, setLastComeComodinesEvent] = useState(null);
   const [negationFx, setNegationFx] = useState(null);
   const [forkFx, setForkFx] = useState(null);
+  const [comeComodinesFx, setComeComodinesFx] = useState(null);
   const [forkAnim, setForkAnim] = useState(null);
+  const [comeComodinesAnim, setComeComodinesAnim] = useState(null);
   // Host-only ref that stores the resolve callback (not serializable over socket)
   const pendingNegRef = useRef(null);
   const lastNegationSeenRef = useRef(null);
   const lastForkSeenRef = useRef(null);
+  const lastComeComodinesSeenRef = useRef(null);
   const playerAreaRefs = useRef({});
   const playerIngredientRefs = useRef({});
   const humanBurgerAreaRef = useRef(null);
@@ -263,6 +268,12 @@ export default function App() {
     const timer = setTimeout(() => setForkFx(null), 1500);
     return () => clearTimeout(timer);
   }, [forkFx]);
+
+  useEffect(() => {
+    if (!comeComodinesFx) return undefined;
+    const timer = setTimeout(() => setComeComodinesFx(null), 2200);
+    return () => clearTimeout(timer);
+  }, [comeComodinesFx]);
 
   useEffect(() => {
     if (!forkFx) return undefined;
@@ -350,6 +361,93 @@ export default function App() {
       clearTimeout(clearTimer);
     };
   }, [forkFx]);
+
+  useEffect(() => {
+    if (!comeComodinesFx?.targets?.length) return undefined;
+
+    const timers = [];
+    const getRectCenter = (el, fallbackX, fallbackY) => {
+      if (!el) return { x: fallbackX, y: fallbackY };
+      const rect = el.getBoundingClientRect();
+      return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+    };
+    const getPlayerCenter = (playerIdx, fallbackX, fallbackY) => {
+      const el = playerIdx === HI ? humanBurgerAreaRef.current : playerAreaRefs.current[playerIdx];
+      return getRectCenter(el, fallbackX, fallbackY);
+    };
+
+    const actor = getPlayerCenter(
+      comeComodinesFx.actingIdx,
+      window.innerWidth * 0.72,
+      window.innerHeight * 0.52,
+    );
+    const stops = comeComodinesFx.targets.map((target, i) => ({
+      ...target,
+      point: getPlayerCenter(
+        target.targetIdx,
+        window.innerWidth * 0.18,
+        window.innerHeight * (0.26 + (i * 0.14)),
+      ),
+    }));
+    if (!stops.length) return undefined;
+
+    setComeComodinesAnim({
+      x: actor.x,
+      y: actor.y,
+      moving: false,
+      stoppingAt: null,
+      pickedCount: 0,
+    });
+
+    const moveDuration = 620;
+    const stopDuration = 340;
+    let elapsed = 120;
+    let pickedCount = 0;
+    const route = [...stops, { targetIdx: comeComodinesFx.actingIdx, count: 0, point: actor, isReturn: true }];
+
+    route.forEach((stop, idx) => {
+      timers.push(setTimeout(() => {
+        setComeComodinesAnim((prev) => (prev ? {
+          ...prev,
+          x: stop.point.x,
+          y: stop.point.y,
+          moving: true,
+          stoppingAt: prev.stoppingAt,
+        } : prev));
+      }, elapsed));
+      elapsed += moveDuration;
+
+      timers.push(setTimeout(() => {
+        if (!stop.isReturn) pickedCount += stop.count || 0;
+        setComeComodinesAnim((prev) => (prev ? {
+          ...prev,
+          x: stop.point.x,
+          y: stop.point.y,
+          moving: false,
+          stoppingAt: stop.isReturn ? null : stop,
+          pickedCount,
+        } : prev));
+      }, elapsed));
+      elapsed += stop.isReturn ? 240 : stopDuration;
+    });
+
+    timers.push(setTimeout(() => setComeComodinesAnim(null), elapsed + 180));
+
+    return () => timers.forEach(clearTimeout);
+  }, [comeComodinesFx, HI]);
+
+  const triggerComeComodinesEvent = useCallback((result, actingIdx, actorName) => {
+    if (!result?.affectedTargets?.length) return;
+    const event = {
+      id: `${Date.now()}-${Math.random()}`,
+      actingIdx,
+      actorName: actorName || 'Jugador',
+      targets: result.affectedTargets,
+    };
+    setLastComeComodinesEvent(event);
+    lastComeComodinesSeenRef.current = event.id;
+    setComeComodinesFx(event);
+  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
@@ -497,10 +595,16 @@ export default function App() {
     setPendingNeg(null);
     setLastNegationEvent(null);
     setLastForkEvent(null);
+    setLastComeComodinesEvent(null);
     setNegationFx(null);
     setForkFx(null);
+    setComeComodinesFx(null);
     setForkAnim(null);
+    setComeComodinesAnim(null);
     pendingNegRef.current = null;
+    lastNegationSeenRef.current = null;
+    lastForkSeenRef.current = null;
+    lastComeComodinesSeenRef.current = null;
     setGamePaused(false);
     setPausedMessage('');
     setShowChat(false);
@@ -537,9 +641,15 @@ export default function App() {
     setLobbyPlayers([]);
     setLastNegationEvent(null);
     setLastForkEvent(null);
+    setLastComeComodinesEvent(null);
     setNegationFx(null);
     setForkFx(null);
+    setComeComodinesFx(null);
     setForkAnim(null);
+    setComeComodinesAnim(null);
+    lastNegationSeenRef.current = null;
+    lastForkSeenRef.current = null;
+    lastComeComodinesSeenRef.current = null;
     clearRoomSession();
     setGamePaused(false);
     setPausedMessage('');
@@ -691,11 +801,12 @@ export default function App() {
           setLog(gameState.log || []);
           setExtraPlay(gameState.extraPlay || false);
           setCurrentGameConfig(gameState.gameConfig || null);
-          setModal(null);
-          setPendingNeg(gameState.pendingNeg || null);
-          setLastNegationEvent(gameState.lastNegationEvent || null);
-          setLastForkEvent(gameState.lastForkEvent || null);
-          if (gameState.winner) { setWinner(gameState.winner); clearRoomSession(); setPhase('gameover'); }
+            setModal(null);
+            setPendingNeg(gameState.pendingNeg || null);
+            setLastNegationEvent(gameState.lastNegationEvent || null);
+            setLastForkEvent(gameState.lastForkEvent || null);
+            setLastComeComodinesEvent(gameState.lastComeComodinesEvent || null);
+            if (gameState.winner) { setWinner(gameState.winner); clearRoomSession(); setPhase('gameover'); }
           else setPhase('playing');
         } else if (!host) {
           // Non-host: stateUpdate will arrive from host within 80ms
@@ -829,6 +940,7 @@ export default function App() {
       setPendingNeg(state.pendingNeg || null);
       setLastNegationEvent(state.lastNegationEvent || null);
       setLastForkEvent(state.lastForkEvent || null);
+      setLastComeComodinesEvent(state.lastComeComodinesEvent || null);
       if (state.lastNegationEvent?.id && state.lastNegationEvent.id !== lastNegationSeenRef.current && state.lastNegationEvent.actingIdx === myPlayerIdx) {
         lastNegationSeenRef.current = state.lastNegationEvent.id;
         setNegationFx(state.lastNegationEvent);
@@ -836,6 +948,10 @@ export default function App() {
       if (state.lastForkEvent?.id && state.lastForkEvent.id !== lastForkSeenRef.current && state.lastForkEvent.targetIdx === myPlayerIdx) {
         lastForkSeenRef.current = state.lastForkEvent.id;
         setForkFx(state.lastForkEvent);
+      }
+      if (state.lastComeComodinesEvent?.id && state.lastComeComodinesEvent.id !== lastComeComodinesSeenRef.current) {
+        lastComeComodinesSeenRef.current = state.lastComeComodinesEvent.id;
+        setComeComodinesFx(state.lastComeComodinesEvent);
       }
       if (state.winner) { setWinner(state.winner); clearRoomSession(); setPhase('gameover'); }
       else if (state.cp === myPlayerIdx && lastSyncCpRef.current !== myPlayerIdx) {
@@ -862,11 +978,11 @@ export default function App() {
       const syncModal = modal && privateModals.includes(modal.type) ? null : modal;
       socket.emit('syncState', {
         code: roomCode,
-        state: { players, deck, discard, cp, log, extraPlay, modal: syncModal, pendingNeg, lastNegationEvent, lastForkEvent, winner, gameConfig: currentGameConfig, phase: 'playing' },
+        state: { players, deck, discard, cp, log, extraPlay, modal: syncModal, pendingNeg, lastNegationEvent, lastForkEvent, lastComeComodinesEvent, winner, gameConfig: currentGameConfig, phase: 'playing' },
       });
     }, 80);
     return () => clearTimeout(syncRef.current);
-  }, [players, deck, discard, cp, log, extraPlay, modal, pendingNeg, lastNegationEvent, lastForkEvent, winner, currentGameConfig, phase, isOnline, isHost]);
+  }, [players, deck, discard, cp, log, extraPlay, modal, pendingNeg, lastNegationEvent, lastForkEvent, lastComeComodinesEvent, winner, currentGameConfig, phase, isOnline, isHost]);
 
   // â”€â”€ Socket: host processes remote player actions â”€â”€
   // We store the latest state in refs so the socket handler always has fresh values
@@ -1209,6 +1325,9 @@ export default function App() {
                 if (ci !== -1) fp[idx].hand.splice(ci, 1);
                 const fd = [...discardRef.current, card];
                 const r = applyMass(fp, fd, card.action, idx);
+                if (card.action === 'comecomodines') {
+                  triggerComeComodinesEvent(r, idx, fp[idx]?.name || 'Jugador');
+                }
                 endTurnFromRemote(r.players, deckRef.current, r.discard, idx);
               });
               return;
@@ -1343,12 +1462,12 @@ export default function App() {
         setPlayers(newPls); setDeck(newDeck); setDiscard(newDiscard);
         // Emit final sync with winner BEFORE changing phase (the useEffect guard
         // blocks sync when phase !== 'playing', so we must emit directly here)
-        if (isOnline && isHost) {
-          socket.emit('syncState', {
-            code: roomCode,
-            state: { players: newPls, deck: newDeck, discard: newDiscard, cp, log, extraPlay, modal: null, pendingNeg: null, lastNegationEvent, lastForkEvent, winner: w, gameConfig: currentGameConfig, phase: 'playing' },
-          });
-        }
+          if (isOnline && isHost) {
+            socket.emit('syncState', {
+              code: roomCode,
+              state: { players: newPls, deck: newDeck, discard: newDiscard, cp, log, extraPlay, modal: null, pendingNeg: null, lastNegationEvent, lastForkEvent, lastComeComodinesEvent, winner: w, gameConfig: currentGameConfig, phase: 'playing' },
+            });
+          }
       setWinner(w); clearRoomSession(); setPhase('gameover');
       return;
     }
@@ -1717,6 +1836,9 @@ export default function App() {
         const mass = ['milanesa', 'ensalada', 'pizza', 'parrilla', 'comecomodines'];
         if (mass.includes(card.action)) {
           const r = applyMass(newPls, newDiscard, card.action, idx);
+          if (card.action === 'comecomodines') {
+            triggerComeComodinesEvent(r, idx, newPls[idx]?.name || 'IA');
+          }
           newPls = r.players; newDiscard = r.discard;
         } else if (richest !== null && richest !== undefined) {
           if (card.action === 'gloton') {
@@ -2041,13 +2163,17 @@ export default function App() {
       const dk  = deckRef.current;
       const di  = discardRef.current;
 
-      if (mass.includes(card.action)) {
-        const newPls = clone(pls);
-        const ci = newPls[HI].hand.findIndex(c => c.id === card.id);
-        if (ci !== -1) newPls[HI].hand.splice(ci, 1);
-        const newDiscard = [...di, card];
-        const { players: ps2, discard: di2 } = applyMass(newPls, newDiscard, card.action, HI);
-        endTurn(ps2, dk, di2, HI);
+        if (mass.includes(card.action)) {
+          const newPls = clone(pls);
+          const ci = newPls[HI].hand.findIndex(c => c.id === card.id);
+          if (ci !== -1) newPls[HI].hand.splice(ci, 1);
+          const newDiscard = [...di, card];
+          const massResult = applyMass(newPls, newDiscard, card.action, HI);
+          if (card.action === 'comecomodines') {
+            triggerComeComodinesEvent(massResult, HI, newPls[HI]?.name || 'Jugador');
+          }
+          const { players: ps2, discard: di2 } = massResult;
+          endTurn(ps2, dk, di2, HI);
 
       } else if (card.action === 'basurero') {
         const ingCards = di.filter(c => c.type === 'ingredient');
@@ -3472,6 +3598,83 @@ export default function App() {
                 filter: 'drop-shadow(0 10px 18px rgba(0,0,0,.35))',
                 transform: forkAnim.moving ? 'rotate(14deg)' : 'rotate(-8deg)',
                 transition: 'transform 0.22s ease',
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {comeComodinesAnim && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 9488,
+          pointerEvents: 'none',
+          overflow: 'hidden',
+        }}>
+          <div style={{
+            position: 'fixed',
+            left: comeComodinesAnim.x,
+            top: comeComodinesAnim.y,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 8,
+            transform: `translate(-50%, -50%) ${comeComodinesAnim.moving ? 'scale(1)' : 'scale(.96)'}`,
+            transition: comeComodinesAnim.moving
+              ? 'left 0.62s cubic-bezier(.17,.84,.44,1), top 0.62s cubic-bezier(.17,.84,.44,1), transform 0.18s ease'
+              : 'transform 0.16s ease',
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '6px 10px',
+              borderRadius: 999,
+              background: 'rgba(15,17,23,.88)',
+              border: '2px solid rgba(255,215,0,.35)',
+              boxShadow: '0 10px 22px rgba(0,0,0,.32)',
+              opacity: comeComodinesAnim.pickedCount > 0 || comeComodinesAnim.stoppingAt ? 1 : 0,
+              transform: comeComodinesAnim.stoppingAt ? 'scale(1.04)' : 'scale(1)',
+              transition: 'all 0.16s ease',
+            }}>
+              {Array.from({ length: Math.max(1, Math.min(3, comeComodinesAnim.stoppingAt?.count || comeComodinesAnim.pickedCount || 0)) }).map((_, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    width: isMobile ? 22 : 26,
+                    height: isMobile ? 22 : 26,
+                    borderRadius: '50%',
+                    background: 'rgba(255,255,255,.08)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: '1px solid rgba(255,255,255,.08)',
+                  }}
+                >
+                  <img
+                    src={ING_IMG.perrito}
+                    alt="Comodín"
+                    style={{ width: isMobile ? 16 : 20, height: isMobile ? 16 : 20, objectFit: 'contain' }}
+                  />
+                </div>
+              ))}
+              {comeComodinesAnim.pickedCount > 1 && (
+                <span style={{ color: '#FFD700', fontWeight: 900, fontSize: isMobile ? 12 : 14 }}>
+                  x{comeComodinesAnim.pickedCount}
+                </span>
+              )}
+            </div>
+            <img
+              src={actionComeComodines}
+              alt="Come Comodines"
+              style={{
+                width: isMobile ? 92 : 118,
+                height: isMobile ? 92 : 118,
+                objectFit: 'contain',
+                filter: 'drop-shadow(0 12px 22px rgba(0,0,0,.36))',
+                transform: comeComodinesAnim.moving ? 'rotate(-4deg)' : 'rotate(0deg) scale(1.02)',
+                transition: 'transform 0.18s ease',
               }}
             />
           </div>
