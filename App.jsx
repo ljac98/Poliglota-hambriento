@@ -25,6 +25,8 @@ import eqTenedor from './imagenes/acciones/esquina/tenedor2.png';
 import actionTenedor from './imagenes/acciones/tenedor.png';
 import actionGloton from './imagenes/acciones/comer.png';
 import actionComeComodines from './imagenes/acciones/comecomodines.png';
+import actionPizza from './imagenes/acciones/pizza.png';
+import actionPizzaConQueso from './imagenes/acciones/pizza con queso.png';
 import eqLadron from './imagenes/acciones/esquina/robo.png';
 import eqIntercambioSomb from './imagenes/acciones/esquina/intercambiosomb.png';
 import eqIntercambioHamb from './imagenes/acciones/esquina/intercam.png';
@@ -193,19 +195,23 @@ export default function App() {
   const [lastForkEvent, setLastForkEvent] = useState(null);
   const [lastComeComodinesEvent, setLastComeComodinesEvent] = useState(null);
   const [lastGlotonEvent, setLastGlotonEvent] = useState(null);
+  const [lastPizzaEvent, setLastPizzaEvent] = useState(null);
   const [negationFx, setNegationFx] = useState(null);
   const [forkFx, setForkFx] = useState(null);
   const [comeComodinesFx, setComeComodinesFx] = useState(null);
   const [glotonFx, setGlotonFx] = useState(null);
+  const [pizzaFx, setPizzaFx] = useState(null);
   const [forkAnim, setForkAnim] = useState(null);
   const [comeComodinesAnim, setComeComodinesAnim] = useState(null);
   const [glotonAnim, setGlotonAnim] = useState(null);
+  const [pizzaAnim, setPizzaAnim] = useState(null);
   // Host-only ref that stores the resolve callback (not serializable over socket)
   const pendingNegRef = useRef(null);
   const lastNegationSeenRef = useRef(null);
   const lastForkSeenRef = useRef(null);
   const lastComeComodinesSeenRef = useRef(null);
   const lastGlotonSeenRef = useRef(null);
+  const lastPizzaSeenRef = useRef(null);
   const playerAreaRefs = useRef({});
   const playerIngredientRefs = useRef({});
   const humanBurgerAreaRef = useRef(null);
@@ -343,6 +349,55 @@ export default function App() {
 
     return () => timers.forEach(clearTimeout);
   }, [glotonFx, HI, isMobile]);
+
+  useEffect(() => {
+    if (!pizzaFx?.targets?.length) return undefined;
+
+    const timers = [];
+    const getRectCenter = (el, fallbackX, fallbackY) => {
+      if (!el) return { x: fallbackX, y: fallbackY };
+      const rect = el.getBoundingClientRect();
+      return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+    };
+    const targets = pizzaFx.targets.map((target, i) => {
+      const el = target.targetIdx === HI ? humanBurgerAreaRef.current : playerAreaRefs.current[target.targetIdx];
+      return {
+        ...target,
+        point: getRectCenter(el, window.innerWidth * 0.22, window.innerHeight * (0.26 + i * 0.14)),
+      };
+    });
+
+    setPizzaAnim({
+      x: targets[0].point.x,
+      y: targets[0].point.y,
+      cheesy: false,
+      targetCount: targets[0].count || 1,
+      visible: true,
+    });
+
+    let elapsed = 120;
+    targets.forEach((target, idx) => {
+      timers.push(setTimeout(() => {
+        setPizzaAnim({
+          x: target.point.x,
+          y: target.point.y,
+          cheesy: false,
+          targetCount: target.count || 1,
+          visible: true,
+        });
+      }, elapsed));
+      timers.push(setTimeout(() => {
+        setPizzaAnim((prev) => (prev ? { ...prev, cheesy: true } : prev));
+      }, elapsed + 260));
+      timers.push(setTimeout(() => {
+        setPizzaAnim((prev) => (prev ? { ...prev, visible: false } : prev));
+      }, elapsed + 620));
+      elapsed += idx === targets.length - 1 ? 880 : 760;
+    });
+
+    timers.push(setTimeout(() => setPizzaAnim(null), elapsed + 120));
+    return () => timers.forEach(clearTimeout);
+  }, [pizzaFx, HI]);
 
   useEffect(() => {
     if (!forkFx) return undefined;
@@ -544,6 +599,17 @@ export default function App() {
     }
   }, [HI, isOnline]);
 
+  const triggerPizzaEvent = useCallback((result) => {
+    if (!result?.affectedTargets?.length) return;
+    const event = {
+      id: `${Date.now()}-${Math.random()}`,
+      targets: result.affectedTargets,
+    };
+    setLastPizzaEvent(event);
+    lastPizzaSeenRef.current = event.id;
+    setPizzaFx(event);
+  }, []);
+
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
     if (shouldLogoutOnLoad) {
@@ -692,18 +758,22 @@ export default function App() {
     setLastForkEvent(null);
     setLastComeComodinesEvent(null);
     setLastGlotonEvent(null);
+    setLastPizzaEvent(null);
     setNegationFx(null);
     setForkFx(null);
     setComeComodinesFx(null);
     setGlotonFx(null);
+    setPizzaFx(null);
     setForkAnim(null);
     setComeComodinesAnim(null);
     setGlotonAnim(null);
+    setPizzaAnim(null);
     pendingNegRef.current = null;
     lastNegationSeenRef.current = null;
     lastForkSeenRef.current = null;
     lastComeComodinesSeenRef.current = null;
     lastGlotonSeenRef.current = null;
+    lastPizzaSeenRef.current = null;
     setGamePaused(false);
     setPausedMessage('');
     setShowChat(false);
@@ -742,17 +812,21 @@ export default function App() {
     setLastForkEvent(null);
     setLastComeComodinesEvent(null);
     setLastGlotonEvent(null);
+    setLastPizzaEvent(null);
     setNegationFx(null);
     setForkFx(null);
     setComeComodinesFx(null);
     setGlotonFx(null);
+    setPizzaFx(null);
     setForkAnim(null);
     setComeComodinesAnim(null);
     setGlotonAnim(null);
+    setPizzaAnim(null);
     lastNegationSeenRef.current = null;
     lastForkSeenRef.current = null;
     lastComeComodinesSeenRef.current = null;
     lastGlotonSeenRef.current = null;
+    lastPizzaSeenRef.current = null;
     clearRoomSession();
     setGamePaused(false);
     setPausedMessage('');
@@ -910,6 +984,7 @@ export default function App() {
             setLastForkEvent(gameState.lastForkEvent || null);
             setLastComeComodinesEvent(gameState.lastComeComodinesEvent || null);
             setLastGlotonEvent(gameState.lastGlotonEvent || null);
+            setLastPizzaEvent(gameState.lastPizzaEvent || null);
             if (gameState.winner) { setWinner(gameState.winner); clearRoomSession(); setPhase('gameover'); }
           else setPhase('playing');
         } else if (!host) {
@@ -1046,6 +1121,7 @@ export default function App() {
       setLastForkEvent(state.lastForkEvent || null);
       setLastComeComodinesEvent(state.lastComeComodinesEvent || null);
       setLastGlotonEvent(state.lastGlotonEvent || null);
+      setLastPizzaEvent(state.lastPizzaEvent || null);
       if (state.lastNegationEvent?.id && state.lastNegationEvent.id !== lastNegationSeenRef.current && state.lastNegationEvent.actingIdx === myPlayerIdx) {
         lastNegationSeenRef.current = state.lastNegationEvent.id;
         setNegationFx(state.lastNegationEvent);
@@ -1061,6 +1137,10 @@ export default function App() {
       if (state.lastGlotonEvent?.id && state.lastGlotonEvent.id !== lastGlotonSeenRef.current && state.lastGlotonEvent.targetIdx === myPlayerIdx) {
         lastGlotonSeenRef.current = state.lastGlotonEvent.id;
         setGlotonFx(state.lastGlotonEvent);
+      }
+      if (state.lastPizzaEvent?.id && state.lastPizzaEvent.id !== lastPizzaSeenRef.current) {
+        lastPizzaSeenRef.current = state.lastPizzaEvent.id;
+        setPizzaFx(state.lastPizzaEvent);
       }
       if (state.winner) { setWinner(state.winner); clearRoomSession(); setPhase('gameover'); }
       else if (state.cp === myPlayerIdx && lastSyncCpRef.current !== myPlayerIdx) {
@@ -1087,11 +1167,11 @@ export default function App() {
       const syncModal = modal && privateModals.includes(modal.type) ? null : modal;
       socket.emit('syncState', {
         code: roomCode,
-        state: { players, deck, discard, cp, log, extraPlay, modal: syncModal, pendingNeg, lastNegationEvent, lastForkEvent, lastComeComodinesEvent, lastGlotonEvent, winner, gameConfig: currentGameConfig, phase: 'playing' },
+        state: { players, deck, discard, cp, log, extraPlay, modal: syncModal, pendingNeg, lastNegationEvent, lastForkEvent, lastComeComodinesEvent, lastGlotonEvent, lastPizzaEvent, winner, gameConfig: currentGameConfig, phase: 'playing' },
       });
     }, 80);
     return () => clearTimeout(syncRef.current);
-  }, [players, deck, discard, cp, log, extraPlay, modal, pendingNeg, lastNegationEvent, lastForkEvent, lastComeComodinesEvent, lastGlotonEvent, winner, currentGameConfig, phase, isOnline, isHost]);
+  }, [players, deck, discard, cp, log, extraPlay, modal, pendingNeg, lastNegationEvent, lastForkEvent, lastComeComodinesEvent, lastGlotonEvent, lastPizzaEvent, winner, currentGameConfig, phase, isOnline, isHost]);
 
   // â”€â”€ Socket: host processes remote player actions â”€â”€
   // We store the latest state in refs so the socket handler always has fresh values
@@ -1437,6 +1517,8 @@ export default function App() {
                 const r = applyMass(fp, fd, card.action, idx);
                 if (card.action === 'comecomodines') {
                   triggerComeComodinesEvent(r, idx, fp[idx]?.name || 'Jugador');
+                } else if (card.action === 'pizza') {
+                  triggerPizzaEvent(r);
                 }
                 endTurnFromRemote(r.players, deckRef.current, r.discard, idx);
               });
@@ -1575,7 +1657,7 @@ export default function App() {
           if (isOnline && isHost) {
             socket.emit('syncState', {
               code: roomCode,
-              state: { players: newPls, deck: newDeck, discard: newDiscard, cp, log, extraPlay, modal: null, pendingNeg: null, lastNegationEvent, lastForkEvent, lastComeComodinesEvent, lastGlotonEvent, winner: w, gameConfig: currentGameConfig, phase: 'playing' },
+              state: { players: newPls, deck: newDeck, discard: newDiscard, cp, log, extraPlay, modal: null, pendingNeg: null, lastNegationEvent, lastForkEvent, lastComeComodinesEvent, lastGlotonEvent, lastPizzaEvent, winner: w, gameConfig: currentGameConfig, phase: 'playing' },
             });
           }
       setWinner(w); clearRoomSession(); setPhase('gameover');
@@ -1948,6 +2030,8 @@ export default function App() {
           const r = applyMass(newPls, newDiscard, card.action, idx);
           if (card.action === 'comecomodines') {
             triggerComeComodinesEvent(r, idx, newPls[idx]?.name || 'IA');
+          } else if (card.action === 'pizza') {
+            triggerPizzaEvent(r);
           }
           newPls = r.players; newDiscard = r.discard;
         } else if (richest !== null && richest !== undefined) {
@@ -2296,6 +2380,8 @@ export default function App() {
           if (card.action === 'comecomodines') {
             massResult.sourcePoint = sourcePoint;
             triggerComeComodinesEvent(massResult, HI, newPls[HI]?.name || 'Jugador');
+          } else if (card.action === 'pizza') {
+            triggerPizzaEvent(massResult);
           }
           const { players: ps2, discard: di2 } = massResult;
           endTurn(ps2, dk, di2, HI);
@@ -3927,6 +4013,50 @@ export default function App() {
               />
             </div>
           )}
+        </div>
+      )}
+
+      {pizzaAnim && pizzaAnim.visible && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 9487,
+          pointerEvents: 'none',
+          overflow: 'hidden',
+        }}>
+          <div style={{
+            position: 'fixed',
+            left: pizzaAnim.x,
+            top: pizzaAnim.y,
+            transform: `translate(-50%, -50%) scale(${pizzaAnim.cheesy ? 1.06 : 0.96})`,
+            transition: 'transform 0.2s ease, opacity 0.2s ease',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 8,
+            filter: 'drop-shadow(0 14px 26px rgba(0,0,0,.36))',
+          }}>
+            <img
+              src={pizzaAnim.cheesy ? actionPizzaConQueso : actionPizza}
+              alt="Pizza"
+              style={{
+                width: isMobile ? 88 : 118,
+                height: isMobile ? 88 : 118,
+                objectFit: 'contain',
+              }}
+            />
+            <div style={{
+              padding: '5px 10px',
+              borderRadius: 999,
+              background: 'rgba(15,17,23,.86)',
+              border: '2px solid rgba(255,215,0,.28)',
+              color: '#FFD700',
+              fontWeight: 900,
+              fontSize: isMobile ? 12 : 14,
+            }}>
+              + queso x{pizzaAnim.targetCount}
+            </div>
+          </div>
         </div>
       )}
 

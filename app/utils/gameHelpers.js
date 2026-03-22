@@ -138,14 +138,17 @@ export function applyMass(players, discard, actionId, playerIdx) {
   nextPlayers.forEach((player, index) => {
     if (index === playerIdx) return;
     const kept = [];
+    let removedCount = 0;
     player.table.forEach(ing => {
       if (targets.includes(ingKey(ing)) || targets.includes(ingChosen(ing))) {
         nextDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `d${Date.now()}${Math.random()}` });
+        removedCount += 1;
       } else {
         kept.push(ing);
       }
     });
     player.table = kept;
+    if (removedCount > 0) affectedTargets.push({ targetIdx: index, count: removedCount });
   });
 
   return { players: nextPlayers, discard: nextDiscard, affectedTargets };
