@@ -228,6 +228,13 @@ export default function App() {
       const [negationCard] = negator.hand.splice(negationIdx, 1);
       nextState.discard.push(negationCard);
     }
+    nextState.lastNegationEvent = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      actingIdx: meta.actingIdx,
+      negatorIdx,
+      negatorName: negator?.name || 'Jugador',
+      actionName: getActionInfo(meta.card?.action)?.name || 'Accion',
+    };
     addHostLog(nextState, negatorIdx, `Uso negacion contra ${actingPlayer.name}.`);
     finishHostTurn(nextState, meta.actingIdx);
   }

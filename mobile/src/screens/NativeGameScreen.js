@@ -51,6 +51,7 @@ const ACTION_ICON_SOURCES = {
   basurero: require('../../assets/game/action-basurero.png'),
   negacion: require('../../assets/game/action-negacion.png'),
 };
+const BLOCKED_IMAGE = require('../../assets/game/bloqueo.png');
 
 function buildBurgerStack(mode, pool, ingredientCount, burgerIndex, playerIndex) {
   const safePool = pool && pool.length ? pool : FALLBACK_POOL;
@@ -317,6 +318,8 @@ export function NativeGameScreen({ setup, online, gameSession, chatMessages = []
   const negationActor = pendingNeg?.actingIdx != null ? livePlayers[pendingNeg.actingIdx] : null;
   const negationActionLabel = pendingNeg?.cardInfo?.name || ACTION_LABELS[pendingNeg?.cardInfo?.action] || 'Accion';
   const negationIcon = pendingNeg?.cardInfo?.action ? (ACTION_ICON_SOURCES[pendingNeg.cardInfo.action] || ACTION_ICON_SOURCES.negacion) : ACTION_ICON_SOURCES.negacion;
+  const lastNegationEvent = gameSession.liveState?.lastNegationEvent || null;
+  const [negationFx, setNegationFx] = useState(null);
   const urgentHatReplace = !isMyTurn && myLivePlayer && (myLivePlayer.mainHats?.length || 0) === 0 && (myLivePlayer.perchero?.length || 0) > 0;
   const targetedPlayers = TARGETED_ACTIONS.includes(selectedCard?.action)
     ? livePlayers.filter((player) => {
@@ -340,6 +343,17 @@ export function NativeGameScreen({ setup, online, gameSession, chatMessages = []
       setHatDraft(null);
     }
   }, [urgentHatReplace, hatDraft]);
+
+  useEffect(() => {
+    if (!lastNegationEvent || lastNegationEvent.actingIdx !== online.myIdx) return;
+    setNegationFx(lastNegationEvent);
+  }, [lastNegationEvent, online.myIdx]);
+
+  useEffect(() => {
+    if (!negationFx) return undefined;
+    const timer = setTimeout(() => setNegationFx(null), 1800);
+    return () => clearTimeout(timer);
+  }, [negationFx]);
 
   function resetCardFlow() {
     setSelectedCardIdx(null);
@@ -380,6 +394,20 @@ export function NativeGameScreen({ setup, online, gameSession, chatMessages = []
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
+      {negationFx && (
+        <View style={styles.negationFxOverlay}>
+          <View style={styles.negationFxCard}>
+            <Image source={BLOCKED_IMAGE} style={styles.negationFxImage} resizeMode="contain" />
+            <View style={styles.negationFxLabel}>
+              <Text style={styles.negationFxTitle}>Negada</Text>
+              <Text style={styles.negationFxText}>
+                {negationFx.negatorName || 'Un jugador'} bloqueo tu {String(negationFx.actionName || 'accion').toLowerCase()}.
+              </Text>
+            </View>
+          </View>
+        </View>
+      )}
+
       <View style={styles.heroCard}>
         <Text style={styles.heroTitle}>Partida nativa iniciada</Text>
         <Text style={styles.heroText}>Sala {gameSession.roomCode || online.roomCode || 'sin codigo'} - {gameSession.roomName || online.roomName || 'Sin nombre'}</Text>
@@ -1040,6 +1068,51 @@ export function NativeGameScreen({ setup, online, gameSession, chatMessages = []
 
 const styles = StyleSheet.create({
   content: { padding: 18, paddingBottom: 32, gap: 16 },
+  negationFxOverlay: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    zIndex: 50,
+    backgroundColor: 'rgba(6,8,14,0.68)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  negationFxCard: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 14,
+  },
+  negationFxImage: {
+    width: 240,
+    height: 240,
+  },
+  negationFxLabel: {
+    width: '100%',
+    maxWidth: 320,
+    borderRadius: 18,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: 'rgba(15,17,23,0.92)',
+    borderWidth: 2,
+    borderColor: 'rgba(255,95,87,0.7)',
+  },
+  negationFxTitle: {
+    color: '#ffe082',
+    fontSize: 24,
+    fontWeight: '900',
+    textAlign: 'center',
+  },
+  negationFxText: {
+    color: '#ffd7d2',
+    fontSize: 13,
+    fontWeight: '700',
+    textAlign: 'center',
+    lineHeight: 18,
+    marginTop: 6,
+  },
   heroCard: { backgroundColor: '#16213e', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,215,0,0.14)', padding: 18 },
   heroTitle: { color: '#FFD700', fontSize: 28, fontWeight: '900', marginBottom: 8 },
   heroText: { color: '#d8ddf3', fontSize: 15, lineHeight: 22 },

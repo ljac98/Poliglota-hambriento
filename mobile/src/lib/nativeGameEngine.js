@@ -191,6 +191,7 @@ export function createHostGameState({ players = [], hatPicks = {}, gameConfig = 
     extraPlay: false,
     modal: null,
     pendingNeg: null,
+    lastNegationEvent: null,
     winner: null,
     gameConfig: normalizedConfig,
     phase: 'playing',
