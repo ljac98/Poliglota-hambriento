@@ -763,10 +763,11 @@ export default function App() {
 
     if (eligible.length === 0) { resolveCallback(); return; }
 
-    // AI players decide immediately (25% chance to use negaciÃ³n)
+    const aiNegationChance = getAIDifficultyConfig().negationChance;
+    // AI players decide immediately according to difficulty
     const responses = {};
     for (const i of eligible) {
-      if (pls[i].isAI) responses[i] = Math.random() < 0.25;
+      if (pls[i].isAI) responses[i] = Math.random() < aiNegationChance;
     }
     const aiNegator = eligible.find(i => pls[i].isAI && responses[i] === true);
     if (aiNegator !== undefined) { cancelWithNegation(actingIdx, aiNegator, card); return; }
@@ -1219,11 +1220,202 @@ export default function App() {
     }, 0);
   }
 
+  function getAIDifficulty() {
+    return currentGameConfig?.aiDifficulty || 'medium';
+  }
+
+  function getAIDifficultyConfig() {
+    const difficulty = getAIDifficulty();
+    if (difficulty === 'easy') {
+      return {
+        ingredientMode: 'random',
+        changeChance: 0.18,
+        addChance: 0.08,
+        negationChance: 0.08,
+        actionChance: 0.35,
+        actionMode: 'random',
+        discardMode: 'random',
+        targetHumanBias: 0,
+      };
+    }
+    if (difficulty === 'hard') {
+      return {
+        ingredientMode: 'best',
+        changeChance: 0.95,
+        addChance: 0.75,
+        negationChance: 0.58,
+        actionChance: 0.85,
+        actionMode: 'smart',
+        discardMode: 'smart',
+        targetHumanBias: 18,
+      };
+    }
+    if (difficulty === 'impossible') {
+      return {
+        ingredientMode: 'best',
+        changeChance: 1,
+        addChance: 1,
+        negationChance: 1,
+        actionChance: 1,
+        actionMode: 'perfect',
+        discardMode: 'smart',
+        targetHumanBias: 45,
+      };
+    }
+    return {
+      ingredientMode: 'mixed',
+      changeChance: 0.45,
+      addChance: 0.2,
+      negationChance: 0.25,
+      actionChance: 0.55,
+      actionMode: 'basic',
+      discardMode: 'mixed',
+      targetHumanBias: 8,
+    };
+  }
+
+  function getPlayableIngredientOptions(playerLike) {
+    const needs = getRemainingNeeds(playerLike);
+    return playerLike.hand
+      .map((card, handIdx) => ({ card, handIdx }))
+      .filter(({ card }) => card.type === 'ingredient' && canPlayCard(playerLike, card))
+      .map(({ card, handIdx }) => ({
+        card,
+        handIdx,
+        score: scoreIngredientForNeeds(card, needs),
+      }))
+      .sort((a, b) => b.score - a.score);
+  }
+
+  function chooseIngredientOptionForDifficulty(playerLike, aiConfig) {
+    const options = getPlayableIngredientOptions(playerLike);
+    if (!options.length) return null;
+    if (aiConfig.ingredientMode === 'best') return options[0];
+    if (aiConfig.ingredientMode === 'random') return options[randInt(0, options.length - 1)];
+    return Math.random() < 0.7 ? options[0] : options[randInt(0, options.length - 1)];
+  }
+
+  function getAITargetPriority(pls, aiIdx, targetIdx, aiConfig) {
+    const target = pls[targetIdx];
+    if (!target) return -999;
+    let score = target.table.length * 12 + (target.completed || 0) * 25 + target.mainHats.length * 6;
+    if (!target.isAI) score += aiConfig.targetHumanBias;
+    return score;
+  }
+
+  function getBestAIOpponent(pls, aiIdx, aiConfig) {
+    const opponents = pls
+      .map((_, i) => i)
+      .filter(i => i !== aiIdx);
+    if (!opponents.length) return null;
+    return opponents.reduce((best, current) =>
+      getAITargetPriority(pls, aiIdx, current, aiConfig) > getAITargetPriority(pls, aiIdx, best, aiConfig)
+        ? current
+        : best,
+    opponents[0]);
+  }
+
+  function chooseDiscardIndexForDifficulty(playerLike, aiConfig) {
+    if (!playerLike.hand.length) return 0;
+    if (aiConfig.discardMode === 'random') return randInt(0, playerLike.hand.length - 1);
+    const needs = getRemainingNeeds(playerLike);
+    const ranked = playerLike.hand
+      .map((card, handIdx) => ({ handIdx, score: getCardKeepScore(card, playerLike.mainHats, needs) }))
+      .sort((a, b) => a.score - b.score);
+    if (aiConfig.discardMode === 'mixed' && ranked.length > 1 && Math.random() < 0.35) {
+      const pool = ranked.slice(0, Math.min(3, ranked.length));
+      return pool[randInt(0, pool.length - 1)].handIdx;
+    }
+    return ranked[0]?.handIdx ?? 0;
+  }
+
+  function getMassActionScore(action, pls, aiIdx, aiConfig) {
+    const others = pls.filter((_, i) => i !== aiIdx);
+    const humanTargets = others.filter(p => !p.isAI);
+    const tableValue = (table, predicate) => table.reduce((sum, ing) => sum + (predicate(ing) ? 1 : 0), 0);
+    let score = 0;
+    if (action === 'milanesa') score = others.reduce((sum, p) => sum + tableValue(p.table, ing => ['pan', 'huevo'].includes(ingKey(ing))), 0) * 16;
+    if (action === 'ensalada') score = others.reduce((sum, p) => sum + tableValue(p.table, ing => ['lechuga', 'tomate', 'cebolla', 'palta'].includes(ingKey(ing))), 0) * 14;
+    if (action === 'pizza') score = others.reduce((sum, p) => sum + tableValue(p.table, ing => ingKey(ing) === 'queso'), 0) * 18;
+    if (action === 'parrilla') score = others.reduce((sum, p) => sum + tableValue(p.table, ing => ['pollo', 'carne'].includes(ingKey(ing))), 0) * 18;
+    if (action === 'comecomodines') score = others.reduce((sum, p) => sum + tableValue(p.table, ing => String(ing).startsWith('perrito|')), 0) * 22;
+    if (aiConfig.actionMode === 'perfect') {
+      score += humanTargets.reduce((sum, p) => sum + p.table.length * 6, 0);
+    }
+    return score;
+  }
+
+  function getTargetedActionScore(action, pls, aiIdx, targetIdx, aiConfig) {
+    const self = pls[aiIdx];
+    const target = pls[targetIdx];
+    if (!self || !target) return -999;
+    const needs = getRemainingNeeds(self);
+    const targetTableNorm = target.table.map(ing => ingKey(ing));
+    const neededOnTable = targetTableNorm.filter(ing => needs.includes(ing)).length;
+    let score = 0;
+    if (action === 'gloton') score = target.table.length * 28;
+    if (action === 'tenedor') score = target.table.length ? (neededOnTable * 35) + (target.table.length * 8) : -10;
+    if (action === 'ladron') {
+      const usefulHat = target.mainHats.some(h => self.hand.some(card => card.type === 'ingredient' && card.language === h));
+      score = target.mainHats.length ? (usefulHat ? 55 : 25) : -20;
+    }
+    if (action === 'intercambio_sombreros') {
+      const theirHat = target.mainHats[0];
+      const helpsMe = theirHat && self.hand.some(card => card.type === 'ingredient' && card.language === theirHat);
+      score = helpsMe ? 52 : (target.mainHats.length ? 18 : -20);
+    }
+    if (action === 'intercambio_hamburguesa') {
+      const myProgress = self.table.length;
+      const theirProgress = target.table.length;
+      score = (theirProgress - myProgress) * 20;
+    }
+    if (!target.isAI) score += aiConfig.targetHumanBias;
+    return score;
+  }
+
+  function chooseAIAction(play, pls, aiIdx, aiConfig) {
+    const candidates = play.hand
+      .map((card, handIdx) => ({ card, handIdx }))
+      .filter(({ card }) => card.type === 'action' && card.action !== 'negacion' && card.action !== 'basurero');
+    if (!candidates.length) return null;
+
+    if (aiConfig.actionMode === 'random') {
+      return Math.random() <= aiConfig.actionChance
+        ? candidates[randInt(0, candidates.length - 1)]
+        : null;
+    }
+
+    const opponents = pls.map((_, i) => i).filter(i => i !== aiIdx);
+    const ranked = candidates.map((entry) => {
+      const { card } = entry;
+      let targetIdx = null;
+      let score = -999;
+      if (['milanesa', 'ensalada', 'pizza', 'parrilla', 'comecomodines'].includes(card.action)) {
+        score = getMassActionScore(card.action, pls, aiIdx, aiConfig);
+      } else {
+        opponents.forEach((opponentIdx) => {
+          const s = getTargetedActionScore(card.action, pls, aiIdx, opponentIdx, aiConfig);
+          if (s > score) {
+            score = s;
+            targetIdx = opponentIdx;
+          }
+        });
+      }
+      return { ...entry, score, targetIdx };
+    }).sort((a, b) => b.score - a.score);
+
+    const best = ranked[0];
+    if (!best || best.score <= 0) return null;
+    if (aiConfig.actionMode === 'basic' && Math.random() > aiConfig.actionChance) return null;
+    return best;
+  }
+
   // —— AI Turn ——
   function runAITurn(pls, deckArr, discardArr, idx) {
     if (aiRunning.current) return;
     aiRunning.current = true;
     const p = pls[idx];
+    const aiConfig = getAIDifficultyConfig();
 
     const playIngredientAndEnd = (basePlayers, baseDiscard, baseDeck, handIdx, logPlayersOverride = null) => {
       const newPls = clone(basePlayers);
@@ -1252,18 +1444,91 @@ export default function App() {
       setTimeout(() => { aiRunning.current = false; endTurn(newPls, baseDeck, newDiscard, idx); }, 900);
     };
 
-    const bestPlayable = getBestPlayableIngredientOption(p);
+    const executeAIActionAndEnd = (chosenAction) => {
+      if (!chosenAction) return false;
+      const actionIdx = chosenAction.handIdx;
+      const card = p.hand[actionIdx];
+      if (!card) return false;
+      const info = getActionInfo(card.action);
+      const fallbackTarget = getBestAIOpponent(pls, idx, aiConfig);
+      const richest = chosenAction.targetIdx ?? fallbackTarget;
+      let newPls = clone(pls);
+      let newDiscard = [...discardArr, card];
+      newPls[idx].hand.splice(actionIdx, 1);
+      addLog(idx, `jugó ${info.name} ${info.emoji}`, pls);
+
+      const mass = ['milanesa', 'ensalada', 'pizza', 'parrilla', 'comecomodines'];
+      if (mass.includes(card.action)) {
+        const r = applyMass(newPls, newDiscard, card.action, idx);
+        newPls = r.players; newDiscard = r.discard;
+      } else if (richest !== null && richest !== undefined) {
+        if (card.action === 'gloton') {
+          newPls[richest].table.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `g${Date.now()}${Math.random()}` }));
+          newPls[richest].table = [];
+          addLog(idx, `vació la mesa de ${pls[richest].name}`, newPls);
+        } else if (card.action === 'tenedor') {
+          if (newPls[richest].table.length > 0) {
+            const wanted = getRemainingNeeds(newPls[idx]);
+            let si = newPls[richest].table.findIndex(ing => wanted.includes(ingKey(ing)));
+            if (si === -1) si = randInt(0, newPls[richest].table.length - 1);
+            const stolen = newPls[richest].table.splice(si, 1)[0];
+            newPls[idx].table.push(stolen);
+            const { player: up2, freed: fr2, done: dn2 } = advanceBurger(newPls[idx]);
+            newPls[idx] = up2;
+            if (dn2) { fr2.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `t${Date.now()}${Math.random()}` })); }
+            addLog(idx, `robó ${ING_EMOJI[ingKey(stolen)]} de ${pls[richest].name}`, newPls);
+          }
+        } else if (card.action === 'ladron') {
+          if (newPls[richest].mainHats.length > 0) {
+            const stolen = newPls[richest].mainHats.splice(0, 1)[0];
+            newPls[idx].mainHats.push(stolen);
+            if (newPls[richest].mainHats.length > 0) {
+              newPls[richest].maxHand = Math.min(6, newPls[richest].maxHand + 1);
+            }
+            if (newPls[richest].mainHats.length === 0 && newPls[richest].perchero.length > 0) {
+              const nh = newPls[richest].perchero.shift();
+              newPls[richest].mainHats.push(nh);
+            }
+            addLog(idx, `robó el sombrero ${stolen} de ${pls[richest].name}`, newPls);
+          }
+        } else if (card.action === 'intercambio_sombreros') {
+          if (newPls[idx].mainHats[0] && newPls[richest].mainHats[0]) {
+            const tmp = newPls[idx].mainHats[0];
+            newPls[idx].mainHats[0] = newPls[richest].mainHats[0];
+            newPls[richest].mainHats[0] = tmp;
+            addLog(idx, `intercambió sombreros con ${pls[richest].name}`, newPls);
+          }
+        } else if (card.action === 'intercambio_hamburguesa') {
+          const tmp = newPls[idx].table;
+          newPls[idx].table = newPls[richest].table;
+          newPls[richest].table = tmp;
+          filterTable(newPls[idx], newDiscard);
+          filterTable(newPls[richest], newDiscard);
+          addLog(idx, `intercambió mesa con ${pls[richest].name}`, newPls);
+        }
+      }
+
+      setTimeout(() => { aiRunning.current = false; endTurn(newPls, deckArr, newDiscard, idx); }, 900);
+      return true;
+    };
+
+    const openingAction = aiConfig.actionMode === 'perfect' ? chooseAIAction(p, pls, idx, aiConfig) : null;
+    if (openingAction && openingAction.score >= 35 && executeAIActionAndEnd(openingAction)) {
+      return;
+    }
+
+    const bestPlayable = chooseIngredientOptionForDifficulty(p, aiConfig);
     if (bestPlayable) {
       playIngredientAndEnd(pls, discardArr, deckArr, bestPlayable.handIdx, pls);
       return;
     }
 
-    if (p.perchero.length > 0 && p.hand.length > 0 && !extraPlay) {
+    if (p.perchero.length > 0 && p.hand.length > 0 && !extraPlay && Math.random() <= aiConfig.changeChance) {
       let bestChange = null;
       for (const hatLang of p.perchero) {
         const simulated = clone([p])[0];
         simulated.mainHats[0] = hatLang;
-        const bestAfterChange = getBestPlayableIngredientOption(simulated);
+        const bestAfterChange = chooseIngredientOptionForDifficulty(simulated, { ...aiConfig, ingredientMode: 'best' });
         if (!bestAfterChange) continue;
         const discardIndices = chooseDiscardIndicesForChange(p, hatLang, bestAfterChange.handIdx);
         if (discardIndices.includes(bestAfterChange.handIdx)) continue;
@@ -1293,7 +1558,7 @@ export default function App() {
       }
     }
 
-    if (p.perchero.length > 0 && p.hand.length > 0 && p.maxHand > 1 && p.mainHats.length < 3 && !extraPlay) {
+    if (p.perchero.length > 0 && p.hand.length > 0 && p.maxHand > 1 && p.mainHats.length < 3 && !extraPlay && Math.random() <= aiConfig.addChance) {
       const needs = getRemainingNeeds(p);
       let bestAdd = null;
       for (const hatLang of p.perchero) {
@@ -1310,7 +1575,7 @@ export default function App() {
         ai.maxHand = Math.max(1, ai.maxHand - 1);
         const { drawn, deck: nextDeck, discard: nextDiscard } = drawN(deckArr, simDiscard, ai.maxHand);
         ai.hand = drawn;
-        const bestAfterAdd = getBestPlayableIngredientOption(ai);
+        const bestAfterAdd = chooseIngredientOptionForDifficulty(ai, { ...aiConfig, ingredientMode: 'best' });
         const score = futureScore + (bestAfterAdd ? bestAfterAdd.score + 30 : 0);
         if (!bestAdd || score > bestAdd.score) {
           bestAdd = { hatLang, players: simPlayers, discard: nextDiscard, deck: nextDeck, bestAfterAdd, score };
@@ -1323,74 +1588,12 @@ export default function App() {
       }
     }
 
-    const actionIdx = p.hand.findIndex(c =>
-      c.type === 'action' && c.action !== 'negacion' && c.action !== 'basurero'
-    );
-    if (actionIdx !== -1) {
-      const card = p.hand[actionIdx];
-      const info = getActionInfo(card.action);
-      const opponents = pls.map((_, i) => i).filter(i => i !== idx);
-      const richest = opponents.reduce((b, i) => pls[i].table.length > pls[b].table.length ? i : b, opponents[0]);
-      let newPls = clone(pls);
-      let newDiscard = [...discardArr, card];
-      newPls[idx].hand.splice(actionIdx, 1);
-      addLog(idx, `jugó ${info.name} ${info.emoji}`, pls);
-
-      const mass = ['milanesa', 'ensalada', 'pizza', 'parrilla', 'comecomodines'];
-      if (mass.includes(card.action)) {
-        const r = applyMass(newPls, newDiscard, card.action, idx);
-        newPls = r.players; newDiscard = r.discard;
-      } else if (card.action === 'gloton') {
-        newPls[richest].table.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `g${Date.now()}${Math.random()}` }));
-        newPls[richest].table = [];
-        addLog(idx, `vació la mesa de ${pls[richest].name}`, newPls);
-      } else if (card.action === 'tenedor') {
-        if (newPls[richest].table.length > 0) {
-          const si = randInt(0, newPls[richest].table.length - 1);
-          const stolen = newPls[richest].table.splice(si, 1)[0];
-          newPls[idx].table.push(stolen);
-          const { player: up2, freed: fr2, done: dn2 } = advanceBurger(newPls[idx]);
-          newPls[idx] = up2;
-          if (dn2) { fr2.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `t${Date.now()}${Math.random()}` })); }
-          addLog(idx, `robó ${ING_EMOJI[ingKey(stolen)]} de ${pls[richest].name}`, newPls);
-        }
-      } else if (card.action === 'ladron') {
-        if (newPls[richest].mainHats.length > 0) {
-          const stolen = newPls[richest].mainHats.splice(0, 1)[0];
-          newPls[idx].mainHats.push(stolen);
-          if (newPls[richest].mainHats.length > 0) {
-            newPls[richest].maxHand = Math.min(6, newPls[richest].maxHand + 1);
-          }
-          if (newPls[richest].mainHats.length === 0 && newPls[richest].perchero.length > 0) {
-            const nh = newPls[richest].perchero.shift();
-            newPls[richest].mainHats.push(nh);
-          }
-          addLog(idx, `robó el sombrero ${stolen} de ${pls[richest].name}`, newPls);
-        }
-      } else if (card.action === 'intercambio_sombreros') {
-        if (newPls[idx].mainHats[0] && newPls[richest].mainHats[0]) {
-          const tmp = newPls[idx].mainHats[0];
-          newPls[idx].mainHats[0] = newPls[richest].mainHats[0];
-          newPls[richest].mainHats[0] = tmp;
-          addLog(idx, `intercambió sombreros con ${pls[richest].name}`, newPls);
-        }
-      } else if (card.action === 'intercambio_hamburguesa') {
-        const tmp = newPls[idx].table;
-        newPls[idx].table = newPls[richest].table;
-        newPls[richest].table = tmp;
-        filterTable(newPls[idx], newDiscard);
-        filterTable(newPls[richest], newDiscard);
-        addLog(idx, `intercambió mesa con ${pls[richest].name}`, newPls);
-      }
-
-      setTimeout(() => { aiRunning.current = false; endTurn(newPls, deckArr, newDiscard, idx); }, 900);
+    const chosenAction = chooseAIAction(p, pls, idx, aiConfig);
+    if (chosenAction && executeAIActionAndEnd(chosenAction)) {
       return;
     }
 
-    const needs = getRemainingNeeds(p);
-    const di2 = p.hand
-      .map((card, handIdx) => ({ handIdx, score: getCardKeepScore(card, p.mainHats, needs) }))
-      .sort((a, b) => a.score - b.score)[0]?.handIdx ?? 0;
+    const di2 = chooseDiscardIndexForDifficulty(p, aiConfig);
     if (p.hand.length > 0) {
       addLog(idx, `descartó una carta`, pls);
       const newPls = clone(pls);

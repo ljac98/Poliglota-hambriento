@@ -36,6 +36,7 @@ export function SetupScreen({ onStart, onOnline, onDownload, user, onLogout, onH
   const [ingredientPool, setIngredientPool] = useState(cloneIngredients);
   const [chaosLevel, setChaosLevel] = useState(2);
   const [aiCount, setAiCount] = useState(2);
+  const [aiDifficulty, setAiDifficulty] = useState('medium');
   const [showModeConfig, setShowModeConfig] = useState(false);
   const [selectedStaircasePlayer, setSelectedStaircasePlayer] = useState(0);
   const [isDesktopWide, setIsDesktopWide] = useState(() => (typeof window !== 'undefined' ? window.innerWidth >= 1180 : false));
@@ -60,6 +61,12 @@ export function SetupScreen({ onStart, onOnline, onDownload, user, onLogout, onH
     { id: 'clon', label: T('modeClon'), desc: T('modeClonDesc') ,img:modoclon },
     { id: 'escalera', label: T('modeEscalera'), desc: T('modeEscaleraDesc'),img:modoescalera },
     { id: 'caotico', label: T('modeCaotico'), desc: T('modeCaoticoDesc') ,img:modocaotico},
+  ];
+  const aiDifficultyOptions = [
+    { id: 'easy', label: T('aiEasy') },
+    { id: 'medium', label: T('aiMedium') },
+    { id: 'hard', label: T('aiHard') },
+    { id: 'impossible', label: T('aiImpossible') },
   ];
   const selectedMode = gameModes.find((mode) => mode.id === gameMode) || gameModes[0];
   const burgerLayerMap = {
@@ -484,6 +491,7 @@ export function SetupScreen({ onStart, onOnline, onDownload, user, onLogout, onH
               ingredientCount,
               chaosLevel,
               ingredientPool,
+              aiDifficulty,
               sharedBurgers: gameMode === 'clon' ? previewBurgers : null,
             }, aiCount)}
             disabled={!name.trim() || !hat}
@@ -682,6 +690,36 @@ export function SetupScreen({ onStart, onOnline, onDownload, user, onLogout, onH
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 6 }}>
               <span style={markerStyle}>{T('opponent1')}</span>
               <span style={markerStyle}>{T('opponents3')}</span>
+            </div>
+          </div>
+          <div style={{ marginBottom: 18 }}>
+            <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 8 }}>
+              {T('aiDifficulty')}
+            </label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
+              {aiDifficultyOptions.map((option) => {
+                const active = aiDifficulty === option.id;
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => setAiDifficulty(option.id)}
+                    style={{
+                      padding: '10px 12px',
+                      borderRadius: 12,
+                      border: active ? '2px solid #FFD700' : '1px solid rgba(255,255,255,0.12)',
+                      background: active ? 'rgba(255,215,0,0.12)' : 'rgba(255,255,255,0.03)',
+                      color: active ? '#FFD700' : '#d8ddf3',
+                      fontFamily: "'Fredoka',sans-serif",
+                      fontSize: 12,
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {option.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
             </div>
