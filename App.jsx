@@ -15,6 +15,7 @@ import { HatBadge } from './components/HatComponents.jsx';
 import HatSVG from './components/HatSVG.jsx';
 import percheroImg from './imagenes/sombreros/perchero/percherofinal.png';
 import ingredientCardIcon from './imagenes/hamburguesas/ham.png';
+import bloqueoImg from './imagenes/bloqueo.png';
 import eqMilanesa from './imagenes/acciones/esquina/milanga.png';
 import eqEnsalada from './imagenes/acciones/esquina/ensalada2.png';
 import eqPizza from './imagenes/acciones/esquina/pizza2.png';
@@ -184,8 +185,11 @@ export default function App() {
   // â”€â”€ NegaciÃ³n state â”€â”€
   // pendingNeg: null | { actingIdx, cardInfo, eligibleIdxs, responses: {i: bool} }
   const [pendingNeg, setPendingNeg] = useState(null);
+  const [lastNegationEvent, setLastNegationEvent] = useState(null);
+  const [negationFx, setNegationFx] = useState(null);
   // Host-only ref that stores the resolve callback (not serializable over socket)
   const pendingNegRef = useRef(null);
+  const lastNegationSeenRef = useRef(null);
 
   // â”€â”€ Voluntary leave state â”€â”€
   const [gamePaused, setGamePaused] = useState(false);
@@ -238,6 +242,12 @@ export default function App() {
     socket.on('friendRemoved', handleFriendRemoved);
     return () => socket.off('friendRemoved', handleFriendRemoved);
   }, []);
+
+  useEffect(() => {
+    if (!negationFx) return undefined;
+    const timer = setTimeout(() => setNegationFx(null), 1800);
+    return () => clearTimeout(timer);
+  }, [negationFx]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
@@ -383,6 +393,8 @@ export default function App() {
     setExtraPlay(false);
     setCurrentGameConfig(null);
     setPendingNeg(null);
+    setLastNegationEvent(null);
+    setNegationFx(null);
     pendingNegRef.current = null;
     setGamePaused(false);
     setPausedMessage('');
@@ -418,6 +430,8 @@ export default function App() {
     setRoomIsPublic(false);
     setRoomDisplayName('');
     setLobbyPlayers([]);
+    setLastNegationEvent(null);
+    setNegationFx(null);
     clearRoomSession();
     setGamePaused(false);
     setPausedMessage('');
@@ -571,6 +585,7 @@ export default function App() {
           setCurrentGameConfig(gameState.gameConfig || null);
           setModal(null);
           setPendingNeg(gameState.pendingNeg || null);
+          setLastNegationEvent(gameState.lastNegationEvent || null);
           if (gameState.winner) { setWinner(gameState.winner); clearRoomSession(); setPhase('gameover'); }
           else setPhase('playing');
         } else if (!host) {
@@ -703,6 +718,11 @@ export default function App() {
         return null;
       });
       setPendingNeg(state.pendingNeg || null);
+      setLastNegationEvent(state.lastNegationEvent || null);
+      if (state.lastNegationEvent?.id && state.lastNegationEvent.id !== lastNegationSeenRef.current && state.lastNegationEvent.actingIdx === myPlayerIdx) {
+        lastNegationSeenRef.current = state.lastNegationEvent.id;
+        setNegationFx(state.lastNegationEvent);
+      }
       if (state.winner) { setWinner(state.winner); clearRoomSession(); setPhase('gameover'); }
       else if (state.cp === myPlayerIdx && lastSyncCpRef.current !== myPlayerIdx) {
         // Only show transition when cp just changed to this player's turn
@@ -728,11 +748,11 @@ export default function App() {
       const syncModal = modal && privateModals.includes(modal.type) ? null : modal;
       socket.emit('syncState', {
         code: roomCode,
-        state: { players, deck, discard, cp, log, extraPlay, modal: syncModal, pendingNeg, winner, gameConfig: currentGameConfig, phase: 'playing' },
+        state: { players, deck, discard, cp, log, extraPlay, modal: syncModal, pendingNeg, lastNegationEvent, winner, gameConfig: currentGameConfig, phase: 'playing' },
       });
     }, 80);
     return () => clearTimeout(syncRef.current);
-  }, [players, deck, discard, cp, log, extraPlay, modal, pendingNeg, winner, currentGameConfig, phase, isOnline, isHost]);
+  }, [players, deck, discard, cp, log, extraPlay, modal, pendingNeg, lastNegationEvent, winner, currentGameConfig, phase, isOnline, isHost]);
 
   // â”€â”€ Socket: host processes remote player actions â”€â”€
   // We store the latest state in refs so the socket handler always has fresh values
@@ -844,7 +864,19 @@ export default function App() {
     const nIdx = newPls[negatorIdx].hand.findIndex(c => c.action === 'negacion');
     const negCard = nIdx !== -1 ? newPls[negatorIdx].hand.splice(nIdx, 1)[0] : null;
     const newDiscard = [...discardRef.current, card, ...(negCard ? [negCard] : [])];
+    const negEvent = {
+      id: `${Date.now()}-${Math.random()}`,
+      actingIdx,
+      negatorIdx,
+      negatorName: newPls[negatorIdx]?.name || 'Oponente',
+      actionName: getActionInfo(card.action)?.name || 'Acción',
+    };
     addLog(negatorIdx, `usÃ³ ðŸš« NegaciÃ³n contra ${newPls[actingIdx].name}!`, newPls);
+    setLastNegationEvent(negEvent);
+    if (actingIdx === HI) {
+      lastNegationSeenRef.current = negEvent.id;
+      setNegationFx(negEvent);
+    }
     setPendingNeg(null); pendingNegRef.current = null;
     endTurn(newPls, deckRef.current, newDiscard, actingIdx);
   }
@@ -1177,16 +1209,16 @@ export default function App() {
       newDiscard = di;
     }
     const w = checkWin(newPls);
-    if (w) {
-      setPlayers(newPls); setDeck(newDeck); setDiscard(newDiscard);
-      // Emit final sync with winner BEFORE changing phase (the useEffect guard
-      // blocks sync when phase !== 'playing', so we must emit directly here)
-      if (isOnline && isHost) {
-        socket.emit('syncState', {
-          code: roomCode,
-          state: { players: newPls, deck: newDeck, discard: newDiscard, cp, log, extraPlay, modal: null, pendingNeg: null, winner: w, gameConfig: currentGameConfig, phase: 'playing' },
-        });
-      }
+      if (w) {
+        setPlayers(newPls); setDeck(newDeck); setDiscard(newDiscard);
+        // Emit final sync with winner BEFORE changing phase (the useEffect guard
+        // blocks sync when phase !== 'playing', so we must emit directly here)
+        if (isOnline && isHost) {
+          socket.emit('syncState', {
+            code: roomCode,
+            state: { players: newPls, deck: newDeck, discard: newDiscard, cp, log, extraPlay, modal: null, pendingNeg: null, lastNegationEvent, winner: w, gameConfig: currentGameConfig, phase: 'playing' },
+          });
+        }
       setWinner(w); clearRoomSession(); setPhase('gameover');
       return;
     }
@@ -3123,6 +3155,55 @@ export default function App() {
             }} color="#ff4444" style={{ color: '#fff', fontSize: 14, padding: '10px 24px' }}>
               {T('backToLobby')}
             </Btn>
+          </div>
+        </div>
+      )}
+
+      {negationFx && (
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          zIndex: 9500,
+          pointerEvents: 'none',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'radial-gradient(circle, rgba(255,80,80,0.12) 0%, rgba(0,0,0,0.55) 70%)',
+          animation: 'pulse 0.55s ease-in-out 2',
+        }}>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 12,
+            transform: 'translateY(-18px)',
+          }}>
+            <img
+              src={bloqueoImg}
+              alt="Bloqueo"
+              style={{
+                width: isMobile ? 180 : 250,
+                maxWidth: '70vw',
+                objectFit: 'contain',
+                filter: 'drop-shadow(0 16px 30px rgba(0,0,0,.45))',
+              }}
+            />
+            <div style={{
+              padding: '10px 18px',
+              borderRadius: 16,
+              background: 'rgba(15,17,23,.88)',
+              border: '2px solid rgba(255,80,80,.55)',
+              color: '#ffe082',
+              textAlign: 'center',
+              boxShadow: '0 12px 30px rgba(0,0,0,.35)',
+            }}>
+              <div style={{ fontSize: isMobile ? 20 : 26, fontWeight: 900, lineHeight: 1 }}>
+                ¡Negada!
+              </div>
+              <div style={{ marginTop: 6, fontSize: isMobile ? 12 : 14, color: '#ffd5d5', fontWeight: 700 }}>
+                {negationFx.negatorName} bloqueó tu {String(negationFx.actionName).toLowerCase()}
+              </div>
+            </div>
           </div>
         </div>
       )}
