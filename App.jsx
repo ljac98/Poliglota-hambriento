@@ -1142,18 +1142,93 @@ export default function App() {
   }
 
   // â”€â”€ AI Turn â”€â”€
+  function getRemainingNeeds(playerLike) {
+    if (!playerLike || playerLike.currentBurger >= playerLike.totalBurgers) return [];
+    const burger = playerLike.burgers[playerLike.currentBurger] || [];
+    const remaining = [...burger];
+    const tableCopy = (playerLike.table || []).map(t => t.startsWith('perrito|') ? t.split('|')[1] : t);
+    for (let i = remaining.length - 1; i >= 0; i--) {
+      const idx = tableCopy.indexOf(remaining[i]);
+      if (idx !== -1) {
+        remaining.splice(i, 1);
+        tableCopy.splice(idx, 1);
+      }
+    }
+    return remaining;
+  }
+
+  function scoreIngredientForNeeds(card, needs) {
+    if (!card || card.type !== 'ingredient') return -999;
+    if (card.ingredient === 'perrito') return needs.length > 0 ? 80 + needs.length : 10;
+    const copiesNeeded = needs.filter(n => n === card.ingredient).length;
+    return copiesNeeded > 0 ? 100 + copiesNeeded * 10 : -50;
+  }
+
+  function getBestPlayableIngredientOption(playerLike) {
+    const needs = getRemainingNeeds(playerLike);
+    let best = null;
+    playerLike.hand.forEach((card, handIdx) => {
+      if (card.type !== 'ingredient') return;
+      if (!canPlayCard(playerLike, card)) return;
+      const score = scoreIngredientForNeeds(card, needs);
+      if (!best || score > best.score) {
+        best = { handIdx, card, score };
+      }
+    });
+    return best;
+  }
+
+  function getCardKeepScore(card, nextHats, needs) {
+    if (card.type === 'ingredient') {
+      const matchesHat = nextHats.includes(card.language);
+      const ingredientScore = card.ingredient === 'perrito'
+        ? (needs.length > 0 ? 120 : 20)
+        : (needs.includes(card.ingredient) ? 160 + needs.filter(n => n === card.ingredient).length * 8 : (matchesHat ? 20 : 0));
+      return ingredientScore + (matchesHat ? 30 : -20);
+    }
+    if (card.action === 'negacion') return 75;
+    if (['tenedor', 'gloton', 'intercambio_hamburguesa', 'ladron', 'intercambio_sombreros'].includes(card.action)) return 45;
+    if (['basurero', 'parrilla', 'pizza', 'ensalada', 'milanesa', 'comecomodines'].includes(card.action)) return 35;
+    return 10;
+  }
+
+  function chooseDiscardIndicesForChange(playerLike, hatLang, forcedKeepIdx) {
+    const cost = Math.ceil(playerLike.hand.length / 2);
+    const keepCount = Math.max(0, playerLike.hand.length - cost);
+    const nextHats = [hatLang, ...playerLike.mainHats.slice(1)];
+    const needs = getRemainingNeeds({ ...playerLike, mainHats: nextHats });
+    const ranked = playerLike.hand.map((card, idx) => ({
+      idx,
+      score: getCardKeepScore(card, nextHats, needs) + (idx === forcedKeepIdx ? 1000 : 0),
+    })).sort((a, b) => b.score - a.score);
+    const keep = new Set(ranked.slice(0, keepCount).map(item => item.idx));
+    if (forcedKeepIdx !== undefined) keep.add(forcedKeepIdx);
+    const discards = [];
+    playerLike.hand.forEach((_, idx) => {
+      if (!keep.has(idx)) discards.push(idx);
+    });
+    return discards.slice(0, cost);
+  }
+
+  function getDeckHatFutureScore(deckArr, hatLang, needs) {
+    return deckArr.reduce((sum, card) => {
+      if (card.type !== 'ingredient') return sum;
+      if (card.language !== hatLang) return sum;
+      if (card.ingredient === 'perrito') return sum + (needs.length > 0 ? 3 : 0);
+      return sum + (needs.includes(card.ingredient) ? 4 : 0);
+    }, 0);
+  }
+
+  // —— AI Turn ——
   function runAITurn(pls, deckArr, discardArr, idx) {
     if (aiRunning.current) return;
     aiRunning.current = true;
     const p = pls[idx];
 
-    // Priority 1: Play playable ingredient
-    const playableIdx = p.hand.findIndex(c => c.type === 'ingredient' && canPlayCard(p, c));
-    if (playableIdx !== -1) {
-      const card = p.hand[playableIdx];
-      addLog(idx, `jugÃ³ ${getIngName(card.ingredient, card.language)} ${ING_EMOJI[card.ingredient]}`, pls);
-      const newPls = clone(pls);
-      newPls[idx].hand.splice(playableIdx, 1);
+    const playIngredientAndEnd = (basePlayers, baseDiscard, baseDeck, handIdx, logPlayersOverride = null) => {
+      const newPls = clone(basePlayers);
+      const card = newPls[idx].hand.splice(handIdx, 1)[0];
+      addLog(idx, `jugó ${getIngName(card.ingredient, card.language)} ${ING_EMOJI[card.ingredient]}`, logPlayersOverride || basePlayers);
       if (card.ingredient === 'perrito') {
         const burger = newPls[idx].burgers[newPls[idx].currentBurger] || [];
         const remaining = [...burger];
@@ -1169,13 +1244,85 @@ export default function App() {
       }
       const { player: up, freed, done } = advanceBurger(newPls[idx]);
       newPls[idx] = up;
-      let newDiscard = [...discardArr, card];
-      if (done) { freed.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `f${Date.now()}${Math.random()}` })); addLog(idx, 'Â¡completÃ³ una hamburguesa! ðŸŽ‰', newPls); }
-      setTimeout(() => { aiRunning.current = false; endTurn(newPls, deckArr, newDiscard, idx); }, 900);
+      let newDiscard = [...baseDiscard, card];
+      if (done) {
+        freed.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `f${Date.now()}${Math.random()}` }));
+        addLog(idx, '¡completó una hamburguesa! 🎉', newPls);
+      }
+      setTimeout(() => { aiRunning.current = false; endTurn(newPls, baseDeck, newDiscard, idx); }, 900);
+    };
+
+    const bestPlayable = getBestPlayableIngredientOption(p);
+    if (bestPlayable) {
+      playIngredientAndEnd(pls, discardArr, deckArr, bestPlayable.handIdx, pls);
       return;
     }
 
-    // Priority 2: Play action card (skip negacion & basurero)
+    if (p.perchero.length > 0 && p.hand.length > 0 && !extraPlay) {
+      let bestChange = null;
+      for (const hatLang of p.perchero) {
+        const simulated = clone([p])[0];
+        simulated.mainHats[0] = hatLang;
+        const bestAfterChange = getBestPlayableIngredientOption(simulated);
+        if (!bestAfterChange) continue;
+        const discardIndices = chooseDiscardIndicesForChange(p, hatLang, bestAfterChange.handIdx);
+        if (discardIndices.includes(bestAfterChange.handIdx)) continue;
+        const score = bestAfterChange.score + 40 - discardIndices.length * 2;
+        if (!bestChange || score > bestChange.score) {
+          bestChange = { hatLang, bestAfterChange, discardIndices, score };
+        }
+      }
+      if (bestChange) {
+        const newPls = clone(pls);
+        const ai = newPls[idx];
+        const hi = ai.perchero.indexOf(bestChange.hatLang);
+        ai.perchero.splice(hi, 1);
+        const oldMain = ai.mainHats[0];
+        ai.mainHats[0] = bestChange.hatLang;
+        ai.perchero.push(oldMain);
+        const sorted = [...bestChange.discardIndices].sort((a, b) => b - a);
+        const discarded = sorted.map(i => ai.hand.splice(i, 1)[0]);
+        const newDiscard = [...discardArr, ...discarded];
+        addLog(idx, `cambió sombrero a ${bestChange.hatLang} para jugar mejor su hamburguesa`, newPls);
+        const targetCardId = p.hand[bestChange.bestAfterChange.handIdx]?.id;
+        const newHandIdx = ai.hand.findIndex(card => card.id === targetCardId);
+        if (newHandIdx !== -1) {
+          playIngredientAndEnd(newPls, newDiscard, deckArr, newHandIdx, newPls);
+          return;
+        }
+      }
+    }
+
+    if (p.perchero.length > 0 && p.hand.length > 0 && p.maxHand > 1 && p.mainHats.length < 3 && !extraPlay) {
+      const needs = getRemainingNeeds(p);
+      let bestAdd = null;
+      for (const hatLang of p.perchero) {
+        const futureScore = getDeckHatFutureScore(deckArr, hatLang, needs);
+        if (futureScore <= 0) continue;
+        const simPlayers = clone(pls);
+        const ai = simPlayers[idx];
+        const hi = ai.perchero.indexOf(hatLang);
+        ai.perchero.splice(hi, 1);
+        ai.mainHats.push(hatLang);
+        ai.manuallyAddedHats = [...(ai.manuallyAddedHats || []), hatLang];
+        let simDiscard = [...discardArr, ...ai.hand];
+        ai.hand = [];
+        ai.maxHand = Math.max(1, ai.maxHand - 1);
+        const { drawn, deck: nextDeck, discard: nextDiscard } = drawN(deckArr, simDiscard, ai.maxHand);
+        ai.hand = drawn;
+        const bestAfterAdd = getBestPlayableIngredientOption(ai);
+        const score = futureScore + (bestAfterAdd ? bestAfterAdd.score + 30 : 0);
+        if (!bestAdd || score > bestAdd.score) {
+          bestAdd = { hatLang, players: simPlayers, discard: nextDiscard, deck: nextDeck, bestAfterAdd, score };
+        }
+      }
+      if (bestAdd && bestAdd.bestAfterAdd) {
+        addLog(idx, `agregó sombrero ${bestAdd.hatLang} para acercarse a su hamburguesa`, bestAdd.players);
+        playIngredientAndEnd(bestAdd.players, bestAdd.discard, bestAdd.deck, bestAdd.bestAfterAdd.handIdx, bestAdd.players);
+        return;
+      }
+    }
+
     const actionIdx = p.hand.findIndex(c =>
       c.type === 'action' && c.action !== 'negacion' && c.action !== 'basurero'
     );
@@ -1187,7 +1334,7 @@ export default function App() {
       let newPls = clone(pls);
       let newDiscard = [...discardArr, card];
       newPls[idx].hand.splice(actionIdx, 1);
-      addLog(idx, `jugÃ³ ${info.name} ${info.emoji}`, pls);
+      addLog(idx, `jugó ${info.name} ${info.emoji}`, pls);
 
       const mass = ['milanesa', 'ensalada', 'pizza', 'parrilla', 'comecomodines'];
       if (mass.includes(card.action)) {
@@ -1196,7 +1343,7 @@ export default function App() {
       } else if (card.action === 'gloton') {
         newPls[richest].table.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `g${Date.now()}${Math.random()}` }));
         newPls[richest].table = [];
-        addLog(idx, `vaciÃ³ la mesa de ${pls[richest].name}`, newPls);
+        addLog(idx, `vació la mesa de ${pls[richest].name}`, newPls);
       } else if (card.action === 'tenedor') {
         if (newPls[richest].table.length > 0) {
           const si = randInt(0, newPls[richest].table.length - 1);
@@ -1205,7 +1352,7 @@ export default function App() {
           const { player: up2, freed: fr2, done: dn2 } = advanceBurger(newPls[idx]);
           newPls[idx] = up2;
           if (dn2) { fr2.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `t${Date.now()}${Math.random()}` })); }
-          addLog(idx, `robÃ³ ${ING_EMOJI[ingKey(stolen)]} de ${pls[richest].name}`, newPls);
+          addLog(idx, `robó ${ING_EMOJI[ingKey(stolen)]} de ${pls[richest].name}`, newPls);
         }
       } else if (card.action === 'ladron') {
         if (newPls[richest].mainHats.length > 0) {
@@ -1218,14 +1365,14 @@ export default function App() {
             const nh = newPls[richest].perchero.shift();
             newPls[richest].mainHats.push(nh);
           }
-          addLog(idx, `robÃ³ el sombrero ${stolen} de ${pls[richest].name}`, newPls);
+          addLog(idx, `robó el sombrero ${stolen} de ${pls[richest].name}`, newPls);
         }
       } else if (card.action === 'intercambio_sombreros') {
         if (newPls[idx].mainHats[0] && newPls[richest].mainHats[0]) {
           const tmp = newPls[idx].mainHats[0];
           newPls[idx].mainHats[0] = newPls[richest].mainHats[0];
           newPls[richest].mainHats[0] = tmp;
-          addLog(idx, `intercambiÃ³ sombreros con ${pls[richest].name}`, newPls);
+          addLog(idx, `intercambió sombreros con ${pls[richest].name}`, newPls);
         }
       } else if (card.action === 'intercambio_hamburguesa') {
         const tmp = newPls[idx].table;
@@ -1233,18 +1380,19 @@ export default function App() {
         newPls[richest].table = tmp;
         filterTable(newPls[idx], newDiscard);
         filterTable(newPls[richest], newDiscard);
-        addLog(idx, `intercambiÃ³ mesa con ${pls[richest].name}`, newPls);
+        addLog(idx, `intercambió mesa con ${pls[richest].name}`, newPls);
       }
 
       setTimeout(() => { aiRunning.current = false; endTurn(newPls, deckArr, newDiscard, idx); }, 900);
       return;
     }
 
-    // Priority 3: Discard least valuable
-    const di2 = p.hand.findIndex(c => c.type === 'action') !== -1
-      ? p.hand.findIndex(c => c.type === 'action') : 0;
+    const needs = getRemainingNeeds(p);
+    const di2 = p.hand
+      .map((card, handIdx) => ({ handIdx, score: getCardKeepScore(card, p.mainHats, needs) }))
+      .sort((a, b) => a.score - b.score)[0]?.handIdx ?? 0;
     if (p.hand.length > 0) {
-      addLog(idx, `descartÃ³ una carta`, pls);
+      addLog(idx, `descartó una carta`, pls);
       const newPls = clone(pls);
       const card = newPls[idx].hand.splice(di2, 1)[0];
       const newDiscard2 = [...discardArr, card];
@@ -1255,11 +1403,10 @@ export default function App() {
     }
   }
 
-  // â”€â”€ AI useEffect â”€â”€
+  // —— AI useEffect ——
   useEffect(() => {
     if (phase !== 'playing') return;
     if (!players.length) return;
-    // Skip if it's a remote player's turn (they handle it on their client)
     if (players[cp]?.isRemote) return;
     if (!players[cp]?.isAI) return;
     if (modal) return;
@@ -1269,7 +1416,6 @@ export default function App() {
     }, 1200);
     return () => clearTimeout(timer);
   }, [phase, cp, players, deck, discard, modal]);
-
   // â”€â”€ Turn timer (60s) â”€â”€
   useEffect(() => {
     clearInterval(turnTimerRef.current);
@@ -3906,6 +4052,8 @@ export default function App() {
     </div>
   );
 }
+
+
 
 
 
