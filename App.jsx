@@ -1094,7 +1094,7 @@ export default function App() {
         sourceIngIdx: action.ingIdx,
       };
       setLastForkEvent(forkEvent);
-      if (ti === HI) {
+      if (!isOnline || ti === HI || actingIdx === HI) {
         lastForkSeenRef.current = forkEvent.id;
         setForkFx(forkEvent);
       }
@@ -1704,7 +1704,7 @@ export default function App() {
                 sourceIngIdx: si,
               };
               setLastForkEvent(forkEvent);
-              if (richest === HI) {
+              if (!isOnline || richest === HI) {
                 lastForkSeenRef.current = forkEvent.id;
                 setForkFx(forkEvent);
               }
@@ -2156,7 +2156,7 @@ export default function App() {
       sourceIngIdx: ingIdx,
     };
     setLastForkEvent(forkEvent);
-    if (targetIdx === HI) {
+    if (!isOnline || targetIdx === HI) {
       lastForkSeenRef.current = forkEvent.id;
       setForkFx(forkEvent);
     }
