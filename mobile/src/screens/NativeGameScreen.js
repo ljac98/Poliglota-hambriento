@@ -52,6 +52,7 @@ const ACTION_ICON_SOURCES = {
   negacion: require('../../assets/game/action-negacion.png'),
 };
 const BLOCKED_IMAGE = require('../../assets/game/bloqueo.png');
+const FORK_IMAGE = require('../../assets/game/action-tenedor.png');
 
 function buildBurgerStack(mode, pool, ingredientCount, burgerIndex, playerIndex) {
   const safePool = pool && pool.length ? pool : FALLBACK_POOL;
@@ -319,7 +320,9 @@ export function NativeGameScreen({ setup, online, gameSession, chatMessages = []
   const negationActionLabel = pendingNeg?.cardInfo?.name || ACTION_LABELS[pendingNeg?.cardInfo?.action] || 'Accion';
   const negationIcon = pendingNeg?.cardInfo?.action ? (ACTION_ICON_SOURCES[pendingNeg.cardInfo.action] || ACTION_ICON_SOURCES.negacion) : ACTION_ICON_SOURCES.negacion;
   const lastNegationEvent = gameSession.liveState?.lastNegationEvent || null;
+  const lastForkEvent = gameSession.liveState?.lastForkEvent || null;
   const [negationFx, setNegationFx] = useState(null);
+  const [forkFx, setForkFx] = useState(null);
   const urgentHatReplace = !isMyTurn && myLivePlayer && (myLivePlayer.mainHats?.length || 0) === 0 && (myLivePlayer.perchero?.length || 0) > 0;
   const targetedPlayers = TARGETED_ACTIONS.includes(selectedCard?.action)
     ? livePlayers.filter((player) => {
@@ -350,10 +353,21 @@ export function NativeGameScreen({ setup, online, gameSession, chatMessages = []
   }, [lastNegationEvent, online.myIdx]);
 
   useEffect(() => {
+    if (!lastForkEvent || lastForkEvent.targetIdx !== online.myIdx) return;
+    setForkFx(lastForkEvent);
+  }, [lastForkEvent, online.myIdx]);
+
+  useEffect(() => {
     if (!negationFx) return undefined;
     const timer = setTimeout(() => setNegationFx(null), 1800);
     return () => clearTimeout(timer);
   }, [negationFx]);
+
+  useEffect(() => {
+    if (!forkFx) return undefined;
+    const timer = setTimeout(() => setForkFx(null), 1600);
+    return () => clearTimeout(timer);
+  }, [forkFx]);
 
   function resetCardFlow() {
     setSelectedCardIdx(null);
@@ -402,6 +416,20 @@ export function NativeGameScreen({ setup, online, gameSession, chatMessages = []
               <Text style={styles.negationFxTitle}>Negada</Text>
               <Text style={styles.negationFxText}>
                 {negationFx.negatorName || 'Un jugador'} bloqueo tu {String(negationFx.actionName || 'accion').toLowerCase()}.
+              </Text>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {forkFx && (
+        <View style={styles.forkFxOverlay}>
+          <View style={styles.forkFxCard}>
+            <Image source={FORK_IMAGE} style={styles.forkFxImage} resizeMode="contain" />
+            <View style={styles.forkFxLabel}>
+              <Text style={styles.forkFxTitle}>Tenedor</Text>
+              <Text style={styles.forkFxText}>
+                {forkFx.actorName || 'Un jugador'} te robo {getIngredientLabel(forkFx.ingredient) || forkFx.ingredient}.
               </Text>
             </View>
           </View>
@@ -1107,6 +1135,51 @@ const styles = StyleSheet.create({
   },
   negationFxText: {
     color: '#ffd7d2',
+    fontSize: 13,
+    fontWeight: '700',
+    textAlign: 'center',
+    lineHeight: 18,
+    marginTop: 6,
+  },
+  forkFxOverlay: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    zIndex: 49,
+    backgroundColor: 'rgba(6,8,14,0.58)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  forkFxCard: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 14,
+  },
+  forkFxImage: {
+    width: 180,
+    height: 180,
+  },
+  forkFxLabel: {
+    width: '100%',
+    maxWidth: 320,
+    borderRadius: 18,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: 'rgba(15,17,23,0.92)',
+    borderWidth: 2,
+    borderColor: 'rgba(78,205,196,0.7)',
+  },
+  forkFxTitle: {
+    color: '#d7fffb',
+    fontSize: 24,
+    fontWeight: '900',
+    textAlign: 'center',
+  },
+  forkFxText: {
+    color: '#c9f7f2',
     fontSize: 13,
     fontWeight: '700',
     textAlign: 'center',

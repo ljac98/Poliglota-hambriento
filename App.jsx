@@ -186,10 +186,13 @@ export default function App() {
   // pendingNeg: null | { actingIdx, cardInfo, eligibleIdxs, responses: {i: bool} }
   const [pendingNeg, setPendingNeg] = useState(null);
   const [lastNegationEvent, setLastNegationEvent] = useState(null);
+  const [lastForkEvent, setLastForkEvent] = useState(null);
   const [negationFx, setNegationFx] = useState(null);
+  const [forkFx, setForkFx] = useState(null);
   // Host-only ref that stores the resolve callback (not serializable over socket)
   const pendingNegRef = useRef(null);
   const lastNegationSeenRef = useRef(null);
+  const lastForkSeenRef = useRef(null);
 
   // â”€â”€ Voluntary leave state â”€â”€
   const [gamePaused, setGamePaused] = useState(false);
@@ -248,6 +251,12 @@ export default function App() {
     const timer = setTimeout(() => setNegationFx(null), 1800);
     return () => clearTimeout(timer);
   }, [negationFx]);
+
+  useEffect(() => {
+    if (!forkFx) return undefined;
+    const timer = setTimeout(() => setForkFx(null), 1500);
+    return () => clearTimeout(timer);
+  }, [forkFx]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
@@ -394,7 +403,9 @@ export default function App() {
     setCurrentGameConfig(null);
     setPendingNeg(null);
     setLastNegationEvent(null);
+    setLastForkEvent(null);
     setNegationFx(null);
+    setForkFx(null);
     pendingNegRef.current = null;
     setGamePaused(false);
     setPausedMessage('');
@@ -431,7 +442,9 @@ export default function App() {
     setRoomDisplayName('');
     setLobbyPlayers([]);
     setLastNegationEvent(null);
+    setLastForkEvent(null);
     setNegationFx(null);
+    setForkFx(null);
     clearRoomSession();
     setGamePaused(false);
     setPausedMessage('');
@@ -586,6 +599,7 @@ export default function App() {
           setModal(null);
           setPendingNeg(gameState.pendingNeg || null);
           setLastNegationEvent(gameState.lastNegationEvent || null);
+          setLastForkEvent(gameState.lastForkEvent || null);
           if (gameState.winner) { setWinner(gameState.winner); clearRoomSession(); setPhase('gameover'); }
           else setPhase('playing');
         } else if (!host) {
@@ -719,9 +733,14 @@ export default function App() {
       });
       setPendingNeg(state.pendingNeg || null);
       setLastNegationEvent(state.lastNegationEvent || null);
+      setLastForkEvent(state.lastForkEvent || null);
       if (state.lastNegationEvent?.id && state.lastNegationEvent.id !== lastNegationSeenRef.current && state.lastNegationEvent.actingIdx === myPlayerIdx) {
         lastNegationSeenRef.current = state.lastNegationEvent.id;
         setNegationFx(state.lastNegationEvent);
+      }
+      if (state.lastForkEvent?.id && state.lastForkEvent.id !== lastForkSeenRef.current && state.lastForkEvent.targetIdx === myPlayerIdx) {
+        lastForkSeenRef.current = state.lastForkEvent.id;
+        setForkFx(state.lastForkEvent);
       }
       if (state.winner) { setWinner(state.winner); clearRoomSession(); setPhase('gameover'); }
       else if (state.cp === myPlayerIdx && lastSyncCpRef.current !== myPlayerIdx) {
@@ -748,11 +767,11 @@ export default function App() {
       const syncModal = modal && privateModals.includes(modal.type) ? null : modal;
       socket.emit('syncState', {
         code: roomCode,
-        state: { players, deck, discard, cp, log, extraPlay, modal: syncModal, pendingNeg, lastNegationEvent, winner, gameConfig: currentGameConfig, phase: 'playing' },
+        state: { players, deck, discard, cp, log, extraPlay, modal: syncModal, pendingNeg, lastNegationEvent, lastForkEvent, winner, gameConfig: currentGameConfig, phase: 'playing' },
       });
     }, 80);
     return () => clearTimeout(syncRef.current);
-  }, [players, deck, discard, cp, log, extraPlay, modal, pendingNeg, lastNegationEvent, winner, currentGameConfig, phase, isOnline, isHost]);
+  }, [players, deck, discard, cp, log, extraPlay, modal, pendingNeg, lastNegationEvent, lastForkEvent, winner, currentGameConfig, phase, isOnline, isHost]);
 
   // â”€â”€ Socket: host processes remote player actions â”€â”€
   // We store the latest state in refs so the socket handler always has fresh values
@@ -975,6 +994,18 @@ export default function App() {
     } else if (card.action === 'tenedor' && action.ingIdx !== undefined) {
       const stolen = pls[ti].table.splice(action.ingIdx, 1)[0];
       pls[actingIdx].table.push(stolen);
+      const forkEvent = {
+        id: `${Date.now()}-${Math.random()}`,
+        actingIdx,
+        targetIdx: ti,
+        actorName: pls[actingIdx]?.name || 'Oponente',
+        ingredient: ingKey(stolen),
+      };
+      setLastForkEvent(forkEvent);
+      if (ti === HI) {
+        lastForkSeenRef.current = forkEvent.id;
+        setForkFx(forkEvent);
+      }
       const { player: up, freed, done } = advanceBurger(pls[actingIdx]);
       pls[actingIdx] = up;
       if (done) { freed.forEach(ing => di.push({ type: 'ingredient', ingredient: ingKey(ing), id: uid() })); }
@@ -1216,7 +1247,7 @@ export default function App() {
         if (isOnline && isHost) {
           socket.emit('syncState', {
             code: roomCode,
-            state: { players: newPls, deck: newDeck, discard: newDiscard, cp, log, extraPlay, modal: null, pendingNeg: null, lastNegationEvent, winner: w, gameConfig: currentGameConfig, phase: 'playing' },
+            state: { players: newPls, deck: newDeck, discard: newDiscard, cp, log, extraPlay, modal: null, pendingNeg: null, lastNegationEvent, lastForkEvent, winner: w, gameConfig: currentGameConfig, phase: 'playing' },
           });
         }
       setWinner(w); clearRoomSession(); setPhase('gameover');
@@ -1571,6 +1602,18 @@ export default function App() {
               if (si === -1) si = randInt(0, newPls[richest].table.length - 1);
               const stolen = newPls[richest].table.splice(si, 1)[0];
               newPls[idx].table.push(stolen);
+              const forkEvent = {
+                id: `${Date.now()}-${Math.random()}`,
+                actingIdx: idx,
+                targetIdx: richest,
+                actorName: newPls[idx]?.name || 'IA',
+                ingredient: ingKey(stolen),
+              };
+              setLastForkEvent(forkEvent);
+              if (richest === HI) {
+                lastForkSeenRef.current = forkEvent.id;
+                setForkFx(forkEvent);
+              }
               const { player: up2, freed: fr2, done: dn2 } = advanceBurger(newPls[idx]);
               newPls[idx] = up2;
               if (dn2) { fr2.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `t${Date.now()}${Math.random()}` })); }
@@ -1995,6 +2038,18 @@ export default function App() {
     }
     const stolen = newPls[targetIdx].table.splice(ingIdx, 1)[0];
     newPls[HI].table.push(stolen);
+    const forkEvent = {
+      id: `${Date.now()}-${Math.random()}`,
+      actingIdx: HI,
+      targetIdx,
+      actorName: newPls[HI]?.name || 'Jugador',
+      ingredient: ingKey(stolen),
+    };
+    setLastForkEvent(forkEvent);
+    if (targetIdx === HI) {
+      lastForkSeenRef.current = forkEvent.id;
+      setForkFx(forkEvent);
+    }
     const { player: up, freed, done } = advanceBurger(newPls[HI]);
     newPls[HI] = up;
     let fd = newDiscard;
@@ -3202,6 +3257,44 @@ export default function App() {
               </div>
               <div style={{ marginTop: 6, fontSize: isMobile ? 12 : 14, color: '#ffd5d5', fontWeight: 700 }}>
                 {negationFx.negatorName} bloqueó tu {String(negationFx.actionName).toLowerCase()}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {forkFx && (
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          zIndex: 9490,
+          pointerEvents: 'none',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'radial-gradient(circle, rgba(78,205,196,0.12) 0%, rgba(0,0,0,0.45) 70%)',
+          animation: 'pulse 0.45s ease-in-out 2',
+        }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, transform: 'translateY(-16px)' }}>
+            <img
+              src={eqTenedor}
+              alt="Tenedor"
+              style={{ width: isMobile ? 120 : 170, height: isMobile ? 120 : 170, objectFit: 'contain', filter: 'drop-shadow(0 16px 30px rgba(0,0,0,.45))' }}
+            />
+            <div style={{
+              padding: '10px 18px',
+              borderRadius: 16,
+              background: 'rgba(15,17,23,.88)',
+              border: '2px solid rgba(78,205,196,.55)',
+              color: '#d7fffb',
+              textAlign: 'center',
+              boxShadow: '0 12px 30px rgba(0,0,0,.35)',
+            }}>
+              <div style={{ fontSize: isMobile ? 18 : 24, fontWeight: 900, lineHeight: 1 }}>
+                ¡Tenedor!
+              </div>
+              <div style={{ marginTop: 6, fontSize: isMobile ? 12 : 14, color: '#c9f7f2', fontWeight: 700 }}>
+                {forkFx.actorName} te robó {getIngName(forkFx.ingredient, human.mainHats?.[0] || 'español')}
               </div>
             </div>
           </div>

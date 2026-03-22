@@ -255,6 +255,13 @@ export default function App() {
       const stolen = targetPlayer.table.splice(action.ingIdx, 1)[0];
       if (!stolen) return false;
       actingPlayer.table.push(stolen);
+      nextState.lastForkEvent = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        actingIdx,
+        targetIdx,
+        actorName: actingPlayer?.name || 'Jugador',
+        ingredient: ingKey(stolen),
+      };
       const result = advanceBurger(actingPlayer);
       nextState.players[actingIdx] = result.player;
       if (result.done) {
