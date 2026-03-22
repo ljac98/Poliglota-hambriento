@@ -204,6 +204,7 @@ export default function App() {
   const playerIngredientRefs = useRef({});
   const humanBurgerAreaRef = useRef(null);
   const humanBurgerSlotRefs = useRef({});
+  const handCardRefs = useRef({});
 
   // â”€â”€ Voluntary leave state â”€â”€
   const [gamePaused, setGamePaused] = useState(false);
@@ -376,7 +377,7 @@ export default function App() {
       return getRectCenter(el, fallbackX, fallbackY);
     };
 
-    const actor = getPlayerCenter(
+    const actor = comeComodinesFx.sourcePoint || getPlayerCenter(
       comeComodinesFx.actingIdx,
       window.innerWidth * 0.72,
       window.innerHeight * 0.52,
@@ -443,6 +444,7 @@ export default function App() {
       actingIdx,
       actorName: actorName || 'Jugador',
       targets: result.affectedTargets,
+      sourcePoint: result.sourcePoint || null,
     };
     setLastComeComodinesEvent(event);
     lastComeComodinesSeenRef.current = event.id;
@@ -2141,6 +2143,13 @@ export default function App() {
     const info = getActionInfo(card.action);
     const mass = ['milanesa', 'ensalada', 'pizza', 'parrilla', 'comecomodines'];
     const targeted = ['tenedor', 'ladron', 'intercambio_sombreros', 'intercambio_hamburguesa', 'gloton'];
+    const sourceCardEl = handCardRefs.current[cardIdx];
+    const sourcePoint = sourceCardEl
+      ? (() => {
+          const rect = sourceCardEl.getBoundingClientRect();
+          return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+        })()
+      : null;
 
     if (card.action === 'negacion') {
       alert('NegaciÃ³n se juega automÃ¡ticamente cuando un oponente juega una acciÃ³n.');
@@ -2170,6 +2179,7 @@ export default function App() {
           const newDiscard = [...di, card];
           const massResult = applyMass(newPls, newDiscard, card.action, HI);
           if (card.action === 'comecomodines') {
+            massResult.sourcePoint = sourcePoint;
             triggerComeComodinesEvent(massResult, HI, newPls[HI]?.name || 'Jugador');
           }
           const { players: ps2, discard: di2 } = massResult;
@@ -3249,17 +3259,21 @@ export default function App() {
       scrollSnapType: isMobile ? 'x mandatory' : 'none',
       WebkitOverflowScrolling: 'touch',
     }}>
-      {human.hand.map((card, i) => {
-        const playable = card.type === 'ingredient' ? canPlayCard(human, card) : (extraPlay ? false : null);
-        const angle = handN > 1 ? -MAX_ANGLE + i * (2 * MAX_ANGLE / (handN - 1)) : 0;
-        const isSelected = selectedIdx === i;
-        return (
-          <div
-            key={card.id}
-            onClick={() => {
-              if (!isHumanTurn) return;
-              if (extraPlay && card.type !== 'ingredient') return;
-              setSelectedIdx(isSelected ? null : i);
+        {human.hand.map((card, i) => {
+          const playable = card.type === 'ingredient' ? canPlayCard(human, card) : (extraPlay ? false : null);
+          const angle = handN > 1 ? -MAX_ANGLE + i * (2 * MAX_ANGLE / (handN - 1)) : 0;
+          const isSelected = selectedIdx === i;
+          return (
+            <div
+              key={card.id}
+              ref={(el) => {
+                if (el) handCardRefs.current[i] = el;
+                else delete handCardRefs.current[i];
+              }}
+              onClick={() => {
+                if (!isHumanTurn) return;
+                if (extraPlay && card.type !== 'ingredient') return;
+                setSelectedIdx(isSelected ? null : i);
             }}
             onMouseEnter={e => { if (!isMobile && !isSelected && isHumanTurn) e.currentTarget.style.transform = `translateY(-14px) rotate(${angle * 0.4}deg)`; }}
             onMouseLeave={e => { if (!isMobile && !isSelected) e.currentTarget.style.transform = `translateY(0px) rotate(${angle}deg)`; }}
