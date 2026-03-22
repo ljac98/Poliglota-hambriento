@@ -320,7 +320,7 @@ export default function App() {
     };
 
     const sourceEl = forkFx.targetIdx === HI
-      ? humanBurgerAreaRef.current
+      ? (forkFx.sourceSlotIdx != null ? humanBurgerSlotRefs.current[forkFx.sourceSlotIdx] : humanBurgerAreaRef.current)
       : (playerIngredientRefs.current[forkFx.targetIdx]?.[forkFx.sourceIngIdx] || playerAreaRefs.current[forkFx.targetIdx]);
     const landingSlotIdx = getLandingSlotIndex();
     const destEl = forkFx.actingIdx === HI && landingSlotIdx !== null
@@ -1086,6 +1086,7 @@ export default function App() {
       pls[ti].table = [];
       endTurnFromRemote(pls, dk, di, actingIdx);
     } else if (card.action === 'tenedor' && action.ingIdx !== undefined) {
+      const sourceSlotIdx = ti === HI ? getTableSlotIndexForCurrentBurger(pls[ti], action.ingIdx) : null;
       const stolen = pls[ti].table.splice(action.ingIdx, 1)[0];
       pls[actingIdx].table.push(stolen);
       const forkEvent = {
@@ -1096,6 +1097,7 @@ export default function App() {
         ingredient: ingKey(stolen),
         stolenRaw: stolen,
         sourceIngIdx: action.ingIdx,
+        sourceSlotIdx,
       };
       setLastForkEvent(forkEvent);
       if (!isOnline || ti === HI || actingIdx === HI) {
@@ -1374,6 +1376,35 @@ export default function App() {
       }
     }
     return remaining;
+  }
+
+  function getTableSlotIndexForCurrentBurger(playerLike, tableIndex) {
+    if (!playerLike || tableIndex == null || tableIndex < 0) return null;
+    const targetBurger = playerLike.burgers?.[playerLike.currentBurger] || [];
+    const table = playerLike.table || [];
+    if (!targetBurger.length || tableIndex >= table.length) return null;
+
+    const used = new Array(targetBurger.length).fill(false);
+    for (let i = 0; i <= tableIndex; i += 1) {
+      const raw = table[i];
+      const base = ingKey(raw);
+      const chosen = ingChosen(raw);
+      let slotIdx = -1;
+
+      if (chosen) {
+        slotIdx = targetBurger.findIndex((ing, idx) => !used[idx] && ing === chosen);
+      } else if (raw === 'perrito') {
+        slotIdx = targetBurger.findIndex((_, idx) => !used[idx]);
+      } else {
+        slotIdx = targetBurger.findIndex((ing, idx) => !used[idx] && ing === base);
+      }
+
+      if (slotIdx !== -1) {
+        used[slotIdx] = true;
+        if (i === tableIndex) return slotIdx;
+      }
+    }
+    return null;
   }
 
   function scoreIngredientForNeeds(card, needs) {
@@ -1696,6 +1727,7 @@ export default function App() {
               const wanted = getRemainingNeeds(newPls[idx]);
               let si = newPls[richest].table.findIndex(ing => wanted.includes(ingKey(ing)));
               if (si === -1) si = randInt(0, newPls[richest].table.length - 1);
+              const sourceSlotIdx = richest === HI ? getTableSlotIndexForCurrentBurger(newPls[richest], si) : null;
               const stolen = newPls[richest].table.splice(si, 1)[0];
               newPls[idx].table.push(stolen);
               const forkEvent = {
@@ -1706,6 +1738,7 @@ export default function App() {
                 ingredient: ingKey(stolen),
                 stolenRaw: stolen,
                 sourceIngIdx: si,
+                sourceSlotIdx,
               };
               setLastForkEvent(forkEvent);
               if (!isOnline || richest === HI) {
@@ -2148,6 +2181,7 @@ export default function App() {
       socket.emit('playerAction', { code: roomCode, action: { type: 'playActionTarget', cardIdx, targetIdx, action: 'tenedor', ingIdx } });
       return;
     }
+    const sourceSlotIdx = targetIdx === HI ? getTableSlotIndexForCurrentBurger(newPls[targetIdx], ingIdx) : null;
     const stolen = newPls[targetIdx].table.splice(ingIdx, 1)[0];
     newPls[HI].table.push(stolen);
     const forkEvent = {
@@ -2158,6 +2192,7 @@ export default function App() {
       ingredient: ingKey(stolen),
       stolenRaw: stolen,
       sourceIngIdx: ingIdx,
+      sourceSlotIdx,
     };
     setLastForkEvent(forkEvent);
     if (!isOnline || targetIdx === HI) {
