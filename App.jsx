@@ -293,8 +293,8 @@ export default function App() {
     };
     const sourceEl = glotonFx.actingIdx === HI ? humanBurgerAreaRef.current : playerAreaRefs.current[glotonFx.actingIdx];
     const targetEl = glotonFx.targetIdx === HI ? humanBurgerAreaRef.current : playerAreaRefs.current[glotonFx.targetIdx];
-    const source = getRectCenter(sourceEl, window.innerWidth * 0.68, window.innerHeight * 0.44);
-    const target = getRectCenter(targetEl, window.innerWidth * 0.26, window.innerHeight * 0.34);
+    const source = glotonFx.actorPoint || getRectCenter(sourceEl, window.innerWidth * 0.68, window.innerHeight * 0.44);
+    const target = glotonFx.targetPoint || getRectCenter(targetEl, window.innerWidth * 0.26, window.innerHeight * 0.34);
     const stackY = target.y + (isMobile ? 38 : 52);
 
     setGlotonAnim({
@@ -521,12 +521,21 @@ export default function App() {
 
   const triggerGlotonEvent = useCallback((actingIdx, targetIdx, targetTable, actorName) => {
     if (!targetTable?.length) return;
+    const getRectCenter = (el, fallbackX, fallbackY) => {
+      if (!el) return { x: fallbackX, y: fallbackY };
+      const rect = el.getBoundingClientRect();
+      return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+    };
+    const actorEl = actingIdx === HI ? humanBurgerAreaRef.current : playerAreaRefs.current[actingIdx];
+    const targetEl = targetIdx === HI ? humanBurgerAreaRef.current : playerAreaRefs.current[targetIdx];
     const event = {
       id: `${Date.now()}-${Math.random()}`,
       actingIdx,
       targetIdx,
       actorName: actorName || 'Jugador',
       ingredients: targetTable.map(ing => ingKey(ing)),
+      actorPoint: getRectCenter(actorEl, window.innerWidth * 0.68, window.innerHeight * 0.44),
+      targetPoint: getRectCenter(targetEl, window.innerWidth * 0.22, window.innerHeight * 0.34),
     };
     setLastGlotonEvent(event);
     if (!isOnline || targetIdx === HI) {
