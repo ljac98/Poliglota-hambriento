@@ -675,7 +675,7 @@ export default function App() {
       socket.off('playerRejoined');
       socket.off('playerRemovedFromGame');
     };
-  }, [isOnline]);
+  }, [isOnline, isHost, myPlayerIdx]);
 
   useEffect(() => { showChatRef.current = showChat; }, [showChat]);
   useEffect(() => {
@@ -686,7 +686,10 @@ export default function App() {
   useEffect(() => {
     if (!isOnline || isHost) return;
     socket.on('stateUpdate', ({ state }) => {
-      setPlayers(state.players);
+      setPlayers(state.players.map((player, idx) => ({
+        ...player,
+        isRemote: idx !== myPlayerIdx,
+      })));
       setDeck(state.deck);
       setDiscard(state.discard);
       setCp(state.cp);
@@ -866,9 +869,9 @@ export default function App() {
     const rawDeck = generateDeck();
     const deckArr = [...rawDeck];
     const normalizedConfig = buildGameConfig(gameConfig);
-    const ps = onlinePls.map(p => initPlayer(p.name, deckArr, hatPicks[p.name], normalizedConfig, false));
+    const ps = onlinePls.map(p => initPlayer(p.name, deckArr, hatPicks[p.name] || p.hat, normalizedConfig, !!p.isAI));
     // Mark non-host players as remote
-    ps.forEach((p, i) => { if (i !== 0) p.isRemote = true; });
+    ps.forEach((p, i) => { if (i !== 0 && !p.isAI) p.isRemote = true; });
     setPlayers(ps); setDeck(deckArr); setDiscard([]);
     setCp(0); setLog([]); setSelectedIdx(null); setModal(null);
     setWinner(null); setExtraPlay(false); setCurrentGameConfig(normalizedConfig);

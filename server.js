@@ -550,6 +550,9 @@ if (existsSync(distPath)) {
 
 const rooms = new Map();
 const genCode = () => Math.random().toString(36).substring(2, 7).toUpperCase();
+const ROOM_AI_NAMES = ['Chef Bot', 'Maestro IA', 'Hambre IA', 'Cocinero Bot', 'Rival Bot'];
+const ROOM_AI_HATS = ['español', 'inglés', 'francés', 'italiano', 'alemán', 'portugués'];
+const MAX_ROOM_PLAYERS = 6;
 
 // Track which rooms already saved history (prevent duplicates)
 const savedGames = new Set();
@@ -558,12 +561,49 @@ const savedGames = new Set();
 const disconnectTimers = new Map();
 const GRACE_PERIOD_MS = 30000;
 
+function getActiveRoomPlayers(room) {
+  return room.players.filter(p => p.isAI || !p.disconnected);
+}
+
+function serializeRoomPlayers(room) {
+  return getActiveRoomPlayers(room).map(p => ({
+    name: p.name,
+    idx: p.idx,
+    userId: p.userId || null,
+    username: p.username || null,
+    isAI: !!p.isAI,
+    hat: p.hat || null,
+  }));
+}
+
+function reindexRoomPlayers(room) {
+  room.players.forEach((player, idx) => {
+    player.idx = idx;
+  });
+}
+
+function getNextRoomAiName(room) {
+  const used = new Set(room.players.map(p => p.name));
+  for (const name of ROOM_AI_NAMES) {
+    if (!used.has(name)) return name;
+  }
+  let num = 2;
+  while (used.has(`Chef Bot ${num}`)) num += 1;
+  return `Chef Bot ${num}`;
+}
+
+function getNextRoomAiHat(room) {
+  const used = new Set(room.players.map(p => p.hat).filter(Boolean));
+  const free = ROOM_AI_HATS.find(hat => !used.has(hat));
+  return free || ROOM_AI_HATS[Math.floor(Math.random() * ROOM_AI_HATS.length)];
+}
+
 // ── Helper: get public rooms list for lobby browser ──
 function getPublicRoomsList() {
   const list = [];
   for (const [code, room] of rooms) {
-    const activePlayers = room.players.filter(p => !p.disconnected);
-    if (room.isPublic && !room.started && activePlayers.length < 4) {
+    const activePlayers = getActiveRoomPlayers(room);
+    if (room.isPublic && !room.started && activePlayers.length < MAX_ROOM_PLAYERS) {
       list.push({
         code,
         roomName: room.roomName,
@@ -617,7 +657,7 @@ io.on('connection', socket => {
     const code = genCode();
     rooms.set(code, {
       hostId: socket.id,
-      players: [{ id: socket.id, name: playerName, idx: 0, userId: socket.data.userId || null, username: socket.data.username || null, reconnectId: socket.data.reconnectId }],
+      players: [{ id: socket.id, name: playerName, idx: 0, userId: socket.data.userId || null, username: socket.data.username || null, reconnectId: socket.data.reconnectId, isAI: false, hat: null }],
       started: false,
       isPublic: !!isPublic,
       roomName: roomName || '',
@@ -627,7 +667,7 @@ io.on('connection', socket => {
     socket.data.roomCode = code;
     socket.emit('roomCreated', { code, isPublic: !!isPublic, roomName: roomName || '' });
     io.to(code).emit('lobbyUpdate', {
-      players: rooms.get(code).players.map(p => ({ name: p.name, idx: p.idx, userId: p.userId || null, username: p.username || null })),
+      players: serializeRoomPlayers(rooms.get(code)),
     });
     if (isPublic) broadcastLobbyList();
   });
@@ -637,15 +677,49 @@ io.on('connection', socket => {
     const room = rooms.get(code);
     if (!room) return socket.emit('joinError', 'Sala no encontrada');
     if (room.started) return socket.emit('joinError', 'El juego ya comenzó');
-    if (room.players.length >= 4) return socket.emit('joinError', 'Sala llena (máximo 4 jugadores)');
-    const idx = room.players.length;
-    room.players.push({ id: socket.id, name: playerName, idx, userId: socket.data.userId || null, username: socket.data.username || null, reconnectId: socket.data.reconnectId });
+    if (room.players.length >= MAX_ROOM_PLAYERS) return socket.emit('joinError', 'Sala llena (máximo 6 jugadores)');
+    const firstAiIdx = room.players.findIndex(p => p.isAI);
+    const idx = firstAiIdx === -1 ? room.players.length : firstAiIdx;
+    room.players.splice(idx, 0, { id: socket.id, name: playerName, idx, userId: socket.data.userId || null, username: socket.data.username || null, reconnectId: socket.data.reconnectId, isAI: false, hat: null });
+    reindexRoomPlayers(room);
     socket.join(code);
     socket.data.roomCode = code;
     socket.emit('roomJoined', { code, myIdx: idx, isPublic: room.isPublic, roomName: room.roomName });
     io.to(code).emit('lobbyUpdate', {
-      players: room.players.map(p => ({ name: p.name, idx: p.idx, userId: p.userId || null, username: p.username || null })),
+      players: serializeRoomPlayers(room),
     });
+    if (room.isPublic) broadcastLobbyList();
+  });
+
+  socket.on('addAiPlayer', ({ code }) => {
+    const room = rooms.get(code);
+    if (!room || room.hostId !== socket.id || room.started) return;
+    if (room.players.length >= MAX_ROOM_PLAYERS) return;
+    const aiName = getNextRoomAiName(room);
+    const aiHat = getNextRoomAiHat(room);
+    room.players.push({
+      id: null,
+      name: aiName,
+      idx: room.players.length,
+      userId: null,
+      username: null,
+      reconnectId: `ai-${code}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      isAI: true,
+      hat: aiHat,
+    });
+    reindexRoomPlayers(room);
+    io.to(code).emit('lobbyUpdate', { players: serializeRoomPlayers(room) });
+    if (room.isPublic) broadcastLobbyList();
+  });
+
+  socket.on('removeAiPlayer', ({ code, playerIdx }) => {
+    const room = rooms.get(code);
+    if (!room || room.hostId !== socket.id || room.started) return;
+    const idx = room.players.findIndex(p => p.idx === playerIdx && p.isAI);
+    if (idx === -1) return;
+    room.players.splice(idx, 1);
+    reindexRoomPlayers(room);
+    io.to(code).emit('lobbyUpdate', { players: serializeRoomPlayers(room) });
     if (room.isPublic) broadcastLobbyList();
   });
 
@@ -691,15 +765,15 @@ io.on('connection', socket => {
       myIdx: player.idx,
       isHost,
       phase: room.started ? 'playing' : 'onlineLobby',
-      players: room.players.filter(p => !p.disconnected).map(p => ({ name: p.name, idx: p.idx, userId: p.userId || null, username: p.username || null })),
+      players: serializeRoomPlayers(room),
       roomIsPublic: room.isPublic,
       roomDisplayName: room.roomName,
       gameState: (isHost && room.started && room.lastGameState) ? room.lastGameState : null,
     });
     // Notify others that player reconnected
-    const activePlayers = room.players.filter(p => !p.disconnected);
+    const activePlayers = getActiveRoomPlayers(room);
     io.to(code).emit('lobbyUpdate', {
-      players: activePlayers.map(p => ({ name: p.name, idx: p.idx, userId: p.userId || null, username: p.username || null })),
+      players: serializeRoomPlayers(room),
     });
     io.to(code).emit('playerRejoined', {
       playerName: player.name,
@@ -722,7 +796,7 @@ io.on('connection', socket => {
     if (!socket.data.userId || !socket.data.roomCode) return;
     const room = rooms.get(socket.data.roomCode);
     if (!room || room.started) return;
-    if (room.players.filter(p => !p.disconnected).length >= 4) return;
+    if (getActiveRoomPlayers(room).length >= MAX_ROOM_PLAYERS) return;
     const friendSocketId = onlineUsers.get(friendUserId);
     if (!friendSocketId) return;
     try {
@@ -738,6 +812,11 @@ io.on('connection', socket => {
 
   // ── Relay hat pick in lobby ──
   socket.on('lobbyHatPick', ({ code, playerName, hat }) => {
+    const room = rooms.get(code);
+    if (room) {
+      const player = room.players.find(p => p.name === playerName);
+      if (player) player.hat = hat;
+    }
     socket.to(code).emit('lobbyHatPick', { playerName, hat });
   });
 
@@ -750,7 +829,7 @@ io.on('connection', socket => {
     io.to(code).emit('gameStarted', {
       hatPicks,
       gameConfig,
-      players: room.players.map(p => ({ name: p.name, idx: p.idx, userId: p.userId || null, username: p.username || null })),
+      players: serializeRoomPlayers(room),
     });
     if (room.isPublic) broadcastLobbyList();
   });
@@ -812,7 +891,7 @@ io.on('connection', socket => {
 
     // Transfer host if needed
     if (room.hostId === player.id || player.wasHost) {
-      const newHost = room.players.find(p => !p.disconnected && p.reconnectId !== reconnectId);
+      const newHost = room.players.find(p => p.id && !p.disconnected && p.reconnectId !== reconnectId);
       if (newHost) {
         room.hostId = newHost.id;
         io.to(newHost.id).emit('becameHost');
@@ -820,7 +899,8 @@ io.on('connection', socket => {
     }
 
     room.players.splice(pi, 1);
-    const activePlayers = room.players.filter(p => !p.disconnected);
+    reindexRoomPlayers(room);
+    const activePlayers = getActiveRoomPlayers(room);
 
     if (room.players.length === 0) {
       rooms.delete(code);
@@ -830,11 +910,11 @@ io.on('connection', socket => {
       io.to(code).emit('playerRemovedFromGame', {
         playerIdx: player.idx,
         playerName: player.name,
-        activePlayers: activePlayers.map(p => ({ name: p.name, idx: p.idx, userId: p.userId || null, username: p.username || null })),
+        activePlayers: serializeRoomPlayers(room),
         activeCount: activePlayers.length,
       });
       io.to(code).emit('lobbyUpdate', {
-        players: activePlayers.map(p => ({ name: p.name, idx: p.idx, userId: p.userId || null, username: p.username || null })),
+        players: serializeRoomPlayers(room),
       });
     }
     if (wasPublic) broadcastLobbyList();
@@ -855,7 +935,7 @@ io.on('connection', socket => {
     // Transfer host if needed
     if (room.hostId === socket.id) {
       player.wasHost = true;
-      const connectedPlayer = room.players.find(p => !p.disconnected);
+      const connectedPlayer = room.players.find(p => p.id && !p.disconnected);
       if (connectedPlayer) {
         room.hostId = connectedPlayer.id;
         io.to(connectedPlayer.id).emit('becameHost');
@@ -863,13 +943,13 @@ io.on('connection', socket => {
     }
 
     // Count active (non-disconnected) players
-    const activePlayers = room.players.filter(p => !p.disconnected);
+    const activePlayers = getActiveRoomPlayers(room);
 
     // Notify others
     io.to(code).emit('playerVoluntaryLeft', {
       playerName: player.name,
       playerIdx: player.idx,
-      activePlayers: activePlayers.map(p => ({ name: p.name, idx: p.idx, userId: p.userId || null, username: p.username || null })),
+      activePlayers: serializeRoomPlayers(room),
       activeCount: activePlayers.length,
       gameStarted: room.started,
     });
@@ -886,12 +966,13 @@ io.on('connection', socket => {
       const pi = currentRoom.players.findIndex(p => p.reconnectId === player.reconnectId);
       if (pi === -1) return;
       currentRoom.players.splice(pi, 1);
+      reindexRoomPlayers(currentRoom);
       if (currentRoom.players.length === 0) {
         rooms.delete(code);
         savedGames.delete(code);
       } else {
         io.to(code).emit('playerLeft', {
-          players: currentRoom.players.filter(p => !p.disconnected).map(p => ({ name: p.name, idx: p.idx, userId: p.userId || null, username: p.username || null })),
+          players: serializeRoomPlayers(currentRoom),
         });
       }
       if (currentRoom.isPublic) broadcastLobbyList();
@@ -917,7 +998,7 @@ io.on('connection', socket => {
       // Transfer host temporarily to a connected player if needed
       if (room.hostId === socket.id) {
         player.wasHost = true;
-        const connectedPlayer = room.players.find(p => !p.disconnected);
+        const connectedPlayer = room.players.find(p => p.id && !p.disconnected);
         if (connectedPlayer) {
           room.hostId = connectedPlayer.id;
           io.to(connectedPlayer.id).emit('becameHost');
@@ -926,7 +1007,7 @@ io.on('connection', socket => {
 
       // Notify others that player is temporarily disconnected
       io.to(code).emit('lobbyUpdate', {
-        players: room.players.filter(p => !p.disconnected).map(p => ({ name: p.name, idx: p.idx, userId: p.userId || null, username: p.username || null })),
+        players: serializeRoomPlayers(room),
       });
 
       // Start grace period timer
@@ -937,12 +1018,13 @@ io.on('connection', socket => {
         const pi = currentRoom.players.findIndex(p => p.reconnectId === player.reconnectId);
         if (pi === -1) return;
         currentRoom.players.splice(pi, 1);
+        reindexRoomPlayers(currentRoom);
         if (currentRoom.players.length === 0) {
           rooms.delete(code);
           savedGames.delete(code);
         } else {
           io.to(code).emit('playerLeft', {
-            players: currentRoom.players.filter(p => !p.disconnected).map(p => ({ name: p.name, idx: p.idx, userId: p.userId || null, username: p.username || null })),
+            players: serializeRoomPlayers(currentRoom),
           });
         }
         if (wasPublic) broadcastLobbyList();
@@ -957,16 +1039,17 @@ io.on('connection', socket => {
     const pi = room.players.findIndex(p => p.id === socket.id);
     if (pi === -1) return;
     room.players.splice(pi, 1);
+    reindexRoomPlayers(room);
     if (room.players.length === 0) {
       rooms.delete(code);
       savedGames.delete(code);
     } else {
       if (room.hostId === socket.id) {
-        room.hostId = room.players[0].id;
-        io.to(room.hostId).emit('becameHost');
+        room.hostId = room.players.find(p => p.id)?.id || null;
+        if (room.hostId) io.to(room.hostId).emit('becameHost');
       }
       io.to(code).emit('playerLeft', {
-        players: room.players.map(p => ({ name: p.name, idx: p.idx, userId: p.userId || null, username: p.username || null })),
+        players: serializeRoomPlayers(room),
       });
     }
     if (wasPublic) broadcastLobbyList();

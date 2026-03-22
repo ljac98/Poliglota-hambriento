@@ -27,6 +27,7 @@ import burgerHuevo from '../../imagenes/hamburguesas/ingredientes/huevo.png';
 import burgerPalta from '../../imagenes/hamburguesas/ingredientes/palta.png';
 
 export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack, isPublic, roomDisplayName, T, user, onOpenProfile }) {
+  const MAX_ROOM_PLAYERS = 6;
   const uiGameLang = KEY_TO_LANG[getUILang()] || 'español';
   const cloneIngredients = INGREDIENTS.filter((ing) => ing !== 'pan');
   const [gameMode, setGameMode] = useState('clon');
@@ -34,6 +35,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
   const [ingredientCount, setIngredientCount] = useState(5);
   const [ingredientPool, setIngredientPool] = useState(cloneIngredients);
   const [chaosLevel, setChaosLevel] = useState(2);
+  const [aiDifficulty, setAiDifficulty] = useState('medium');
   const [showModeConfig, setShowModeConfig] = useState(false);
   const [hatPicks, setHatPicks] = useState({});
   const [copied, setCopied] = useState(false);
@@ -134,6 +136,12 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
     { id: 'clon', label: T('modeClon'), desc: T('modeClonDesc'),img:modoclon },
     { id: 'escalera', label: T('modeEscalera'), desc: T('modeEscaleraDesc'),img:modoescalera },
     { id: 'caotico', label: T('modeCaotico'), desc: T('modeCaoticoDesc'),img:modocaotico },
+  ];
+  const aiDifficultyOptions = [
+    { id: 'easy', label: T('aiEasy') },
+    { id: 'medium', label: T('aiMedium') },
+    { id: 'hard', label: T('aiHard') },
+    { id: 'impossible', label: T('aiImpossible') },
   ];
   const selectedMode = gameModes.find((mode) => mode.id === gameMode) || gameModes[0];
   const burgerLayerMap = {
@@ -477,6 +485,20 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
     alignItems: 'start',
   } : null;
 
+  useEffect(() => {
+    setHatPicks((prev) => {
+      const next = { ...prev };
+      players.forEach((player) => {
+        if (player.hat) next[player.name] = player.hat;
+      });
+      return next;
+    });
+  }, [players]);
+
+  const allHumansReady = players
+    .filter((player) => !player.isAI)
+    .every((player) => !!hatPicks[player.name]);
+
   function pickHat(lang) {
     const taken = Object.values(hatPicks);
     if (taken.includes(lang) && hatPicks[myName] !== lang) return;
@@ -485,17 +507,28 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
   }
 
   function handleStart() {
-    if (!myHat) return;
+    if (!myHat || !allHumansReady) return;
     const gameConfig = {
       mode: gameMode,
       burgerCount,
       ingredientCount,
       chaosLevel,
       ingredientPool,
+      aiDifficulty,
       sharedBurgers: gameMode === 'clon' ? previewBurgers : null,
     };
     socket.emit('startGame', { code: roomCode, hatPicks, gameConfig });
     onStart(hatPicks, gameConfig);
+  }
+
+  function handleAddAi() {
+    if (!isHost || players.length >= MAX_ROOM_PLAYERS) return;
+    socket.emit('addAiPlayer', { code: roomCode });
+  }
+
+  function handleRemoveAi(playerIdx) {
+    if (!isHost) return;
+    socket.emit('removeAiPlayer', { code: roomCode, playerIdx });
   }
 
   const roomHeader = (
@@ -521,7 +554,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
               >
                 {copied ? T('linkCopied') : T('inviteLink')}
               </button>
-              {user && players.length < 4 && (
+              {user && players.length < MAX_ROOM_PLAYERS && (
                 <div style={{ position: 'relative' }}>
                   <button
                     onClick={toggleInvitePanel}
@@ -584,6 +617,25 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
                   )}
                 </div>
               )}
+              {isHost && players.length < MAX_ROOM_PLAYERS && (
+                <button
+                  onClick={handleAddAi}
+                  style={{
+                    padding: '7px 18px',
+                    borderRadius: 10,
+                    border: '1px solid rgba(255,112,67,.35)',
+                    background: 'rgba(255,112,67,.1)',
+                    color: '#FFB199',
+                    fontFamily: "'Fredoka',sans-serif",
+                    fontWeight: 700,
+                    fontSize: 13,
+                    cursor: 'pointer',
+                    transition: 'all .2s',
+                  }}
+                >
+                  {T('addAiPlayer')}
+                </button>
+              )}
             </div>
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
               <div style={{
@@ -613,7 +665,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
                 fontSize: 12,
                 fontWeight: 800,
               }}>
-                <span>{players.length}/4</span>
+                <span>{players.length}/{MAX_ROOM_PLAYERS}</span>
                 <span>{String(T('players')).toLowerCase()}</span>
               </div>
             </div>
@@ -708,11 +760,11 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
               fontSize: 12,
               fontWeight: 800,
             }}>
-              <span>{players.length}/4</span>
+              <span>{players.length}/{MAX_ROOM_PLAYERS}</span>
               <span>{String(T('players')).toLowerCase()}</span>
             </div>
           </div>
-          {user && players.length < 4 && (
+          {user && players.length < MAX_ROOM_PLAYERS && (
             <div style={{ marginTop: 12, position: 'relative', display: 'flex', justifyContent: 'center' }}>
               <button onClick={toggleInvitePanel} style={{
                 padding: '7px 18px', borderRadius: 10,
@@ -760,6 +812,26 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
               )}
             </div>
           )}
+          {isHost && players.length < MAX_ROOM_PLAYERS && (
+            <div style={{ marginTop: 10, display: 'flex', justifyContent: 'center' }}>
+              <button
+                onClick={handleAddAi}
+                style={{
+                  padding: '7px 18px',
+                  borderRadius: 10,
+                  border: '1px solid rgba(255,112,67,.35)',
+                  background: 'rgba(255,112,67,.1)',
+                  color: '#FFB199',
+                  fontFamily: "'Fredoka',sans-serif",
+                  fontWeight: 700,
+                  fontSize: 13,
+                  cursor: 'pointer',
+                }}
+              >
+                {T('addAiPlayer')}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -793,7 +865,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
         {/* Players */}
         <div style={{ marginBottom: 20 }}>
           <div style={{ fontSize: 12, fontWeight: 800, color: '#555', letterSpacing: 1, marginBottom: 10 }}>
-            {typeof T('playersCount') === 'function' ? T('playersCount')(players.length) : `PLAYERS (${players.length}/4)`}
+            {typeof T('playersCount') === 'function' ? T('playersCount')(players.length) : `PLAYERS (${players.length}/${MAX_ROOM_PLAYERS})`}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {players.map((p, i) => (
@@ -835,9 +907,30 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
                   <span style={{ fontWeight: 700, color: '#eee' }}>{p.name}</span>
                 )}
                 {p.name === myName && <span style={{ fontSize: 11, color: '#888' }}>{T('you')}</span>}
+                {p.isAI && <span style={{ fontSize: 11, color: '#FFB199', fontWeight: 800 }}>IA</span>}
                 {i === 0 && <span style={{ fontSize: 11, color: '#FFD700', marginLeft: 'auto' }}>{T('host')}</span>}
                 {hatPicks[p.name] && (
                   <HatSVG lang={hatPicks[p.name]} size={24} />
+                )}
+                {isHost && p.isAI && (
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveAi(p.idx)}
+                    style={{
+                      marginLeft: 'auto',
+                      padding: '4px 10px',
+                      borderRadius: 8,
+                      border: '1px solid rgba(255,112,67,.35)',
+                      background: 'rgba(255,112,67,.12)',
+                      color: '#FFB199',
+                      fontFamily: "'Fredoka',sans-serif",
+                      fontSize: 11,
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {T('removeAiPlayer')}
+                  </button>
                 )}
                 {user && p.username && p.name !== myName && !existingFriends.has(p.username) && (
                   <button
@@ -943,12 +1036,12 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
         {isHost ? (
           <Btn
             onClick={handleStart}
-            disabled={players.length < 2 || !myHat || Object.keys(hatPicks).length < players.length}
+            disabled={players.length < 2 || !myHat || !allHumansReady}
             color="#4CAF50"
             style={{ width: '100%', fontSize: 15, padding: '12px 0' }}
           >
-            {Object.keys(hatPicks).length < players.length
-              ? (typeof T('waitingHats') === 'function' ? T('waitingHats')(Object.keys(hatPicks).length, players.length) : T('waitingHats'))
+            {!allHumansReady
+              ? (typeof T('waitingHats') === 'function' ? T('waitingHats')(players.filter((p) => !p.isAI && hatPicks[p.name]).length, players.filter((p) => !p.isAI).length) : T('waitingHats'))
               : T('startGame')}
           </Btn>
         ) : (
@@ -1188,6 +1281,36 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
               <div style={{ color: '#6f7697', fontSize: 11 }}>{T('cloneIngredientPoolLocked')}</div>
             </div>
           )}
+          <div style={{ marginBottom: 18 }}>
+            <label style={{ color: '#aaa', fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 6 }}>
+              {T('aiDifficulty')}
+            </label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
+              {aiDifficultyOptions.map((option) => {
+                const active = aiDifficulty === option.id;
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => setAiDifficulty(option.id)}
+                    style={{
+                      padding: '10px 12px',
+                      borderRadius: 12,
+                      border: active ? '2px solid #FFD700' : '1px solid rgba(255,255,255,0.12)',
+                      background: active ? 'rgba(255,215,0,0.12)' : 'rgba(255,255,255,0.03)',
+                      color: active ? '#FFD700' : '#d8ddf3',
+                      fontFamily: "'Fredoka',sans-serif",
+                      fontSize: 12,
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {option.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
             </div>
           </div>
           <Btn onClick={() => setShowModeConfig(false)} color="#333" style={{ color: '#aaa', marginTop: 16 }}>{T('close')}</Btn>
@@ -1197,4 +1320,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
     </div>
   );
 }
+
+
+
 
