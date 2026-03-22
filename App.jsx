@@ -195,6 +195,7 @@ export default function App() {
   const lastNegationSeenRef = useRef(null);
   const lastForkSeenRef = useRef(null);
   const playerAreaRefs = useRef({});
+  const playerIngredientRefs = useRef({});
   const humanBurgerAreaRef = useRef(null);
   const humanBurgerSlotRefs = useRef({});
 
@@ -318,7 +319,9 @@ export default function App() {
       return slotIdx === -1 ? null : slotIdx;
     };
 
-    const sourceEl = forkFx.targetIdx === HI ? humanBurgerAreaRef.current : playerAreaRefs.current[forkFx.targetIdx];
+    const sourceEl = forkFx.targetIdx === HI
+      ? humanBurgerAreaRef.current
+      : (playerIngredientRefs.current[forkFx.targetIdx]?.[forkFx.sourceIngIdx] || playerAreaRefs.current[forkFx.targetIdx]);
     const landingSlotIdx = getLandingSlotIndex();
     const destEl = forkFx.actingIdx === HI && landingSlotIdx !== null
       ? humanBurgerSlotRefs.current[landingSlotIdx]
@@ -327,21 +330,22 @@ export default function App() {
     const dest = getRectCenter(destEl, window.innerWidth * 0.62, window.innerHeight * 0.42);
 
     setForkAnim({
-      phase: 'hook',
-      source,
+      x: source.x,
+      y: source.y,
       dest,
       ingredient: forkFx.ingredient,
       actorName: forkFx.actorName,
       exactSlot: landingSlotIdx !== null,
+      moving: false,
     });
 
-    const dropTimer = setTimeout(() => {
-      setForkAnim((prev) => (prev ? { ...prev, phase: 'drop' } : prev));
-    }, 420);
-    const clearTimer = setTimeout(() => setForkAnim(null), 1120);
+    const moveTimer = setTimeout(() => {
+      setForkAnim((prev) => (prev ? { ...prev, x: dest.x, y: dest.y, moving: true } : prev));
+    }, 120);
+    const clearTimer = setTimeout(() => setForkAnim(null), 980);
 
     return () => {
-      clearTimeout(dropTimer);
+      clearTimeout(moveTimer);
       clearTimeout(clearTimer);
     };
   }, [forkFx]);
@@ -2821,6 +2825,11 @@ export default function App() {
               if (el) playerAreaRefs.current[playerIdx] = el;
               else delete playerAreaRefs.current[playerIdx];
             }}
+            onRegisterIngredientRef={(playerIdx, ingIdx, el) => {
+              if (!playerIngredientRefs.current[playerIdx]) playerIngredientRefs.current[playerIdx] = {};
+              if (el) playerIngredientRefs.current[playerIdx][ingIdx] = el;
+              else if (playerIngredientRefs.current[playerIdx]) delete playerIngredientRefs.current[playerIdx][ingIdx];
+            }}
             onIngredientClick={(ing) => setModal({ type: 'ingredientInfo', ingredient: ing })}
             T={T}
           />
@@ -3389,81 +3398,47 @@ export default function App() {
           pointerEvents: 'none',
           overflow: 'hidden',
         }}>
-          {forkAnim.phase === 'hook' && (
+          <div style={{
+            position: 'fixed',
+            left: forkAnim.x,
+            top: forkAnim.y,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 6,
+            transform: `translate(-50%, -50%) ${forkAnim.moving ? 'scale(1)' : 'scale(.92)'}`,
+            transition: forkAnim.moving
+              ? 'left 0.62s cubic-bezier(.17,.84,.44,1), top 0.62s cubic-bezier(.17,.84,.44,1), transform 0.2s ease'
+              : 'transform 0.12s ease',
+          }}>
             <div style={{
-              position: 'fixed',
-              left: forkAnim.source.x,
-              top: forkAnim.source.y,
+              width: isMobile ? 58 : 72,
+              height: isMobile ? 58 : 72,
+              borderRadius: 18,
+              background: 'rgba(15,17,23,.92)',
+              border: '2px solid rgba(78,205,196,.65)',
               display: 'flex',
-              flexDirection: 'column',
               alignItems: 'center',
-              gap: 8,
-              animation: 'forkHook 0.42s ease forwards',
+              justifyContent: 'center',
+              boxShadow: '0 12px 28px rgba(0,0,0,.35)',
             }}>
-              <div style={{
-                width: isMobile ? 58 : 74,
-                height: isMobile ? 58 : 74,
-                borderRadius: 18,
-                background: 'rgba(15,17,23,.92)',
-                border: '2px solid rgba(78,205,196,.6)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 12px 28px rgba(0,0,0,.35)',
-              }}>
-                {ING_IMG[forkAnim.ingredient]
-                  ? <img src={ING_IMG[forkAnim.ingredient]} alt={forkAnim.ingredient} style={{ width: isMobile ? 38 : 46, height: isMobile ? 38 : 46, objectFit: 'contain' }} />
-                  : <span style={{ fontSize: isMobile ? 28 : 34 }}>{ING_EMOJI[forkAnim.ingredient] || '🍴'}</span>}
-              </div>
-              <img
-                src={eqTenedor}
-                alt="Tenedor"
-                style={{ width: isMobile ? 46 : 58, height: isMobile ? 46 : 58, objectFit: 'contain', filter: 'drop-shadow(0 10px 18px rgba(0,0,0,.35))' }}
-              />
+              {ING_IMG[forkAnim.ingredient]
+                ? <img src={ING_IMG[forkAnim.ingredient]} alt={forkAnim.ingredient} style={{ width: isMobile ? 38 : 44, height: isMobile ? 38 : 44, objectFit: 'contain' }} />
+                : <span style={{ fontSize: isMobile ? 28 : 34 }}>{ING_EMOJI[forkAnim.ingredient] || '🍴'}</span>}
             </div>
-          )}
-
-          {forkAnim.phase === 'drop' && (
-            <div style={{
-              position: 'fixed',
-              left: forkAnim.dest.x,
-              top: forkAnim.dest.y,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: 8,
-              animation: 'forkDrop 0.6s cubic-bezier(.17,.84,.44,1) forwards',
-            }}>
-              <div style={{
-                width: isMobile ? 64 : 80,
-                height: isMobile ? 64 : 80,
-                borderRadius: 20,
-                background: 'rgba(15,17,23,.94)',
-                border: '2px solid rgba(78,205,196,.75)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 14px 34px rgba(0,0,0,.42)',
-              }}>
-                {ING_IMG[forkAnim.ingredient]
-                  ? <img src={ING_IMG[forkAnim.ingredient]} alt={forkAnim.ingredient} style={{ width: isMobile ? 42 : 52, height: isMobile ? 42 : 52, objectFit: 'contain' }} />
-                  : <span style={{ fontSize: isMobile ? 30 : 36 }}>{ING_EMOJI[forkAnim.ingredient] || '🍴'}</span>}
-              </div>
-              <div style={{
-                padding: '8px 14px',
-                borderRadius: 14,
-                background: 'rgba(15,17,23,.88)',
-                border: '2px solid rgba(78,205,196,.45)',
-                color: '#c9f7f2',
-                textAlign: 'center',
-                boxShadow: '0 12px 30px rgba(0,0,0,.35)',
-                fontSize: isMobile ? 11 : 13,
-                fontWeight: 800,
-              }}>
-                {forkAnim.actorName} se quedó con {getIngName(forkAnim.ingredient, human.mainHats?.[0] || 'español')}
-              </div>
-            </div>
-          )}
+            <img
+              src={eqTenedor}
+              alt="Tenedor"
+              style={{
+                width: isMobile ? 48 : 60,
+                height: isMobile ? 48 : 60,
+                objectFit: 'contain',
+                filter: 'drop-shadow(0 10px 18px rgba(0,0,0,.35))',
+                transform: forkAnim.moving ? 'rotate(18deg)' : 'rotate(-10deg)',
+                transition: 'transform 0.22s ease',
+              }}
+            />
+          </div>
         </div>
       )}
 

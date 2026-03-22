@@ -6,7 +6,7 @@ import HatSVG from '../../components/HatSVG.jsx';
 import { ING_IMG, ingChosen, ingKey } from '../utils/gameHelpers.js';
 import burgerIcon from '../../imagenes/hamburguesas/ham.png';
 
-export function OpponentCard({ player, index, color, isActive, onIngredientClick, onRegisterRef, T }) {
+export function OpponentCard({ player, index, color, isActive, onIngredientClick, onRegisterRef, onRegisterIngredientRef, T }) {
   const burger = player.burgers[player.currentBurger];
   return (
     <div
@@ -41,14 +41,19 @@ export function OpponentCard({ player, index, color, isActive, onIngredientClick
             const base = ingKey(ing);
             const chosen = ingChosen(ing);
             return (
-              <div key={i} onClick={() => onIngredientClick?.(ing)} style={{
-                width: 30, height: 30, borderRadius: 6,
-                background: chosen
-                  ? `linear-gradient(to right, ${ING_BG.perrito || '#9b59b6'} 50%, ${ING_BG[chosen]} 50%)`
-                  : ING_BG[base],
-                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14,
-                overflow: 'hidden', position: 'relative', cursor: 'pointer',
-              }}>
+              <div
+                key={i}
+                ref={(el) => onRegisterIngredientRef?.(index, i, el)}
+                onClick={() => onIngredientClick?.(ing)}
+                style={{
+                  width: 30, height: 30, borderRadius: 6,
+                  background: chosen
+                    ? `linear-gradient(to right, ${ING_BG.perrito || '#9b59b6'} 50%, ${ING_BG[chosen]} 50%)`
+                    : ING_BG[base],
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14,
+                  overflow: 'hidden', position: 'relative', cursor: 'pointer',
+                }}
+              >
                 {chosen ? (
                   <>
                     <div style={{ position: 'absolute', left: 0, top: 0, width: '50%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
