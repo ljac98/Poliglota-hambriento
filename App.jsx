@@ -3827,11 +3827,12 @@ export default function App() {
             top: glotonAnim.y,
             width: isMobile ? 90 : 118,
             height: isMobile ? 90 : 118,
-            transform: `translate(-50%, -50%) ${glotonAnim.moving ? 'scale(1)' : `scale(${glotonAnim.biteTick % 2 === 0 ? 1.02 : 1.1})`}`,
+            transform: `translate(-50%, -50%) ${glotonAnim.showChampion ? 'scale(0.72)' : (glotonAnim.moving ? 'scale(1)' : `scale(${glotonAnim.biteTick % 2 === 0 ? 1.02 : 1.1})`)}`,
             transition: glotonAnim.moving
               ? 'left 0.62s cubic-bezier(.17,.84,.44,1), top 0.62s cubic-bezier(.17,.84,.44,1), transform 0.18s ease'
               : 'transform 0.18s ease',
             filter: 'drop-shadow(0 14px 26px rgba(0,0,0,.36))',
+            opacity: glotonAnim.showChampion ? 0 : 1,
           }}>
             <img
               src={actionGloton}
