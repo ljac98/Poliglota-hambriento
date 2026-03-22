@@ -1297,6 +1297,9 @@ export default function App() {
       setNegationFx(negEvent);
     }
     setPendingNeg(null); pendingNegRef.current = null;
+    if (newPls[actingIdx]?.isAI) {
+      aiRunning.current = false;
+    }
     endTurn(newPls, deckRef.current, newDiscard, actingIdx);
   }
 
@@ -2212,7 +2215,18 @@ export default function App() {
     if (modal) return;
 
     const timer = setTimeout(() => {
-      runAITurn(players, deck, discard, cp);
+      try {
+        runAITurn(players, deck, discard, cp);
+      } catch (error) {
+        console.error('AI turn crashed, forcing endTurn fallback:', error);
+        aiRunning.current = false;
+        const pls = playersRef.current;
+        const dk = deckRef.current;
+        const di = discardRef.current;
+        if (pls[cp]?.isAI) {
+          endTurn(pls, dk, di, cp);
+        }
+      }
     }, 1200);
     return () => clearTimeout(timer);
   }, [phase, cp, players, deck, discard, modal]);
