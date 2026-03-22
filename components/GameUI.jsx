@@ -70,7 +70,7 @@ function resolveTargetSlots(table, target) {
 }
 
 // ═══ BURGER TARGET (horizontal) with stacked burger visual ═══
-export const BurgerTarget = ({ ingredients, table, isCurrent, onIngredientClick }) => {
+export const BurgerTarget = ({ ingredients, table, isCurrent, onIngredientClick, onRegisterSlotRef }) => {
   const slotState = resolveTargetSlots(table, ingredients);
   const counts = {};
   ingredients.forEach(ing => { counts[ing] = (counts[ing] || 0) + 1; });
@@ -139,6 +139,7 @@ export const BurgerTarget = ({ ingredients, table, isCurrent, onIngredientClick 
           return (
             <div
               key={i}
+              ref={(el) => onRegisterSlotRef?.(i, el)}
               onClick={() => onIngredientClick && onIngredientClick(viaWildcard ? `perrito|${ing}` : ing)}
               style={{
               position: "relative", width: 36, height: 36, borderRadius: 6,

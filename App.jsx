@@ -196,6 +196,7 @@ export default function App() {
   const lastForkSeenRef = useRef(null);
   const playerAreaRefs = useRef({});
   const humanBurgerAreaRef = useRef(null);
+  const humanBurgerSlotRefs = useRef({});
 
   // â”€â”€ Voluntary leave state â”€â”€
   const [gamePaused, setGamePaused] = useState(false);
@@ -270,8 +271,58 @@ export default function App() {
       return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
     };
 
+    const resolveTargetSlotsLocal = (table, target) => {
+      const normal = {};
+      const wildcardChosen = {};
+      let wildcardBare = 0;
+      (table || []).forEach((t) => {
+        if (t === 'perrito') wildcardBare += 1;
+        else if (String(t).startsWith('perrito|')) {
+          const chosen = String(t).split('|')[1];
+          wildcardChosen[chosen] = (wildcardChosen[chosen] || 0) + 1;
+        } else {
+          normal[t] = (normal[t] || 0) + 1;
+        }
+      });
+      return (target || []).map((ing) => {
+        if ((normal[ing] || 0) > 0) {
+          normal[ing] -= 1;
+          return { filled: true, viaWildcard: false };
+        }
+        if ((wildcardChosen[ing] || 0) > 0) {
+          wildcardChosen[ing] -= 1;
+          return { filled: true, viaWildcard: true };
+        }
+        if (wildcardBare > 0) {
+          wildcardBare -= 1;
+          return { filled: true, viaWildcard: true };
+        }
+        return { filled: false, viaWildcard: false };
+      });
+    };
+
+    const getLandingSlotIndex = () => {
+      if (forkFx.actingIdx !== HI) return null;
+      const currentHuman = players[HI];
+      if (!currentHuman || currentHuman.currentBurger >= currentHuman.totalBurgers) return null;
+      const targetBurger = currentHuman.burgers?.[currentHuman.currentBurger] || [];
+      if (!targetBurger.length) return null;
+      const tableAfter = [...(currentHuman.table || [])];
+      const removeIdx = [...tableAfter].map((ing, idx) => ({ ing, idx })).reverse().find((entry) => entry.ing === forkFx.stolenRaw)?.idx;
+      const tableBefore = [...tableAfter];
+      if (removeIdx !== undefined) tableBefore.splice(removeIdx, 1);
+      const beforeSlots = resolveTargetSlotsLocal(tableBefore, targetBurger);
+      const afterSlots = resolveTargetSlotsLocal(tableAfter, targetBurger);
+      const baseIngredient = forkFx.ingredient;
+      const slotIdx = targetBurger.findIndex((ing, idx) => ing === baseIngredient && !beforeSlots[idx]?.filled && afterSlots[idx]?.filled);
+      return slotIdx === -1 ? null : slotIdx;
+    };
+
     const sourceEl = forkFx.targetIdx === HI ? humanBurgerAreaRef.current : playerAreaRefs.current[forkFx.targetIdx];
-    const destEl = forkFx.actingIdx === HI ? humanBurgerAreaRef.current : playerAreaRefs.current[forkFx.actingIdx];
+    const landingSlotIdx = getLandingSlotIndex();
+    const destEl = forkFx.actingIdx === HI && landingSlotIdx !== null
+      ? humanBurgerSlotRefs.current[landingSlotIdx]
+      : (forkFx.actingIdx === HI ? humanBurgerAreaRef.current : playerAreaRefs.current[forkFx.actingIdx]);
     const source = getRectCenter(sourceEl, window.innerWidth * 0.22, window.innerHeight * 0.38);
     const dest = getRectCenter(destEl, window.innerWidth * 0.62, window.innerHeight * 0.42);
 
@@ -281,6 +332,7 @@ export default function App() {
       dest,
       ingredient: forkFx.ingredient,
       actorName: forkFx.actorName,
+      exactSlot: landingSlotIdx !== null,
     });
 
     const dropTimer = setTimeout(() => {
@@ -1038,6 +1090,7 @@ export default function App() {
         targetIdx: ti,
         actorName: pls[actingIdx]?.name || 'Oponente',
         ingredient: ingKey(stolen),
+        stolenRaw: stolen,
         sourceIngIdx: action.ingIdx,
       };
       setLastForkEvent(forkEvent);
@@ -1647,6 +1700,7 @@ export default function App() {
                 targetIdx: richest,
                 actorName: newPls[idx]?.name || 'IA',
                 ingredient: ingKey(stolen),
+                stolenRaw: stolen,
                 sourceIngIdx: si,
               };
               setLastForkEvent(forkEvent);
@@ -2098,6 +2152,7 @@ export default function App() {
       targetIdx,
       actorName: newPls[HI]?.name || 'Jugador',
       ingredient: ingKey(stolen),
+      stolenRaw: stolen,
       sourceIngIdx: ingIdx,
     };
     setLastForkEvent(forkEvent);
@@ -2850,6 +2905,10 @@ export default function App() {
               ingredients={b}
               table={i === human.currentBurger ? human.table : i < human.currentBurger ? b : []}
               isCurrent={i === human.currentBurger}
+              onRegisterSlotRef={i === human.currentBurger ? ((slotIdx, el) => {
+                if (el) humanBurgerSlotRefs.current[slotIdx] = el;
+                else delete humanBurgerSlotRefs.current[slotIdx];
+              }) : undefined}
               onIngredientClick={(ing) => setModal({ type: 'ingredientInfo', ingredient: ing })}
             />
           </div>
