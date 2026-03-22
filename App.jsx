@@ -754,6 +754,56 @@ export default function App() {
     return () => socket.off('remoteAction', handler);
   }, [isOnline, isHost]);  // eslint-disable-line
 
+  function estimateAINegationThreat(pls, aiIdx, actingIdx, card, affectedIdxs) {
+    const ai = pls[aiIdx];
+    if (!ai || !card) return 0;
+    const action = card.action;
+    const actingPlayer = pls[actingIdx];
+    const isTargetedAtAI = Array.isArray(affectedIdxs) && affectedIdxs.includes(aiIdx);
+    const normalizedTable = (ai.table || []).map(ing => ingKey(ing));
+    const aiNeeds = getRemainingNeeds(ai);
+    const neededOnTable = normalizedTable.filter(ing => aiNeeds.includes(ing)).length;
+    let threat = 0;
+
+    if (action === 'tenedor' && isTargetedAtAI) {
+      threat += ai.table.length > 0 ? 35 + neededOnTable * 12 : 0;
+    } else if (action === 'gloton' && isTargetedAtAI) {
+      threat += ai.table.length * 28 + neededOnTable * 10;
+    } else if (action === 'ladron' && isTargetedAtAI) {
+      threat += ai.mainHats.length > 0 ? 52 : 12;
+    } else if (action === 'intercambio_sombreros' && isTargetedAtAI) {
+      threat += ai.mainHats.length > 0 ? 44 : 8;
+    } else if (action === 'intercambio_hamburguesa' && isTargetedAtAI) {
+      threat += ai.table.length * 22 + neededOnTable * 10;
+    } else if (action === 'basurero') {
+      threat += actingPlayer?.isAI ? 10 : 30;
+    } else if (['milanesa', 'ensalada', 'pizza', 'parrilla', 'comecomodines'].includes(action)) {
+      const lossCount = normalizedTable.reduce((sum, ing) => {
+        if (action === 'milanesa') return sum + (['pan', 'huevo'].includes(ing) ? 1 : 0);
+        if (action === 'ensalada') return sum + (['lechuga', 'tomate', 'cebolla', 'palta'].includes(ing) ? 1 : 0);
+        if (action === 'pizza') return sum + (ing === 'queso' ? 1 : 0);
+        if (action === 'parrilla') return sum + (['pollo', 'carne'].includes(ing) ? 1 : 0);
+        if (action === 'comecomodines') return sum + (String(ing).startsWith('perrito|') ? 1 : 0);
+        return sum;
+      }, 0);
+      threat += lossCount * 24;
+    }
+
+    if (!actingPlayer?.isAI) threat += 10;
+    return threat;
+  }
+
+  function shouldAINegate(pls, aiIdx, actingIdx, card, affectedIdxs, aiConfig) {
+    const threat = estimateAINegationThreat(pls, aiIdx, actingIdx, card, affectedIdxs);
+    const difficulty = getAIDifficulty();
+
+    if (difficulty === 'easy') return threat >= 42 && Math.random() < aiConfig.negationChance;
+    if (difficulty === 'medium') return threat >= 26 && Math.random() < Math.max(aiConfig.negationChance, 0.35);
+    if (difficulty === 'hard') return threat >= 14 && Math.random() < Math.max(aiConfig.negationChance, 0.8);
+    if (difficulty === 'impossible') return threat > 0;
+    return threat >= 24 && Math.random() < aiConfig.negationChance;
+  }
+
   // â”€â”€ NegaciÃ³n: check before applying any action â”€â”€
   // resolveCallback: () => void  â€” called if action is NOT negated
   function startNegCheck(actingIdx, card, resolveCallback, affectedIdxs) {
@@ -766,13 +816,15 @@ export default function App() {
 
     if (eligible.length === 0) { resolveCallback(); return; }
 
-    const aiNegationChance = getAIDifficultyConfig().negationChance;
-    // AI players decide immediately according to difficulty
+    const aiConfig = getAIDifficultyConfig();
+    // AI players decide immediately according to difficulty and board impact
     const responses = {};
     for (const i of eligible) {
-      if (pls[i].isAI) responses[i] = Math.random() < aiNegationChance;
+      if (pls[i].isAI) responses[i] = shouldAINegate(pls, i, actingIdx, card, affectedIdxs, aiConfig);
     }
-    const aiNegator = eligible.find(i => pls[i].isAI && responses[i] === true);
+    const aiNegator = eligible
+      .filter(i => pls[i].isAI && responses[i] === true)
+      .sort((a, b) => estimateAINegationThreat(pls, b, actingIdx, card, affectedIdxs) - estimateAINegationThreat(pls, a, actingIdx, card, affectedIdxs))[0];
     if (aiNegator !== undefined) { cancelWithNegation(actingIdx, aiNegator, card); return; }
 
     // Human/remote players need to respond
