@@ -2062,6 +2062,8 @@ export default function App() {
           playIngredientAndEnd(newPls, newDiscard, deckArr, newHandIdx, newPls);
           return;
         }
+        setTimeout(() => { aiRunning.current = false; endTurn(newPls, deckArr, newDiscard, idx); }, 700);
+        return;
       }
     }
 
@@ -2088,9 +2090,13 @@ export default function App() {
           bestAdd = { hatLang, players: simPlayers, discard: nextDiscard, deck: nextDeck, bestAfterAdd, score };
         }
       }
-      if (bestAdd && bestAdd.bestAfterAdd) {
+      if (bestAdd) {
         addLog(idx, `agregó sombrero ${bestAdd.hatLang} para acercarse a su hamburguesa`, bestAdd.players);
-        playIngredientAndEnd(bestAdd.players, bestAdd.discard, bestAdd.deck, bestAdd.bestAfterAdd.handIdx, bestAdd.players);
+        if (bestAdd.bestAfterAdd) {
+          playIngredientAndEnd(bestAdd.players, bestAdd.discard, bestAdd.deck, bestAdd.bestAfterAdd.handIdx, bestAdd.players);
+          return;
+        }
+        setTimeout(() => { aiRunning.current = false; endTurn(bestAdd.players, bestAdd.deck, bestAdd.discard, idx); }, 700);
         return;
       }
     }
