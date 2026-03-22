@@ -307,6 +307,7 @@ export default function App() {
       ingredients: [...(glotonFx.ingredients || [])],
       moving: false,
       biteTick: 0,
+      biteFlash: false,
       showChampion: false,
     });
 
@@ -325,9 +326,13 @@ export default function App() {
             moving: false,
             ingredients: nextIngredients,
             biteTick: prev.biteTick + 1,
+            biteFlash: true,
           };
         });
       }, chewStart + idx * 250));
+      timers.push(setTimeout(() => {
+        setGlotonAnim((prev) => (prev ? { ...prev, biteFlash: false } : prev));
+      }, chewStart + idx * 250 + 130));
     });
 
     const finishAt = chewStart + (glotonFx.ingredients?.length || 0) * 250 + 120;
@@ -3824,6 +3829,20 @@ export default function App() {
                 transition: 'transform 0.18s ease',
               }}
             />
+            {glotonAnim.biteFlash && (
+              <div style={{
+                position: 'absolute',
+                left: '52%',
+                top: '54%',
+                width: isMobile ? 34 : 44,
+                height: isMobile ? 34 : 44,
+                transform: 'translate(-50%, -50%)',
+                borderRadius: '50%',
+                background: 'radial-gradient(circle, rgba(255,215,0,.9) 0%, rgba(255,140,0,.58) 45%, rgba(255,90,0,0) 72%)',
+                boxShadow: '0 0 18px rgba(255,215,0,.45)',
+                animation: 'gloton-bite-flash .13s ease-out',
+              }} />
+            )}
           </div>
 
           {!glotonAnim.showChampion && (
@@ -3850,7 +3869,10 @@ export default function App() {
                     alignItems: 'center',
                     justifyContent: 'center',
                     boxShadow: '0 10px 18px rgba(0,0,0,.28)',
-                    transform: idx === glotonAnim.ingredients.length - 1 && !glotonAnim.moving ? `scale(${glotonAnim.biteTick % 2 === 0 ? 1 : 0.9})` : 'scale(1)',
+                    transform: idx === glotonAnim.ingredients.length - 1 && !glotonAnim.moving
+                      ? `scale(${glotonAnim.biteFlash ? 0.76 : (glotonAnim.biteTick % 2 === 0 ? 1 : 0.9)})`
+                      : 'scale(1)',
+                    opacity: idx === glotonAnim.ingredients.length - 1 && glotonAnim.biteFlash ? 0.38 : 1,
                     transition: 'transform 0.16s ease, opacity 0.16s ease',
                   }}
                 >
@@ -3891,6 +3913,14 @@ export default function App() {
           )}
         </div>
       )}
+
+      <style>{`
+        @keyframes gloton-bite-flash {
+          0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+          40% { transform: translate(-50%, -50%) scale(1.08); opacity: 1; }
+          100% { transform: translate(-50%, -50%) scale(1.35); opacity: 0; }
+        }
+      `}</style>
 
       {/* â”€â”€ Main area â”€â”€ */}
       {isMobile ? (
