@@ -3649,7 +3649,7 @@ export default function App() {
               border: '2px solid rgba(255,215,0,.35)',
               boxShadow: '0 10px 22px rgba(0,0,0,.32)',
               opacity: comeComodinesAnim.pickedCount > 0 || comeComodinesAnim.stoppingAt ? 1 : 0,
-              transform: comeComodinesAnim.stoppingAt ? 'scale(1.04)' : 'scale(1)',
+              transform: comeComodinesAnim.stoppingAt ? 'scale(1.08) translateY(-2px)' : 'scale(1)',
               transition: 'all 0.16s ease',
             }}>
               {Array.from({ length: Math.max(1, Math.min(3, comeComodinesAnim.stoppingAt?.count || comeComodinesAnim.pickedCount || 0)) }).map((_, idx) => (
@@ -3687,7 +3687,9 @@ export default function App() {
                 height: isMobile ? 92 : 118,
                 objectFit: 'contain',
                 filter: 'drop-shadow(0 12px 22px rgba(0,0,0,.36))',
-                transform: comeComodinesAnim.moving ? 'rotate(-4deg)' : 'rotate(0deg) scale(1.02)',
+                transform: comeComodinesAnim.moving
+                  ? 'rotate(-4deg)'
+                  : (comeComodinesAnim.stoppingAt ? 'rotate(0deg) scale(1.12) translateY(-4px)' : 'rotate(0deg) scale(1.02)'),
                 transition: 'transform 0.18s ease',
               }}
             />
