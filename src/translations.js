@@ -2005,14 +2005,15 @@ const SHORT_BY_UI = {
 
 export function getLocalizedLangShort(gameLang, uiLang) {
   const l = uiLang || getUILang();
-  const short = SHORT_BY_UI[l]?.[gameLang];
+  const safeGameLang = gameLang || 'español';
+  const short = SHORT_BY_UI[l]?.[safeGameLang];
   if (short) return short;
-  const name = getLocalizedLangName(gameLang, l);
+  const name = getLocalizedLangName(safeGameLang, l) || safeGameLang;
   const clean = name
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^A-Za-z]/g, '');
-  return (clean.slice(0, 3) || gameLang.slice(0, 3)).toUpperCase();
+  return (clean.slice(0, 3) || safeGameLang.slice(0, 3)).toUpperCase();
 }
 
 export { translations, LANG_TO_KEY, KEY_TO_LANG };

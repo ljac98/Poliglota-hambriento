@@ -57,9 +57,10 @@ self.addEventListener('fetch', (event) => {
   if (event.request.mode === 'navigate' || event.request.destination === 'document') {
     event.respondWith(
       fetch(event.request)
-        .then((response) => {
+        .then(async (response) => {
           if (shouldCacheResponse(event.request, response)) {
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, response.clone()));
+            const cache = await caches.open(CACHE_NAME);
+            await cache.put(event.request, response.clone());
           }
           return response;
         })
@@ -72,17 +73,30 @@ self.addEventListener('fetch', (event) => {
   }
 
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      const networkFetch = fetch(event.request)
-        .then((response) => {
+    caches.match(event.request).then(async (cachedResponse) => {
+      if (cachedResponse) {
+        event.waitUntil(
+          fetch(event.request)
+            .then(async (response) => {
+              if (shouldCacheResponse(event.request, response)) {
+                const cache = await caches.open(CACHE_NAME);
+                await cache.put(event.request, response.clone());
+              }
+            })
+            .catch(() => {}),
+        );
+        return cachedResponse;
+      }
+
+      return fetch(event.request)
+        .then(async (response) => {
           if (shouldCacheResponse(event.request, response)) {
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, response.clone()));
+            const cache = await caches.open(CACHE_NAME);
+            await cache.put(event.request, response.clone());
           }
           return response;
         })
-        .catch(() => cachedResponse);
-
-      return cachedResponse || networkFetch;
+        .catch(() => caches.match('/'));
     }),
   );
 });

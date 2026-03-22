@@ -77,7 +77,8 @@ const ING_IMG = {
 
 // ═══ INGREDIENT CARD (Lotería style) ═══
 export const IngredientCard = ({ card, onClick, selected, small, large, playable }) => {
-  const { language: lang, ingredient: ing } = card;
+  const { ingredient: ing } = card;
+  const lang = card.language || 'español';
   const uiLang = getUILang();
   const langShort = getLocalizedLangShort(lang, uiLang);
   const isWild = ing === "perrito";
