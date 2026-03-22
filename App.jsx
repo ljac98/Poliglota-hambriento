@@ -697,7 +697,7 @@ export default function App() {
       setExtraPlay(state.extraPlay || false);
       setCurrentGameConfig(state.gameConfig || null);
       setModal(currentModal => {
-        const privateModals = ['manual_cambiar', 'manual_cambiar_discard', 'manual_agregar', 'wildcard', 'basurero', 'pickHatReplace', 'pickHatExchange', 'ingredientInfo', 'pickTarget', 'pickIngredient', 'pickIngredientRemote'];
+        const privateModals = ['manual_cambiar', 'manual_cambiar_discard', 'manual_agregar', 'wildcard', 'basurero', 'pickHatReplace', 'pickHatExchange', 'pickHatSteal', 'ingredientInfo', 'pickTarget', 'pickIngredient', 'pickIngredientRemote'];
         if (state.modal) return state.modal;
         if (currentModal && privateModals.includes(currentModal.type)) return currentModal;
         return null;
@@ -724,7 +724,7 @@ export default function App() {
     clearTimeout(syncRef.current);
     if (!isOnline || !isHost || phase !== 'playing') return;
     syncRef.current = setTimeout(() => {
-      const privateModals = ['manual_cambiar', 'manual_cambiar_discard', 'manual_agregar', 'wildcard', 'basurero', 'pickHatReplace', 'pickHatExchange', 'ingredientInfo', 'pickTarget', 'pickIngredient', 'pickIngredientRemote'];
+      const privateModals = ['manual_cambiar', 'manual_cambiar_discard', 'manual_agregar', 'wildcard', 'basurero', 'pickHatReplace', 'pickHatExchange', 'pickHatSteal', 'ingredientInfo', 'pickTarget', 'pickIngredient', 'pickIngredientRemote'];
       const syncModal = modal && privateModals.includes(modal.type) ? null : modal;
       socket.emit('syncState', {
         code: roomCode,
@@ -897,7 +897,11 @@ export default function App() {
       endTurnFromRemote(pls, dk, di, actingIdx);
     } else if (card.action === 'ladron') {
       if (pls[ti].mainHats.length > 0) {
-        const stolen = pls[ti].mainHats.splice(0, 1)[0];
+        const stealHat = action.hatLang && pls[ti].mainHats.includes(action.hatLang)
+          ? action.hatLang
+          : pls[ti].mainHats[0];
+        const stealIdx = pls[ti].mainHats.indexOf(stealHat);
+        const stolen = pls[ti].mainHats.splice(stealIdx, 1)[0];
         pls[actingIdx].mainHats.push(stolen);
         if (pls[ti].mainHats.length > 0) {
           pls[ti].maxHand = Math.min(6, pls[ti].maxHand + 1);
@@ -1455,63 +1459,71 @@ export default function App() {
       const info = getActionInfo(card.action);
       const fallbackTarget = getBestAIOpponent(pls, idx, aiConfig);
       const richest = chosenAction.targetIdx ?? fallbackTarget;
-      let newPls = clone(pls);
-      let newDiscard = [...discardArr, card];
-      newPls[idx].hand.splice(actionIdx, 1);
       addLog(idx, `jugó ${info.name} ${info.emoji}`, pls);
 
-      const mass = ['milanesa', 'ensalada', 'pizza', 'parrilla', 'comecomodines'];
-      if (mass.includes(card.action)) {
-        const r = applyMass(newPls, newDiscard, card.action, idx);
-        newPls = r.players; newDiscard = r.discard;
-      } else if (richest !== null && richest !== undefined) {
-        if (card.action === 'gloton') {
-          newPls[richest].table.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `g${Date.now()}${Math.random()}` }));
-          newPls[richest].table = [];
-          addLog(idx, `vació la mesa de ${pls[richest].name}`, newPls);
-        } else if (card.action === 'tenedor') {
-          if (newPls[richest].table.length > 0) {
-            const wanted = getRemainingNeeds(newPls[idx]);
-            let si = newPls[richest].table.findIndex(ing => wanted.includes(ingKey(ing)));
-            if (si === -1) si = randInt(0, newPls[richest].table.length - 1);
-            const stolen = newPls[richest].table.splice(si, 1)[0];
-            newPls[idx].table.push(stolen);
-            const { player: up2, freed: fr2, done: dn2 } = advanceBurger(newPls[idx]);
-            newPls[idx] = up2;
-            if (dn2) { fr2.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `t${Date.now()}${Math.random()}` })); }
-            addLog(idx, `robó ${ING_EMOJI[ingKey(stolen)]} de ${pls[richest].name}`, newPls);
-          }
-        } else if (card.action === 'ladron') {
-          if (newPls[richest].mainHats.length > 0) {
-            const stolen = newPls[richest].mainHats.splice(0, 1)[0];
-            newPls[idx].mainHats.push(stolen);
-            if (newPls[richest].mainHats.length > 0) {
-              newPls[richest].maxHand = Math.min(6, newPls[richest].maxHand + 1);
-            }
-            if (newPls[richest].mainHats.length === 0 && newPls[richest].perchero.length > 0) {
-              const nh = newPls[richest].perchero.shift();
-              newPls[richest].mainHats.push(nh);
-            }
-            addLog(idx, `robó el sombrero ${stolen} de ${pls[richest].name}`, newPls);
-          }
-        } else if (card.action === 'intercambio_sombreros') {
-          if (newPls[idx].mainHats[0] && newPls[richest].mainHats[0]) {
-            const tmp = newPls[idx].mainHats[0];
-            newPls[idx].mainHats[0] = newPls[richest].mainHats[0];
-            newPls[richest].mainHats[0] = tmp;
-            addLog(idx, `intercambió sombreros con ${pls[richest].name}`, newPls);
-          }
-        } else if (card.action === 'intercambio_hamburguesa') {
-          const tmp = newPls[idx].table;
-          newPls[idx].table = newPls[richest].table;
-          newPls[richest].table = tmp;
-          filterTable(newPls[idx], newDiscard);
-          filterTable(newPls[richest], newDiscard);
-          addLog(idx, `intercambió mesa con ${pls[richest].name}`, newPls);
-        }
-      }
+      const affected = ['milanesa', 'ensalada', 'pizza', 'parrilla', 'comecomodines'].includes(card.action)
+        ? undefined
+        : (richest !== null && richest !== undefined ? [richest] : undefined);
 
-      setTimeout(() => { aiRunning.current = false; endTurn(newPls, deckArr, newDiscard, idx); }, 900);
+      startNegCheck(idx, card, () => {
+        let newPls = clone(playersRef.current);
+        let newDiscard = [...discardRef.current, card];
+        const currentIdx = newPls[idx].hand.findIndex(c => c.id === card.id);
+        if (currentIdx !== -1) newPls[idx].hand.splice(currentIdx, 1);
+
+        const mass = ['milanesa', 'ensalada', 'pizza', 'parrilla', 'comecomodines'];
+        if (mass.includes(card.action)) {
+          const r = applyMass(newPls, newDiscard, card.action, idx);
+          newPls = r.players; newDiscard = r.discard;
+        } else if (richest !== null && richest !== undefined) {
+          if (card.action === 'gloton') {
+            newPls[richest].table.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `g${Date.now()}${Math.random()}` }));
+            newPls[richest].table = [];
+            addLog(idx, `vació la mesa de ${pls[richest].name}`, newPls);
+          } else if (card.action === 'tenedor') {
+            if (newPls[richest].table.length > 0) {
+              const wanted = getRemainingNeeds(newPls[idx]);
+              let si = newPls[richest].table.findIndex(ing => wanted.includes(ingKey(ing)));
+              if (si === -1) si = randInt(0, newPls[richest].table.length - 1);
+              const stolen = newPls[richest].table.splice(si, 1)[0];
+              newPls[idx].table.push(stolen);
+              const { player: up2, freed: fr2, done: dn2 } = advanceBurger(newPls[idx]);
+              newPls[idx] = up2;
+              if (dn2) { fr2.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `t${Date.now()}${Math.random()}` })); }
+              addLog(idx, `robó ${ING_EMOJI[ingKey(stolen)]} de ${pls[richest].name}`, newPls);
+            }
+          } else if (card.action === 'ladron') {
+            if (newPls[richest].mainHats.length > 0) {
+              const stolen = newPls[richest].mainHats.splice(0, 1)[0];
+              newPls[idx].mainHats.push(stolen);
+              if (newPls[richest].mainHats.length > 0) {
+                newPls[richest].maxHand = Math.min(6, newPls[richest].maxHand + 1);
+              }
+              if (newPls[richest].mainHats.length === 0 && newPls[richest].perchero.length > 0) {
+                const nh = newPls[richest].perchero.shift();
+                newPls[richest].mainHats.push(nh);
+              }
+              addLog(idx, `robó el sombrero ${stolen} de ${pls[richest].name}`, newPls);
+            }
+          } else if (card.action === 'intercambio_sombreros') {
+            if (newPls[idx].mainHats[0] && newPls[richest].mainHats[0]) {
+              const tmp = newPls[idx].mainHats[0];
+              newPls[idx].mainHats[0] = newPls[richest].mainHats[0];
+              newPls[richest].mainHats[0] = tmp;
+              addLog(idx, `intercambió sombreros con ${pls[richest].name}`, newPls);
+            }
+          } else if (card.action === 'intercambio_hamburguesa') {
+            const tmp = newPls[idx].table;
+            newPls[idx].table = newPls[richest].table;
+            newPls[richest].table = tmp;
+            filterTable(newPls[idx], newDiscard);
+            filterTable(newPls[richest], newDiscard);
+            addLog(idx, `intercambió mesa con ${pls[richest].name}`, newPls);
+          }
+        }
+
+        setTimeout(() => { aiRunning.current = false; endTurn(newPls, deckArr, newDiscard, idx); }, 900);
+      }, affected);
       return true;
     };
 
@@ -1831,6 +1843,8 @@ export default function App() {
         const newDiscard = [...discard, card];
         if (newPls[targetIdx].table.length === 0) return;
         setModal({ type: 'pickIngredientRemote', targetIdx, cardIdx, newPls, newDiscard });
+      } else if (action === 'ladron') {
+        setModal({ type: 'pickHatSteal', targetIdx, cardIdx, isRemote: true });
       } else if (action === 'intercambio_sombreros') {
         // Show hat exchange picker locally
         setModal({ type: 'pickHatExchange', targetIdx, cardIdx, isRemote: true });
@@ -1865,28 +1879,7 @@ export default function App() {
 
       } else if (action === 'ladron') {
         if (newPls[targetIdx].mainHats.length === 0) return;
-        const stolen = newPls[targetIdx].mainHats.splice(0, 1)[0];
-        newPls[HI].mainHats.push(stolen);
-        if (newPls[targetIdx].mainHats.length > 0) {
-          newPls[targetIdx].maxHand = Math.min(6, newPls[targetIdx].maxHand + 1);
-        }
-        addLog(HI, `robÃ³ el sombrero ${stolen}`, newPls);
-        if (newPls[targetIdx].mainHats.length === 0) {
-          if (newPls[targetIdx].perchero.length > 0) {
-            if (newPls[targetIdx].isAI) {
-              const nh = newPls[targetIdx].perchero.shift();
-              newPls[targetIdx].mainHats.push(nh);
-              endTurn(newPls, dk, newDiscard, HI);
-            } else if (newPls[targetIdx].isRemote) {
-              setModal({ type: 'pickHatReplace', newPls, newDiscard, victimIdx: targetIdx, fromIdx: HI });
-              setPlayers(newPls); setDiscard(newDiscard);
-            } else {
-              setModal({ type: 'pickHatReplace', newPls, newDiscard, victimIdx: targetIdx });
-            }
-            return;
-          }
-        }
-        endTurn(newPls, dk, newDiscard, HI);
+        setModal({ type: 'pickHatSteal', targetIdx, newPls, newDiscard, dk });
 
       } else if (action === 'intercambio_sombreros') {
         if (newPls[HI].mainHats.length > 0 && newPls[targetIdx].mainHats.length > 0) {
@@ -1955,6 +1948,40 @@ export default function App() {
       newPls[targetIdx].mainHats.splice(ti, 1);
       newPls[HI].mainHats.push(theirHat);
       newPls[targetIdx].mainHats.push(myHat);
+    }
+    endTurn(newPls, dk || deck, newDiscard || discard, HI);
+  }
+
+  function resolveHatSteal(hatLang) {
+    const { targetIdx, newPls, newDiscard, dk, cardIdx, isRemote } = modal;
+    setModal(null); setSelectedIdx(null);
+    if (isOnline && !isHost) {
+      socket.emit('playerAction', { code: roomCode, action: { type: 'playActionTarget', cardIdx, targetIdx, action: 'ladron', hatLang } });
+      return;
+    }
+    if (!newPls[targetIdx].mainHats.includes(hatLang)) {
+      endTurn(newPls, dk || deck, newDiscard || discard, HI);
+      return;
+    }
+    const stealIdx = newPls[targetIdx].mainHats.indexOf(hatLang);
+    const stolen = newPls[targetIdx].mainHats.splice(stealIdx, 1)[0];
+    newPls[HI].mainHats.push(stolen);
+    if (newPls[targetIdx].mainHats.length > 0) {
+      newPls[targetIdx].maxHand = Math.min(6, newPls[targetIdx].maxHand + 1);
+    }
+    addLog(HI, `robó el sombrero ${stolen}`, newPls);
+    if (newPls[targetIdx].mainHats.length === 0 && newPls[targetIdx].perchero.length > 0) {
+      if (newPls[targetIdx].isAI) {
+        const nh = newPls[targetIdx].perchero.shift();
+        newPls[targetIdx].mainHats.push(nh);
+        endTurn(newPls, dk || deck, newDiscard || discard, HI);
+      } else if (newPls[targetIdx].isRemote) {
+        setModal({ type: 'pickHatReplace', newPls, newDiscard, victimIdx: targetIdx, fromIdx: HI });
+        setPlayers(newPls); setDiscard(newDiscard);
+      } else {
+        setModal({ type: 'pickHatReplace', newPls, newDiscard, victimIdx: targetIdx });
+      }
+      return;
     }
     endTurn(newPls, dk || deck, newDiscard || discard, HI);
   }
@@ -3316,6 +3343,52 @@ export default function App() {
               }}
             >
               {T('exchange')}
+            </button>
+          </Modal>
+        );
+      })()}
+
+      {modal?.type === 'pickHatSteal' && (() => {
+        const theirHats = modal.isRemote ? players[modal.targetIdx].mainHats : modal.newPls[modal.targetIdx].mainHats;
+        const targetName = players[modal.targetIdx]?.name || 'Oponente';
+        return (
+          <Modal title="🥷 Robar sombrero">
+            <p style={{ color: '#888', fontSize: 12, marginBottom: 12 }}>
+              Elige cuál sombrero principal quieres robarle a {targetName}.
+            </p>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
+              {theirHats.map(h => (
+                <div
+                  key={h}
+                  onClick={() => setModal(prev => ({ ...prev, selectedStealHat: h }))}
+                  style={{
+                    padding: 10, borderRadius: 10, cursor: 'pointer',
+                    border: modal.selectedStealHat === h ? `3px solid #FFD700` : `2px solid ${LANG_BORDER[h]}88`,
+                    background: modal.selectedStealHat === h ? 'rgba(255,215,0,.12)' : 'rgba(255,255,255,.04)',
+                    transition: 'all .15s',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                  }}
+                >
+                  <HatSVG lang={h} size={36} />
+                  <span style={{ fontSize: 11, fontWeight: 700, color: modal.selectedStealHat === h ? '#FFD700' : LANG_TEXT[h] }}>
+                    {T(h)}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <button
+              disabled={!modal.selectedStealHat}
+              onClick={() => resolveHatSteal(modal.selectedStealHat)}
+              style={{
+                width: '100%', padding: '10px 0', borderRadius: 10,
+                border: 'none', fontFamily: 'inherit', fontWeight: 800, fontSize: 14,
+                cursor: modal.selectedStealHat ? 'pointer' : 'not-allowed',
+                background: modal.selectedStealHat ? 'linear-gradient(135deg, #ff8a65, #ff7043)' : 'rgba(255,255,255,.08)',
+                color: modal.selectedStealHat ? '#fff' : '#555',
+                transition: 'all .2s',
+              }}
+            >
+              Robar
             </button>
           </Modal>
         );
