@@ -3066,14 +3066,16 @@ export default function App() {
           </p>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
             {human.perchero.map(h => (
-              <div
+              <button
                 key={h}
+                type="button"
                 onClick={() => setModal({ type: 'manual_cambiar_discard', hatLang: h, selected: [] })}
                 style={{
                   padding: 10, borderRadius: 10, cursor: 'pointer',
                   border: `2px solid ${LANG_BORDER[h]}88`,
                   background: 'rgba(255,255,255,.04)', transition: 'all .15s',
                   display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                  WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation',
                 }}
                 onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,.1)'}
                 onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,.04)'}
@@ -3082,7 +3084,7 @@ export default function App() {
                 <span style={{ fontSize: 11, fontWeight: 700, color: LANG_TEXT[h] }}>
                   {T(h)}
                 </span>
-              </div>
+              </button>
             ))}
           </div>
           <Btn onClick={() => setModal(null)} color="#333" style={{ color: '#aaa' }}>{T('cancel')}</Btn>
@@ -3105,8 +3107,9 @@ export default function App() {
               {human.hand.map((card, i) => {
                 const isSel = sel.includes(i);
                 return (
-                  <div
+                  <button
                     key={card.id}
+                    type="button"
                     onClick={() => {
                       const newSel = isSel
                         ? sel.filter(x => x !== i)
@@ -3119,10 +3122,11 @@ export default function App() {
                       borderRadius: 8,
                       transform: isSel ? 'translateY(-6px)' : 'none',
                       opacity: !isSel && sel.length >= cost ? 0.4 : 1,
+                      WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation',
                     }}
                   >
                     <GameCard card={card} selected={false} playable={false} large={false} small={true} />
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -3149,14 +3153,16 @@ export default function App() {
           </p>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
             {human.perchero.map(h => (
-              <div
+              <button
                 key={h}
+                type="button"
                 onClick={() => resolveManualAgregar(h)}
                 style={{
                   padding: 10, borderRadius: 10, cursor: 'pointer',
                   border: `2px solid ${LANG_BORDER[h]}88`,
                   background: 'rgba(255,255,255,.04)', transition: 'all .15s',
                   display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                  WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation',
                 }}
                 onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,.1)'}
                 onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,.04)'}
@@ -3165,7 +3171,7 @@ export default function App() {
                 <span style={{ fontSize: 11, fontWeight: 700, color: LANG_TEXT[h] }}>
                   {T(h)}
                 </span>
-              </div>
+              </button>
             ))}
           </div>
           <Btn onClick={() => setModal(null)} color="#333" style={{ color: '#aaa' }}>{T('cancel')}</Btn>
@@ -3900,6 +3906,7 @@ export default function App() {
     </div>
   );
 }
+
 
 
 
