@@ -16,12 +16,14 @@ import HatSVG from './components/HatSVG.jsx';
 import percheroImg from './imagenes/sombreros/perchero/percherofinal.png';
 import ingredientCardIcon from './imagenes/hamburguesas/ham.png';
 import bloqueoImg from './imagenes/bloqueo.png';
+import campeonImg from './imagenes/campeon.png';
 import eqMilanesa from './imagenes/acciones/esquina/milanga.png';
 import eqEnsalada from './imagenes/acciones/esquina/ensalada2.png';
 import eqPizza from './imagenes/acciones/esquina/pizza2.png';
 import eqParrilla from './imagenes/acciones/esquina/parrilla.png';
 import eqTenedor from './imagenes/acciones/esquina/tenedor2.png';
 import actionTenedor from './imagenes/acciones/tenedor.png';
+import actionGloton from './imagenes/acciones/comer.png';
 import actionComeComodines from './imagenes/acciones/comecomodines.png';
 import eqLadron from './imagenes/acciones/esquina/robo.png';
 import eqIntercambioSomb from './imagenes/acciones/esquina/intercambiosomb.png';
@@ -190,16 +192,20 @@ export default function App() {
   const [lastNegationEvent, setLastNegationEvent] = useState(null);
   const [lastForkEvent, setLastForkEvent] = useState(null);
   const [lastComeComodinesEvent, setLastComeComodinesEvent] = useState(null);
+  const [lastGlotonEvent, setLastGlotonEvent] = useState(null);
   const [negationFx, setNegationFx] = useState(null);
   const [forkFx, setForkFx] = useState(null);
   const [comeComodinesFx, setComeComodinesFx] = useState(null);
+  const [glotonFx, setGlotonFx] = useState(null);
   const [forkAnim, setForkAnim] = useState(null);
   const [comeComodinesAnim, setComeComodinesAnim] = useState(null);
+  const [glotonAnim, setGlotonAnim] = useState(null);
   // Host-only ref that stores the resolve callback (not serializable over socket)
   const pendingNegRef = useRef(null);
   const lastNegationSeenRef = useRef(null);
   const lastForkSeenRef = useRef(null);
   const lastComeComodinesSeenRef = useRef(null);
+  const lastGlotonSeenRef = useRef(null);
   const playerAreaRefs = useRef({});
   const playerIngredientRefs = useRef({});
   const humanBurgerAreaRef = useRef(null);
@@ -275,6 +281,63 @@ export default function App() {
     const timer = setTimeout(() => setComeComodinesFx(null), 2200);
     return () => clearTimeout(timer);
   }, [comeComodinesFx]);
+
+  useEffect(() => {
+    if (!glotonFx) return undefined;
+
+    const timers = [];
+    const getRectCenter = (el, fallbackX, fallbackY) => {
+      if (!el) return { x: fallbackX, y: fallbackY };
+      const rect = el.getBoundingClientRect();
+      return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+    };
+    const sourceEl = glotonFx.actingIdx === HI ? humanBurgerAreaRef.current : playerAreaRefs.current[glotonFx.actingIdx];
+    const targetEl = glotonFx.targetIdx === HI ? humanBurgerAreaRef.current : playerAreaRefs.current[glotonFx.targetIdx];
+    const source = getRectCenter(sourceEl, window.innerWidth * 0.68, window.innerHeight * 0.44);
+    const target = getRectCenter(targetEl, window.innerWidth * 0.26, window.innerHeight * 0.34);
+    const stackY = target.y + (isMobile ? 38 : 52);
+
+    setGlotonAnim({
+      x: source.x,
+      y: source.y,
+      targetX: target.x,
+      targetY: target.y - (isMobile ? 8 : 12),
+      stackX: target.x,
+      stackY,
+      ingredients: [...(glotonFx.ingredients || [])],
+      moving: false,
+      biteTick: 0,
+      showChampion: false,
+    });
+
+    timers.push(setTimeout(() => {
+      setGlotonAnim((prev) => (prev ? { ...prev, x: target.x, y: target.y - (isMobile ? 8 : 12), moving: true } : prev));
+    }, 120));
+
+    const chewStart = 760;
+    (glotonFx.ingredients || []).forEach((_, idx) => {
+      timers.push(setTimeout(() => {
+        setGlotonAnim((prev) => {
+          if (!prev) return prev;
+          const nextIngredients = prev.ingredients.slice(0, Math.max(0, prev.ingredients.length - 1));
+          return {
+            ...prev,
+            moving: false,
+            ingredients: nextIngredients,
+            biteTick: prev.biteTick + 1,
+          };
+        });
+      }, chewStart + idx * 250));
+    });
+
+    const finishAt = chewStart + (glotonFx.ingredients?.length || 0) * 250 + 120;
+    timers.push(setTimeout(() => {
+      setGlotonAnim((prev) => (prev ? { ...prev, showChampion: true } : prev));
+    }, finishAt));
+    timers.push(setTimeout(() => setGlotonAnim(null), finishAt + 980));
+
+    return () => timers.forEach(clearTimeout);
+  }, [glotonFx, HI, isMobile]);
 
   useEffect(() => {
     if (!forkFx) return undefined;
@@ -451,6 +514,22 @@ export default function App() {
     setComeComodinesFx(event);
   }, []);
 
+  const triggerGlotonEvent = useCallback((actingIdx, targetIdx, targetTable, actorName) => {
+    if (!targetTable?.length) return;
+    const event = {
+      id: `${Date.now()}-${Math.random()}`,
+      actingIdx,
+      targetIdx,
+      actorName: actorName || 'Jugador',
+      ingredients: targetTable.map(ing => ingKey(ing)),
+    };
+    setLastGlotonEvent(event);
+    if (!isOnline || targetIdx === HI) {
+      lastGlotonSeenRef.current = event.id;
+      setGlotonFx(event);
+    }
+  }, [HI, isOnline]);
+
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
     if (shouldLogoutOnLoad) {
@@ -598,15 +677,19 @@ export default function App() {
     setLastNegationEvent(null);
     setLastForkEvent(null);
     setLastComeComodinesEvent(null);
+    setLastGlotonEvent(null);
     setNegationFx(null);
     setForkFx(null);
     setComeComodinesFx(null);
+    setGlotonFx(null);
     setForkAnim(null);
     setComeComodinesAnim(null);
+    setGlotonAnim(null);
     pendingNegRef.current = null;
     lastNegationSeenRef.current = null;
     lastForkSeenRef.current = null;
     lastComeComodinesSeenRef.current = null;
+    lastGlotonSeenRef.current = null;
     setGamePaused(false);
     setPausedMessage('');
     setShowChat(false);
@@ -644,14 +727,18 @@ export default function App() {
     setLastNegationEvent(null);
     setLastForkEvent(null);
     setLastComeComodinesEvent(null);
+    setLastGlotonEvent(null);
     setNegationFx(null);
     setForkFx(null);
     setComeComodinesFx(null);
+    setGlotonFx(null);
     setForkAnim(null);
     setComeComodinesAnim(null);
+    setGlotonAnim(null);
     lastNegationSeenRef.current = null;
     lastForkSeenRef.current = null;
     lastComeComodinesSeenRef.current = null;
+    lastGlotonSeenRef.current = null;
     clearRoomSession();
     setGamePaused(false);
     setPausedMessage('');
@@ -808,6 +895,7 @@ export default function App() {
             setLastNegationEvent(gameState.lastNegationEvent || null);
             setLastForkEvent(gameState.lastForkEvent || null);
             setLastComeComodinesEvent(gameState.lastComeComodinesEvent || null);
+            setLastGlotonEvent(gameState.lastGlotonEvent || null);
             if (gameState.winner) { setWinner(gameState.winner); clearRoomSession(); setPhase('gameover'); }
           else setPhase('playing');
         } else if (!host) {
@@ -943,6 +1031,7 @@ export default function App() {
       setLastNegationEvent(state.lastNegationEvent || null);
       setLastForkEvent(state.lastForkEvent || null);
       setLastComeComodinesEvent(state.lastComeComodinesEvent || null);
+      setLastGlotonEvent(state.lastGlotonEvent || null);
       if (state.lastNegationEvent?.id && state.lastNegationEvent.id !== lastNegationSeenRef.current && state.lastNegationEvent.actingIdx === myPlayerIdx) {
         lastNegationSeenRef.current = state.lastNegationEvent.id;
         setNegationFx(state.lastNegationEvent);
@@ -954,6 +1043,10 @@ export default function App() {
       if (state.lastComeComodinesEvent?.id && state.lastComeComodinesEvent.id !== lastComeComodinesSeenRef.current) {
         lastComeComodinesSeenRef.current = state.lastComeComodinesEvent.id;
         setComeComodinesFx(state.lastComeComodinesEvent);
+      }
+      if (state.lastGlotonEvent?.id && state.lastGlotonEvent.id !== lastGlotonSeenRef.current && state.lastGlotonEvent.targetIdx === myPlayerIdx) {
+        lastGlotonSeenRef.current = state.lastGlotonEvent.id;
+        setGlotonFx(state.lastGlotonEvent);
       }
       if (state.winner) { setWinner(state.winner); clearRoomSession(); setPhase('gameover'); }
       else if (state.cp === myPlayerIdx && lastSyncCpRef.current !== myPlayerIdx) {
@@ -980,11 +1073,11 @@ export default function App() {
       const syncModal = modal && privateModals.includes(modal.type) ? null : modal;
       socket.emit('syncState', {
         code: roomCode,
-        state: { players, deck, discard, cp, log, extraPlay, modal: syncModal, pendingNeg, lastNegationEvent, lastForkEvent, lastComeComodinesEvent, winner, gameConfig: currentGameConfig, phase: 'playing' },
+        state: { players, deck, discard, cp, log, extraPlay, modal: syncModal, pendingNeg, lastNegationEvent, lastForkEvent, lastComeComodinesEvent, lastGlotonEvent, winner, gameConfig: currentGameConfig, phase: 'playing' },
       });
     }, 80);
     return () => clearTimeout(syncRef.current);
-  }, [players, deck, discard, cp, log, extraPlay, modal, pendingNeg, lastNegationEvent, lastForkEvent, lastComeComodinesEvent, winner, currentGameConfig, phase, isOnline, isHost]);
+  }, [players, deck, discard, cp, log, extraPlay, modal, pendingNeg, lastNegationEvent, lastForkEvent, lastComeComodinesEvent, lastGlotonEvent, winner, currentGameConfig, phase, isOnline, isHost]);
 
   // â”€â”€ Socket: host processes remote player actions â”€â”€
   // We store the latest state in refs so the socket handler always has fresh values
@@ -1201,6 +1294,7 @@ export default function App() {
   // â”€â”€ Shared targeted action resolution (used by host for both local and remote players) â”€â”€
   function applyTargetedAction(card, actingIdx, ti, action, pls, dk, di) {
     if (card.action === 'gloton') {
+      triggerGlotonEvent(actingIdx, ti, [...pls[ti].table], pls[actingIdx]?.name || 'Jugador');
       pls[ti].table.forEach(ing => di.push({ type: 'ingredient', ingredient: ingKey(ing), id: uid() }));
       pls[ti].table = [];
       endTurnFromRemote(pls, dk, di, actingIdx);
@@ -1467,7 +1561,7 @@ export default function App() {
           if (isOnline && isHost) {
             socket.emit('syncState', {
               code: roomCode,
-              state: { players: newPls, deck: newDeck, discard: newDiscard, cp, log, extraPlay, modal: null, pendingNeg: null, lastNegationEvent, lastForkEvent, lastComeComodinesEvent, winner: w, gameConfig: currentGameConfig, phase: 'playing' },
+              state: { players: newPls, deck: newDeck, discard: newDiscard, cp, log, extraPlay, modal: null, pendingNeg: null, lastNegationEvent, lastForkEvent, lastComeComodinesEvent, lastGlotonEvent, winner: w, gameConfig: currentGameConfig, phase: 'playing' },
             });
           }
       setWinner(w); clearRoomSession(); setPhase('gameover');
@@ -1843,10 +1937,11 @@ export default function App() {
           }
           newPls = r.players; newDiscard = r.discard;
         } else if (richest !== null && richest !== undefined) {
-          if (card.action === 'gloton') {
-            newPls[richest].table.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `g${Date.now()}${Math.random()}` }));
-            newPls[richest].table = [];
-            addLog(idx, `vació la mesa de ${pls[richest].name}`, newPls);
+            if (card.action === 'gloton') {
+              triggerGlotonEvent(idx, richest, [...newPls[richest].table], newPls[idx]?.name || 'IA');
+              newPls[richest].table.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `g${Date.now()}${Math.random()}` }));
+              newPls[richest].table = [];
+              addLog(idx, `vació la mesa de ${pls[richest].name}`, newPls);
           } else if (card.action === 'tenedor') {
             if (newPls[richest].table.length > 0) {
               const wanted = getRemainingNeeds(newPls[idx]);
@@ -2278,6 +2373,7 @@ export default function App() {
       let newDiscard = [...di, card];
 
       if (action === 'gloton') {
+        triggerGlotonEvent(HI, targetIdx, [...newPls[targetIdx].table], newPls[HI]?.name || 'Jugador');
         newPls[targetIdx].table.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `g${Date.now()}` }));
         newPls[targetIdx].table = [];
         endTurn(newPls, dk, newDiscard, HI);
@@ -3694,6 +3790,105 @@ export default function App() {
               }}
             />
           </div>
+        </div>
+      )}
+
+      {glotonAnim && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 9489,
+          pointerEvents: 'none',
+          overflow: 'hidden',
+        }}>
+          <div style={{
+            position: 'fixed',
+            left: glotonAnim.x,
+            top: glotonAnim.y,
+            width: isMobile ? 90 : 118,
+            height: isMobile ? 90 : 118,
+            transform: `translate(-50%, -50%) ${glotonAnim.moving ? 'scale(1)' : `scale(${glotonAnim.biteTick % 2 === 0 ? 1.02 : 1.1})`}`,
+            transition: glotonAnim.moving
+              ? 'left 0.62s cubic-bezier(.17,.84,.44,1), top 0.62s cubic-bezier(.17,.84,.44,1), transform 0.18s ease'
+              : 'transform 0.18s ease',
+            filter: 'drop-shadow(0 14px 26px rgba(0,0,0,.36))',
+          }}>
+            <img
+              src={actionGloton}
+              alt="Glotón"
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain',
+                transform: glotonAnim.moving ? 'rotate(-8deg)' : `rotate(${glotonAnim.biteTick % 2 === 0 ? '-2deg' : '5deg'})`,
+                transition: 'transform 0.18s ease',
+              }}
+            />
+          </div>
+
+          {!glotonAnim.showChampion && (
+            <div style={{
+              position: 'fixed',
+              left: glotonAnim.stackX,
+              top: glotonAnim.stackY,
+              transform: 'translate(-50%, -50%)',
+              display: 'flex',
+              flexDirection: 'column-reverse',
+              alignItems: 'center',
+              gap: isMobile ? 4 : 6,
+            }}>
+              {glotonAnim.ingredients.map((ing, idx) => (
+                <div
+                  key={`${ing}-${idx}-${glotonAnim.biteTick}`}
+                  style={{
+                    width: isMobile ? 54 : 70,
+                    height: isMobile ? 54 : 70,
+                    borderRadius: 16,
+                    background: 'rgba(15,17,23,.88)',
+                    border: '2px solid rgba(255,215,0,.22)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 10px 18px rgba(0,0,0,.28)',
+                    transform: idx === glotonAnim.ingredients.length - 1 && !glotonAnim.moving ? `scale(${glotonAnim.biteTick % 2 === 0 ? 1 : 0.9})` : 'scale(1)',
+                    transition: 'transform 0.16s ease, opacity 0.16s ease',
+                  }}
+                >
+                  {ING_IMG[ing]
+                    ? <img src={ING_IMG[ing]} alt={ing} style={{ width: isMobile ? 34 : 46, height: isMobile ? 34 : 46, objectFit: 'contain' }} />
+                    : <span style={{ fontSize: isMobile ? 28 : 34 }}>{ING_EMOJI[ing] || '🍔'}</span>}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {glotonAnim.showChampion && (
+            <div style={{
+              position: 'fixed',
+              left: glotonAnim.stackX,
+              top: glotonAnim.stackY,
+              transform: 'translate(-50%, -50%) scale(1)',
+              width: isMobile ? 112 : 150,
+              height: isMobile ? 112 : 150,
+              borderRadius: 24,
+              background: 'rgba(15,17,23,.66)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 14px 28px rgba(0,0,0,.34)',
+            }}>
+              <img
+                src={campeonImg}
+                alt="Campeón"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
+                  filter: 'drop-shadow(0 10px 16px rgba(255,215,0,.22))',
+                }}
+              />
+            </div>
+          )}
         </div>
       )}
 
