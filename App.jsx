@@ -1389,7 +1389,8 @@ export default function App() {
       setChatMessages(prev => [...prev, msg]);
       if (!showChatRef.current) setUnreadChat(prev => prev + 1);
     });
-    socket.on('playerVoluntaryLeft', ({ playerName, activeCount, gameStarted }) => {
+    socket.on('playerVoluntaryLeft', ({ playerName, activeCount, gameStarted, activePlayers }) => {
+      if (Array.isArray(activePlayers)) setLobbyPlayers(activePlayers);
       // Add a chat-like message so everyone sees who left
       setChatMessages(prev => [...prev, { playerName: 'Sistema', text: `${playerName} se ha salido del juego`, timestamp: Date.now() }]);
       // If game in progress and only 1 active player left (was 2-player game), pause
