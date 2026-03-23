@@ -27,8 +27,16 @@ import actionGloton from './imagenes/acciones/comer.png';
 import actionComeComodines from './imagenes/acciones/comecomodines.png';
 import actionPizza from './imagenes/acciones/pizza.png';
 import actionPizzaConQueso from './imagenes/acciones/pizza con queso.png';
+import burgerCarne from './imagenes/hamburguesas/ingredientes/carne.png';
+import burgerCebolla from './imagenes/hamburguesas/ingredientes/cebolla.png';
+import burgerHuevo from './imagenes/hamburguesas/ingredientes/huevo.png';
+import burgerLechuga from './imagenes/hamburguesas/ingredientes/lechuga.png';
+import burgerPalta from './imagenes/hamburguesas/ingredientes/palta.png';
 import burgerPanArriba from './imagenes/hamburguesas/ingredientes/pan arriba.png';
 import burgerPanAbajo from './imagenes/hamburguesas/ingredientes/pan abajo.png';
+import burgerPollo from './imagenes/hamburguesas/ingredientes/pollo.png';
+import burgerQueso from './imagenes/hamburguesas/ingredientes/queso.png';
+import burgerTomate from './imagenes/hamburguesas/ingredientes/tomates.png';
 import eqLadron from './imagenes/acciones/esquina/robo.png';
 import eqIntercambioSomb from './imagenes/acciones/esquina/intercambiosomb.png';
 import eqIntercambioHamb from './imagenes/acciones/esquina/intercam.png';
@@ -56,6 +64,17 @@ import {
   ingChosen,
   ingKey,
 } from './app/utils/gameHelpers.js';
+
+const BURGER_STACK_IMG = {
+  carne: burgerCarne,
+  cebolla: burgerCebolla,
+  huevo: burgerHuevo,
+  lechuga: burgerLechuga,
+  palta: burgerPalta,
+  pollo: burgerPollo,
+  queso: burgerQueso,
+  tomate: burgerTomate,
+};
 import { clearRoomSession, getRoomSession, saveRoomSession } from './app/utils/roomSession.js';
 
 const INSTALL_PROMPT_COPY = {
@@ -3999,10 +4018,10 @@ export default function App() {
                 src={burgerPanArriba}
                 alt="Pan arriba"
                 style={{
-                  width: isMobile ? 78 : 104,
-                  height: isMobile ? 42 : 56,
+                  width: isMobile ? 70 : 70,
+                  height: 'auto',
                   objectFit: 'contain',
-                  marginBottom: isMobile ? -6 : -10,
+                  marginBottom: -4,
                   filter: 'drop-shadow(0 10px 18px rgba(0,0,0,.28))',
                 }}
               />
@@ -4010,9 +4029,10 @@ export default function App() {
                 <div
                   key={`${ing}-${idx}-${glotonAnim.biteTick}`}
                   style={{
-                    width: isMobile ? 76 : 100,
-                    height: isMobile ? 30 : 40,
-                    marginTop: isMobile ? -3 : -5,
+                    width: isMobile ? 64 : 64,
+                    height: 'auto',
+                    marginTop: -4,
+                    marginBottom: -4,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -4026,8 +4046,10 @@ export default function App() {
                       : 'drop-shadow(0 8px 14px rgba(0,0,0,.24))',
                   }}
                 >
-                  {ING_IMG[ing]
-                    ? <img src={ING_IMG[ing]} alt={ing} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                  {BURGER_STACK_IMG[ing]
+                    ? <img src={BURGER_STACK_IMG[ing]} alt={ing} style={{ width: '100%', height: 'auto', objectFit: 'contain' }} />
+                    : ING_IMG[ing]
+                    ? <img src={ING_IMG[ing]} alt={ing} style={{ width: isMobile ? 40 : 48, height: isMobile ? 40 : 48, objectFit: 'contain' }} />
                     : <span style={{ fontSize: isMobile ? 24 : 30 }}>{ING_EMOJI[ing] || '🍔'}</span>}
                 </div>
               ))}
@@ -4035,10 +4057,10 @@ export default function App() {
                 src={burgerPanAbajo}
                 alt="Pan abajo"
                 style={{
-                  width: isMobile ? 78 : 104,
-                  height: isMobile ? 36 : 48,
+                  width: isMobile ? 70 : 70,
+                  height: 'auto',
                   objectFit: 'contain',
-                  marginTop: isMobile ? -6 : -8,
+                  marginTop: -4,
                   filter: 'drop-shadow(0 10px 18px rgba(0,0,0,.28))',
                 }}
               />
