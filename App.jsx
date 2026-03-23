@@ -1384,6 +1384,7 @@ export default function App() {
     socket.on('lobbyUpdate', ({ players: pls }) => setLobbyPlayers(pls));
     socket.on('lobbyHatPick', () => {});  // handled via lobbyUpdate in server if needed
     socket.on('playerLeft', ({ players: pls }) => setLobbyPlayers(pls));
+    socket.on('becameHost', () => setIsHost(true));
     socket.on('chatMessage', (msg) => {
       setChatMessages(prev => [...prev, msg]);
       if (!showChatRef.current) setUnreadChat(prev => prev + 1);
@@ -1430,6 +1431,7 @@ export default function App() {
       socket.off('lobbyUpdate');
       socket.off('lobbyHatPick');
       socket.off('playerLeft');
+      socket.off('becameHost');
       socket.off('chatMessage');
       socket.off('playerVoluntaryLeft');
       socket.off('playerRejoined');
