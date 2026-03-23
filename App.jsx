@@ -1016,67 +1016,6 @@ export default function App() {
     setShowInstallPrompt(true);
   }, [canOpenInstallPrompt]);
 
-  const installBanner = showInstallPrompt && (
-    <div
-      style={{
-        position: 'fixed',
-        left: 16,
-        right: isMobile ? 16 : 'auto',
-        bottom: isMobile ? 16 : 20,
-        width: isMobile ? 'auto' : 360,
-        zIndex: 10000,
-        padding: isMobile ? '12px 14px' : '14px 16px',
-        borderRadius: 18,
-        background: 'rgba(12, 16, 28, 0.96)',
-        border: '1px solid rgba(255, 215, 0, 0.22)',
-        boxShadow: '0 20px 50px rgba(0,0,0,.42)',
-        backdropFilter: 'blur(10px)',
-      }}
-    >
-      <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-        <div
-          style={{
-            width: 42,
-            height: 42,
-            borderRadius: 14,
-            background: 'rgba(255, 215, 0, 0.16)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-            fontSize: 22,
-          }}
-        >
-          {'\u{1F4F1}'}
-        </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ color: '#FFD700', fontWeight: 900, fontSize: 16, lineHeight: 1.1, marginBottom: 4 }}>
-            {installCopy.title}
-          </div>
-          <div style={{ color: '#d5d8e4', fontSize: 13, lineHeight: 1.35 }}>
-            {showIosInstallHint ? installCopy.descIos : installCopy.descPrompt}
-          </div>
-          <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-            {!showIosInstallHint && deferredInstallPrompt && (
-              <Btn onClick={handleInstallApp} color="#FFD700" style={{ color: '#0f1117', fontWeight: 900 }}>
-                {installCopy.install}
-              </Btn>
-            )}
-            <Btn
-              onClick={() => {
-                setShowInstallPrompt(false);
-              }}
-              color="#2a2a4a"
-              style={{ color: '#c5cada', fontWeight: 800 }}
-            >
-              {installCopy.later}
-            </Btn>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
   function acceptRoomInvite() {
     if (!roomInvite) return;
     const code = roomInvite.roomCode;
@@ -3574,7 +3513,6 @@ export default function App() {
           onLeftRoomReturn={handleLeftRoomReturn}
           onLeftRoomLeave={handleLeftRoomLeave}
         />
-        {installBanner}
       </>
     );
   }
@@ -4058,8 +3996,6 @@ export default function App() {
       background: '#0f1117', fontFamily: "'Fredoka',sans-serif", overflow: 'hidden', position: 'relative',
     }}>
       {quickMenu}
-      {installBanner}
-
       {/* â”€â”€ Header â”€â”€ */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: isMobile ? 6 : 12, padding: isMobile ? '6px 10px' : '8px 16px',
