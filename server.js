@@ -816,6 +816,7 @@ io.on('connection', socket => {
     if (room) {
       const player = room.players.find(p => p.name === playerName);
       if (player) player.hat = hat;
+      io.to(code).emit('lobbyUpdate', { players: serializeRoomPlayers(room) });
     }
     socket.to(code).emit('lobbyHatPick', { playerName, hat });
   });
