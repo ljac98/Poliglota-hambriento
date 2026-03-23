@@ -465,6 +465,7 @@ export default function App() {
       x: targets[0].point.x,
       y: targets[0].point.y,
       cheesy: false,
+      pop: false,
       targetCount: targets[0].count || 1,
       visible: true,
     });
@@ -476,13 +477,17 @@ export default function App() {
           x: target.point.x,
           y: target.point.y,
           cheesy: false,
+          pop: false,
           targetCount: target.count || 1,
           visible: true,
         });
       }, elapsed));
       timers.push(setTimeout(() => {
-        setPizzaAnim((prev) => (prev ? { ...prev, cheesy: true } : prev));
+        setPizzaAnim((prev) => (prev ? { ...prev, cheesy: true, pop: true } : prev));
       }, elapsed + 260));
+      timers.push(setTimeout(() => {
+        setPizzaAnim((prev) => (prev ? { ...prev, pop: false } : prev));
+      }, elapsed + 410));
       timers.push(setTimeout(() => {
         setPizzaAnim((prev) => (prev ? { ...prev, visible: false } : prev));
       }, elapsed + 620));
@@ -4257,8 +4262,10 @@ export default function App() {
             position: 'fixed',
             left: pizzaAnim.x,
             top: pizzaAnim.y,
-            transform: `translate(-50%, -50%) scale(${pizzaAnim.cheesy ? 1.06 : 0.96})`,
-            transition: 'transform 0.2s ease, opacity 0.2s ease',
+            transform: `translate(-50%, -50%) scale(${pizzaAnim.pop ? 1.18 : (pizzaAnim.cheesy ? 1.06 : 0.96)})`,
+            transition: pizzaAnim.pop
+              ? 'transform 0.12s cubic-bezier(.2,1.35,.45,1), opacity 0.2s ease'
+              : 'transform 0.2s ease, opacity 0.2s ease',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -4272,6 +4279,9 @@ export default function App() {
                 width: isMobile ? 88 : 118,
                 height: isMobile ? 88 : 118,
                 objectFit: 'contain',
+                filter: pizzaAnim.pop
+                  ? 'drop-shadow(0 0 16px rgba(255,215,0,.38))'
+                  : 'none',
               }}
             />
             <div style={{
