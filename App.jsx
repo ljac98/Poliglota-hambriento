@@ -27,6 +27,8 @@ import actionGloton from './imagenes/acciones/comer.png';
 import actionComeComodines from './imagenes/acciones/comecomodines.png';
 import actionPizza from './imagenes/acciones/pizza.png';
 import actionPizzaConQueso from './imagenes/acciones/pizza con queso.png';
+import burgerPanArriba from './imagenes/hamburguesas/ingredientes/pan arriba.png';
+import burgerPanAbajo from './imagenes/hamburguesas/ingredientes/pan abajo.png';
 import eqLadron from './imagenes/acciones/esquina/robo.png';
 import eqIntercambioSomb from './imagenes/acciones/esquina/intercambiosomb.png';
 import eqIntercambioHamb from './imagenes/acciones/esquina/intercam.png';
@@ -3989,35 +3991,57 @@ export default function App() {
               top: glotonAnim.stackY,
               transform: 'translate(-50%, -50%)',
               display: 'flex',
-              flexDirection: 'column-reverse',
+              flexDirection: 'column',
               alignItems: 'center',
-              gap: isMobile ? 4 : 6,
+              gap: 0,
             }}>
-              {glotonAnim.ingredients.map((ing, idx) => (
+              <img
+                src={burgerPanArriba}
+                alt="Pan arriba"
+                style={{
+                  width: isMobile ? 78 : 104,
+                  height: isMobile ? 42 : 56,
+                  objectFit: 'contain',
+                  marginBottom: isMobile ? -6 : -10,
+                  filter: 'drop-shadow(0 10px 18px rgba(0,0,0,.28))',
+                }}
+              />
+              {glotonAnim.ingredients.slice().reverse().map((ing, idx) => (
                 <div
                   key={`${ing}-${idx}-${glotonAnim.biteTick}`}
                   style={{
-                    width: isMobile ? 54 : 70,
-                    height: isMobile ? 54 : 70,
-                    borderRadius: 16,
-                    background: 'rgba(15,17,23,.88)',
-                    border: '2px solid rgba(255,215,0,.22)',
+                    width: isMobile ? 76 : 100,
+                    height: isMobile ? 30 : 40,
+                    marginTop: isMobile ? -3 : -5,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    boxShadow: '0 10px 18px rgba(0,0,0,.28)',
-                    transform: idx === glotonAnim.ingredients.length - 1 && !glotonAnim.moving
-                      ? `scale(${glotonAnim.biteFlash ? 0.76 : (glotonAnim.biteTick % 2 === 0 ? 1 : 0.9)})`
+                    transform: idx === 0 && !glotonAnim.moving
+                      ? `scale(${glotonAnim.biteFlash ? 0.72 : (glotonAnim.biteTick % 2 === 0 ? 1 : 0.92)})`
                       : 'scale(1)',
-                    opacity: idx === glotonAnim.ingredients.length - 1 && glotonAnim.biteFlash ? 0.38 : 1,
+                    opacity: idx === 0 && glotonAnim.biteFlash ? 0.22 : 1,
                     transition: 'transform 0.16s ease, opacity 0.16s ease',
+                    filter: idx === 0 && glotonAnim.biteFlash
+                      ? 'drop-shadow(0 0 16px rgba(255,215,0,.34))'
+                      : 'drop-shadow(0 8px 14px rgba(0,0,0,.24))',
                   }}
                 >
                   {ING_IMG[ing]
-                    ? <img src={ING_IMG[ing]} alt={ing} style={{ width: isMobile ? 34 : 46, height: isMobile ? 34 : 46, objectFit: 'contain' }} />
-                    : <span style={{ fontSize: isMobile ? 28 : 34 }}>{ING_EMOJI[ing] || '🍔'}</span>}
+                    ? <img src={ING_IMG[ing]} alt={ing} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                    : <span style={{ fontSize: isMobile ? 24 : 30 }}>{ING_EMOJI[ing] || '🍔'}</span>}
                 </div>
               ))}
+              <img
+                src={burgerPanAbajo}
+                alt="Pan abajo"
+                style={{
+                  width: isMobile ? 78 : 104,
+                  height: isMobile ? 36 : 48,
+                  objectFit: 'contain',
+                  marginTop: isMobile ? -6 : -8,
+                  filter: 'drop-shadow(0 10px 18px rgba(0,0,0,.28))',
+                }}
+              />
             </div>
           )}
 
