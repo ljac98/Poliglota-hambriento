@@ -25,6 +25,7 @@ import imgTenedor         from '../imagenes/acciones/tenedor.png';
 import imgLadron          from '../imagenes/acciones/ladron.png';
 import imgIntercambioSomb from '../imagenes/acciones/intercambio de sombreros.png';
 import imgIntercambioHamb from '../imagenes/acciones/intercambio de hamburguesar.png';
+import imgPercheroCubierto from '../imagenes/acciones/perchero cubierto.png';
 import imgBasurero        from '../imagenes/acciones/robar descarte.png';
 import imgGloton          from '../imagenes/acciones/comer.png';
 import imgNegacion        from '../imagenes/acciones/cancel.png';
@@ -40,6 +41,7 @@ import eqTenedor         from '../imagenes/acciones/esquina/tenedor2.png';
 import eqLadron          from '../imagenes/acciones/esquina/robo.png';
 import eqIntercambioSomb from '../imagenes/acciones/esquina/intercambiosomb.png';
 import eqIntercambioHamb from '../imagenes/acciones/esquina/intercam.png';
+import eqPercheroCubierto from '../imagenes/acciones/esquina/percheroc.png';
 import eqBasurero        from '../imagenes/acciones/esquina/basurero.png';
 import eqGloton          from '../imagenes/acciones/esquina/comelona.png';
 import eqNegacion        from '../imagenes/acciones/esquina/cancelh.png';
@@ -53,6 +55,7 @@ const ACTION_IMG = {
   milanesa: imgMilanesa, ensalada: imgEnsalada, pizza: imgPizza,
   parrilla: imgParrilla, tenedor: imgTenedor, ladron: imgLadron,
   intercambio_sombreros: imgIntercambioSomb, intercambio_hamburguesa: imgIntercambioHamb,
+  perchero_cubierto: imgPercheroCubierto,
   basurero: imgBasurero,
   gloton: imgGloton, negacion: imgNegacion, comecomodines: imgComeComodines,
 };
@@ -60,6 +63,7 @@ const ACTION_CORNER_IMG = {
   milanesa: eqMilanesa, ensalada: eqEnsalada, pizza: eqPizza,
   parrilla: eqParrilla, tenedor: eqTenedor, ladron: eqLadron,
   intercambio_sombreros: eqIntercambioSomb, intercambio_hamburguesa: eqIntercambioHamb,
+  perchero_cubierto: eqPercheroCubierto,
   basurero: eqBasurero,
   gloton: eqGloton, negacion: eqNegacion, comecomodines: eqComeComodines,
 };
@@ -67,6 +71,7 @@ const ACTION_CORNER_DER_IMG = {
   milanesa: eqaccionesg  , ensalada:  eqaccionesg , pizza:  eqaccionesg ,
   parrilla:  eqaccionesg , tenedor:  eqaccioness , ladron:  eqaccioness ,
   intercambio_sombreros:  eqaccioness, intercambio_hamburguesa:  eqaccioness ,
+  perchero_cubierto: eqaccioness,
   basurero: eqdescarte, gloton:  eqaccioness ,negacion: eqnegacion, comecomodines:  eqaccionesg,
 };
 const ING_IMG = {
