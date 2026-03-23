@@ -593,13 +593,11 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
     setHatPicks((prev) => {
       const next = {};
       players.forEach((player) => {
-        const syncedHat = player.hat || prev[player.name];
-        if (syncedHat) next[player.name] = syncedHat;
+        if (player.hat) next[player.name] = player.hat;
       });
-      if (!next[myName] && prev[myName]) next[myName] = prev[myName];
       return next;
     });
-  }, [players, myName]);
+  }, [players]);
 
   const allHumansReady = players
     .filter((player) => !player.isAI)
