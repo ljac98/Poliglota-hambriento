@@ -1737,9 +1737,9 @@ export default function App() {
     };
   }
   function startGame(name, hat, gameConfig, aiCount) {
-    const rawDeck = generateDeck();
-    const deckArr = [...rawDeck];
     const normalizedConfig = buildGameConfig(gameConfig);
+    const rawDeck = generateDeck(normalizedConfig);
+    const deckArr = [...rawDeck];
     const ps = [];
     ps.push(initPlayer(name, deckArr, hat, normalizedConfig, false));
     const usedHats = [hat];
@@ -1759,9 +1759,9 @@ export default function App() {
 
   // â”€â”€ Start game (online host) â”€â”€
   function startOnlineGame(hatPicks, gameConfig, onlinePls) {
-    const rawDeck = generateDeck();
-    const deckArr = [...rawDeck];
     const normalizedConfig = buildGameConfig(gameConfig);
+    const rawDeck = generateDeck(normalizedConfig);
+    const deckArr = [...rawDeck];
     const ps = onlinePls.map(p => initPlayer(p.name, deckArr, hatPicks[p.name] || p.hat, normalizedConfig, !!p.isAI));
     // Mark non-host players as remote
     ps.forEach((p, i) => { if (i !== 0 && !p.isAI) p.isRemote = true; });

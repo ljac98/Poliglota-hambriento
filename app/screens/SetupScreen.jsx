@@ -13,6 +13,9 @@ import hamImg from '../../imagenes/hamburguesas/ham.png';
 import modoclon from '../../imagenes/modos/clones.png';
 import modoescalera from '../../imagenes/modos/escalera.png';
 import modocaotico from '../../imagenes/modos/caotico.png';
+import actionEnsaladaImg from '../../imagenes/acciones/ensalada3.png';
+import actionPizzaImg from '../../imagenes/acciones/pizza.png';
+import actionParrillaImg from '../../imagenes/acciones/parrilla2.png';
 import percheroImg from '../../imagenes/sombreros/perchero/percherofinal.png';
 import burgerPanArriba from '../../imagenes/hamburguesas/ingredientes/pan arriba.png';
 import burgerPanAbajo from '../../imagenes/hamburguesas/ingredientes/pan abajo.png';
@@ -104,6 +107,19 @@ export function SetupScreen({ onStart, onOnline, onDownload, user, onLogout, onH
         : [4, 5, 6];
     return ranges.map((size) => genBurger(size));
   }, [gameMode, burgerCount, ingredientCount, chaosLevel, ingredientPool]);
+  const removedCloneActions = useMemo(() => {
+    const poolSet = new Set(ingredientPool);
+    const removed = [];
+    if (!['lechuga', 'tomate', 'cebolla', 'palta'].some((ing) => poolSet.has(ing))) removed.push('ensalada');
+    if (!poolSet.has('queso')) removed.push('pizza');
+    if (!poolSet.has('carne') && !poolSet.has('pollo')) removed.push('parrilla');
+    return removed;
+  }, [ingredientPool]);
+  const cloneRemovedActionImages = {
+    ensalada: actionEnsaladaImg,
+    pizza: actionPizzaImg,
+    parrilla: actionParrillaImg,
+  };
   const staircasePreviewByPlayer = useMemo(
     () => Array.from(
       { length: totalPreviewPlayers },
@@ -676,6 +692,41 @@ export function SetupScreen({ onStart, onOnline, onDownload, user, onLogout, onH
                 })}
               </div>
               <div style={{ color: '#6f7697', fontSize: 11 }}>{T('cloneIngredientPoolLocked')}</div>
+              <div style={{ marginTop: 10, padding: '10px 12px', borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <div style={{ color: '#FFD700', fontSize: 11, fontWeight: 900, marginBottom: 6 }}>
+                  {T('cloneRemovedActions')}
+                </div>
+                {removedCloneActions.length > 0 ? (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {removedCloneActions.map((actionId) => (
+                      <span
+                        key={actionId}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          padding: '6px 10px 6px 6px',
+                          borderRadius: 999,
+                          background: 'rgba(255,112,67,0.12)',
+                          border: '1px solid rgba(255,112,67,0.28)',
+                          color: '#ffb199',
+                          fontSize: 11,
+                          fontWeight: 800,
+                        }}
+                      >
+                        <img
+                          src={cloneRemovedActionImages[actionId]}
+                          alt={T(`actionName_${actionId}`)}
+                          style={{ width: 22, height: 22, objectFit: 'cover', borderRadius: 999, flexShrink: 0 }}
+                        />
+                        {T(`actionName_${actionId}`)}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ color: '#8a8fa8', fontSize: 11 }}>{T('cloneRemovedActionsNone')}</div>
+                )}
+              </div>
             </div>
           )}
           <div style={{ marginBottom: 18 }}>
