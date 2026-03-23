@@ -170,6 +170,7 @@ export default function App() {
   const [showNotificationsPanel, setShowNotificationsPanel] = useState(false);
   const [profileUserId, setProfileUserId] = useState(Number.isFinite(initialProfileId) ? initialProfileId : (savedUserOnLoad?.id || null));
   const [profileReturnPhase, setProfileReturnPhase] = useState('setup');
+  const [profileBackStack, setProfileBackStack] = useState([]);
   const [historyInitialFilter, setHistoryInitialFilter] = useState('all');
   const [historyReturnPhase, setHistoryReturnPhase] = useState('setup');
   const aiRunning = useRef(false);
@@ -1238,10 +1239,32 @@ export default function App() {
 
   function openProfile(targetUserId, returnPhase = phase) {
     if (!targetUserId) return;
+    const normalizedReturnPhase = returnPhase || (user ? 'setup' : 'auth');
+    if (phase === 'profile' && profileUserId && profileUserId !== targetUserId) {
+      setProfileBackStack((prev) => [...prev, profileUserId]);
+    } else if (normalizedReturnPhase !== 'profile') {
+      setProfileBackStack([]);
+      setProfileReturnPhase(normalizedReturnPhase);
+    }
     setProfileUserId(targetUserId);
-    setProfileReturnPhase(returnPhase || (user ? 'setup' : 'auth'));
+    if (normalizedReturnPhase !== 'profile') {
+      setProfileReturnPhase(normalizedReturnPhase);
+    }
     setShowQuickMenu(false);
     setPhase('profile');
+  }
+
+  function handleProfileBack() {
+    if (profileBackStack.length > 0) {
+      const prevProfileId = profileBackStack[profileBackStack.length - 1];
+      setProfileBackStack((prev) => prev.slice(0, -1));
+      setProfileUserId(prevProfileId);
+      setShowQuickMenu(false);
+      setPhase('profile');
+      return;
+    }
+    setShowQuickMenu(false);
+    setPhase(profileReturnPhase || (user ? 'setup' : 'auth'));
   }
 
   function openHistory(filter = 'all', returnPhase = phase) {
@@ -3491,6 +3514,7 @@ export default function App() {
           historyInitialFilter={historyInitialFilter}
           historyReturnPhase={historyReturnPhase}
           openProfile={openProfile}
+          onProfileBack={handleProfileBack}
           openHistory={openHistory}
           inviteToast={inviteToast}
           friendReqToast={friendReqToast}
