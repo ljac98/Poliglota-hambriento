@@ -485,7 +485,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
             {LANGUAGES.map(lang => {
-              const takenBy = Object.entries(hatPicks).find(([n, h]) => h === lang && n !== myName);
+              const takenBy = getTakenBy(lang);
               const isTaken = !!takenBy;
               return (
                 <div
@@ -605,9 +605,13 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
     .filter((player) => !player.isAI)
     .every((player) => !!hatPicks[player.name]);
 
+  function getTakenBy(lang) {
+    return players.find((player) => player.name !== myName && hatPicks[player.name] === lang) || null;
+  }
+
   function pickHat(lang) {
-    const taken = Object.values(hatPicks);
-    if (taken.includes(lang) && hatPicks[myName] !== lang) return;
+    const takenBy = getTakenBy(lang);
+    if (takenBy && hatPicks[myName] !== lang) return;
     setHatPicks(prev => ({ ...prev, [myName]: lang }));
     socket.emit('lobbyHatPick', { code: roomCode, playerName: myName, hat: lang });
   }
@@ -1073,7 +1077,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
           </label>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {LANGUAGES.map(lang => {
-              const takenBy = Object.entries(hatPicks).find(([n, h]) => h === lang && n !== myName);
+              const takenBy = getTakenBy(lang);
               const isTaken = !!takenBy;
               return (
                 <div
@@ -1091,7 +1095,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
                   <span style={{ fontSize: 10, fontWeight: 800, color: myHat === lang ? '#FFD700' : LANG_TEXT[lang] }}>
                     {T(lang)}
                   </span>
-                  {isTaken && <span style={{ fontSize: 9, color: '#888' }}>{takenBy[0]}</span>}
+                  {isTaken && <span style={{ fontSize: 9, color: '#888' }}>{takenBy.name}</span>}
                 </div>
               );
             })}
