@@ -139,6 +139,8 @@ const translations = {
     actionDesc_intercambio_sombreros: 'Intercambia sombreros',
     actionName_intercambio_hamburguesa: 'Intercambio Mesa',
     actionDesc_intercambio_hamburguesa: 'Intercambia ingredientes de mesa',
+    actionName_perchero_cubierto: 'Perchero Cubierto',
+    actionDesc_perchero_cubierto: 'Bloquea cambiar/agregar y cartas de sombrero por un turno',
     actionName_basurero: 'El Basurero',
     actionDesc_basurero: 'Busca en descartes',
     actionName_gloton: 'El Glotón',
@@ -147,6 +149,11 @@ const translations = {
     actionDesc_negacion: 'Bloquea acción enemiga',
     actionName_comecomodines: 'Come Comodines',
     actionDesc_comecomodines: 'Todos descartan sus comodines de la mesa',
+    closetCoverPrompt: (name) => name + ' te cubri� el perchero. �Quieres descartar 2 cartas para evitar el efecto?',
+    closetCoverChooseTwo: 'Elige 2 cartas de tu mano para evitar esta carta.',
+    closetCoverDiscardTwo: 'Descartar 2 y evitar',
+    closetCoverAccept: 'Aceptar efecto',
+    closetCoveredStatus: 'Perchero cubierto',
     howToPlayDesc: 'Guía rápida del turno: usa cartas de ingredientes para completar tu hamburguesa y cartas de acción para afectar la partida.',
     howToPlayPage: 'Página',
     howToPlayTurnRulesTitle: 'Reglas del turno',
@@ -459,6 +466,8 @@ const translations = {
     actionDesc_intercambio_sombreros: 'Swap hats with a player',
     actionName_intercambio_hamburguesa: 'Table Swap',
     actionDesc_intercambio_hamburguesa: 'Swap ingredient tables',
+    actionName_perchero_cubierto: 'Covered Closet',
+    actionDesc_perchero_cubierto: 'Blocks closet actions and hat cards for one turn',
     actionName_basurero: 'Trash Bin',
     actionDesc_basurero: 'Recover from discard pile',
     actionName_gloton: 'The Glutton',
@@ -467,6 +476,11 @@ const translations = {
     actionDesc_negacion: 'Block an enemy action',
     actionName_comecomodines: 'Wildcard Eater',
     actionDesc_comecomodines: 'Everyone discards wildcards from table',
+    closetCoverPrompt: (name) => name + ' covered your closet. Do you want to discard 2 cards to avoid the effect?',
+    closetCoverChooseTwo: 'Choose 2 cards from your hand to avoid this card.',
+    closetCoverDiscardTwo: 'Discard 2 and avoid',
+    closetCoverAccept: 'Accept effect',
+    closetCoveredStatus: 'Closet covered',
     howToPlayDesc: 'Quick turn guide: use ingredient cards to complete your burger and action cards to affect the match.',
     howToPlayPage: 'Page',
     howToPlayTurnRulesTitle: 'Turn rules',
@@ -2052,5 +2066,10 @@ export function getLocalizedLangShort(gameLang, uiLang) {
 }
 
 export { translations, LANG_TO_KEY, KEY_TO_LANG };
+
+
+
+
+
 
 

@@ -35,6 +35,7 @@ import actionParrilla1 from './imagenes/acciones/parrilla2.png';
 import actionParrilla2 from './imagenes/acciones/parrilla3.png';
 import actionParrilla3 from './imagenes/acciones/parrilla4.png';
 import actionTridente from './imagenes/acciones/tridente.png';
+import actionPercheroCubierto from './imagenes/acciones/perchero cubierto.png';
 import burgerCarne from './imagenes/hamburguesas/ingredientes/carne.png';
 import burgerCebolla from './imagenes/hamburguesas/ingredientes/cebolla.png';
 import burgerHuevo from './imagenes/hamburguesas/ingredientes/huevo.png';
@@ -49,6 +50,7 @@ import eqLadron from './imagenes/acciones/esquina/robo.png';
 import eqIntercambioSomb from './imagenes/acciones/esquina/intercambiosomb.png';
 import eqIntercambioHamb from './imagenes/acciones/esquina/intercam.png';
 import eqBasurero from './imagenes/acciones/esquina/basurero.png';
+import eqPercheroCubierto from './imagenes/acciones/esquina/percheroc.png';
 import eqGloton from './imagenes/acciones/esquina/comelona.png';
 import eqNegacion from './imagenes/acciones/esquina/cancelh.png';
 import eqComeComodines from './imagenes/acciones/esquina/pancho.png';
@@ -234,6 +236,7 @@ export default function App() {
   // â”€â”€ NegaciÃ³n state â”€â”€
   // pendingNeg: null | { actingIdx, cardInfo, eligibleIdxs, responses: {i: bool} }
   const [pendingNeg, setPendingNeg] = useState(null);
+  const pendingClosetCoverRef = useRef(null);
   const [lastNegationEvent, setLastNegationEvent] = useState(null);
   const [lastForkEvent, setLastForkEvent] = useState(null);
   const [lastComeComodinesEvent, setLastComeComodinesEvent] = useState(null);
@@ -1608,6 +1611,96 @@ export default function App() {
     return ['milanesa', 'ensalada', 'pizza', 'parrilla', 'comecomodines'].includes(card.action);
   }
 
+  function isClosetActionBlocked(playerLike, actionId) {
+    if (!playerLike?.closetCovered) return false;
+    return ['ladron', 'intercambio_sombreros'].includes(actionId);
+  }
+
+  function getClosetCoverDiscardIndices(playerLike) {
+    if (!playerLike || playerLike.hand.length < 2) return [];
+    const needs = getRemainingNeeds(playerLike);
+    return playerLike.hand
+      .map((card, idx) => ({ idx, score: getCardKeepScore(card, playerLike.mainHats, needs) }))
+      .sort((a, b) => a.score - b.score)
+      .slice(0, 2)
+      .map((item) => item.idx);
+  }
+
+  function shouldAIAvoidClosetCover(playerLike) {
+    if (!playerLike || playerLike.hand.length < 2) return false;
+    if (playerLike.perchero?.length > 0) return true;
+    if (playerLike.mainHats?.length > 1) return true;
+    return playerLike.hand.some((card) => card.type === 'action' && ['ladron', 'intercambio_sombreros'].includes(card.action));
+  }
+
+  function finishClosetCoverAction(basePlayers, baseDeck, baseDiscard, actingIdx, targetIdx, blocked) {
+    const nextPlayers = clone(basePlayers);
+    if (blocked) {
+      nextPlayers[targetIdx].closetCovered = true;
+      addLog(actingIdx, `cubrió el perchero de ${nextPlayers[targetIdx].name}`, nextPlayers);
+    } else {
+      addLog(targetIdx, `evitó el perchero cubierto descartando 2 cartas`, nextPlayers);
+    }
+    pendingClosetCoverRef.current = null;
+    setModal(null);
+    endTurn(nextPlayers, baseDeck, baseDiscard, actingIdx);
+  }
+
+  function promptClosetCoverResponse(actingIdx, targetIdx, basePlayers, baseDeck, baseDiscard) {
+    const target = basePlayers[targetIdx];
+    if (!target) {
+      endTurn(basePlayers, baseDeck, baseDiscard, actingIdx);
+      return;
+    }
+    if (target.hand.length < 2) {
+      finishClosetCoverAction(basePlayers, baseDeck, baseDiscard, actingIdx, targetIdx, true);
+      return;
+    }
+    if (target.isAI) {
+      const shouldAvoid = shouldAIAvoidClosetCover(target);
+      if (shouldAvoid) {
+        const discardIndices = getClosetCoverDiscardIndices(target).sort((a, b) => b - a);
+        const nextPlayers = clone(basePlayers);
+        const nextDiscard = [...baseDiscard];
+        discardIndices.forEach((discardIdx) => {
+          const discarded = nextPlayers[targetIdx].hand.splice(discardIdx, 1)[0];
+          if (discarded) nextDiscard.push(discarded);
+        });
+        finishClosetCoverAction(nextPlayers, baseDeck, nextDiscard, actingIdx, targetIdx, false);
+        return;
+      }
+      finishClosetCoverAction(basePlayers, baseDeck, baseDiscard, actingIdx, targetIdx, true);
+      return;
+    }
+    pendingClosetCoverRef.current = { actingIdx, targetIdx, basePlayers: clone(basePlayers), baseDeck: [...baseDeck], baseDiscard: [...baseDiscard] };
+    setModal({ type: 'closetCoverResponse', actingIdx, targetIdx, selected: [] });
+  }
+
+  function resolveClosetCoverResponse(avoid, selectedIds = []) {
+    const pending = pendingClosetCoverRef.current;
+    if (!pending) {
+      setModal(null);
+      return;
+    }
+    const { actingIdx, targetIdx, basePlayers, baseDeck, baseDiscard } = pending;
+    if (!avoid) {
+      finishClosetCoverAction(basePlayers, baseDeck, baseDiscard, actingIdx, targetIdx, true);
+      return;
+    }
+    const nextPlayers = clone(basePlayers);
+    const nextDiscard = [...baseDiscard];
+    const idSet = new Set(selectedIds);
+    const chosen = nextPlayers[targetIdx].hand.filter((card) => idSet.has(card.id)).slice(0, 2).map((card) => card.id);
+    if (chosen.length < 2) return;
+    nextPlayers[targetIdx].hand = nextPlayers[targetIdx].hand.filter((card) => {
+      if (!idSet.has(card.id) || chosen.length === 0) return true;
+      const shouldDiscard = chosen.includes(card.id);
+      if (shouldDiscard) nextDiscard.push(card);
+      return !shouldDiscard;
+    });
+    finishClosetCoverAction(nextPlayers, baseDeck, nextDiscard, actingIdx, targetIdx, false);
+  }
+
   // â”€â”€ NegaciÃ³n: check before applying any action â”€â”€
   // resolveCallback: () => void  â€” called if action is NOT negated
   function startNegCheck(actingIdx, card, resolveCallback, affectedIdxs) {
@@ -1830,6 +1923,8 @@ export default function App() {
       filterTable(pls[actingIdx], di);
       filterTable(pls[ti], di);
       endTurnFromRemote(pls, dk, di, actingIdx);
+    } else if (card.action === 'perchero_cubierto') {
+      promptClosetCoverResponse(actingIdx, ti, pls, dk, di);
     }
   }
 
@@ -1918,6 +2013,11 @@ export default function App() {
               }, [ti]);
               return;
 
+            } else if (type === 'closetCoverResponse') {
+              if (!pendingClosetCoverRef.current) return;
+              resolveClosetCoverResponse(!!action.avoid, action.discardIds || []);
+              return;
+
             } else if (type === 'playBasurero') {
               const card = pls[idx].hand[action.cardIdx];
               if (!card) return;
@@ -1933,6 +2033,7 @@ export default function App() {
 
             } else if (type === 'manualCambiar') {
               const p = pls[idx];
+              if (p.closetCovered) return;
               const hi = p.perchero.indexOf(action.hatLang);
               if (hi === -1) return;
               p.perchero.splice(hi, 1);
@@ -1953,6 +2054,7 @@ export default function App() {
 
             } else if (type === 'manualAgregar') {
               const p = pls[idx];
+              if (p.closetCovered) return;
               const hi = p.perchero.indexOf(action.hatLang);
               if (hi === -1) return;
               p.perchero.splice(hi, 1);
@@ -2026,6 +2128,10 @@ export default function App() {
       newPls[fromIdx].hand.push(...drawn);
       newDeck = d;
       newDiscard = di;
+    }
+    if (newPls[fromIdx]?.closetCovered) {
+      if (newPls === pls) newPls = clone(pls);
+      newPls[fromIdx].closetCovered = false;
     }
     const w = checkWin(newPls);
       if (w) {
@@ -2127,7 +2233,7 @@ export default function App() {
       return ingredientScore + (matchesHat ? 30 : -20);
     }
     if (card.action === 'negacion') return 75;
-    if (['tenedor', 'gloton', 'intercambio_hamburguesa', 'ladron', 'intercambio_sombreros'].includes(card.action)) return 45;
+    if (['tenedor', 'gloton', 'intercambio_hamburguesa', 'ladron', 'intercambio_sombreros', 'perchero_cubierto'].includes(card.action)) return 45;
     if (['basurero', 'parrilla', 'pizza', 'ensalada', 'milanesa', 'comecomodines'].includes(card.action)) return 35;
     return 10;
   }
@@ -2308,6 +2414,10 @@ export default function App() {
       const theirProgress = target.table.length;
       score = (theirProgress - myProgress) * 20;
     }
+    if (action === 'perchero_cubierto') {
+      const usefulCloset = target.perchero?.length > 0 || target.mainHats?.length > 1;
+      score = usefulCloset ? 42 : 10;
+    }
     if (!target.isAI) score += aiConfig.targetHumanBias;
     return score;
   }
@@ -2479,6 +2589,9 @@ export default function App() {
             filterTable(newPls[idx], newDiscard);
             filterTable(newPls[richest], newDiscard);
             addLog(idx, `intercambió mesa con ${pls[richest].name}`, newPls);
+          } else if (card.action === 'perchero_cubierto') {
+            promptClosetCoverResponse(idx, richest, newPls, deckArr, newDiscard);
+            return;
           }
         }
 
@@ -2498,7 +2611,7 @@ export default function App() {
       return;
     }
 
-    if (p.perchero.length > 0 && p.hand.length > 0 && !extraPlay && Math.random() <= aiConfig.changeChance) {
+    if (!p.closetCovered && p.perchero.length > 0 && p.hand.length > 0 && !extraPlay && Math.random() <= aiConfig.changeChance) {
       let bestChange = null;
       for (const hatLang of p.perchero) {
         const simulated = clone([p])[0];
@@ -2535,7 +2648,7 @@ export default function App() {
       }
     }
 
-    if (p.perchero.length > 0 && p.hand.length > 0 && p.maxHand > 1 && p.mainHats.length < 3 && !extraPlay && Math.random() <= aiConfig.addChance) {
+    if (!p.closetCovered && p.perchero.length > 0 && p.hand.length > 0 && p.maxHand > 1 && p.mainHats.length < 3 && !extraPlay && Math.random() <= aiConfig.addChance) {
       const needs = getRemainingNeeds(p);
       let bestAdd = null;
       for (const hatLang of p.perchero) {
@@ -2726,6 +2839,7 @@ export default function App() {
   // â”€â”€ Non-host: action card dispatch via socket â”€â”€
   function humanPlayActionRemote(card, cardIdx) {
     const mass = ['milanesa', 'ensalada', 'pizza', 'parrilla', 'comecomodines'];
+    if (isClosetActionBlocked(players[HI], card.action)) return;
     if (mass.includes(card.action)) {
       socket.emit('playerAction', { code: roomCode, action: { type: 'playMass', cardIdx } });
       setSelectedIdx(null);
@@ -2733,7 +2847,7 @@ export default function App() {
       const ingCards = discard.filter(c => c.type === 'ingredient');
       if (ingCards.length === 0) { alert('El basurero estÃ¡ vacÃ­o'); return; }
       setModal({ type: 'basurero', cardIdx, cards: ingCards });
-    } else if (['tenedor', 'ladron', 'intercambio_sombreros', 'intercambio_hamburguesa', 'gloton'].includes(card.action)) {
+    } else if (['tenedor', 'ladron', 'intercambio_sombreros', 'intercambio_hamburguesa', 'gloton', 'perchero_cubierto'].includes(card.action)) {
       setModal({ type: 'pickTarget', cardIdx, action: card.action });
     } else if (card.action === 'negacion') {
       alert('NegaciÃ³n se juega automÃ¡ticamente cuando un oponente juega una acciÃ³n.');
@@ -2743,7 +2857,7 @@ export default function App() {
   function humanPlayAction(card, cardIdx) {
     const info = getActionInfo(card.action);
     const mass = ['milanesa', 'ensalada', 'pizza', 'parrilla', 'comecomodines'];
-    const targeted = ['tenedor', 'ladron', 'intercambio_sombreros', 'intercambio_hamburguesa', 'gloton'];
+    const targeted = ['tenedor', 'ladron', 'intercambio_sombreros', 'intercambio_hamburguesa', 'gloton', 'perchero_cubierto'];
     const sourceCardEl = handCardRefs.current[cardIdx];
     const sourcePoint = sourceCardEl
       ? (() => {
@@ -2754,6 +2868,9 @@ export default function App() {
 
     if (card.action === 'negacion') {
       alert('NegaciÃ³n se juega automÃ¡ticamente cuando un oponente juega una acciÃ³n.');
+      return;
+    }
+    if (isClosetActionBlocked(players[HI], card.action)) {
       return;
     }
 
@@ -2915,6 +3032,9 @@ export default function App() {
         filterTable(newPls[targetIdx], newDiscard);
         endTurn(newPls, dk, newDiscard, HI);
 
+      } else if (action === 'perchero_cubierto') {
+        promptClosetCoverResponse(HI, targetIdx, newPls, dk, newDiscard);
+
       }
     }, [targetIdx]);
   }
@@ -3023,6 +3143,7 @@ export default function App() {
 
   // Manual: swap main hat from perchero (costs half your hand â€” player chooses which cards)
   function resolveManualCambiar(hatLang, cardIndices) {
+    if (players[HI]?.closetCovered) return;
     setModal(null); setSelectedIdx(null);
     if (isOnline && !isHost) {
       socket.emit('playerAction', { code: roomCode, action: { type: 'manualCambiar', hatLang, cardIndices } });
@@ -3045,6 +3166,7 @@ export default function App() {
 
   // Manual: add an extra hat from perchero (costs discarding entire hand, reduces maxHand)
   function resolveManualAgregar(hatLang) {
+    if (players[HI]?.closetCovered) return;
     setModal(null); setSelectedIdx(null);
     if (isOnline && !isHost) {
       socket.emit('playerAction', { code: roomCode, action: { type: 'manualAgregar', hatLang } });
@@ -3667,6 +3789,26 @@ export default function App() {
             <span>{T('sharedGoalsLabel')}</span>
           </div>
         )}
+        {human.closetCovered && (
+          <div style={{
+            marginTop: 6,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '4px 10px',
+            borderRadius: 999,
+            background: 'rgba(255,112,67,0.12)',
+            border: '1px solid rgba(255,112,67,0.35)',
+            color: '#ffb199',
+            fontSize: 10,
+            fontWeight: 800,
+            letterSpacing: 0.4,
+            textTransform: 'uppercase',
+          }}>
+            <span>🪝</span>
+            <span>{T('closetCoveredStatus') || 'Perchero cubierto'}</span>
+          </div>
+        )}
       </div>
       {phase === 'playing' && players[cp] && !players[cp].isAI && (
         <div style={{
@@ -3724,8 +3866,8 @@ export default function App() {
       <div>
         <div style={{ fontSize: 9, color: '#555', fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>{T('closet')}</div>
         <div style={{ position: 'relative', width: 130, height: 165 }}>
-          <img src={percheroImg} alt="Perchero" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-          {human.perchero.map((h, i) => {
+          <img src={human.closetCovered ? actionPercheroCubierto : percheroImg} alt="Perchero" style={{ width: '100%', height: '100%', objectFit: 'contain', opacity: human.closetCovered ? 0.92 : 1 }} />
+          {!human.closetCovered && human.perchero.map((h, i) => {
             if (i >= branchPositions.length) return null;
             const pos = branchPositions[i];
             return (
@@ -3754,7 +3896,7 @@ export default function App() {
     );
   })();
 
-  const percheroButtons = isHumanTurn && !extraPlay && human.perchero.length > 0 && (
+  const percheroButtons = isHumanTurn && !extraPlay && human.perchero.length > 0 && !human.closetCovered && (
     <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
       <button
         onClick={() => { setShowPercheroModal(false); setModal({ type: 'manual_cambiar' }); }}
@@ -3873,7 +4015,9 @@ export default function App() {
       WebkitOverflowScrolling: 'touch',
     }}>
         {human.hand.map((card, i) => {
-          const playable = card.type === 'ingredient' ? canPlayCard(human, card) : (extraPlay ? false : null);
+          const playable = card.type === 'ingredient'
+            ? canPlayCard(human, card)
+            : (extraPlay ? false : (isClosetActionBlocked(human, card.action) ? false : null));
           const angle = handN > 1 ? -MAX_ANGLE + i * (2 * MAX_ANGLE / (handN - 1)) : 0;
           const isSelected = selectedIdx === i;
           return (
@@ -3936,7 +4080,7 @@ export default function App() {
                   </>)}
                 </div>
                 <div style={{ display: 'flex', gap: 4 }}>
-                  <Btn onClick={humanPlay} disabled={extraPlay && card.type !== 'ingredient'} color="#4CAF50" style={{ fontSize: 11, padding: '6px 12px' }}>
+                  <Btn onClick={humanPlay} disabled={(extraPlay && card.type !== 'ingredient') || (card.type === 'action' && isClosetActionBlocked(human, card.action))} color="#4CAF50" style={{ fontSize: 11, padding: '6px 12px' }}>
                     {T('play')}
                   </Btn>
                   <Btn onClick={humanDiscard} disabled={extraPlay} color="#FF7043" style={{ fontSize: 11, padding: '6px 12px' }}>
@@ -4904,6 +5048,101 @@ export default function App() {
         </Modal>
       )}
 
+      {modal?.type === 'closetCoverResponse' && modal.targetIdx === HI && (() => {
+        const selected = modal.selected || [];
+        const canAvoid = human.hand.length >= 2;
+        return (
+          <Modal title={`${getActionText('perchero_cubierto')?.emoji || '🪝'} ${getActionText('perchero_cubierto')?.name || 'Perchero Cubierto'}`}>
+            <p style={{ color: '#ddd', fontSize: 13, marginBottom: 10 }}>
+              {typeof T('closetCoverPrompt') === 'function'
+                ? T('closetCoverPrompt')(players[modal.actingIdx]?.name || 'Oponente')
+                : T('closetCoverPrompt')}
+            </p>
+            {canAvoid ? (
+              <>
+                <p style={{ color: '#8a8fa8', fontSize: 12, marginBottom: 12 }}>
+                  {T('closetCoverChooseTwo')}
+                </p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14, justifyContent: 'center' }}>
+                  {human.hand.map((card) => {
+                    const isSel = selected.includes(card.id);
+                    return (
+                      <button
+                        key={card.id}
+                        type="button"
+                        onClick={() => setModal((prev) => {
+                          if (!prev || prev.type !== 'closetCoverResponse') return prev;
+                          const prevSelected = prev.selected || [];
+                          return {
+                            ...prev,
+                            selected: isSel
+                              ? prevSelected.filter((id) => id !== card.id)
+                              : [...prevSelected, card.id].slice(0, 2),
+                          };
+                        })}
+                        style={{
+                          border: 'none',
+                          background: 'transparent',
+                          padding: 0,
+                          cursor: 'pointer',
+                          outline: isSel ? '3px solid #FFD700' : '3px solid transparent',
+                          borderRadius: 8,
+                        }}
+                      >
+                        <GameCard card={card} selected={isSel} playable={false} large={false} small={true} />
+                      </button>
+                    );
+                  })}
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <Btn
+                    onClick={() => {
+                      if (isOnline && !isHost) {
+                        socket.emit('playerAction', { code: roomCode, action: { type: 'closetCoverResponse', avoid: false } });
+                        setModal(null);
+                        return;
+                      }
+                      setModal(null);
+                      resolveClosetCoverResponse(false);
+                    }}
+                    color="#333"
+                    style={{ color: '#aaa' }}
+                  >
+                    {T('closetCoverAccept') || 'Aceptar efecto'}
+                  </Btn>
+                  <Btn
+                    onClick={() => {
+                      if (isOnline && !isHost) {
+                        socket.emit('playerAction', { code: roomCode, action: { type: 'closetCoverResponse', avoid: true, discardIds: selected } });
+                        setModal(null);
+                        return;
+                      }
+                      resolveClosetCoverResponse(true, selected);
+                    }}
+                    disabled={selected.length !== 2}
+                    color="#FFD700"
+                    style={{ flex: 1, color: '#111' }}
+                  >
+                    {T('closetCoverDiscardTwo') || 'Descartar 2 y evitar'}
+                  </Btn>
+                </div>
+              </>
+            ) : (
+              <Btn onClick={() => {
+                if (isOnline && !isHost) {
+                  socket.emit('playerAction', { code: roomCode, action: { type: 'closetCoverResponse', avoid: false } });
+                  setModal(null);
+                  return;
+                }
+                resolveClosetCoverResponse(false);
+              }} color="#FF7043" style={{ width: '100%' }}>
+                {T('close') || 'Cerrar'}
+              </Btn>
+            )}
+          </Modal>
+        );
+      })()}
+
       {/* Pick Ingredient (Tenedor) */}
       {modal?.type === 'pickIngredient' && (
         <Modal title={T('forkSteal')}>
@@ -5138,11 +5377,13 @@ export default function App() {
       {/* Mobile: Card detail modal */}
       {isMobile && isHumanTurn && selectedIdx !== null && human.hand[selectedIdx] && (() => {
         const card = human.hand[selectedIdx];
-        const playable = card.type === 'ingredient' ? canPlayCard(human, card) : (extraPlay ? false : null);
+        const playable = card.type === 'ingredient'
+          ? canPlayCard(human, card)
+          : (extraPlay ? false : (isClosetActionBlocked(human, card.action) ? false : null));
         const cleanTitle = (txt) => String(txt).replace('?? ', '').replace('??', '').replace('? ', '').replace('?', '');
         const actionTypeIcon = (() => {
           if (card.type !== 'action') return null;
-          if (['tenedor', 'ladron', 'intercambio_sombreros', 'intercambio_hamburguesa', 'gloton'].includes(card.action)) return eqRightSingle;
+          if (['tenedor', 'ladron', 'intercambio_sombreros', 'intercambio_hamburguesa', 'gloton', 'perchero_cubierto'].includes(card.action)) return eqRightSingle;
           if (['milanesa', 'ensalada', 'pizza', 'parrilla', 'comecomodines'].includes(card.action)) return eqRightGlobal;
           if (card.action === 'basurero') return eqRightDiscard;
           if (card.action === 'negacion') return eqRightNegation;
@@ -5189,7 +5430,7 @@ export default function App() {
                 </>)}
               </div>
               <div style={{ display: 'flex', gap: 8, width: '100%' }}>
-                <Btn onClick={() => { humanPlay(); }} disabled={extraPlay && card.type !== 'ingredient'} color="#4CAF50" style={{ flex: 1, fontSize: 14, padding: '10px 16px' }}>
+                <Btn onClick={() => { humanPlay(); }} disabled={(extraPlay && card.type !== 'ingredient') || (card.type === 'action' && isClosetActionBlocked(human, card.action))} color="#4CAF50" style={{ flex: 1, fontSize: 14, padding: '10px 16px' }}>
                   {T('play')}
                 </Btn>
                 <Btn onClick={() => { humanDiscard(); }} disabled={extraPlay} color="#FF7043" style={{ flex: 1, fontSize: 14, padding: '10px 16px' }}>
@@ -5421,6 +5662,7 @@ export default function App() {
           ladron: eqLadron,
           intercambio_sombreros: eqIntercambioSomb,
           intercambio_hamburguesa: eqIntercambioHamb,
+          perchero_cubierto: eqPercheroCubierto,
           basurero: eqBasurero,
           gloton: eqGloton,
           negacion: eqNegacion,
@@ -5516,6 +5758,7 @@ export default function App() {
           ladron: eqLadron,
           intercambio_sombreros: eqIntercambioSomb,
           intercambio_hamburguesa: eqIntercambioHamb,
+          perchero_cubierto: eqPercheroCubierto,
           basurero: eqBasurero,
           gloton: eqGloton,
           negacion: eqNegacion,
@@ -5527,7 +5770,7 @@ export default function App() {
             icon: eqRightSingle,
             title: T('howToPlayActionSingleTitle'),
             desc: T('howToPlayActionSingleDesc'),
-            actions: ['tenedor', 'ladron', 'intercambio_sombreros', 'intercambio_hamburguesa', 'gloton'],
+            actions: ['tenedor', 'ladron', 'intercambio_sombreros', 'intercambio_hamburguesa', 'gloton', 'perchero_cubierto'],
           },
           {
             key: 'global',
@@ -5568,6 +5811,12 @@ export default function App() {
           intercambio_sombreros: T('howToPlayEffectIntercambioSombreros'),
           intercambio_hamburguesa: T('howToPlayEffectIntercambioMesa'),
           gloton: T('howToPlayEffectGloton'),
+          perchero_cubierto: (() => {
+            const txt = T('howToPlayEffectPercheroCubierto');
+            return txt === 'howToPlayEffectPercheroCubierto'
+              ? 'Bloquea el perchero de otro jugador durante su siguiente turno, salvo que descarte 2 cartas al recibirlo.'
+              : txt;
+          })(),
         };
         const currentModeId = currentGameConfig?.mode || 'clon';
         const modeCards = [

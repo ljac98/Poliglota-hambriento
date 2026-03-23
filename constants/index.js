@@ -68,6 +68,7 @@ export const ACTION_CARDS = [
   {id:"ladron",      name:"Ladrón Sombreros",     emoji:"🎩", desc:"Quita sombrero principal"},
   {id:"intercambio_sombreros",  name:"Intercambio Sombreros",  emoji:"🔄", desc:"Intercambia sombreros"},
   {id:"intercambio_hamburguesa",name:"Intercambio Mesa",       emoji:"🍔", desc:"Intercambia ingredientes de mesa"},
+  {id:"perchero_cubierto", name:"Perchero Cubierto", emoji:"PC", desc:"Bloquea el perchero enemigo por un turno"},
   {id:"basurero",    name:"El Basurero",          emoji:"🗑️", desc:"Busca en descartes"},
   {id:"gloton",      name:"El Glotón",            emoji:"😋", desc:"Vacía mesa de otro"},
   {id:"negacion",    name:"Negación",             emoji:"🚫", desc:"Bloquea acción enemiga"},
@@ -78,3 +79,5 @@ export const getActionInfo = (id) => ACTION_CARDS.find(a => a.id === id);
 
 // ═══ AI NAMES ═══
 export const AI_NAMES = ["Chef Bot", "Cocinerito", "Señor Hambre"];
+
+

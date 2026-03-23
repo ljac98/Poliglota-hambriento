@@ -157,6 +157,7 @@ export function initPlayer(name, deck, chosenHat, gameConfig, isAI = false) {
     totalBurgers,
     currentBurger: 0,
     maxHand: 6,
+    closetCovered: false,
     won: false,
     isAI,
   };
