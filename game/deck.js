@@ -2,7 +2,29 @@ import { INGREDIENTS, LANGUAGES, ACTION_CARDS } from '../constants';
 import { shuffle, uid, randInt } from './utils';
 
 // ═══ DECK GENERATION ═══
-export function generateDeck() {
+function getEnabledActionCards(gameConfig = null) {
+  if (!gameConfig || gameConfig.mode !== 'clon') {
+    return ACTION_CARDS;
+  }
+
+  const pool = Array.isArray(gameConfig.ingredientPool) && gameConfig.ingredientPool.length > 0
+    ? gameConfig.ingredientPool
+    : INGREDIENTS.filter((ing) => ing !== 'pan');
+
+  const poolSet = new Set(pool);
+  const hasVeggies = ['lechuga', 'tomate', 'cebolla', 'palta'].some((ing) => poolSet.has(ing));
+  const hasCheese = poolSet.has('queso');
+  const hasGrill = poolSet.has('carne') || poolSet.has('pollo');
+
+  return ACTION_CARDS.filter((ac) => {
+    if (ac.id === 'ensalada') return hasVeggies;
+    if (ac.id === 'pizza') return hasCheese;
+    if (ac.id === 'parrilla') return hasGrill;
+    return true;
+  });
+}
+
+export function generateDeck(gameConfig = null) {
   let d = [];
   
   // One of each ingredient in each language
@@ -26,7 +48,7 @@ export function generateDeck() {
   });
   
   // Action cards - 3 of each
-  ACTION_CARDS.forEach(ac => {
+  getEnabledActionCards(gameConfig).forEach(ac => {
     for (let i = 0; i < 3; i++)
       d.push({ type: "action", action: ac.id, id: uid() });
   });
