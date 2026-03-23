@@ -25,6 +25,8 @@ import eqTenedor from './imagenes/acciones/esquina/tenedor2.png';
 import actionTenedor from './imagenes/acciones/tenedor.png';
 import actionGloton from './imagenes/acciones/comer.png';
 import actionComeComodines from './imagenes/acciones/comecomodines.png';
+import actionMilanesaSinHuevo from './imagenes/acciones/pmilanesa sin huevo.png';
+import actionMilanesa from './imagenes/acciones/milanesa.png';
 import actionPizza from './imagenes/acciones/pizza.png';
 import actionPizzaConQueso from './imagenes/acciones/pizza con queso.png';
 import burgerCarne from './imagenes/hamburguesas/ingredientes/carne.png';
@@ -227,15 +229,18 @@ export default function App() {
   const [lastForkEvent, setLastForkEvent] = useState(null);
   const [lastComeComodinesEvent, setLastComeComodinesEvent] = useState(null);
   const [lastGlotonEvent, setLastGlotonEvent] = useState(null);
+  const [lastMilanesaEvent, setLastMilanesaEvent] = useState(null);
   const [lastPizzaEvent, setLastPizzaEvent] = useState(null);
   const [negationFx, setNegationFx] = useState(null);
   const [forkFx, setForkFx] = useState(null);
   const [comeComodinesFx, setComeComodinesFx] = useState(null);
   const [glotonFx, setGlotonFx] = useState(null);
+  const [milanesaFx, setMilanesaFx] = useState(null);
   const [pizzaFx, setPizzaFx] = useState(null);
   const [forkAnim, setForkAnim] = useState(null);
   const [comeComodinesAnim, setComeComodinesAnim] = useState(null);
   const [glotonAnim, setGlotonAnim] = useState(null);
+  const [milanesaAnim, setMilanesaAnim] = useState(null);
   const [pizzaAnim, setPizzaAnim] = useState(null);
   // Host-only ref that stores the resolve callback (not serializable over socket)
   const pendingNegRef = useRef(null);
@@ -243,6 +248,7 @@ export default function App() {
   const lastForkSeenRef = useRef(null);
   const lastComeComodinesSeenRef = useRef(null);
   const lastGlotonSeenRef = useRef(null);
+  const lastMilanesaSeenRef = useRef(null);
   const lastPizzaSeenRef = useRef(null);
   const playerAreaRefs = useRef({});
   const playerIngredientRefs = useRef({});
@@ -375,6 +381,64 @@ export default function App() {
 
     return () => timers.forEach(clearTimeout);
   }, [glotonFx, HI, isMobile]);
+
+  useEffect(() => {
+    if (!milanesaFx?.targets?.length) return undefined;
+
+    const timers = [];
+    const getRectCenter = (el, fallbackX, fallbackY) => {
+      if (!el) return { x: fallbackX, y: fallbackY };
+      const rect = el.getBoundingClientRect();
+      return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+    };
+    const getPlayerCenter = (playerIdx, fallbackX, fallbackY) => {
+      const el = playerIdx === HI ? humanBurgerAreaRef.current : playerAreaRefs.current[playerIdx];
+      return getRectCenter(el, fallbackX, fallbackY);
+    };
+
+    const targets = milanesaFx.targets.map((target, i) => ({
+      ...target,
+      point: getPlayerCenter(
+        target.targetIdx,
+        window.innerWidth * 0.18,
+        window.innerHeight * (0.24 + (i * 0.14)),
+      ),
+    }));
+
+    let elapsed = 90;
+    const appearDuration = 260;
+    const cheesyDelay = 250;
+    const holdDuration = 420;
+
+    targets.forEach((target, index) => {
+      timers.push(setTimeout(() => {
+        setMilanesaAnim({
+          x: target.point.x,
+          y: target.point.y,
+          cooked: false,
+          visible: true,
+          targetCount: target.count || 1,
+        });
+      }, elapsed));
+      timers.push(setTimeout(() => {
+        setMilanesaAnim((prev) => (prev ? { ...prev, cooked: true } : prev));
+      }, elapsed + cheesyDelay));
+      timers.push(setTimeout(() => {
+        setMilanesaAnim((prev) => (prev ? { ...prev, visible: false } : prev));
+      }, elapsed + cheesyDelay + holdDuration));
+      elapsed += appearDuration + cheesyDelay + holdDuration + (index === targets.length - 1 ? 40 : 140);
+    });
+
+    timers.push(setTimeout(() => {
+      setMilanesaAnim(null);
+      setMilanesaFx(null);
+    }, elapsed + 80));
+
+    return () => {
+      timers.forEach(clearTimeout);
+      setMilanesaAnim(null);
+    };
+  }, [milanesaFx, HI]);
 
   useEffect(() => {
     if (!pizzaFx?.targets?.length) return undefined;
@@ -634,6 +698,17 @@ export default function App() {
     }
   }, [HI, isOnline]);
 
+  const triggerMilanesaEvent = useCallback((result) => {
+    if (!result?.affectedTargets?.length) return;
+    const event = {
+      id: `${Date.now()}-${Math.random()}`,
+      targets: result.affectedTargets,
+    };
+    setLastMilanesaEvent(event);
+    lastMilanesaSeenRef.current = event.id;
+    setMilanesaFx(event);
+  }, []);
+
   const triggerPizzaEvent = useCallback((result) => {
     if (!result?.affectedTargets?.length) return;
     const event = {
@@ -793,21 +868,25 @@ export default function App() {
     setLastForkEvent(null);
     setLastComeComodinesEvent(null);
     setLastGlotonEvent(null);
+    setLastMilanesaEvent(null);
     setLastPizzaEvent(null);
     setNegationFx(null);
     setForkFx(null);
     setComeComodinesFx(null);
     setGlotonFx(null);
+    setMilanesaFx(null);
     setPizzaFx(null);
     setForkAnim(null);
     setComeComodinesAnim(null);
     setGlotonAnim(null);
+    setMilanesaAnim(null);
     setPizzaAnim(null);
     pendingNegRef.current = null;
     lastNegationSeenRef.current = null;
     lastForkSeenRef.current = null;
     lastComeComodinesSeenRef.current = null;
     lastGlotonSeenRef.current = null;
+    lastMilanesaSeenRef.current = null;
     lastPizzaSeenRef.current = null;
     setGamePaused(false);
     setPausedMessage('');
@@ -847,20 +926,24 @@ export default function App() {
     setLastForkEvent(null);
     setLastComeComodinesEvent(null);
     setLastGlotonEvent(null);
+    setLastMilanesaEvent(null);
     setLastPizzaEvent(null);
     setNegationFx(null);
     setForkFx(null);
     setComeComodinesFx(null);
     setGlotonFx(null);
+    setMilanesaFx(null);
     setPizzaFx(null);
     setForkAnim(null);
     setComeComodinesAnim(null);
     setGlotonAnim(null);
+    setMilanesaAnim(null);
     setPizzaAnim(null);
     lastNegationSeenRef.current = null;
     lastForkSeenRef.current = null;
     lastComeComodinesSeenRef.current = null;
     lastGlotonSeenRef.current = null;
+    lastMilanesaSeenRef.current = null;
     lastPizzaSeenRef.current = null;
     clearRoomSession();
     setGamePaused(false);
@@ -1019,6 +1102,7 @@ export default function App() {
             setLastForkEvent(gameState.lastForkEvent || null);
             setLastComeComodinesEvent(gameState.lastComeComodinesEvent || null);
             setLastGlotonEvent(gameState.lastGlotonEvent || null);
+            setLastMilanesaEvent(gameState.lastMilanesaEvent || null);
             setLastPizzaEvent(gameState.lastPizzaEvent || null);
             if (gameState.winner) { setWinner(gameState.winner); clearRoomSession(); setPhase('gameover'); }
           else setPhase('playing');
@@ -1156,6 +1240,7 @@ export default function App() {
       setLastForkEvent(state.lastForkEvent || null);
       setLastComeComodinesEvent(state.lastComeComodinesEvent || null);
       setLastGlotonEvent(state.lastGlotonEvent || null);
+      setLastMilanesaEvent(state.lastMilanesaEvent || null);
       setLastPizzaEvent(state.lastPizzaEvent || null);
       if (state.lastNegationEvent?.id && state.lastNegationEvent.id !== lastNegationSeenRef.current && state.lastNegationEvent.actingIdx === myPlayerIdx) {
         lastNegationSeenRef.current = state.lastNegationEvent.id;
@@ -1172,6 +1257,10 @@ export default function App() {
       if (state.lastGlotonEvent?.id && state.lastGlotonEvent.id !== lastGlotonSeenRef.current && state.lastGlotonEvent.targetIdx === myPlayerIdx) {
         lastGlotonSeenRef.current = state.lastGlotonEvent.id;
         setGlotonFx(state.lastGlotonEvent);
+      }
+      if (state.lastMilanesaEvent?.id && state.lastMilanesaEvent.id !== lastMilanesaSeenRef.current) {
+        lastMilanesaSeenRef.current = state.lastMilanesaEvent.id;
+        setMilanesaFx(state.lastMilanesaEvent);
       }
       if (state.lastPizzaEvent?.id && state.lastPizzaEvent.id !== lastPizzaSeenRef.current) {
         lastPizzaSeenRef.current = state.lastPizzaEvent.id;
@@ -1202,11 +1291,11 @@ export default function App() {
       const syncModal = modal && privateModals.includes(modal.type) ? null : modal;
       socket.emit('syncState', {
         code: roomCode,
-        state: { players, deck, discard, cp, log, extraPlay, modal: syncModal, pendingNeg, lastNegationEvent, lastForkEvent, lastComeComodinesEvent, lastGlotonEvent, lastPizzaEvent, winner, gameConfig: currentGameConfig, phase: 'playing' },
+        state: { players, deck, discard, cp, log, extraPlay, modal: syncModal, pendingNeg, lastNegationEvent, lastForkEvent, lastComeComodinesEvent, lastGlotonEvent, lastMilanesaEvent, lastPizzaEvent, winner, gameConfig: currentGameConfig, phase: 'playing' },
       });
     }, 80);
     return () => clearTimeout(syncRef.current);
-  }, [players, deck, discard, cp, log, extraPlay, modal, pendingNeg, lastNegationEvent, lastForkEvent, lastComeComodinesEvent, lastGlotonEvent, lastPizzaEvent, winner, currentGameConfig, phase, isOnline, isHost]);
+  }, [players, deck, discard, cp, log, extraPlay, modal, pendingNeg, lastNegationEvent, lastForkEvent, lastComeComodinesEvent, lastGlotonEvent, lastMilanesaEvent, lastPizzaEvent, winner, currentGameConfig, phase, isOnline, isHost]);
 
   // â”€â”€ Socket: host processes remote player actions â”€â”€
   // We store the latest state in refs so the socket handler always has fresh values
@@ -1555,6 +1644,8 @@ export default function App() {
                 const r = applyMass(fp, fd, card.action, idx);
                 if (card.action === 'comecomodines') {
                   triggerComeComodinesEvent(r, idx, fp[idx]?.name || 'Jugador');
+                } else if (card.action === 'milanesa') {
+                  triggerMilanesaEvent(r);
                 } else if (card.action === 'pizza') {
                   triggerPizzaEvent(r);
                 }
@@ -1695,7 +1786,7 @@ export default function App() {
           if (isOnline && isHost) {
             socket.emit('syncState', {
               code: roomCode,
-              state: { players: newPls, deck: newDeck, discard: newDiscard, cp, log, extraPlay, modal: null, pendingNeg: null, lastNegationEvent, lastForkEvent, lastComeComodinesEvent, lastGlotonEvent, lastPizzaEvent, winner: w, gameConfig: currentGameConfig, phase: 'playing' },
+              state: { players: newPls, deck: newDeck, discard: newDiscard, cp, log, extraPlay, modal: null, pendingNeg: null, lastNegationEvent, lastForkEvent, lastComeComodinesEvent, lastGlotonEvent, lastMilanesaEvent, lastPizzaEvent, winner: w, gameConfig: currentGameConfig, phase: 'playing' },
             });
           }
       setWinner(w); clearRoomSession(); setPhase('gameover');
@@ -2068,6 +2159,8 @@ export default function App() {
           const r = applyMass(newPls, newDiscard, card.action, idx);
           if (card.action === 'comecomodines') {
             triggerComeComodinesEvent(r, idx, newPls[idx]?.name || 'IA');
+          } else if (card.action === 'milanesa') {
+            triggerMilanesaEvent(r);
           } else if (card.action === 'pizza') {
             triggerPizzaEvent(r);
           }
@@ -2436,6 +2529,8 @@ export default function App() {
           if (card.action === 'comecomodines') {
             massResult.sourcePoint = sourcePoint;
             triggerComeComodinesEvent(massResult, HI, newPls[HI]?.name || 'Jugador');
+          } else if (card.action === 'milanesa') {
+            triggerMilanesaEvent(massResult);
           } else if (card.action === 'pizza') {
             triggerPizzaEvent(massResult);
           }
@@ -4094,6 +4189,50 @@ export default function App() {
               />
             </div>
           )}
+        </div>
+      )}
+
+      {milanesaAnim && milanesaAnim.visible && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 9487,
+          pointerEvents: 'none',
+          overflow: 'hidden',
+        }}>
+          <div style={{
+            position: 'fixed',
+            left: milanesaAnim.x,
+            top: milanesaAnim.y,
+            transform: `translate(-50%, -50%) scale(${milanesaAnim.cooked ? 1.06 : 0.96})`,
+            transition: 'transform 0.2s ease, opacity 0.2s ease',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 8,
+            filter: 'drop-shadow(0 14px 26px rgba(0,0,0,.36))',
+          }}>
+            <img
+              src={milanesaAnim.cooked ? actionMilanesa : actionMilanesaSinHuevo}
+              alt="Milanesa"
+              style={{
+                width: isMobile ? 88 : 118,
+                height: isMobile ? 88 : 118,
+                objectFit: 'contain',
+              }}
+            />
+            <div style={{
+              padding: '5px 10px',
+              borderRadius: 999,
+              background: 'rgba(15,17,23,.86)',
+              border: '2px solid rgba(255,215,0,.28)',
+              color: '#FFD700',
+              fontWeight: 900,
+              fontSize: isMobile ? 12 : 14,
+            }}>
+              + huevo x{milanesaAnim.targetCount}
+            </div>
+          </div>
         </div>
       )}
 

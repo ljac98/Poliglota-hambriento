@@ -17,7 +17,7 @@ import ingPalta   from '../imagenes/hamburguesas/objetivos/palta.png';
 import comodinImg from '../imagenes/ingredientes/comodines/comodin.png';
 
 // ── Imágenes de cartas de acción ──
-import imgMilanesa        from '../imagenes/acciones/milanesa.png';
+import imgMilanesa        from '../imagenes/acciones/pmilanesa sin huevo.png';
 import imgEnsalada        from '../imagenes/acciones/ensalada3.png';
 import imgPizza           from '../imagenes/acciones/pizza.png';
 import imgParrilla        from '../imagenes/acciones/parrilla.png';
