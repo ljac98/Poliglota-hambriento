@@ -4478,6 +4478,7 @@ export default function App() {
             alignItems: 'center',
             justifyContent: 'center',
             filter: 'drop-shadow(0 16px 26px rgba(0,0,0,.34))',
+            overflow: 'visible',
           }}>
             <img
               src={parrillaAnim.frameImages?.[parrillaAnim.frameIdx] || actionParrilla1}
@@ -4492,9 +4493,9 @@ export default function App() {
               <div
                 key={`smoke-${idx}`}
                 style={{
-                  position: 'fixed',
-                  left: parrillaAnim.x + grillEffectOffsetX + (idx - 1) * (isMobile ? 12 : 18),
-                  top: parrillaAnim.y - (isMobile ? 26 : 34),
+                  position: 'absolute',
+                  left: `calc(50% + ${grillEffectOffsetX + (idx - 1) * (isMobile ? 12 : 18)}px)`,
+                  top: isMobile ? 48 : 58,
                   width: isMobile ? 24 : 32,
                   height: isMobile ? 24 : 32,
                   transform: 'translate(-50%, -50%)',
@@ -4509,9 +4510,9 @@ export default function App() {
             {parrillaAnim.sizzle && (
               <>
                 <div style={{
-                  position: 'fixed',
-                  left: parrillaAnim.x + grillEffectOffsetX,
-                  top: parrillaAnim.y + (isMobile ? 4 : 6),
+                  position: 'absolute',
+                  left: `calc(50% + ${grillEffectOffsetX}px)`,
+                  top: isMobile ? 78 : 98,
                   width: isMobile ? 84 : 108,
                   height: isMobile ? 84 : 108,
                   transform: 'translate(-50%, -50%)',
@@ -4523,9 +4524,9 @@ export default function App() {
                   <div
                     key={idx}
                     style={{
-                      position: 'fixed',
-                      left: parrillaAnim.x + grillEffectOffsetX + Math.cos((Math.PI * 2 * idx) / 6) * (isMobile ? 16 : 20),
-                      top: parrillaAnim.y - (isMobile ? 2 : 4) + Math.sin((Math.PI * 2 * idx) / 6) * (isMobile ? 8 : 10),
+                      position: 'absolute',
+                      left: `calc(50% + ${grillEffectOffsetX + Math.cos((Math.PI * 2 * idx) / 6) * (isMobile ? 16 : 20)}px)`,
+                      top: (isMobile ? 80 : 100) + Math.sin((Math.PI * 2 * idx) / 6) * (isMobile ? 8 : 10),
                       width: isMobile ? 8 : 10,
                       height: isMobile ? 8 : 10,
                       transform: 'translate(-50%, -50%)',
