@@ -29,6 +29,10 @@ import actionMilanesaSinHuevo from './imagenes/acciones/pmilanesa sin huevo.png'
 import actionMilanesa from './imagenes/acciones/milanesa.png';
 import actionPizza from './imagenes/acciones/pizza.png';
 import actionPizzaConQueso from './imagenes/acciones/pizza con queso.png';
+import actionParrilla1 from './imagenes/acciones/parrilla2.png';
+import actionParrilla2 from './imagenes/acciones/parrilla3.png';
+import actionParrilla3 from './imagenes/acciones/parrilla4.png';
+import actionTridente from './imagenes/acciones/tridente.png';
 import burgerCarne from './imagenes/hamburguesas/ingredientes/carne.png';
 import burgerCebolla from './imagenes/hamburguesas/ingredientes/cebolla.png';
 import burgerHuevo from './imagenes/hamburguesas/ingredientes/huevo.png';
@@ -231,17 +235,20 @@ export default function App() {
   const [lastGlotonEvent, setLastGlotonEvent] = useState(null);
   const [lastMilanesaEvent, setLastMilanesaEvent] = useState(null);
   const [lastPizzaEvent, setLastPizzaEvent] = useState(null);
+  const [lastParrillaEvent, setLastParrillaEvent] = useState(null);
   const [negationFx, setNegationFx] = useState(null);
   const [forkFx, setForkFx] = useState(null);
   const [comeComodinesFx, setComeComodinesFx] = useState(null);
   const [glotonFx, setGlotonFx] = useState(null);
   const [milanesaFx, setMilanesaFx] = useState(null);
   const [pizzaFx, setPizzaFx] = useState(null);
+  const [parrillaFx, setParrillaFx] = useState(null);
   const [forkAnim, setForkAnim] = useState(null);
   const [comeComodinesAnim, setComeComodinesAnim] = useState(null);
   const [glotonAnim, setGlotonAnim] = useState(null);
   const [milanesaAnim, setMilanesaAnim] = useState(null);
   const [pizzaAnim, setPizzaAnim] = useState(null);
+  const [parrillaAnim, setParrillaAnim] = useState(null);
   // Host-only ref that stores the resolve callback (not serializable over socket)
   const pendingNegRef = useRef(null);
   const lastNegationSeenRef = useRef(null);
@@ -250,6 +257,7 @@ export default function App() {
   const lastGlotonSeenRef = useRef(null);
   const lastMilanesaSeenRef = useRef(null);
   const lastPizzaSeenRef = useRef(null);
+  const lastParrillaSeenRef = useRef(null);
   const playerAreaRefs = useRef({});
   const playerIngredientRefs = useRef({});
   const humanBurgerAreaRef = useRef(null);
@@ -499,6 +507,117 @@ export default function App() {
   }, [pizzaFx, HI]);
 
   useEffect(() => {
+    if (!parrillaFx?.targets?.length) return undefined;
+
+    const timers = [];
+    const getRectCenter = (el, fallbackX, fallbackY) => {
+      if (!el) return { x: fallbackX, y: fallbackY };
+      const rect = el.getBoundingClientRect();
+      return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+    };
+    const getPlayerCenter = (playerIdx, fallbackX, fallbackY) => {
+      const el = playerIdx === HI ? humanBurgerAreaRef.current : playerAreaRefs.current[playerIdx];
+      return getRectCenter(el, fallbackX, fallbackY);
+    };
+
+    const center = {
+      x: window.innerWidth * 0.5,
+      y: window.innerHeight * (isMobile ? 0.43 : 0.38),
+    };
+    const targets = parrillaFx.targets.flatMap((target, targetIdx) => {
+      const point = getPlayerCenter(
+        target.targetIdx,
+        window.innerWidth * 0.18,
+        window.innerHeight * (0.22 + targetIdx * 0.16),
+      );
+      const ingredients = (target.ingredients?.length ? target.ingredients : Array.from({ length: target.count || 1 }, (_, idx) => (idx % 2 === 0 ? 'pollo' : 'carne')));
+      return ingredients.map((ingredient, idx) => ({
+        id: `${target.targetIdx}-${ingredient}-${idx}`,
+        ingredient,
+        point: {
+          x: point.x + ((idx % 2 === 0 ? -1 : 1) * (isMobile ? 12 : 18)),
+          y: point.y + (idx * (isMobile ? 8 : 10)) - (isMobile ? 14 : 18),
+        },
+      }));
+    });
+
+    const frames = [actionParrilla1, actionParrilla2, actionParrilla3];
+    setParrillaAnim({
+      x: center.x,
+      y: center.y,
+      frameIdx: 0,
+      tridentX: targets[0]?.point.x || center.x,
+      tridentY: targets[0]?.point.y || center.y,
+      meatX: targets[0]?.point.x || center.x,
+      meatY: targets[0]?.point.y || center.y,
+      meatImg: targets[0]?.ingredient === 'pollo' ? burgerPollo : burgerCarne,
+      showMeat: Boolean(targets[0]),
+      visible: true,
+      activePickup: 0,
+      frameImages: frames,
+    });
+
+    const frameTimer = setInterval(() => {
+      setParrillaAnim((prev) => (prev ? { ...prev, frameIdx: (prev.frameIdx + 1) % frames.length } : prev));
+    }, 160);
+    timers.push(frameTimer);
+
+    let elapsed = 120;
+    const moveDuration = 440;
+    const grillPause = 180;
+
+    targets.forEach((target, idx) => {
+      timers.push(setTimeout(() => {
+        setParrillaAnim((prev) => (prev ? {
+          ...prev,
+          tridentX: target.point.x,
+          tridentY: target.point.y,
+          meatX: target.point.x,
+          meatY: target.point.y,
+          meatImg: target.ingredient === 'pollo' ? burgerPollo : burgerCarne,
+          showMeat: true,
+          activePickup: idx + 1,
+        } : prev));
+      }, elapsed));
+
+      timers.push(setTimeout(() => {
+        setParrillaAnim((prev) => (prev ? {
+          ...prev,
+          tridentX: center.x,
+          tridentY: center.y + (isMobile ? 16 : 22),
+          meatX: center.x + (isMobile ? 2 : 4),
+          meatY: center.y + (isMobile ? 2 : 4),
+        } : prev));
+      }, elapsed + 80));
+
+      timers.push(setTimeout(() => {
+        setParrillaAnim((prev) => (prev ? {
+          ...prev,
+          showMeat: false,
+        } : prev));
+      }, elapsed + moveDuration));
+
+      elapsed += moveDuration + grillPause;
+    });
+
+    timers.push(setTimeout(() => {
+      setParrillaAnim((prev) => (prev ? { ...prev, visible: false, showMeat: false } : prev));
+    }, elapsed + 120));
+    timers.push(setTimeout(() => {
+      setParrillaAnim(null);
+      setParrillaFx(null);
+    }, elapsed + 340));
+
+    return () => {
+      timers.forEach((timer) => {
+        clearTimeout(timer);
+        clearInterval(timer);
+      });
+      setParrillaAnim(null);
+    };
+  }, [parrillaFx, HI, isMobile]);
+
+  useEffect(() => {
     if (!forkFx) return undefined;
 
     const getRectCenter = (el, fallbackX, fallbackY) => {
@@ -729,6 +848,17 @@ export default function App() {
     setPizzaFx(event);
   }, []);
 
+  const triggerParrillaEvent = useCallback((result) => {
+    if (!result?.affectedTargets?.length) return;
+    const event = {
+      id: `${Date.now()}-${Math.random()}`,
+      targets: result.affectedTargets,
+    };
+    setLastParrillaEvent(event);
+    lastParrillaSeenRef.current = event.id;
+    setParrillaFx(event);
+  }, []);
+
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
     if (shouldLogoutOnLoad) {
@@ -879,17 +1009,20 @@ export default function App() {
     setLastGlotonEvent(null);
     setLastMilanesaEvent(null);
     setLastPizzaEvent(null);
+    setLastParrillaEvent(null);
     setNegationFx(null);
     setForkFx(null);
     setComeComodinesFx(null);
     setGlotonFx(null);
     setMilanesaFx(null);
     setPizzaFx(null);
+    setParrillaFx(null);
     setForkAnim(null);
     setComeComodinesAnim(null);
     setGlotonAnim(null);
     setMilanesaAnim(null);
     setPizzaAnim(null);
+    setParrillaAnim(null);
     pendingNegRef.current = null;
     lastNegationSeenRef.current = null;
     lastForkSeenRef.current = null;
@@ -897,6 +1030,7 @@ export default function App() {
     lastGlotonSeenRef.current = null;
     lastMilanesaSeenRef.current = null;
     lastPizzaSeenRef.current = null;
+    lastParrillaSeenRef.current = null;
     setGamePaused(false);
     setPausedMessage('');
     setShowChat(false);
@@ -937,23 +1071,27 @@ export default function App() {
     setLastGlotonEvent(null);
     setLastMilanesaEvent(null);
     setLastPizzaEvent(null);
+    setLastParrillaEvent(null);
     setNegationFx(null);
     setForkFx(null);
     setComeComodinesFx(null);
     setGlotonFx(null);
     setMilanesaFx(null);
     setPizzaFx(null);
+    setParrillaFx(null);
     setForkAnim(null);
     setComeComodinesAnim(null);
     setGlotonAnim(null);
     setMilanesaAnim(null);
     setPizzaAnim(null);
+    setParrillaAnim(null);
     lastNegationSeenRef.current = null;
     lastForkSeenRef.current = null;
     lastComeComodinesSeenRef.current = null;
     lastGlotonSeenRef.current = null;
     lastMilanesaSeenRef.current = null;
     lastPizzaSeenRef.current = null;
+    lastParrillaSeenRef.current = null;
     clearRoomSession();
     setGamePaused(false);
     setPausedMessage('');
@@ -1113,6 +1251,7 @@ export default function App() {
             setLastGlotonEvent(gameState.lastGlotonEvent || null);
             setLastMilanesaEvent(gameState.lastMilanesaEvent || null);
             setLastPizzaEvent(gameState.lastPizzaEvent || null);
+            setLastParrillaEvent(gameState.lastParrillaEvent || null);
             if (gameState.winner) { setWinner(gameState.winner); clearRoomSession(); setPhase('gameover'); }
           else setPhase('playing');
         } else if (!host) {
@@ -1251,6 +1390,7 @@ export default function App() {
       setLastGlotonEvent(state.lastGlotonEvent || null);
       setLastMilanesaEvent(state.lastMilanesaEvent || null);
       setLastPizzaEvent(state.lastPizzaEvent || null);
+      setLastParrillaEvent(state.lastParrillaEvent || null);
       if (state.lastNegationEvent?.id && state.lastNegationEvent.id !== lastNegationSeenRef.current && state.lastNegationEvent.actingIdx === myPlayerIdx) {
         lastNegationSeenRef.current = state.lastNegationEvent.id;
         setNegationFx(state.lastNegationEvent);
@@ -1274,6 +1414,10 @@ export default function App() {
       if (state.lastPizzaEvent?.id && state.lastPizzaEvent.id !== lastPizzaSeenRef.current) {
         lastPizzaSeenRef.current = state.lastPizzaEvent.id;
         setPizzaFx(state.lastPizzaEvent);
+      }
+      if (state.lastParrillaEvent?.id && state.lastParrillaEvent.id !== lastParrillaSeenRef.current) {
+        lastParrillaSeenRef.current = state.lastParrillaEvent.id;
+        setParrillaFx(state.lastParrillaEvent);
       }
       if (state.winner) { setWinner(state.winner); clearRoomSession(); setPhase('gameover'); }
       else if (state.cp === myPlayerIdx && lastSyncCpRef.current !== myPlayerIdx) {
@@ -1300,11 +1444,11 @@ export default function App() {
       const syncModal = modal && privateModals.includes(modal.type) ? null : modal;
       socket.emit('syncState', {
         code: roomCode,
-        state: { players, deck, discard, cp, log, extraPlay, modal: syncModal, pendingNeg, lastNegationEvent, lastForkEvent, lastComeComodinesEvent, lastGlotonEvent, lastMilanesaEvent, lastPizzaEvent, winner, gameConfig: currentGameConfig, phase: 'playing' },
+        state: { players, deck, discard, cp, log, extraPlay, modal: syncModal, pendingNeg, lastNegationEvent, lastForkEvent, lastComeComodinesEvent, lastGlotonEvent, lastMilanesaEvent, lastPizzaEvent, lastParrillaEvent, winner, gameConfig: currentGameConfig, phase: 'playing' },
       });
     }, 80);
     return () => clearTimeout(syncRef.current);
-  }, [players, deck, discard, cp, log, extraPlay, modal, pendingNeg, lastNegationEvent, lastForkEvent, lastComeComodinesEvent, lastGlotonEvent, lastMilanesaEvent, lastPizzaEvent, winner, currentGameConfig, phase, isOnline, isHost]);
+  }, [players, deck, discard, cp, log, extraPlay, modal, pendingNeg, lastNegationEvent, lastForkEvent, lastComeComodinesEvent, lastGlotonEvent, lastMilanesaEvent, lastPizzaEvent, lastParrillaEvent, winner, currentGameConfig, phase, isOnline, isHost]);
 
   // â”€â”€ Socket: host processes remote player actions â”€â”€
   // We store the latest state in refs so the socket handler always has fresh values
@@ -1657,6 +1801,8 @@ export default function App() {
                   triggerMilanesaEvent(r);
                 } else if (card.action === 'pizza') {
                   triggerPizzaEvent(r);
+                } else if (card.action === 'parrilla') {
+                  triggerParrillaEvent(r);
                 }
                 endTurnFromRemote(r.players, deckRef.current, r.discard, idx);
               });
@@ -1795,7 +1941,7 @@ export default function App() {
           if (isOnline && isHost) {
             socket.emit('syncState', {
               code: roomCode,
-              state: { players: newPls, deck: newDeck, discard: newDiscard, cp, log, extraPlay, modal: null, pendingNeg: null, lastNegationEvent, lastForkEvent, lastComeComodinesEvent, lastGlotonEvent, lastMilanesaEvent, lastPizzaEvent, winner: w, gameConfig: currentGameConfig, phase: 'playing' },
+              state: { players: newPls, deck: newDeck, discard: newDiscard, cp, log, extraPlay, modal: null, pendingNeg: null, lastNegationEvent, lastForkEvent, lastComeComodinesEvent, lastGlotonEvent, lastMilanesaEvent, lastPizzaEvent, lastParrillaEvent, winner: w, gameConfig: currentGameConfig, phase: 'playing' },
             });
           }
       setWinner(w); clearRoomSession(); setPhase('gameover');
@@ -2172,6 +2318,8 @@ export default function App() {
             triggerMilanesaEvent(r);
           } else if (card.action === 'pizza') {
             triggerPizzaEvent(r);
+          } else if (card.action === 'parrilla') {
+            triggerParrillaEvent(r);
           }
           newPls = r.players; newDiscard = r.discard;
         } else if (richest !== null && richest !== undefined) {
@@ -2542,6 +2690,8 @@ export default function App() {
             triggerMilanesaEvent(massResult);
           } else if (card.action === 'pizza') {
             triggerPizzaEvent(massResult);
+          } else if (card.action === 'parrilla') {
+            triggerParrillaEvent(massResult);
           }
           const { players: ps2, discard: di2 } = massResult;
           endTurn(ps2, dk, di2, HI);
@@ -4296,6 +4446,74 @@ export default function App() {
               + queso x{pizzaAnim.targetCount}
             </div>
           </div>
+        </div>
+      )}
+
+      {parrillaAnim && parrillaAnim.visible && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 9487,
+          pointerEvents: 'none',
+          overflow: 'hidden',
+        }}>
+          <div style={{
+            position: 'fixed',
+            left: parrillaAnim.x,
+            top: parrillaAnim.y,
+            transform: 'translate(-50%, -50%)',
+            width: isMobile ? 170 : 220,
+            height: isMobile ? 170 : 220,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            filter: 'drop-shadow(0 16px 26px rgba(0,0,0,.34))',
+          }}>
+            <img
+              src={parrillaAnim.frameImages?.[parrillaAnim.frameIdx] || actionParrilla1}
+              alt="Parrilla"
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain',
+              }}
+            />
+          </div>
+
+          {parrillaAnim.showMeat && (
+            <>
+              <img
+                src={actionTridente}
+                alt="Tridente"
+                style={{
+                  position: 'fixed',
+                  left: parrillaAnim.tridentX,
+                  top: parrillaAnim.tridentY,
+                  transform: 'translate(-50%, -50%)',
+                  width: isMobile ? 66 : 88,
+                  height: 'auto',
+                  objectFit: 'contain',
+                  filter: 'drop-shadow(0 10px 20px rgba(0,0,0,.32))',
+                  transition: 'left 0.42s ease-in-out, top 0.42s ease-in-out',
+                }}
+              />
+              <img
+                src={parrillaAnim.meatImg}
+                alt="Carne a la parrilla"
+                style={{
+                  position: 'fixed',
+                  left: parrillaAnim.meatX,
+                  top: parrillaAnim.meatY,
+                  transform: 'translate(-50%, -50%)',
+                  width: isMobile ? 34 : 42,
+                  height: 'auto',
+                  objectFit: 'contain',
+                  filter: 'drop-shadow(0 8px 14px rgba(0,0,0,.26))',
+                  transition: 'left 0.42s ease-in-out, top 0.42s ease-in-out, opacity 0.18s ease',
+                }}
+              />
+            </>
+          )}
         </div>
       )}
 
