@@ -560,12 +560,12 @@ export default function App() {
 
     const frameTimer = setInterval(() => {
       setParrillaAnim((prev) => (prev ? { ...prev, frameIdx: (prev.frameIdx + 1) % frames.length } : prev));
-    }, 160);
+    }, 220);
     timers.push(frameTimer);
 
     let elapsed = 120;
-    const moveDuration = 440;
-    const grillPause = 180;
+    const moveDuration = 560;
+    const grillPause = 260;
 
     targets.forEach((target, idx) => {
       timers.push(setTimeout(() => {
@@ -601,7 +601,7 @@ export default function App() {
 
       timers.push(setTimeout(() => {
         setParrillaAnim((prev) => (prev ? { ...prev, sizzle: false } : prev));
-      }, elapsed + moveDuration + 150));
+      }, elapsed + moveDuration + 220));
 
       elapsed += moveDuration + grillPause;
     });
@@ -4497,7 +4497,7 @@ export default function App() {
                   borderRadius: '50%',
                   background: 'radial-gradient(circle, rgba(245,245,245,.28) 0%, rgba(210,210,210,.18) 44%, rgba(180,180,180,0) 76%)',
                   filter: 'blur(1px)',
-                  animation: `parrilla-smoke ${1.6 + idx * 0.18}s ease-in-out infinite`,
+                  animation: `parrilla-smoke ${1.95 + idx * 0.22}s ease-in-out infinite`,
                   animationDelay: `${idx * 0.22}s`,
                 }}
               />
@@ -4513,7 +4513,7 @@ export default function App() {
                   transform: 'translate(-50%, -50%)',
                   borderRadius: '50%',
                   background: 'radial-gradient(circle, rgba(255,196,64,.55) 0%, rgba(255,120,32,.35) 36%, rgba(255,80,0,0) 72%)',
-                  animation: 'parrilla-sizzle 0.32s ease-out forwards',
+                  animation: 'parrilla-sizzle 0.44s ease-out forwards',
                 }} />
                 {Array.from({ length: 6 }).map((_, idx) => (
                   <div
