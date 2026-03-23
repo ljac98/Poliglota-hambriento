@@ -554,6 +554,7 @@ export default function App() {
       showMeat: Boolean(targets[0]),
       visible: true,
       activePickup: 0,
+      sizzle: false,
       frameImages: frames,
     });
 
@@ -594,8 +595,13 @@ export default function App() {
         setParrillaAnim((prev) => (prev ? {
           ...prev,
           showMeat: false,
+          sizzle: true,
         } : prev));
       }, elapsed + moveDuration));
+
+      timers.push(setTimeout(() => {
+        setParrillaAnim((prev) => (prev ? { ...prev, sizzle: false } : prev));
+      }, elapsed + moveDuration + 150));
 
       elapsed += moveDuration + grillPause;
     });
@@ -4475,9 +4481,42 @@ export default function App() {
               style={{
                 width: '100%',
                 height: '100%',
-                objectFit: 'contain',
-              }}
-            />
+              objectFit: 'contain',
+            }}
+          />
+            {parrillaAnim.sizzle && (
+              <>
+                <div style={{
+                  position: 'fixed',
+                  left: parrillaAnim.x,
+                  top: parrillaAnim.y + (isMobile ? 4 : 6),
+                  width: isMobile ? 84 : 108,
+                  height: isMobile ? 84 : 108,
+                  transform: 'translate(-50%, -50%)',
+                  borderRadius: '50%',
+                  background: 'radial-gradient(circle, rgba(255,196,64,.55) 0%, rgba(255,120,32,.35) 36%, rgba(255,80,0,0) 72%)',
+                  animation: 'parrilla-sizzle 0.32s ease-out forwards',
+                }} />
+                {Array.from({ length: 6 }).map((_, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      position: 'fixed',
+                      left: parrillaAnim.x + Math.cos((Math.PI * 2 * idx) / 6) * (isMobile ? 16 : 20),
+                      top: parrillaAnim.y - (isMobile ? 2 : 4) + Math.sin((Math.PI * 2 * idx) / 6) * (isMobile ? 8 : 10),
+                      width: isMobile ? 8 : 10,
+                      height: isMobile ? 8 : 10,
+                      transform: 'translate(-50%, -50%)',
+                      borderRadius: '50%',
+                      background: idx % 2 === 0 ? '#FFD700' : '#FF8C42',
+                      boxShadow: '0 0 10px rgba(255,180,50,.7)',
+                      animation: `parrilla-spark 0.34s ease-out forwards`,
+                      animationDelay: `${idx * 0.018}s`,
+                    }}
+                  />
+                ))}
+              </>
+            )}
           </div>
 
           {parrillaAnim.showMeat && (
@@ -4522,6 +4561,16 @@ export default function App() {
           0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
           40% { transform: translate(-50%, -50%) scale(1.08); opacity: 1; }
           100% { transform: translate(-50%, -50%) scale(1.35); opacity: 0; }
+        }
+        @keyframes parrilla-sizzle {
+          0% { transform: translate(-50%, -50%) scale(.65); opacity: 0; }
+          40% { opacity: 1; }
+          100% { transform: translate(-50%, -50%) scale(1.25); opacity: 0; }
+        }
+        @keyframes parrilla-spark {
+          0% { transform: translate(-50%, -50%) scale(.3); opacity: 0; }
+          30% { opacity: 1; }
+          100% { transform: translate(-50%, -70%) scale(1.25); opacity: 0; }
         }
       `}</style>
 
