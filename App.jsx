@@ -27,6 +27,8 @@ import actionGloton from './imagenes/acciones/comer.png';
 import actionComeComodines from './imagenes/acciones/comecomodines.png';
 import actionMilanesaSinHuevo from './imagenes/acciones/pmilanesa sin huevo.png';
 import actionMilanesa from './imagenes/acciones/milanesa.png';
+import actionEnsalada1 from './imagenes/acciones/ensalada3.png';
+import actionEnsalada2 from './imagenes/acciones/ensalada4.png';
 import actionPizza from './imagenes/acciones/pizza.png';
 import actionPizzaConQueso from './imagenes/acciones/pizza con queso.png';
 import actionParrilla1 from './imagenes/acciones/parrilla2.png';
@@ -234,6 +236,7 @@ export default function App() {
   const [lastComeComodinesEvent, setLastComeComodinesEvent] = useState(null);
   const [lastGlotonEvent, setLastGlotonEvent] = useState(null);
   const [lastMilanesaEvent, setLastMilanesaEvent] = useState(null);
+  const [lastEnsaladaEvent, setLastEnsaladaEvent] = useState(null);
   const [lastPizzaEvent, setLastPizzaEvent] = useState(null);
   const [lastParrillaEvent, setLastParrillaEvent] = useState(null);
   const [negationFx, setNegationFx] = useState(null);
@@ -241,12 +244,14 @@ export default function App() {
   const [comeComodinesFx, setComeComodinesFx] = useState(null);
   const [glotonFx, setGlotonFx] = useState(null);
   const [milanesaFx, setMilanesaFx] = useState(null);
+  const [ensaladaFx, setEnsaladaFx] = useState(null);
   const [pizzaFx, setPizzaFx] = useState(null);
   const [parrillaFx, setParrillaFx] = useState(null);
   const [forkAnim, setForkAnim] = useState(null);
   const [comeComodinesAnim, setComeComodinesAnim] = useState(null);
   const [glotonAnim, setGlotonAnim] = useState(null);
   const [milanesaAnim, setMilanesaAnim] = useState(null);
+  const [ensaladaAnim, setEnsaladaAnim] = useState(null);
   const [pizzaAnim, setPizzaAnim] = useState(null);
   const [parrillaAnim, setParrillaAnim] = useState(null);
   // Host-only ref that stores the resolve callback (not serializable over socket)
@@ -256,6 +261,7 @@ export default function App() {
   const lastComeComodinesSeenRef = useRef(null);
   const lastGlotonSeenRef = useRef(null);
   const lastMilanesaSeenRef = useRef(null);
+  const lastEnsaladaSeenRef = useRef(null);
   const lastPizzaSeenRef = useRef(null);
   const lastParrillaSeenRef = useRef(null);
   const playerAreaRefs = useRef({});
@@ -451,6 +457,79 @@ export default function App() {
       setMilanesaAnim(null);
     };
   }, [milanesaFx, HI]);
+
+  useEffect(() => {
+    if (!ensaladaFx?.targets?.length) return undefined;
+
+    const timers = [];
+    const getRectCenter = (el, fallbackX, fallbackY) => {
+      if (!el) return { x: fallbackX, y: fallbackY };
+      const rect = el.getBoundingClientRect();
+      return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+    };
+    const targets = ensaladaFx.targets.map((target, i) => {
+      const el = target.targetIdx === HI ? humanBurgerAreaRef.current : playerAreaRefs.current[target.targetIdx];
+      const ingredients = (target.ingredients?.length
+        ? target.ingredients.filter((ing) => ['lechuga', 'tomate', 'cebolla', 'palta'].includes(ing))
+        : Array.from({ length: target.count || 1 }, (_, idx) => ['lechuga', 'tomate', 'cebolla', 'palta'][idx % 4]));
+      return {
+        ...target,
+        ingredients,
+        point: getRectCenter(el, window.innerWidth * 0.22, window.innerHeight * (0.26 + i * 0.14)),
+      };
+    });
+
+    const frames = [actionEnsalada1, actionEnsalada2];
+    setEnsaladaAnim({
+      x: targets[0].point.x,
+      y: targets[0].point.y,
+      frameIdx: 0,
+      visible: true,
+      tossTick: 0,
+      ingredients: targets[0].ingredients,
+      targetCount: targets[0].count || targets[0].ingredients.length || 1,
+    });
+
+    const frameTimer = setInterval(() => {
+      setEnsaladaAnim((prev) => (prev ? { ...prev, frameIdx: (prev.frameIdx + 1) % frames.length } : prev));
+    }, 180);
+    timers.push(frameTimer);
+
+    let elapsed = 120;
+    targets.forEach((target, idx) => {
+      timers.push(setTimeout(() => {
+        setEnsaladaAnim({
+          x: target.point.x,
+          y: target.point.y,
+          frameIdx: 0,
+          visible: true,
+          tossTick: idx + 1,
+          ingredients: target.ingredients,
+          targetCount: target.count || target.ingredients.length || 1,
+        });
+      }, elapsed));
+      timers.push(setTimeout(() => {
+        setEnsaladaAnim((prev) => (prev ? { ...prev, tossTick: prev.tossTick + 1 } : prev));
+      }, elapsed + 220));
+      timers.push(setTimeout(() => {
+        setEnsaladaAnim((prev) => (prev ? { ...prev, visible: false } : prev));
+      }, elapsed + 620));
+      elapsed += idx === targets.length - 1 ? 860 : 740;
+    });
+
+    timers.push(setTimeout(() => {
+      setEnsaladaAnim(null);
+      setEnsaladaFx(null);
+    }, elapsed + 120));
+
+    return () => {
+      timers.forEach((timer) => {
+        clearTimeout(timer);
+        clearInterval(timer);
+      });
+      setEnsaladaAnim(null);
+    };
+  }, [ensaladaFx, HI]);
 
   useEffect(() => {
     if (!pizzaFx?.targets?.length) return undefined;
@@ -843,6 +922,17 @@ export default function App() {
     setMilanesaFx(event);
   }, []);
 
+  const triggerEnsaladaEvent = useCallback((result) => {
+    if (!result?.affectedTargets?.length) return;
+    const event = {
+      id: `${Date.now()}-${Math.random()}`,
+      targets: result.affectedTargets,
+    };
+    setLastEnsaladaEvent(event);
+    lastEnsaladaSeenRef.current = event.id;
+    setEnsaladaFx(event);
+  }, []);
+
   const triggerPizzaEvent = useCallback((result) => {
     if (!result?.affectedTargets?.length) return;
     const event = {
@@ -1014,6 +1104,7 @@ export default function App() {
     setLastComeComodinesEvent(null);
     setLastGlotonEvent(null);
     setLastMilanesaEvent(null);
+    setLastEnsaladaEvent(null);
     setLastPizzaEvent(null);
     setLastParrillaEvent(null);
     setNegationFx(null);
@@ -1021,12 +1112,14 @@ export default function App() {
     setComeComodinesFx(null);
     setGlotonFx(null);
     setMilanesaFx(null);
+    setEnsaladaFx(null);
     setPizzaFx(null);
     setParrillaFx(null);
     setForkAnim(null);
     setComeComodinesAnim(null);
     setGlotonAnim(null);
     setMilanesaAnim(null);
+    setEnsaladaAnim(null);
     setPizzaAnim(null);
     setParrillaAnim(null);
     pendingNegRef.current = null;
@@ -1035,6 +1128,7 @@ export default function App() {
     lastComeComodinesSeenRef.current = null;
     lastGlotonSeenRef.current = null;
     lastMilanesaSeenRef.current = null;
+    lastEnsaladaSeenRef.current = null;
     lastPizzaSeenRef.current = null;
     lastParrillaSeenRef.current = null;
     setGamePaused(false);
@@ -1076,6 +1170,7 @@ export default function App() {
     setLastComeComodinesEvent(null);
     setLastGlotonEvent(null);
     setLastMilanesaEvent(null);
+    setLastEnsaladaEvent(null);
     setLastPizzaEvent(null);
     setLastParrillaEvent(null);
     setNegationFx(null);
@@ -1083,12 +1178,14 @@ export default function App() {
     setComeComodinesFx(null);
     setGlotonFx(null);
     setMilanesaFx(null);
+    setEnsaladaFx(null);
     setPizzaFx(null);
     setParrillaFx(null);
     setForkAnim(null);
     setComeComodinesAnim(null);
     setGlotonAnim(null);
     setMilanesaAnim(null);
+    setEnsaladaAnim(null);
     setPizzaAnim(null);
     setParrillaAnim(null);
     lastNegationSeenRef.current = null;
@@ -1096,6 +1193,7 @@ export default function App() {
     lastComeComodinesSeenRef.current = null;
     lastGlotonSeenRef.current = null;
     lastMilanesaSeenRef.current = null;
+    lastEnsaladaSeenRef.current = null;
     lastPizzaSeenRef.current = null;
     lastParrillaSeenRef.current = null;
     clearRoomSession();
@@ -1256,6 +1354,7 @@ export default function App() {
             setLastComeComodinesEvent(gameState.lastComeComodinesEvent || null);
             setLastGlotonEvent(gameState.lastGlotonEvent || null);
             setLastMilanesaEvent(gameState.lastMilanesaEvent || null);
+            setLastEnsaladaEvent(gameState.lastEnsaladaEvent || null);
             setLastPizzaEvent(gameState.lastPizzaEvent || null);
             setLastParrillaEvent(gameState.lastParrillaEvent || null);
             if (gameState.winner) { setWinner(gameState.winner); clearRoomSession(); setPhase('gameover'); }
@@ -1395,6 +1494,7 @@ export default function App() {
       setLastComeComodinesEvent(state.lastComeComodinesEvent || null);
       setLastGlotonEvent(state.lastGlotonEvent || null);
       setLastMilanesaEvent(state.lastMilanesaEvent || null);
+      setLastEnsaladaEvent(state.lastEnsaladaEvent || null);
       setLastPizzaEvent(state.lastPizzaEvent || null);
       setLastParrillaEvent(state.lastParrillaEvent || null);
       if (state.lastNegationEvent?.id && state.lastNegationEvent.id !== lastNegationSeenRef.current && state.lastNegationEvent.actingIdx === myPlayerIdx) {
@@ -1416,6 +1516,10 @@ export default function App() {
       if (state.lastMilanesaEvent?.id && state.lastMilanesaEvent.id !== lastMilanesaSeenRef.current) {
         lastMilanesaSeenRef.current = state.lastMilanesaEvent.id;
         setMilanesaFx(state.lastMilanesaEvent);
+      }
+      if (state.lastEnsaladaEvent?.id && state.lastEnsaladaEvent.id !== lastEnsaladaSeenRef.current) {
+        lastEnsaladaSeenRef.current = state.lastEnsaladaEvent.id;
+        setEnsaladaFx(state.lastEnsaladaEvent);
       }
       if (state.lastPizzaEvent?.id && state.lastPizzaEvent.id !== lastPizzaSeenRef.current) {
         lastPizzaSeenRef.current = state.lastPizzaEvent.id;
@@ -1450,11 +1554,11 @@ export default function App() {
       const syncModal = modal && privateModals.includes(modal.type) ? null : modal;
       socket.emit('syncState', {
         code: roomCode,
-        state: { players, deck, discard, cp, log, extraPlay, modal: syncModal, pendingNeg, lastNegationEvent, lastForkEvent, lastComeComodinesEvent, lastGlotonEvent, lastMilanesaEvent, lastPizzaEvent, lastParrillaEvent, winner, gameConfig: currentGameConfig, phase: 'playing' },
+        state: { players, deck, discard, cp, log, extraPlay, modal: syncModal, pendingNeg, lastNegationEvent, lastForkEvent, lastComeComodinesEvent, lastGlotonEvent, lastMilanesaEvent, lastEnsaladaEvent, lastPizzaEvent, lastParrillaEvent, winner, gameConfig: currentGameConfig, phase: 'playing' },
       });
     }, 80);
     return () => clearTimeout(syncRef.current);
-  }, [players, deck, discard, cp, log, extraPlay, modal, pendingNeg, lastNegationEvent, lastForkEvent, lastComeComodinesEvent, lastGlotonEvent, lastMilanesaEvent, lastPizzaEvent, lastParrillaEvent, winner, currentGameConfig, phase, isOnline, isHost]);
+  }, [players, deck, discard, cp, log, extraPlay, modal, pendingNeg, lastNegationEvent, lastForkEvent, lastComeComodinesEvent, lastGlotonEvent, lastMilanesaEvent, lastEnsaladaEvent, lastPizzaEvent, lastParrillaEvent, winner, currentGameConfig, phase, isOnline, isHost]);
 
   // â”€â”€ Socket: host processes remote player actions â”€â”€
   // We store the latest state in refs so the socket handler always has fresh values
@@ -1805,6 +1909,8 @@ export default function App() {
                   triggerComeComodinesEvent(r, idx, fp[idx]?.name || 'Jugador');
                 } else if (card.action === 'milanesa') {
                   triggerMilanesaEvent(r);
+                } else if (card.action === 'ensalada') {
+                  triggerEnsaladaEvent(r);
                 } else if (card.action === 'pizza') {
                   triggerPizzaEvent(r);
                 } else if (card.action === 'parrilla') {
@@ -1947,7 +2053,7 @@ export default function App() {
           if (isOnline && isHost) {
             socket.emit('syncState', {
               code: roomCode,
-              state: { players: newPls, deck: newDeck, discard: newDiscard, cp, log, extraPlay, modal: null, pendingNeg: null, lastNegationEvent, lastForkEvent, lastComeComodinesEvent, lastGlotonEvent, lastMilanesaEvent, lastPizzaEvent, lastParrillaEvent, winner: w, gameConfig: currentGameConfig, phase: 'playing' },
+              state: { players: newPls, deck: newDeck, discard: newDiscard, cp, log, extraPlay, modal: null, pendingNeg: null, lastNegationEvent, lastForkEvent, lastComeComodinesEvent, lastGlotonEvent, lastMilanesaEvent, lastEnsaladaEvent, lastPizzaEvent, lastParrillaEvent, winner: w, gameConfig: currentGameConfig, phase: 'playing' },
             });
           }
       setWinner(w); clearRoomSession(); setPhase('gameover');
@@ -2316,15 +2422,17 @@ export default function App() {
         if (currentIdx !== -1) newPls[idx].hand.splice(currentIdx, 1);
 
         const mass = ['milanesa', 'ensalada', 'pizza', 'parrilla', 'comecomodines'];
-        if (mass.includes(card.action)) {
-          const r = applyMass(newPls, newDiscard, card.action, idx);
-          if (card.action === 'comecomodines') {
-            triggerComeComodinesEvent(r, idx, newPls[idx]?.name || 'IA');
-          } else if (card.action === 'milanesa') {
-            triggerMilanesaEvent(r);
-          } else if (card.action === 'pizza') {
-            triggerPizzaEvent(r);
-          } else if (card.action === 'parrilla') {
+          if (mass.includes(card.action)) {
+            const r = applyMass(newPls, newDiscard, card.action, idx);
+            if (card.action === 'comecomodines') {
+              triggerComeComodinesEvent(r, idx, newPls[idx]?.name || 'IA');
+            } else if (card.action === 'milanesa') {
+              triggerMilanesaEvent(r);
+            } else if (card.action === 'ensalada') {
+              triggerEnsaladaEvent(r);
+            } else if (card.action === 'pizza') {
+              triggerPizzaEvent(r);
+            } else if (card.action === 'parrilla') {
             triggerParrillaEvent(r);
           }
           newPls = r.players; newDiscard = r.discard;
@@ -2694,6 +2802,8 @@ export default function App() {
             triggerComeComodinesEvent(massResult, HI, newPls[HI]?.name || 'Jugador');
           } else if (card.action === 'milanesa') {
             triggerMilanesaEvent(massResult);
+          } else if (card.action === 'ensalada') {
+            triggerEnsaladaEvent(massResult);
           } else if (card.action === 'pizza') {
             triggerPizzaEvent(massResult);
           } else if (card.action === 'parrilla') {
@@ -4582,6 +4692,91 @@ export default function App() {
         </div>
       )}
 
+      {ensaladaAnim && ensaladaAnim.visible && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 9486,
+          pointerEvents: 'none',
+          overflow: 'hidden',
+        }}>
+          <div style={{
+            position: 'fixed',
+            left: ensaladaAnim.x,
+            top: ensaladaAnim.y,
+            transform: 'translate(-50%, -50%)',
+            width: isMobile ? 126 : 162,
+            height: isMobile ? 126 : 162,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            filter: 'drop-shadow(0 16px 24px rgba(0,0,0,.26))',
+          }}>
+            <img
+              src={ensaladaAnim.frameIdx % 2 === 0 ? actionEnsalada1 : actionEnsalada2}
+              alt="Ensalada"
+              style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+            />
+            <div style={{
+              position: 'absolute',
+              inset: '20% 18%',
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(170,255,130,.16) 0%, rgba(170,255,130,0) 72%)',
+              animation: 'ensalada-glow 0.55s ease-out',
+            }} />
+            {(ensaladaAnim.ingredients || []).slice(0, 6).map((ing, idx) => {
+              const angle = ((Math.PI * 2) / Math.max(1, (ensaladaAnim.ingredients || []).length)) * idx;
+              const radius = isMobile ? 34 : 44;
+              return (
+                <div
+                  key={`${ing}-${idx}-${ensaladaAnim.tossTick}`}
+                  style={{
+                    position: 'absolute',
+                    left: `calc(50% + ${Math.cos(angle) * radius}px)`,
+                    top: `calc(50% + ${Math.sin(angle) * radius}px)`,
+                    transform: 'translate(-50%, -50%)',
+                    width: isMobile ? 24 : 30,
+                    height: isMobile ? 24 : 30,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    animation: `ensalada-toss 0.5s ease-out forwards`,
+                    animationDelay: `${idx * 0.03}s`,
+                  }}
+                >
+                  <div style={{
+                    width: '100%',
+                    height: '100%',
+                    borderRadius: '50%',
+                    background: 'rgba(15,17,23,.74)',
+                    border: '1px solid rgba(255,255,255,.14)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                    <img src={ING_IMG[ing]} alt={ing} style={{ width: isMobile ? 16 : 20, height: isMobile ? 16 : 20, objectFit: 'contain' }} />
+                  </div>
+                </div>
+              );
+            })}
+            <div style={{
+              position: 'absolute',
+              right: isMobile ? 10 : 12,
+              bottom: isMobile ? 12 : 14,
+              padding: '4px 8px',
+              borderRadius: 999,
+              background: 'rgba(15,17,23,.84)',
+              border: '2px solid rgba(170,255,130,.28)',
+              color: '#d9ffb4',
+              fontWeight: 900,
+              fontSize: isMobile ? 11 : 13,
+            }}>
+              - verduras x{ensaladaAnim.targetCount}
+            </div>
+          </div>
+        </div>
+      )}
+
       <style>{`
         @keyframes gloton-bite-flash {
           0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
@@ -4602,6 +4797,16 @@ export default function App() {
           0% { transform: translate(-50%, -50%) scale(.68); opacity: 0; }
           25% { opacity: .42; }
           100% { transform: translate(-50%, -120%) scale(1.45); opacity: 0; }
+        }
+        @keyframes ensalada-toss {
+          0% { transform: translate(-50%, -30%) scale(.5) rotate(-14deg); opacity: 0; }
+          25% { opacity: 1; }
+          100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
+        }
+        @keyframes ensalada-glow {
+          0% { transform: scale(.65); opacity: 0; }
+          45% { opacity: 1; }
+          100% { transform: scale(1.2); opacity: 0; }
         }
       `}</style>
 
