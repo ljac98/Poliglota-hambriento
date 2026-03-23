@@ -4484,6 +4484,24 @@ export default function App() {
               objectFit: 'contain',
             }}
           />
+            {Array.from({ length: 3 }).map((_, idx) => (
+              <div
+                key={`smoke-${idx}`}
+                style={{
+                  position: 'fixed',
+                  left: parrillaAnim.x + (idx - 1) * (isMobile ? 12 : 18),
+                  top: parrillaAnim.y - (isMobile ? 26 : 34),
+                  width: isMobile ? 24 : 32,
+                  height: isMobile ? 24 : 32,
+                  transform: 'translate(-50%, -50%)',
+                  borderRadius: '50%',
+                  background: 'radial-gradient(circle, rgba(245,245,245,.28) 0%, rgba(210,210,210,.18) 44%, rgba(180,180,180,0) 76%)',
+                  filter: 'blur(1px)',
+                  animation: `parrilla-smoke ${1.6 + idx * 0.18}s ease-in-out infinite`,
+                  animationDelay: `${idx * 0.22}s`,
+                }}
+              />
+            ))}
             {parrillaAnim.sizzle && (
               <>
                 <div style={{
@@ -4571,6 +4589,11 @@ export default function App() {
           0% { transform: translate(-50%, -50%) scale(.3); opacity: 0; }
           30% { opacity: 1; }
           100% { transform: translate(-50%, -70%) scale(1.25); opacity: 0; }
+        }
+        @keyframes parrilla-smoke {
+          0% { transform: translate(-50%, -50%) scale(.68); opacity: 0; }
+          25% { opacity: .42; }
+          100% { transform: translate(-50%, -120%) scale(1.45); opacity: 0; }
         }
       `}</style>
 
