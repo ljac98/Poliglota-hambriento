@@ -4463,6 +4463,10 @@ export default function App() {
           pointerEvents: 'none',
           overflow: 'hidden',
         }}>
+          {(() => {
+            const grillEffectOffsetX = isMobile ? -12 : -18;
+            return (
+              <>
           <div style={{
             position: 'fixed',
             left: parrillaAnim.x,
@@ -4489,7 +4493,7 @@ export default function App() {
                 key={`smoke-${idx}`}
                 style={{
                   position: 'fixed',
-                  left: parrillaAnim.x + (idx - 1) * (isMobile ? 12 : 18),
+                  left: parrillaAnim.x + grillEffectOffsetX + (idx - 1) * (isMobile ? 12 : 18),
                   top: parrillaAnim.y - (isMobile ? 26 : 34),
                   width: isMobile ? 24 : 32,
                   height: isMobile ? 24 : 32,
@@ -4506,7 +4510,7 @@ export default function App() {
               <>
                 <div style={{
                   position: 'fixed',
-                  left: parrillaAnim.x,
+                  left: parrillaAnim.x + grillEffectOffsetX,
                   top: parrillaAnim.y + (isMobile ? 4 : 6),
                   width: isMobile ? 84 : 108,
                   height: isMobile ? 84 : 108,
@@ -4520,7 +4524,7 @@ export default function App() {
                     key={idx}
                     style={{
                       position: 'fixed',
-                      left: parrillaAnim.x + Math.cos((Math.PI * 2 * idx) / 6) * (isMobile ? 16 : 20),
+                      left: parrillaAnim.x + grillEffectOffsetX + Math.cos((Math.PI * 2 * idx) / 6) * (isMobile ? 16 : 20),
                       top: parrillaAnim.y - (isMobile ? 2 : 4) + Math.sin((Math.PI * 2 * idx) / 6) * (isMobile ? 8 : 10),
                       width: isMobile ? 8 : 10,
                       height: isMobile ? 8 : 10,
@@ -4571,6 +4575,9 @@ export default function App() {
               />
             </>
           )}
+              </>
+            );
+          })()}
         </div>
       )}
 
