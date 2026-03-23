@@ -416,13 +416,17 @@ export default function App() {
           x: target.point.x,
           y: target.point.y,
           cooked: false,
+          pop: false,
           visible: true,
           targetCount: target.count || 1,
         });
       }, elapsed));
       timers.push(setTimeout(() => {
-        setMilanesaAnim((prev) => (prev ? { ...prev, cooked: true } : prev));
+        setMilanesaAnim((prev) => (prev ? { ...prev, cooked: true, pop: true } : prev));
       }, elapsed + cheesyDelay));
+      timers.push(setTimeout(() => {
+        setMilanesaAnim((prev) => (prev ? { ...prev, pop: false } : prev));
+      }, elapsed + cheesyDelay + 150));
       timers.push(setTimeout(() => {
         setMilanesaAnim((prev) => (prev ? { ...prev, visible: false } : prev));
       }, elapsed + cheesyDelay + holdDuration));
@@ -4204,8 +4208,10 @@ export default function App() {
             position: 'fixed',
             left: milanesaAnim.x,
             top: milanesaAnim.y,
-            transform: `translate(-50%, -50%) scale(${milanesaAnim.cooked ? 1.06 : 0.96})`,
-            transition: 'transform 0.2s ease, opacity 0.2s ease',
+            transform: `translate(-50%, -50%) scale(${milanesaAnim.pop ? 1.18 : (milanesaAnim.cooked ? 1.06 : 0.96)})`,
+            transition: milanesaAnim.pop
+              ? 'transform 0.12s cubic-bezier(.2,1.35,.45,1), opacity 0.2s ease'
+              : 'transform 0.2s ease, opacity 0.2s ease',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -4219,6 +4225,9 @@ export default function App() {
                 width: isMobile ? 88 : 118,
                 height: isMobile ? 88 : 118,
                 objectFit: 'contain',
+                filter: milanesaAnim.pop
+                  ? 'drop-shadow(0 0 16px rgba(255,215,0,.38))'
+                  : 'none',
               }}
             />
             <div style={{
