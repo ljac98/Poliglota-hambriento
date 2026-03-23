@@ -505,13 +505,15 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
 
   useEffect(() => {
     setHatPicks((prev) => {
-      const next = { ...prev };
+      const next = {};
       players.forEach((player) => {
-        if (player.hat) next[player.name] = player.hat;
+        const syncedHat = player.hat || prev[player.name];
+        if (syncedHat) next[player.name] = syncedHat;
       });
+      if (!next[myName] && prev[myName]) next[myName] = prev[myName];
       return next;
     });
-  }, [players]);
+  }, [players, myName]);
 
   const allHumansReady = players
     .filter((player) => !player.isAI)
