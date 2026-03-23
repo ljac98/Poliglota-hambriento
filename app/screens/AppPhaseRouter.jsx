@@ -33,6 +33,7 @@ export function AppPhaseRouter({
   historyInitialFilter,
   historyReturnPhase,
   openProfile,
+  onProfileBack,
   openHistory,
   inviteToast,
   friendReqToast,
@@ -126,7 +127,7 @@ export function AppPhaseRouter({
           onUserUpdate={setUser}
           onOpenProfile={(id) => openProfile(id, 'profile')}
           onOpenHistory={(filter) => openHistory(filter, 'profile')}
-          onBack={() => setPhase(profileReturnPhase || (user ? 'setup' : 'auth'))}
+          onBack={onProfileBack}
           onOpenFriends={() => setPhase(user ? 'friends' : 'auth')}
         />
       </>
