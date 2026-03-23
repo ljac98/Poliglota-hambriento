@@ -1601,9 +1601,20 @@ export default function App() {
     return threat >= 24 && Math.random() < aiConfig.negationChance;
   }
 
+  function actionCanBeNegated(card, affectedIdxs) {
+    if (!card?.action) return false;
+    if (card.action === 'basurero') return false;
+    if (Array.isArray(affectedIdxs) && affectedIdxs.length > 0) return true;
+    return ['milanesa', 'ensalada', 'pizza', 'parrilla', 'comecomodines'].includes(card.action);
+  }
+
   // â”€â”€ NegaciÃ³n: check before applying any action â”€â”€
   // resolveCallback: () => void  â€” called if action is NOT negated
   function startNegCheck(actingIdx, card, resolveCallback, affectedIdxs) {
+    if (!actionCanBeNegated(card, affectedIdxs)) {
+      resolveCallback();
+      return;
+    }
     const pls = playersRef.current;
     // Find players who can negate (only affected players with a negaciÃ³n card)
     const eligible = pls.map((_, i) => i).filter(i =>
