@@ -294,12 +294,6 @@ export default function App() {
   }, [forkFx]);
 
   useEffect(() => {
-    if (!comeComodinesFx) return undefined;
-    const timer = setTimeout(() => setComeComodinesFx(null), 2200);
-    return () => clearTimeout(timer);
-  }, [comeComodinesFx]);
-
-  useEffect(() => {
     if (!glotonFx) return undefined;
 
     const timers = [];
@@ -498,7 +492,10 @@ export default function App() {
   }, [forkFx]);
 
   useEffect(() => {
-    if (!comeComodinesFx?.targets?.length) return undefined;
+    if (!comeComodinesFx?.targets?.length) {
+      setComeComodinesAnim(null);
+      return undefined;
+    }
 
     const timers = [];
     const getRectCenter = (el, fallbackX, fallbackY) => {
@@ -566,9 +563,15 @@ export default function App() {
       elapsed += stop.isReturn ? 240 : stopDuration;
     });
 
-    timers.push(setTimeout(() => setComeComodinesAnim(null), elapsed + 180));
+    timers.push(setTimeout(() => {
+      setComeComodinesAnim(null);
+      setComeComodinesFx(null);
+    }, elapsed + 180));
 
-    return () => timers.forEach(clearTimeout);
+    return () => {
+      timers.forEach(clearTimeout);
+      setComeComodinesAnim(null);
+    };
   }, [comeComodinesFx, HI]);
 
   const triggerComeComodinesEvent = useCallback((result, actingIdx, actorName) => {
