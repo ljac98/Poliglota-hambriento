@@ -37,6 +37,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
   const [burgerCount, setBurgerCount] = useState(2);
   const [ingredientCount, setIngredientCount] = useState(5);
   const [ingredientPool, setIngredientPool] = useState(cloneIngredients);
+  const [cloneWildcardsEnabled, setCloneWildcardsEnabled] = useState(true);
   const [chaosLevel, setChaosLevel] = useState(2);
   const [aiDifficulty, setAiDifficulty] = useState('medium');
   const [showModeConfig, setShowModeConfig] = useState(false);
@@ -530,6 +531,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
       ingredientCount,
       chaosLevel,
       ingredientPool,
+      cloneWildcardsEnabled,
       aiDifficulty,
       sharedBurgers: gameMode === 'clon' ? previewBurgers : null,
     };
@@ -1295,6 +1297,32 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
                 })}
               </div>
               <div style={{ color: '#6f7697', fontSize: 11 }}>{T('cloneIngredientPoolLocked')}</div>
+              <div style={{ marginTop: 10, marginBottom: 10 }}>
+                <label style={{ color: '#aaa', fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 6 }}>
+                  {T('cloneWildcardsToggle')}
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setCloneWildcardsEnabled((prev) => !prev)}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '8px 12px',
+                    borderRadius: 999,
+                    border: cloneWildcardsEnabled ? '2px solid #FFD700' : '1px solid rgba(255,255,255,0.12)',
+                    background: cloneWildcardsEnabled ? 'rgba(255,215,0,0.1)' : 'rgba(255,255,255,0.03)',
+                    color: cloneWildcardsEnabled ? '#FFD700' : '#8a8fa8',
+                    fontFamily: "'Fredoka',sans-serif",
+                    fontSize: 12,
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <img src={ING_IMG.perrito} alt={T('cloneWildcardsToggle')} style={{ width: 20, height: 20, objectFit: 'contain' }} />
+                  <span>{cloneWildcardsEnabled ? T('cloneWildcardsOn') : T('cloneWildcardsOff')}</span>
+                </button>
+              </div>
               <div style={{ marginTop: 10, padding: '10px 12px', borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
                 <div style={{ color: '#FFD700', fontSize: 11, fontWeight: 900, marginBottom: 6 }}>
                   {T('cloneRemovedActions')}

@@ -24,28 +24,48 @@ function getEnabledActionCards(gameConfig = null) {
   });
 }
 
+function getEnabledIngredients(gameConfig = null) {
+  if (!gameConfig || gameConfig.mode !== 'clon') {
+    return INGREDIENTS;
+  }
+
+  const pool = Array.isArray(gameConfig.ingredientPool) && gameConfig.ingredientPool.length > 0
+    ? gameConfig.ingredientPool.filter((ing) => ing !== 'pan')
+    : INGREDIENTS.filter((ing) => ing !== 'pan');
+
+  return ['pan', ...pool];
+}
+
+function shouldIncludeWildcards(gameConfig = null) {
+  if (!gameConfig || gameConfig.mode !== 'clon') return true;
+  return gameConfig.cloneWildcardsEnabled !== false;
+}
+
 export function generateDeck(gameConfig = null) {
   let d = [];
+  const enabledIngredients = getEnabledIngredients(gameConfig);
   
   // One of each ingredient in each language
-  INGREDIENTS.forEach(ing =>
+  enabledIngredients.forEach(ing =>
     LANGUAGES.forEach(lang =>
       d.push({ type: "ingredient", ingredient: ing, language: lang, id: uid() })
     )
   );
   
   // Extra 2 random-language copies of each ingredient
-  INGREDIENTS.forEach(ing => {
+  enabledIngredients.forEach(ing => {
     shuffle(LANGUAGES).slice(0, 2).forEach(lang =>
       d.push({ type: "ingredient", ingredient: ing, language: lang, id: uid() })
     );
   });
   
   // Wildcards (perritos) - 2 per language
-  LANGUAGES.forEach(lang => {
-    for (let i = 0; i < 2; i++)
-      d.push({ type: "ingredient", ingredient: "perrito", language: lang, id: uid() });
-  });
+  if (shouldIncludeWildcards(gameConfig)) {
+    LANGUAGES.forEach(lang => {
+      for (let i = 0; i < 2; i++)
+        d.push({ type: "ingredient", ingredient: "perrito", language: lang, id: uid() });
+    });
+  }
   
   // Action cards - 3 of each
   getEnabledActionCards(gameConfig).forEach(ac => {
