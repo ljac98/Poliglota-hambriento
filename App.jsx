@@ -170,6 +170,8 @@ export default function App() {
   const [showNotificationsPanel, setShowNotificationsPanel] = useState(false);
   const [profileUserId, setProfileUserId] = useState(Number.isFinite(initialProfileId) ? initialProfileId : (savedUserOnLoad?.id || null));
   const [profileReturnPhase, setProfileReturnPhase] = useState('setup');
+  const [historyInitialFilter, setHistoryInitialFilter] = useState('all');
+  const [historyReturnPhase, setHistoryReturnPhase] = useState('setup');
   const aiRunning = useRef(false);
   const aiRunningMeta = useRef({ idx: null, startedAt: 0 });
   const [turnTime, setTurnTime] = useState(60);
@@ -1240,6 +1242,13 @@ export default function App() {
     setProfileReturnPhase(returnPhase || (user ? 'setup' : 'auth'));
     setShowQuickMenu(false);
     setPhase('profile');
+  }
+
+  function openHistory(filter = 'all', returnPhase = phase) {
+    setHistoryInitialFilter(filter || 'all');
+    setHistoryReturnPhase(returnPhase || (user ? 'setup' : 'auth'));
+    setShowQuickMenu(false);
+    setPhase('history');
   }
 
   function handleQuickLeaveGame() {
@@ -3479,7 +3488,10 @@ export default function App() {
           setDownloadReturnPhase={setDownloadReturnPhase}
           profileUserId={profileUserId}
           profileReturnPhase={profileReturnPhase}
+          historyInitialFilter={historyInitialFilter}
+          historyReturnPhase={historyReturnPhase}
           openProfile={openProfile}
+          openHistory={openHistory}
           inviteToast={inviteToast}
           friendReqToast={friendReqToast}
           setUser={setUser}

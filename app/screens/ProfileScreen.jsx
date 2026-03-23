@@ -98,7 +98,7 @@ function formatDate(dateValue) {
   }
 }
 
-export function ProfileScreen({ profileUserId, user, onUserUpdate, onOpenProfile, onBack, onOpenFriends, T }) {
+export function ProfileScreen({ profileUserId, user, onUserUpdate, onOpenProfile, onBack, onOpenFriends, onOpenHistory, T }) {
   const uiKey = getUILang();
   const text = getCopy();
   const [profile, setProfile] = useState(null);
@@ -403,16 +403,16 @@ export function ProfileScreen({ profileUserId, user, onUserUpdate, onOpenProfile
                   gap: 10,
                 }}>
                   {[
-                    { label: text.wins, value: profile.wins },
-                    { label: text.losses, value: profile.losses },
-                    { label: text.games, value: profile.gamesPlayed },
+                    { label: text.wins, value: profile.wins, clickable: isOwnProfile, onClick: () => onOpenHistory?.('wins') },
+                    { label: text.losses, value: profile.losses, clickable: isOwnProfile, onClick: () => onOpenHistory?.('losses') },
+                    { label: text.games, value: profile.gamesPlayed, clickable: isOwnProfile, onClick: () => onOpenHistory?.('all') },
                     { label: text.friends, value: profile.friendsCount, clickable: true },
                     ...(!isOwnProfile ? [{ label: text.mutual, value: profile.mutualFriendsCount }] : []),
                   ].map((item) => (
                     <button
                       key={item.label}
                       type="button"
-                      onClick={item.clickable ? openFriendsModal : undefined}
+                      onClick={item.clickable ? (item.onClick || openFriendsModal) : undefined}
                       style={{
                         borderRadius: 16,
                         padding: '14px 16px',
@@ -428,7 +428,9 @@ export function ProfileScreen({ profileUserId, user, onUserUpdate, onOpenProfile
                       <div style={{ color: '#8a8fa8', fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.6 }}>{item.label}</div>
                       <div style={{ color: '#FFD700', fontSize: 24, fontWeight: 900, marginTop: 4 }}>{item.value}</div>
                       {item.clickable && (
-                        <div style={{ color: '#7ad8ff', fontSize: 11, fontWeight: 800, marginTop: 4 }}>{text.openFriendsList}</div>
+                        <div style={{ color: '#7ad8ff', fontSize: 11, fontWeight: 800, marginTop: 4 }}>
+                          {item.onClick ? T('history') : text.openFriendsList}
+                        </div>
                       )}
                     </button>
                   ))}

@@ -30,7 +30,10 @@ export function AppPhaseRouter({
   setDownloadReturnPhase,
   profileUserId,
   profileReturnPhase,
+  historyInitialFilter,
+  historyReturnPhase,
   openProfile,
+  openHistory,
   inviteToast,
   friendReqToast,
   setUser,
@@ -104,7 +107,7 @@ export function AppPhaseRouter({
   }
 
   if (phase === 'history' && user) {
-    return <>{inviteToast}{friendReqToast}<HistoryScreen user={user} onBack={() => setPhase('setup')} T={T} /></>;
+    return <>{inviteToast}{friendReqToast}<HistoryScreen user={user} initialFilter={historyInitialFilter} onBack={() => setPhase(historyReturnPhase || 'setup')} T={T} /></>;
   }
 
   if (phase === 'friends' && user) {
@@ -122,6 +125,7 @@ export function AppPhaseRouter({
           T={T}
           onUserUpdate={setUser}
           onOpenProfile={(id) => openProfile(id, 'profile')}
+          onOpenHistory={(filter) => openHistory(filter, 'profile')}
           onBack={() => setPhase(profileReturnPhase || (user ? 'setup' : 'auth'))}
           onOpenFriends={() => setPhase(user ? 'friends' : 'auth')}
         />
@@ -138,7 +142,7 @@ export function AppPhaseRouter({
           onDownload={() => { setDownloadReturnPhase('setup'); setPhase('download'); }}
           user={user}
           onLogout={() => { clearAuth(); setUser(null); setPhase('auth'); }}
-          onHistory={() => setPhase('history')}
+          onHistory={() => openHistory('all', 'setup')}
           onFriends={() => { socket.connect(); setPhase('friends'); }}
           T={T}
           installEntryVisible={installEntryVisible}
@@ -258,7 +262,7 @@ export function AppPhaseRouter({
           clearRoomSession();
           setPhase('setup');
         }}
-        onHistory={() => setPhase('history')}
+        onHistory={() => openHistory('all', 'setup')}
       />
     );
   }

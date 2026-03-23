@@ -4,13 +4,17 @@ import { Btn } from '../components/Btn.jsx';
 import ganador from '../../imagenes/campeon.png';
 import perdedor from '../../imagenes/perdedor.png';
 
-export function HistoryScreen({ user, onBack, T }) {
+export function HistoryScreen({ user, onBack, T, initialFilter = 'all' }) {
   const [history, setHistory] = useState(null);
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilter] = useState(initialFilter);
 
   useEffect(() => {
     getHistory(user.id).then(setHistory).catch(() => setHistory([]));
   }, [user.id]);
+
+  useEffect(() => {
+    setFilter(initialFilter || 'all');
+  }, [initialFilter]);
 
   const wins = history ? history.filter(g => g.winnerName === user.displayName).length : 0;
   const losses = history ? history.filter(g => g.winnerName !== user.displayName).length : 0;
