@@ -3,6 +3,7 @@ import socket from '../../src/socket.js';
 import { Btn } from '../components/Btn.jsx';
 import { Modal } from '../components/Modal.jsx';
 import { InstallFloatingCard } from '../components/InstallFloatingCard.jsx';
+import onlineImg from '../../imagenes/online.png';
 
 export function OnlineMenu({ onCreated, onJoined, onBack, onDownload, initialCode = '', initialTab = '', user, T, installEntryVisible, installEntryTitle, installEntryDesc, installEntryButton, onOpenInstallPrompt }) {
   const [tab, setTab] = useState(initialTab || (initialCode ? 'join' : 'create'));
@@ -222,7 +223,7 @@ export function OnlineMenu({ onCreated, onJoined, onBack, onDownload, initialCod
         }}
       >
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
-          <div style={{ fontSize: 50, marginBottom: 8 }}>🌐</div>
+          <img src={onlineImg} alt={T('multiplayerOnline')} style={{ width: 68, height: 68, objectFit: 'contain', marginBottom: 8 }} />
           <h1 style={{ fontSize: 26, fontWeight: 900, color: '#FFD700' }}>{T('multiplayerOnline')}</h1>
           <p style={{ color: '#888', fontSize: 13, marginTop: 4 }}>{T('playWithFriends')}</p>
         </div>
@@ -463,3 +464,4 @@ export function OnlineMenu({ onCreated, onJoined, onBack, onDownload, initialCod
     </div>
   );
 }
+
