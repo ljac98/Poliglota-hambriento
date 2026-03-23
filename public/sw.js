@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hungry-poly-pwa-v3';
+const CACHE_NAME = 'hungry-poly-pwa-v4';
 const PRECACHE_URLS = [
   '/',
   '/manifest.webmanifest',
@@ -96,7 +96,12 @@ self.addEventListener('fetch', (event) => {
           }
           return response;
         })
-        .catch(() => caches.match('/'));
+        .catch(async () => {
+          if (event.request.mode === 'navigate' || event.request.destination === 'document') {
+            return (await caches.match(event.request)) || caches.match('/');
+          }
+          return Response.error();
+        });
     }),
   );
 });
