@@ -36,6 +36,11 @@ function getEnabledIngredients(gameConfig = null) {
   return ['pan', ...pool];
 }
 
+function shouldIncludeWildcards(gameConfig = null) {
+  if (!gameConfig || gameConfig.mode !== 'clon') return true;
+  return gameConfig.cloneWildcardsEnabled !== false;
+}
+
 export function generateDeck(gameConfig = null) {
   let d = [];
   const enabledIngredients = getEnabledIngredients(gameConfig);
@@ -55,10 +60,12 @@ export function generateDeck(gameConfig = null) {
   });
   
   // Wildcards (perritos) - 2 per language
-  LANGUAGES.forEach(lang => {
-    for (let i = 0; i < 2; i++)
-      d.push({ type: "ingredient", ingredient: "perrito", language: lang, id: uid() });
-  });
+  if (shouldIncludeWildcards(gameConfig)) {
+    LANGUAGES.forEach(lang => {
+      for (let i = 0; i < 2; i++)
+        d.push({ type: "ingredient", ingredient: "perrito", language: lang, id: uid() });
+    });
+  }
   
   // Action cards - 3 of each
   getEnabledActionCards(gameConfig).forEach(ac => {
