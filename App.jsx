@@ -142,6 +142,7 @@ export default function App() {
   const [profileUserId, setProfileUserId] = useState(Number.isFinite(initialProfileId) ? initialProfileId : (savedUserOnLoad?.id || null));
   const [profileReturnPhase, setProfileReturnPhase] = useState('setup');
   const aiRunning = useRef(false);
+  const aiRunningMeta = useRef({ idx: null, startedAt: 0 });
   const [turnTime, setTurnTime] = useState(60);
   const [currentGameConfig, setCurrentGameConfig] = useState(null);
   const turnTimerRef = useRef(null);
@@ -164,6 +165,16 @@ export default function App() {
   const lastExtraPlayRef = useRef(false);
   // Human index: 0 for local/AI mode, myPlayerIdx for online
   const HI = isOnline ? myPlayerIdx : 0;
+
+  const releaseAITurnLock = useCallback(() => {
+    aiRunning.current = false;
+    aiRunningMeta.current = { idx: null, startedAt: 0 };
+  }, []);
+
+  const markAITurnLock = useCallback((idx) => {
+    aiRunning.current = true;
+    aiRunningMeta.current = { idx, startedAt: Date.now() };
+  }, []);
 
   // â”€â”€ Auth state â”€â”€
   const [user, setUser] = useState(() => (shouldLogoutOnLoad ? null : getSavedUser()));
@@ -742,7 +753,7 @@ export default function App() {
 
   // â”€â”€ Handle voluntary leave from room / local match â”€â”€
   function resetLocalGameState() {
-    aiRunning.current = false;
+    releaseAITurnLock();
     setPlayers([]);
     setDeck([]);
     setDiscard([]);
@@ -1298,7 +1309,7 @@ export default function App() {
     }
     setPendingNeg(null); pendingNegRef.current = null;
     if (newPls[actingIdx]?.isAI) {
-      aiRunning.current = false;
+      releaseAITurnLock();
     }
     endTurn(newPls, deckRef.current, newDiscard, actingIdx);
   }
@@ -1366,7 +1377,7 @@ export default function App() {
     setPlayers(ps); setDeck(deckArr); setDiscard([]);
     setCp(0); setLog([]); setSelectedIdx(null); setModal(null);
     setWinner(null); setExtraPlay(false); setCurrentGameConfig(normalizedConfig);
-    aiRunning.current = false;
+    releaseAITurnLock();
     setPhase('playing');
   }
 
@@ -1381,7 +1392,7 @@ export default function App() {
     setPlayers(ps); setDeck(deckArr); setDiscard([]);
     setCp(0); setLog([]); setSelectedIdx(null); setModal(null);
     setWinner(null); setExtraPlay(false); setCurrentGameConfig(normalizedConfig);
-    aiRunning.current = false;
+    releaseAITurnLock();
     // Update session to reflect game started
     const session = getRoomSession();
     if (session) saveRoomSession({ ...session, phase: 'playing' });
@@ -1977,7 +1988,7 @@ export default function App() {
   // —— AI Turn ——
   function runAITurn(pls, deckArr, discardArr, idx) {
     if (aiRunning.current) return;
-    aiRunning.current = true;
+    markAITurnLock(idx);
     const p = pls[idx];
     const aiConfig = getAIDifficultyConfig();
 
@@ -2005,7 +2016,7 @@ export default function App() {
         freed.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `f${Date.now()}${Math.random()}` }));
         addLog(idx, '¡completó una hamburguesa! 🎉', newPls);
       }
-      setTimeout(() => { aiRunning.current = false; endTurn(newPls, baseDeck, newDiscard, idx); }, 900);
+      setTimeout(() => { releaseAITurnLock(); endTurn(newPls, baseDeck, newDiscard, idx); }, 900);
     };
 
     const executeAIActionAndEnd = (chosenAction) => {
@@ -2101,7 +2112,7 @@ export default function App() {
           }
         }
 
-        setTimeout(() => { aiRunning.current = false; endTurn(newPls, deckArr, newDiscard, idx); }, 900);
+        setTimeout(() => { releaseAITurnLock(); endTurn(newPls, deckArr, newDiscard, idx); }, 900);
       }, affected);
       return true;
     };
@@ -2149,7 +2160,7 @@ export default function App() {
           playIngredientAndEnd(newPls, newDiscard, deckArr, newHandIdx, newPls);
           return;
         }
-        setTimeout(() => { aiRunning.current = false; endTurn(newPls, deckArr, newDiscard, idx); }, 700);
+        setTimeout(() => { releaseAITurnLock(); endTurn(newPls, deckArr, newDiscard, idx); }, 700);
         return;
       }
     }
@@ -2183,7 +2194,7 @@ export default function App() {
           playIngredientAndEnd(bestAdd.players, bestAdd.discard, bestAdd.deck, bestAdd.bestAfterAdd.handIdx, bestAdd.players);
           return;
         }
-        setTimeout(() => { aiRunning.current = false; endTurn(bestAdd.players, bestAdd.deck, bestAdd.discard, idx); }, 700);
+        setTimeout(() => { releaseAITurnLock(); endTurn(bestAdd.players, bestAdd.deck, bestAdd.discard, idx); }, 700);
         return;
       }
     }
@@ -2199,9 +2210,9 @@ export default function App() {
       const newPls = clone(pls);
       const card = newPls[idx].hand.splice(di2, 1)[0];
       const newDiscard2 = [...discardArr, card];
-      setTimeout(() => { aiRunning.current = false; endTurn(newPls, deckArr, newDiscard2, idx); }, 700);
+      setTimeout(() => { releaseAITurnLock(); endTurn(newPls, deckArr, newDiscard2, idx); }, 700);
     } else {
-      aiRunning.current = false;
+      releaseAITurnLock();
       endTurn(pls, deckArr, discardArr, idx);
     }
   }
@@ -2213,13 +2224,20 @@ export default function App() {
     if (players[cp]?.isRemote) return;
     if (!players[cp]?.isAI) return;
     if (modal) return;
+    if (pendingNeg) return;
+
+    const lockAge = Date.now() - (aiRunningMeta.current.startedAt || 0);
+    if (aiRunning.current && (aiRunningMeta.current.idx !== cp || lockAge > 6500)) {
+      console.warn('Releasing stale AI lock', aiRunningMeta.current);
+      releaseAITurnLock();
+    }
 
     const timer = setTimeout(() => {
       try {
         runAITurn(players, deck, discard, cp);
       } catch (error) {
         console.error('AI turn crashed, forcing endTurn fallback:', error);
-        aiRunning.current = false;
+        releaseAITurnLock();
         const pls = playersRef.current;
         const dk = deckRef.current;
         const di = discardRef.current;
@@ -2229,7 +2247,7 @@ export default function App() {
       }
     }, 1200);
     return () => clearTimeout(timer);
-  }, [phase, cp, players, deck, discard, modal]);
+  }, [phase, cp, players, deck, discard, modal, pendingNeg, releaseAITurnLock]);
   // â”€â”€ Turn timer (60s) â”€â”€
   useEffect(() => {
     clearInterval(turnTimerRef.current);
