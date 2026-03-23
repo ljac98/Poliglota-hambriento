@@ -14,6 +14,7 @@ import { genBurger } from '../../game/deck.js';
 import modoclon from '../../imagenes/modos/clones.png';
 import modoescalera from '../../imagenes/modos/escalera.png';
 import modocaotico from '../../imagenes/modos/caotico.png';
+import vsiaImg from '../../imagenes/vsia.png';
 import actionEnsaladaImg from '../../imagenes/acciones/ensalada3.png';
 import actionPizzaImg from '../../imagenes/acciones/pizza.png';
 import actionParrillaImg from '../../imagenes/acciones/parrilla2.png';
@@ -892,7 +893,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
                 borderRadius: 10, background: 'rgba(255,255,255,.04)',
                 border: `2px solid ${PLAYER_COLORS[i % PLAYER_COLORS.length]}44`,
               }}>
-                <UserAvatar name={p.name} username={p.username} size={34} />
+                <UserAvatar name={p.name} username={p.username} avatarUrl={p.isAI ? vsiaImg : undefined} size={34} />
                 <div style={{
                   width: 28, height: 28, borderRadius: '50%',
                   background: PLAYER_COLORS[i % PLAYER_COLORS.length] + '33',

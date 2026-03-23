@@ -10,9 +10,11 @@ import { genBurger } from '../../game/deck.js';
 import { HatBadge, PercheroSVG } from '../../components/HatComponents.jsx';
 import HatSVG from '../../components/HatSVG.jsx';
 import hamImg from '../../imagenes/hamburguesas/ham.png';
+import onlineImg from '../../imagenes/online.png';
 import modoclon from '../../imagenes/modos/clones.png';
 import modoescalera from '../../imagenes/modos/escalera.png';
 import modocaotico from '../../imagenes/modos/caotico.png';
+import vsiaImg from '../../imagenes/vsia.png';
 import actionEnsaladaImg from '../../imagenes/acciones/ensalada3.png';
 import actionPizzaImg from '../../imagenes/acciones/pizza.png';
 import actionParrillaImg from '../../imagenes/acciones/parrilla2.png';
@@ -516,14 +518,20 @@ export function SetupScreen({ onStart, onOnline, onDownload, user, onLogout, onH
             color="#FFD700"
             style={{ flex: 1, fontSize: 16, padding: '12px 0' }}
           >
-            {T('vsAI')}
+            <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+              <img src={vsiaImg} alt={T('vsAI')} style={{ width: 24, height: 24, objectFit: 'contain' }} />
+              <span>{String(T('vsAI')).replace('🎮 ', '')}</span>
+            </span>
           </Btn>
           <Btn
             onClick={onOnline}
             color="#00BCD4"
             style={{ flex: 1, fontSize: 16, padding: '12px 0' }}
           >
-            {T('online')}
+            <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+              <img src={onlineImg} alt={T('online')} style={{ width: 24, height: 24, objectFit: 'contain' }} />
+              <span>{String(T('online')).replace('🌐 ', '')}</span>
+            </span>
           </Btn>
         </div>
       </div>
