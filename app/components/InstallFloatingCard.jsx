@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Btn } from './Btn.jsx';
+import burgerIcon from '../../imagenes/hamburguesas/ham.png';
 
 export function InstallFloatingCard({
   visible,
@@ -9,7 +10,44 @@ export function InstallFloatingCard({
   onInstall,
   onDownload,
 }) {
+  const [minimized, setMinimized] = useState(false);
+
+  useEffect(() => {
+    if (!visible) setMinimized(false);
+  }, [visible]);
+
   if (!visible) return null;
+
+  if (minimized) {
+    return (
+      <button
+        type="button"
+        aria-label={title}
+        onClick={() => setMinimized(false)}
+        className="hp-install-floating-card hp-install-floating-card--mini"
+        style={{
+          position: 'fixed',
+          right: 18,
+          bottom: 18,
+          width: 64,
+          height: 64,
+          borderRadius: 999,
+          border: '1px solid rgba(255,215,0,.3)',
+          background: 'rgba(22,33,62,0.96)',
+          boxShadow: '0 16px 34px rgba(0,0,0,.32)',
+          zIndex: 2200,
+          backdropFilter: 'blur(10px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          padding: 0,
+        }}
+      >
+        <img src={burgerIcon} alt={title} style={{ width: 34, height: 34, objectFit: 'contain' }} />
+      </button>
+    );
+  }
 
   return (
     <div
@@ -28,7 +66,30 @@ export function InstallFloatingCard({
         backdropFilter: 'blur(10px)',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+      <button
+        type="button"
+        aria-label="Minimizar"
+        onClick={() => setMinimized(true)}
+        style={{
+          position: 'absolute',
+          top: 10,
+          right: 10,
+          width: 28,
+          height: 28,
+          borderRadius: 999,
+          border: '1px solid rgba(255,255,255,.12)',
+          background: 'rgba(255,255,255,.05)',
+          color: '#d0d6ef',
+          fontFamily: "'Fredoka',sans-serif",
+          fontSize: 16,
+          fontWeight: 900,
+          lineHeight: 1,
+          cursor: 'pointer',
+        }}
+      >
+        -
+      </button>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, paddingRight: 28 }}>
         <div style={{
           width: 34,
           height: 34,
@@ -37,10 +98,9 @@ export function InstallFloatingCard({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: 18,
           flexShrink: 0,
         }}>
-          {'\u{1F4F1}'}
+          <img src={burgerIcon} alt={title} style={{ width: 22, height: 22, objectFit: 'contain' }} />
         </div>
         <div style={{ minWidth: 0 }}>
           <div style={{ color: '#FFD700', fontSize: 13, fontWeight: 900, lineHeight: 1.15 }}>{title}</div>
@@ -78,6 +138,11 @@ export function InstallFloatingCard({
             bottom: 12px !important;
             left: 12px !important;
             width: auto !important;
+          }
+          .hp-install-floating-card--mini {
+            left: auto !important;
+            width: 58px !important;
+            height: 58px !important;
           }
         }
       `}</style>
