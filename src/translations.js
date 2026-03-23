@@ -527,6 +527,7 @@ const translations = {
     table: 'TABLE',
     tableCount: (n) => `TABLE (${n} ingredients)`,
     emptyTable: 'Empty table',
+    sharedGoalsLabel: 'Shared goals',
     mainHat: 'MAIN',
     closet: 'CLOSET',
     viewCloset: (n) => `🧥 View closet (${n})`,
@@ -846,6 +847,7 @@ const translations = {
     table: 'TABLE',
     tableCount: (n) => `TABLE (${n} ingrédients)`,
     emptyTable: 'Table vide',
+    sharedGoalsLabel: 'Objectifs partag�s',
     mainHat: 'PRINCIPAL',
     closet: 'PENDERIE',
     viewCloset: (n) => `🧥 Voir penderie (${n})`,
@@ -1165,6 +1167,7 @@ const translations = {
     table: 'TAVOLO',
     tableCount: (n) => `TAVOLO (${n} ingredienti)`,
     emptyTable: 'Tavolo vuoto',
+    sharedGoalsLabel: 'Obiettivi condivisi',
     mainHat: 'PRINCIPALE',
     closet: 'ARMADIO',
     viewCloset: (n) => `🧥 Vedi armadio (${n})`,
@@ -1484,6 +1487,7 @@ const translations = {
     table: 'TISCH',
     tableCount: (n) => `TISCH (${n} Zutaten)`,
     emptyTable: 'Leerer Tisch',
+    sharedGoalsLabel: 'Gemeinsame Ziele',
     mainHat: 'HAUPT',
     closet: 'GARDEROBE',
     viewCloset: (n) => `🧥 Garderobe (${n})`,
@@ -1803,6 +1807,7 @@ const translations = {
     table: 'MESA',
     tableCount: (n) => `MESA (${n} ingredientes)`,
     emptyTable: 'Mesa vazia',
+    sharedGoalsLabel: 'Objetivos compartilhados',
     mainHat: 'PRINCIPAL',
     closet: 'ARMÁRIO',
     viewCloset: (n) => `🧥 Ver armário (${n})`,
@@ -2047,4 +2052,5 @@ export function getLocalizedLangShort(gameLang, uiLang) {
 }
 
 export { translations, LANG_TO_KEY, KEY_TO_LANG };
+
 
