@@ -1099,12 +1099,12 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
           </div>
         )}
 
-        {/* Game Mode (host only) */}
-        {isHost && (
+        {/* Game Mode / Mode Summary */}
+        {(isHost || !isDesktopWide) && (
           <div style={{ marginBottom: 16, position: 'relative', paddingRight: 0 }}>
             {!isDesktopWide && <label style={{ color: '#aaa', fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 8 }}>{T('gameMode')}</label>}
             <div style={{ display: 'flex', gap: 12, alignItems: 'stretch', flexWrap: 'wrap' }}>
-              {!isDesktopWide && (
+              {!isDesktopWide && isHost && (
                 <div style={{ display: 'flex', gap: 8, flex: '1 1 320px' }}>
                   {gameModes.map(m => (
                     <div
