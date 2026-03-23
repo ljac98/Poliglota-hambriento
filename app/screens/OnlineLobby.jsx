@@ -339,10 +339,91 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
   };
   const renderModeSummary = () => {
     if (gameMode === 'escalera') {
-      return renderEscaleraPlayers(true);
+      return (
+        <>
+          <div
+            style={{
+              marginBottom: 12,
+              padding: '10px 12px',
+              borderRadius: 12,
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.08)',
+            }}
+          >
+            <div style={{ color: '#f6f0c3', fontSize: 12, fontWeight: 800, lineHeight: 1.35 }}>{selectedMode.desc}</div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
+              <span style={markerStyle}>{`${T('burgerCount')}: ${modePreview.burgers}`}</span>
+              <span style={markerStyle}>{`${T('ingredientsLabelShort')}: ${modePreview.ingredients}`}</span>
+              <span style={markerStyle}>{T('perPlayerLabel')}</span>
+            </div>
+          </div>
+          {renderEscaleraPlayers(true)}
+        </>
+      );
     }
     return (
       <>
+        <div
+          style={{
+            marginBottom: 12,
+            padding: '10px 12px',
+            borderRadius: 12,
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.08)',
+          }}
+        >
+          <div style={{ color: '#f6f0c3', fontSize: 12, fontWeight: 800, lineHeight: 1.35 }}>{selectedMode.desc}</div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
+            <span style={markerStyle}>{`${T('burgerCount')}: ${modePreview.burgers}`}</span>
+            <span style={markerStyle}>{`${T('ingredientsLabelShort')}: ${modePreview.ingredients}`}</span>
+            <span style={markerStyle}>{T('perPlayerLabel')}</span>
+            {gameMode === 'clon' && (
+              <span style={markerStyle}>{cloneWildcardsEnabled ? T('cloneWildcardsOn') : T('cloneWildcardsOff')}</span>
+            )}
+            {gameMode === 'caotico' && (
+              <span style={markerStyle}>{`CAOS ${chaosLevel}/3`}</span>
+            )}
+          </div>
+          {gameMode === 'clon' && (
+            <div style={{ marginTop: 10 }}>
+              <div style={{ color: '#9ea4be', fontSize: 10, fontWeight: 800, marginBottom: 6 }}>
+                {T('cloneRemovedActionsLabel')}
+              </div>
+              {removedCloneActions.length > 0 ? (
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {removedCloneActions.map((actionId) => (
+                    <span
+                      key={`clone-removed-${actionId}`}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        padding: '5px 8px',
+                        borderRadius: 999,
+                        background: 'rgba(255,120,120,0.08)',
+                        border: '1px solid rgba(255,120,120,0.18)',
+                        color: '#ffcfbf',
+                        fontSize: 10,
+                        fontWeight: 800,
+                      }}
+                    >
+                      <img
+                        src={cloneRemovedActionImages[actionId]}
+                        alt={T(`actionName_${actionId}`)}
+                        style={{ width: 16, height: 16, objectFit: 'contain' }}
+                      />
+                      {T(`actionName_${actionId}`)}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ color: '#7ef0a2', fontSize: 10, fontWeight: 800 }}>
+                  {T('cloneNoRemovedActions')}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
           <span style={{ color: '#FFD700', fontSize: 13, fontWeight: 900 }}>{T('burgerCount')}</span>
           <span style={{ color: '#fff1b3', fontSize: 14, fontWeight: 900 }}>{modePreview.burgers}</span>
@@ -457,12 +538,16 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
             {gameModes.map((m) => (
               <div
                 key={`sidebar-mode-${m.id}`}
-                onClick={() => { setGameMode(m.id); setShowModeConfig(true); }}
+                onClick={() => {
+                  if (!isHost) return;
+                  setGameMode(m.id);
+                  setShowModeConfig(true);
+                }}
                 style={{
                   minHeight: 98,
                   padding: '9px 6px',
                   borderRadius: 12,
-                  cursor: 'pointer',
+                  cursor: isHost ? 'pointer' : 'default',
                   border: gameMode === m.id ? '2px solid #FFD700' : '1px solid rgba(255,255,255,0.08)',
                   background: gameMode === m.id ? 'linear-gradient(180deg, rgba(255,215,0,0.16), rgba(255,255,255,0.05))' : 'rgba(255,255,255,0.03)',
                   display: 'flex',
@@ -472,6 +557,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
                   gap: 5,
                   boxShadow: gameMode === m.id ? '0 0 18px rgba(255,215,0,0.16)' : 'none',
                   transition: 'all .15s',
+                  opacity: isHost ? 1 : 0.92,
                 }}
               >
                 <img src={m.img} alt={m.label} style={{ width: 62, height: 62, objectFit: 'cover', borderRadius: 14 }} />
