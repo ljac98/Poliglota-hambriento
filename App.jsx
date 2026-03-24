@@ -93,6 +93,7 @@ const ACTION_STACK_IMG = {
   pan: burgerPanAbajo,
 };
 import { clearRoomSession, getRoomSession, saveRoomSession } from './app/utils/roomSession.js';
+import { buildTutorialScenario, getTutorialContent } from './app/utils/tutorialGame.js';
 
 const INSTALL_PROMPT_COPY = {
   es: {
@@ -223,8 +224,13 @@ export default function App() {
   const [user, setUser] = useState(() => (shouldLogoutOnLoad ? null : getSavedUser()));
   // â”€â”€ UI language state â”€â”€
   const [uiLang, setUiLangState] = useState(() => getUILang());
+  const [tutorialPrompt, setTutorialPrompt] = useState(null);
+  const [tutorialState, setTutorialState] = useState(null);
   const T = useCallback((key) => t(key, uiLang), [uiLang]);
   const uiGameLang = KEY_TO_LANG[uiLang] || LANGUAGES[0];
+  const tutorialCopy = getTutorialContent(uiLang);
+  const tutorialActive = !!tutorialState?.active;
+  const tutorialStepData = tutorialActive ? tutorialCopy.steps[tutorialState.step] : null;
   const installCopy = INSTALL_PROMPT_COPY[uiLang] || INSTALL_PROMPT_COPY.en;
   const canOpenInstallPrompt = showIosInstallHint || !!deferredInstallPrompt;
   const isMobile = typeof window !== 'undefined' && window.innerWidth <= 640;
@@ -1128,6 +1134,11 @@ export default function App() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!tutorialActive) return;
+    applyTutorialScenario(tutorialState.step);
+  }, [tutorialActive, tutorialState?.step, user?.displayName, user?.id, user?.username, user?.avatarUrl]);
+
   const handleInstallApp = useCallback(async () => {
     if (!deferredInstallPrompt) return;
     deferredInstallPrompt.prompt();
@@ -1166,6 +1177,7 @@ export default function App() {
     setWinner(null);
     setExtraPlay(false);
     setCurrentGameConfig(null);
+    setTutorialState(null);
     setPendingNeg(null);
     setLastNegationEvent(null);
     setLastForkEvent(null);
@@ -1369,6 +1381,76 @@ export default function App() {
     setOnlineMenuTab('');
     setShowQuickMenu(false);
     setPhase('auth');
+  }
+
+  function getTutorialPromptKey(userId) {
+    return userId ? `hp_tutorial_prompt_seen_${userId}` : null;
+  }
+
+  function markTutorialPromptSeen(userId) {
+    const key = getTutorialPromptKey(userId);
+    if (key && typeof localStorage !== 'undefined') localStorage.setItem(key, '1');
+  }
+
+  function hasSeenTutorialPrompt(userId) {
+    const key = getTutorialPromptKey(userId);
+    return key ? localStorage.getItem(key) === '1' : false;
+  }
+
+  function handleAuthSuccess(nextUser, meta = {}) {
+    setUser(nextUser);
+    setPhase('setup');
+    if (meta?.isNewUser && !hasSeenTutorialPrompt(nextUser?.id)) {
+      setTutorialPrompt('familiarity');
+    } else {
+      setTutorialPrompt(null);
+    }
+  }
+
+  function applyTutorialScenario(step) {
+    const scenario = buildTutorialScenario(step, {
+      playerName: user?.displayName || 'Jugador',
+      user,
+    });
+    setPlayers(scenario.players);
+    setDeck(scenario.deck || []);
+    setDiscard(scenario.discard || []);
+    setCp(scenario.cp || 0);
+    setLog([]);
+    setSelectedIdx(scenario.selectedIdx ?? null);
+    setModal(null);
+    setWinner(null);
+    setExtraPlay(!!scenario.extraPlay);
+    setCurrentGameConfig(scenario.gameConfig || null);
+    setTurnTime(60);
+    releaseAITurnLock();
+    setPhase('playing');
+  }
+
+  function startTutorialGame() {
+    setTutorialPrompt(null);
+    setTutorialState({ active: true, step: 0 });
+  }
+
+  function finishTutorialGame() {
+    setTutorialState(null);
+    resetLocalGameState();
+    setPhase('setup');
+  }
+
+  function nextTutorialStep() {
+    if (!tutorialActive) return;
+    const nextStep = tutorialState.step + 1;
+    if (nextStep >= tutorialCopy.steps.length) {
+      finishTutorialGame();
+      return;
+    }
+    setTutorialState((prev) => ({ ...prev, step: nextStep }));
+  }
+
+  function prevTutorialStep() {
+    if (!tutorialActive) return;
+    setTutorialState((prev) => ({ ...prev, step: Math.max(0, prev.step - 1) }));
   }
 
   function openProfile(targetUserId, returnPhase = phase) {
@@ -2896,6 +2978,7 @@ export default function App() {
   // —— AI useEffect ——
   useEffect(() => {
     if (phase !== 'playing') return;
+    if (tutorialActive) return;
     if (!players.length) return;
     if (players[cp]?.isRemote) return;
     if (!players[cp]?.isAI) return;
@@ -2923,12 +3006,12 @@ export default function App() {
       }
     }, 1200);
     return () => clearTimeout(timer);
-  }, [phase, cp, players, deck, discard, modal, pendingNeg, releaseAITurnLock]);
+  }, [phase, cp, players, deck, discard, modal, pendingNeg, releaseAITurnLock, tutorialActive]);
   // â”€â”€ Turn timer (60s) â”€â”€
   useEffect(() => {
     clearInterval(turnTimerRef.current);
     const isTimedPlayer = players[cp] && !players[cp].isAI;
-    if (phase !== 'playing' || !isTimedPlayer) { setTurnTime(60); return; }
+    if (phase !== 'playing' || !isTimedPlayer || tutorialActive) { setTurnTime(60); return; }
     setTurnTime(60);
     turnTimerRef.current = setInterval(() => {
       setTurnTime(prev => {
@@ -2940,7 +3023,7 @@ export default function App() {
       });
     }, 1000);
     return () => clearInterval(turnTimerRef.current);
-  }, [phase, cp, players.length]);
+  }, [phase, cp, players.length, tutorialActive]);
 
   useEffect(() => {
     if (document.getElementById('pulse-keyframes')) return;
@@ -2967,6 +3050,7 @@ export default function App() {
   useEffect(() => {
     if (turnTime !== 0) return;
     if (phase !== 'playing') return;
+    if (tutorialActive) return;
     const p = players[cp];
     if (!p || p.isAI) return;
     if (p.hand.length === 0) return;
@@ -2979,10 +3063,11 @@ export default function App() {
     setSelectedIdx(null);
     setModal(null);
     endTurn(newPls, deck, [...discard, discarded], cp);
-  }, [turnTime]);
+  }, [turnTime, tutorialActive]);
 
   // â”€â”€ Human: Play selected card â”€â”€
   function humanPlay() {
+    if (tutorialActive) return;
     if (selectedIdx === null) return;
     const human = players[HI];
     const card = human.hand[selectedIdx];
@@ -3119,6 +3204,7 @@ export default function App() {
   }
 
   function humanDiscard() {
+    if (tutorialActive) return;
     if (selectedIdx === null) return;
     if (isOnline && !isHost) {
       socket.emit('playerAction', { code: roomCode, action: { type: 'discard', cardIdx: selectedIdx } });
@@ -3134,6 +3220,7 @@ export default function App() {
   }
 
   function confirmWildcard(chosenIng) {
+    if (tutorialActive) return;
     const { cardIdx } = modal;
     setModal(null); setSelectedIdx(null);
     if (isOnline && !isHost) {
@@ -3158,6 +3245,7 @@ export default function App() {
 
   // â”€â”€ Modal resolvers â”€â”€
   function resolvePickTarget(targetIdx) {
+    if (tutorialActive) return;
     const { cardIdx, action } = modal;
     setModal(null); setSelectedIdx(null);
 
@@ -3233,6 +3321,7 @@ export default function App() {
   }
 
   function resolvePickIngredient(ingIdx) {
+    if (tutorialActive) return;
     const { targetIdx, newPls, newDiscard } = modal;
     setModal(null); setSelectedIdx(null);
     // Non-host: send complete action
@@ -3267,6 +3356,7 @@ export default function App() {
   }
 
   function resolveHatReplace(hatLang) {
+    if (tutorialActive) return;
     const { newPls, newDiscard, victimIdx, fromIdx } = modal;
     setModal(null); setSelectedIdx(null);
     // Non-host victim sends their hat pick
@@ -3281,6 +3371,7 @@ export default function App() {
   }
 
   function resolveHatExchange(myHat, theirHat) {
+    if (tutorialActive) return;
     const { targetIdx, newPls, newDiscard, dk, cardIdx, isRemote } = modal;
     setModal(null); setSelectedIdx(null);
     // Non-host: send complete action via socket
@@ -3301,6 +3392,7 @@ export default function App() {
   }
 
   function resolveHatSteal(hatLang) {
+    if (tutorialActive) return;
     const { targetIdx, newPls, newDiscard, dk, cardIdx, isRemote } = modal;
     setModal(null); setSelectedIdx(null);
     if (isOnline && !isHost) {
@@ -3337,6 +3429,7 @@ export default function App() {
 
   // Manual: swap main hat from perchero (costs half your hand â€” player chooses which cards)
   function resolveManualCambiar(hatLang, cardIndices, replaceIdx = 0) {
+    if (tutorialActive) return;
     if (players[HI]?.closetCovered) return;
     setModal(null); setSelectedIdx(null);
     if (isOnline && !isHost) {
@@ -3361,6 +3454,7 @@ export default function App() {
 
   // Manual: add an extra hat from perchero (costs discarding entire hand, reduces maxHand)
   function resolveManualAgregar(hatLang) {
+    if (tutorialActive) return;
     if (players[HI]?.closetCovered) return;
     setModal(null); setSelectedIdx(null);
     if (isOnline && !isHost) {
@@ -3383,6 +3477,7 @@ export default function App() {
   }
 
   function resolveBasurero(cardId) {
+    if (tutorialActive) return;
     const { cardIdx } = modal;
     setModal(null); setSelectedIdx(null);
     if (isOnline && !isHost) {
@@ -3849,6 +3944,7 @@ export default function App() {
           inviteToast={inviteToast}
           friendReqToast={friendReqToast}
           setUser={setUser}
+          handleAuthSuccess={handleAuthSuccess}
           setPhase={setPhase}
           startGame={startGame}
           socket={socket}
@@ -3881,6 +3977,65 @@ export default function App() {
           onLeftRoomReturn={handleLeftRoomReturn}
           onLeftRoomLeave={handleLeftRoomLeave}
         />
+        {phase === 'setup' && tutorialPrompt === 'familiarity' && (
+          <Modal title={tutorialCopy.promptTitle}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ color: '#ddd', fontSize: 14, lineHeight: 1.45 }}>
+                {tutorialCopy.promptDesc}
+              </div>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                <Btn
+                  onClick={() => {
+                    markTutorialPromptSeen(user?.id);
+                    setTutorialPrompt(null);
+                  }}
+                  color="#4CAF50"
+                  style={{ color: '#08140a' }}
+                >
+                  {tutorialCopy.promptYes}
+                </Btn>
+                <Btn
+                  onClick={() => setTutorialPrompt('offer')}
+                  color="#FFD700"
+                  style={{ color: '#111' }}
+                >
+                  {tutorialCopy.promptNo}
+                </Btn>
+              </div>
+            </div>
+          </Modal>
+        )}
+        {phase === 'setup' && tutorialPrompt === 'offer' && (
+          <Modal title={tutorialCopy.offerTitle}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ color: '#ddd', fontSize: 14, lineHeight: 1.45 }}>
+                {tutorialCopy.offerDesc}
+              </div>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                <Btn
+                  onClick={() => {
+                    markTutorialPromptSeen(user?.id);
+                    startTutorialGame();
+                  }}
+                  color="#FFD700"
+                  style={{ color: '#111' }}
+                >
+                  {tutorialCopy.offerYes}
+                </Btn>
+                <Btn
+                  onClick={() => {
+                    markTutorialPromptSeen(user?.id);
+                    setTutorialPrompt(null);
+                  }}
+                  color="#2a2a4a"
+                  style={{ color: '#fff' }}
+                >
+                  {tutorialCopy.offerNo}
+                </Btn>
+              </div>
+            </div>
+          </Modal>
+        )}
       </>
     );
   }
@@ -3891,6 +4046,7 @@ export default function App() {
   const human = players[HI] || players[0];
   const opponents = players.filter((_, i) => i !== HI);
   const isHumanTurn = cp === HI;
+  const tutorialFocus = tutorialStepData?.focus || {};
   const burger = human.burgers[human.currentBurger];
   const humanColor = PLAYER_COLORS[HI % PLAYER_COLORS.length];
   const hasSharedGoals = currentGameConfig?.mode === 'clon' && Array.isArray(currentGameConfig?.sharedBurgers) && currentGameConfig.sharedBurgers.length > 0;
@@ -3965,7 +4121,8 @@ export default function App() {
     <div style={{
       display: 'flex', alignItems: 'center', gap: 10,
       background: 'rgba(255,215,0,.06)', borderRadius: 12, padding: '8px 14px',
-      border: '2px solid rgba(255,215,0,.2)', flexShrink: 0,
+      border: tutorialActive && tutorialFocus.hats ? '2px solid #FFD700' : '2px solid rgba(255,215,0,.2)', flexShrink: 0,
+      boxShadow: tutorialActive && tutorialFocus.hats ? '0 0 0 3px rgba(255,215,0,0.16)' : 'none',
     }}>
       <UserAvatar
         name={human.name}
@@ -4107,15 +4264,16 @@ export default function App() {
     );
   })();
 
-  const percheroButtons = isHumanTurn && !extraPlay && human.perchero.length > 0 && !human.closetCovered && (
+  const percheroButtons = isHumanTurn && !extraPlay && !tutorialActive && human.perchero.length > 0 && !human.closetCovered && (
     <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
       <button
         onClick={() => { setShowPercheroModal(false); setModal({ type: 'manual_cambiar' }); }}
         title={T('changeHatTooltip')}
         style={{
-          padding: '7px 12px', borderRadius: 8, border: '1px solid rgba(156,39,176,0.3)',
+          padding: '7px 12px', borderRadius: 8, border: tutorialActive && tutorialFocus.changeButton ? '2px solid #FFD700' : '1px solid rgba(156,39,176,0.3)',
           background: 'rgba(156,39,176,0.12)', color: '#BA68C8', fontSize: 13,
           fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+          boxShadow: tutorialActive && tutorialFocus.changeButton ? '0 0 0 3px rgba(255,215,0,0.14)' : 'none',
         }}
       >
         {T('changeHat')}
@@ -4125,9 +4283,10 @@ export default function App() {
           onClick={() => { setShowPercheroModal(false); setModal({ type: 'manual_agregar' }); }}
           title={T('addHatTooltip')}
           style={{
-            padding: '7px 12px', borderRadius: 8, border: '1px solid rgba(156,39,176,0.3)',
+            padding: '7px 12px', borderRadius: 8, border: tutorialActive && tutorialFocus.addButton ? '2px solid #FFD700' : '1px solid rgba(156,39,176,0.3)',
             background: 'rgba(156,39,176,0.12)', color: '#BA68C8', fontSize: 13,
             fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+            boxShadow: tutorialActive && tutorialFocus.addButton ? '0 0 0 3px rgba(255,215,0,0.14)' : 'none',
           }}
         >
           {T('addHat')}
@@ -4139,7 +4298,13 @@ export default function App() {
   const hatsSection = (
     <div style={{
       background: 'rgba(255,255,255,.02)', borderRadius: 10, padding: '8px 10px',
-      border: '2px solid #1e2a45', flexShrink: 0,
+      border: tutorialActive && (tutorialFocus.hats || tutorialFocus.closet || tutorialFocus.changeButton || tutorialFocus.addButton)
+        ? '2px solid #FFD700'
+        : '2px solid #1e2a45',
+      boxShadow: tutorialActive && (tutorialFocus.hats || tutorialFocus.closet || tutorialFocus.changeButton || tutorialFocus.addButton)
+        ? '0 0 0 3px rgba(255,215,0,0.14)'
+        : 'none',
+      flexShrink: 0,
     }}>
       <div style={{ display: 'flex', gap: 10, alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }}>
         {/* Sombrero(s) principal(es) */}
@@ -4251,7 +4416,7 @@ export default function App() {
                 else delete handCardRefs.current[i];
               }}
               onClick={() => {
-                if (!isHumanTurn) return;
+                if (!isHumanTurn || tutorialActive) return;
                 if (extraPlay && card.type !== 'ingredient') return;
                 setSelectedIdx(isSelected ? null : i);
             }}
@@ -4303,10 +4468,10 @@ export default function App() {
                   </>)}
                 </div>
                 <div style={{ display: 'flex', gap: 4 }}>
-                  <Btn onClick={humanPlay} disabled={(extraPlay && card.type !== 'ingredient') || (card.type === 'action' && isClosetActionBlocked(human, card.action))} color="#4CAF50" style={{ fontSize: 11, padding: '6px 12px' }}>
+                  <Btn onClick={humanPlay} disabled={tutorialActive || (extraPlay && card.type !== 'ingredient') || (card.type === 'action' && isClosetActionBlocked(human, card.action))} color="#4CAF50" style={{ fontSize: 11, padding: '6px 12px' }}>
                     {T('play')}
                   </Btn>
-                  <Btn onClick={humanDiscard} disabled={extraPlay} color="#FF7043" style={{ fontSize: 11, padding: '6px 12px' }}>
+                  <Btn onClick={humanDiscard} disabled={tutorialActive || extraPlay} color="#FF7043" style={{ fontSize: 11, padding: '6px 12px' }}>
                     {T('discard')}
                   </Btn>
                 </div>
@@ -4458,6 +4623,77 @@ export default function App() {
           )}
         </div>
       </div>
+
+      {tutorialActive && tutorialStepData && (
+        <div style={{
+          position: 'fixed',
+          top: isMobile ? 74 : 92,
+          right: isMobile ? 10 : 16,
+          width: isMobile ? 'calc(100vw - 20px)' : 360,
+          maxWidth: isMobile ? 'calc(100vw - 20px)' : 360,
+          zIndex: 9700,
+        }}>
+          <div style={{
+            borderRadius: 18,
+            padding: isMobile ? '14px 14px 12px' : '16px 16px 14px',
+            background: 'linear-gradient(180deg, rgba(22,33,62,0.98), rgba(15,17,23,0.98))',
+            border: '2px solid rgba(255,215,0,0.28)',
+            boxShadow: '0 16px 38px rgba(0,0,0,0.42)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '4px 10px',
+                borderRadius: 999,
+                background: 'rgba(255,215,0,0.12)',
+                color: '#FFD700',
+                fontSize: 11,
+                fontWeight: 900,
+                letterSpacing: 0.4,
+                textTransform: 'uppercase',
+              }}>
+                <span>🎓</span>
+                <span>{tutorialCopy.badge}</span>
+              </div>
+              <div style={{ color: '#9ea4be', fontSize: 11, fontWeight: 700 }}>
+                {tutorialCopy.stepLabel} {tutorialState.step + 1}/{tutorialCopy.steps.length}
+              </div>
+            </div>
+            <div style={{ color: '#fff1b3', fontSize: 18, fontWeight: 900, lineHeight: 1.1, marginBottom: 8 }}>
+              {tutorialStepData.title}
+            </div>
+            <div style={{ color: '#d6d8e5', fontSize: 13, lineHeight: 1.45, marginBottom: 10 }}>
+              {tutorialStepData.body}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
+              {(tutorialStepData.bullets || []).map((bullet, idx) => (
+                <div key={`tutorial-bullet-${idx}`} style={{ color: '#9ea4be', fontSize: 12, lineHeight: 1.4 }}>
+                  • {bullet}
+                </div>
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+              <Btn onClick={finishTutorialGame} color="#2a2a4a" style={{ color: '#fff' }}>
+                {tutorialCopy.skip}
+              </Btn>
+              {tutorialState.step > 0 && (
+                <Btn onClick={prevTutorialStep} color="#4ecdc4" style={{ color: '#0f1117' }}>
+                  {tutorialCopy.prev}
+                </Btn>
+              )}
+              <Btn
+                onClick={tutorialState.step === tutorialCopy.steps.length - 1 ? finishTutorialGame : nextTutorialStep}
+                color="#FFD700"
+                style={{ color: '#111' }}
+              >
+                {tutorialState.step === tutorialCopy.steps.length - 1 ? tutorialCopy.finish : tutorialCopy.next}
+              </Btn>
+            </div>
+          </div>
+        </div>
+      )}
 
       {leaveNotice && phase === 'playing' && (
         <div style={{
@@ -5787,10 +6023,10 @@ export default function App() {
                 </>)}
               </div>
               <div style={{ display: 'flex', gap: 8, width: '100%' }}>
-                <Btn onClick={() => { humanPlay(); }} disabled={(extraPlay && card.type !== 'ingredient') || (card.type === 'action' && isClosetActionBlocked(human, card.action))} color="#4CAF50" style={{ flex: 1, fontSize: 14, padding: '10px 16px' }}>
+                <Btn onClick={() => { humanPlay(); }} disabled={tutorialActive || (extraPlay && card.type !== 'ingredient') || (card.type === 'action' && isClosetActionBlocked(human, card.action))} color="#4CAF50" style={{ flex: 1, fontSize: 14, padding: '10px 16px' }}>
                   {T('play')}
                 </Btn>
-                <Btn onClick={() => { humanDiscard(); }} disabled={extraPlay} color="#FF7043" style={{ flex: 1, fontSize: 14, padding: '10px 16px' }}>
+                <Btn onClick={() => { humanDiscard(); }} disabled={tutorialActive || extraPlay} color="#FF7043" style={{ flex: 1, fontSize: 14, padding: '10px 16px' }}>
                   {T('discard')}
                 </Btn>
               </div>

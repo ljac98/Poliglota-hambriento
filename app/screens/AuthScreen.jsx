@@ -28,7 +28,7 @@ export function AuthScreen({ onAuth, onGuest, onDownload, T, uiLang, onLangChang
       const user = tab === 'login'
         ? await login(username, password)
         : await register(username, password, displayName || username);
-      onAuth(user);
+      onAuth(user, { isNewUser: tab === 'register' });
     } catch (err) {
       setError(err.message);
     }
