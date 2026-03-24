@@ -1027,13 +1027,19 @@ export default function App() {
       setHatStealAnim((prev) => prev ? {
         ...prev,
         frame: 2,
+        releasing: false,
+      } : prev);
+    }, 220));
+    timers.push(setTimeout(() => {
+      setHatStealAnim((prev) => prev ? {
+        ...prev,
         moving: true,
         x: destination.x,
         y: destination.y,
         hatX: destination.x,
         hatY: destination.y,
       } : prev);
-    }, 220));
+    }, 420));
     timers.push(setTimeout(() => {
       setHatStealAnim((prev) => prev ? {
         ...prev,
@@ -1041,11 +1047,11 @@ export default function App() {
         moving: false,
         releasing: true,
       } : prev);
-    }, 1260));
+    }, 1460));
     timers.push(setTimeout(() => {
       setHatStealAnim(null);
       setHatStealFx(null);
-    }, 1640));
+    }, 1840));
 
     return () => {
       timers.forEach(clearTimeout);
