@@ -119,6 +119,8 @@ const translations = {
     tapContinue: 'Toca para continuar...',
     // Game Over
     playerWon: (name) => `¡${name} ganó!`,
+    wonByAbandon: '¡Ganaste por abandono!',
+    abandonSubtitle: (name) => `${name} abandonó la partida.`,
     youLost: 'Perdiste',
     completedBurgers: 'Completó todas sus hamburguesas primero',
     playAgain: '🔄 Jugar de nuevo',
@@ -451,6 +453,8 @@ const translations = {
     yourTurn: 'Your turn',
     tapContinue: 'Tap to continue...',
     playerWon: (name) => `${name} won!`,
+    wonByAbandon: 'You win by abandonment!',
+    abandonSubtitle: (name) => `${name} left the match.`,
     youLost: 'You lost!',
     completedBurgers: 'Completed all burgers first',
     playAgain: '🔄 Play again',
@@ -782,6 +786,8 @@ const translations = {
     yourTurn: 'Ton tour',
     tapContinue: 'Touche pour continuer...',
     playerWon: (name) => `${name} a gagné !`,
+    wonByAbandon: 'Victoire par abandon !',
+    abandonSubtitle: (name) => `${name} a quitté la partie.`,
     youLost: 'Tu as perdu !',
     completedBurgers: 'A complété tous ses hamburgers en premier',
     playAgain: '🔄 Rejouer',
@@ -1113,6 +1119,8 @@ const translations = {
     yourTurn: 'Il tuo turno',
     tapContinue: 'Tocca per continuare...',
     playerWon: (name) => `${name} ha vinto!`,
+    wonByAbandon: 'Hai vinto per abbandono!',
+    abandonSubtitle: (name) => `${name} ha lasciato la partita.`,
     youLost: 'Hai perso!',
     completedBurgers: 'Ha completato tutti gli hamburger per primo',
     playAgain: '🔄 Gioca ancora',
@@ -1444,6 +1452,8 @@ const translations = {
     yourTurn: 'Dein Zug',
     tapContinue: 'Tippe zum Fortfahren...',
     playerWon: (name) => `${name} hat gewonnen!`,
+    wonByAbandon: 'Sieg durch Aufgabe!',
+    abandonSubtitle: (name) => `${name} hat das Spiel verlassen.`,
     youLost: 'Du hast verloren!',
     completedBurgers: 'Hat alle Burger zuerst fertiggestellt',
     playAgain: '🔄 Nochmal spielen',
@@ -1775,6 +1785,8 @@ const translations = {
     yourTurn: 'Sua vez',
     tapContinue: 'Toque para continuar...',
     playerWon: (name) => `${name} venceu!`,
+    wonByAbandon: 'Venceste por abandono!',
+    abandonSubtitle: (name) => `${name} saiu da partida.`,
     youLost: 'Voc� perdeu!',
     completedBurgers: 'Completou todos os hambúrgueres primeiro',
     playAgain: '🔄 Jogar novamente',
@@ -2113,6 +2125,7 @@ export function getLocalizedLangShort(gameLang, uiLang) {
 }
 
 export { translations, LANG_TO_KEY, KEY_TO_LANG };
+
 
 
 

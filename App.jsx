@@ -1416,7 +1416,7 @@ export default function App() {
       setGamePaused(false);
       setPausedMessage('');
     });
-    socket.on('playerRemovedFromGame', ({ playerIdx, playerName, activeCount }) => {
+    socket.on('playerRemovedFromGame', ({ playerIdx, playerName, activeCount, winner: leaveWinner }) => {
       setChatMessages(prev => [...prev, { playerName: 'Sistema', text: `${playerName} ha abandonado la partida`, timestamp: Date.now() }]);
       // Remove player from game state (host removes, non-host gets via stateUpdate)
       setPlayers(prev => {
@@ -1431,10 +1431,10 @@ export default function App() {
       });
       // Adjust myPlayerIdx if our index shifted
       setMyPlayerIdx(prev => playerIdx < prev ? prev - 1 : prev);
-      // If only 1 active player left, show alone screen
-      if (activeCount <= 1) {
-        setGamePaused(true);
-        setPausedMessage('alone');
+      if (leaveWinner) {
+        setWinner(leaveWinner);
+        clearRoomSession();
+        setPhase('gameover');
       } else {
         setGamePaused(false);
         setPausedMessage('');

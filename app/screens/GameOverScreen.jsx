@@ -8,12 +8,17 @@ import burgerIcon from '../../imagenes/hamburguesas/ham.png';
 
 export function GameOverScreen({ winner, players, onRestart, user, onHistory, T }) {
   const didWin = !!user && (winner?.id === user?.id || winner?.name === user?.displayName);
+  const wonByAbandon = winner?.reason === 'abandon';
   const headerImage = didWin ? ganador : perdedor;
   const titleText = didWin
-    ? (typeof T('playerWon') === 'function' ? T('playerWon')(winner.name) : T('playerWon'))
+    ? (wonByAbandon
+      ? T('wonByAbandon')
+      : (typeof T('playerWon') === 'function' ? T('playerWon')(winner.name) : T('playerWon')))
     : T('youLost');
   const subtitleText = didWin
-    ? T('completedBurgers')
+    ? (wonByAbandon
+      ? (typeof T('abandonSubtitle') === 'function' ? T('abandonSubtitle')(winner.leftPlayerName || '') : T('abandonSubtitle'))
+      : T('completedBurgers'))
     : (typeof T('defeatBy') === 'function' ? T('defeatBy')(winner.name) : T('defeatBy'));
 
   return (

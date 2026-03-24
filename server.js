@@ -942,6 +942,63 @@ io.on('connection', socket => {
     const player = room.players.find(p => p.id === socket.id);
     if (!player) return;
 
+    if (room.started) {
+      const leavingIdx = room.players.findIndex((p) => p.id === socket.id);
+      if (leavingIdx === -1) return;
+      const leavingPlayer = room.players[leavingIdx];
+
+      room.players.splice(leavingIdx, 1);
+      reindexRoomPlayers(room);
+
+      if (room.hostId === socket.id) {
+        room.hostId = room.players.find((p) => p.id)?.id || null;
+        if (room.hostId) io.to(room.hostId).emit('becameHost');
+      }
+
+      const activePlayers = serializeRoomPlayers(room);
+      const activeCount = activePlayers.length;
+      const payload = {
+        playerIdx: leavingIdx,
+        playerName: leavingPlayer.name,
+        activePlayers,
+        activeCount,
+      };
+
+      if (activeCount === 1) {
+        const winnerPlayer = room.players[0];
+        payload.winner = {
+          name: winnerPlayer.name,
+          id: winnerPlayer.userId || null,
+          reason: 'abandon',
+          leftPlayerName: leavingPlayer.name,
+        };
+        if (!savedGames.has(code)) {
+          savedGames.add(code);
+          const playersData = [
+            ...room.players.map((p) => ({
+              name: p.name,
+              userId: p.userId || null,
+              currentBurger: p.currentBurger || 0,
+              totalBurgers: p.totalBurgers || 0,
+            })),
+            {
+              name: leavingPlayer.name,
+              userId: leavingPlayer.userId || null,
+              currentBurger: leavingPlayer.currentBurger || 0,
+              totalBurgers: leavingPlayer.totalBurgers || 0,
+            },
+          ];
+          saveGameHistory(code, payload.winner, room, playersData).catch(() => {});
+        }
+      }
+
+      io.to(code).emit('playerRemovedFromGame', payload);
+      socket.leave(code);
+      socket.data.roomCode = null;
+      if (room.isPublic) broadcastLobbyList();
+      return;
+    }
+
     // Mark as disconnected with grace period (like a refresh)
     player.disconnected = true;
     player.voluntaryLeft = true;
