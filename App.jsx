@@ -1468,12 +1468,22 @@ export default function App() {
   }, [leaveNotice]);
 
   useEffect(() => {
-    if (!isOnline || !myRoomPlayerName || !Array.isArray(lobbyPlayers) || lobbyPlayers.length === 0) return;
-    const nextIdx = lobbyPlayers.findIndex((player) => player.name === myRoomPlayerName);
+    if (!isOnline || !Array.isArray(lobbyPlayers) || lobbyPlayers.length === 0) return;
+    let nextIdx = -1;
+    if (socket.id) {
+      nextIdx = lobbyPlayers.findIndex((player) => player.socketId === socket.id);
+    }
+    if (nextIdx < 0 && myRoomPlayerName) {
+      nextIdx = lobbyPlayers.findIndex((player) => player.name === myRoomPlayerName);
+    }
     if (nextIdx >= 0 && nextIdx !== myPlayerIdx) {
       setMyPlayerIdx(nextIdx);
       const session = getRoomSession();
-      if (session) saveRoomSession({ ...session, myPlayerIdx: nextIdx, playerName: myRoomPlayerName });
+      const resolvedPlayerName = lobbyPlayers[nextIdx]?.name || myRoomPlayerName;
+      if (resolvedPlayerName && resolvedPlayerName !== myRoomPlayerName) {
+        setMyRoomPlayerName(resolvedPlayerName);
+      }
+      if (session) saveRoomSession({ ...session, myPlayerIdx: nextIdx, playerName: resolvedPlayerName || myRoomPlayerName });
     }
   }, [isOnline, lobbyPlayers, myPlayerIdx, myRoomPlayerName]);
 

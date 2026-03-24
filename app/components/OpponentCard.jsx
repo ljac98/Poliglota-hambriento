@@ -1,8 +1,7 @@
 import React from 'react';
-import { LANGUAGES, ING_EMOJI, ING_BG } from '../../constants/index.js';
+import { ING_EMOJI, ING_BG } from '../../constants/index.js';
 import { BurgerTarget } from '../../components/GameUI.jsx';
 import { HatBadge } from '../../components/HatComponents.jsx';
-import HatSVG from '../../components/HatSVG.jsx';
 import { ING_IMG, ingChosen, ingKey } from '../utils/gameHelpers.js';
 import burgerIcon from '../../imagenes/hamburguesas/ham.png';
 import { UserAvatar } from './UserAvatar.jsx';
@@ -25,13 +24,8 @@ export function OpponentCard({ player, index, color, isActive, onIngredientClick
           avatarUrl={player.avatarUrl}
           size={28}
         />
-        <HatSVG lang={player.mainHats[0] || LANGUAGES[0]} size={22} />
         <span style={{ fontWeight: 800, color, fontSize: 13 }}>{player.name}</span>
         {isActive && <span style={{ fontSize: 10, color: '#FFD700', marginLeft: 'auto' }}>{T('turn')}</span>}
-        <span style={{ marginLeft: isActive ? 0 : 'auto', fontSize: 11, color: '#777', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-          <img src={burgerIcon} alt="hamburguesa" style={{ width: 14, height: 14, objectFit: 'contain' }} />
-          {player.currentBurger}/{player.totalBurgers}
-        </span>
       </div>
 
       {/* Main hats */}
@@ -39,6 +33,11 @@ export function OpponentCard({ player, index, color, isActive, onIngredientClick
         {player.mainHats.map(h => (
           <HatBadge key={h} lang={h} isMain size="sm" />
         ))}
+      </div>
+
+      <div style={{ fontSize: 11, color: '#777', display: 'inline-flex', alignItems: 'center', gap: 4, marginBottom: 6 }}>
+        <img src={burgerIcon} alt="hamburguesa" style={{ width: 14, height: 14, objectFit: 'contain' }} />
+        {player.currentBurger}/{player.totalBurgers}
       </div>
 
       {/* Table ingredients */}

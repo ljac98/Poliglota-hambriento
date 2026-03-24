@@ -631,6 +631,7 @@ function getActiveRoomPlayers(room) {
 
 function serializeRoomPlayers(room) {
   return getActiveRoomPlayers(room).map(p => ({
+    socketId: p.id || null,
     name: p.name,
     idx: p.idx,
     userId: p.userId || null,

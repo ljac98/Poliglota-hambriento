@@ -61,6 +61,10 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
   );
   const resolvedMyPlayer = useMemo(() => {
     if (!Array.isArray(players) || players.length === 0) return null;
+    if (socket.id) {
+      const bySocket = players.find((player) => player.socketId === socket.id);
+      if (bySocket) return bySocket;
+    }
     if (myName) {
       const byName = players.find((player) => player.name === myName);
       if (byName) return byName;
