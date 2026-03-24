@@ -769,12 +769,6 @@ export function buildTutorialScenario(step, { playerName = 'Jugador', user = nul
         }),
       ],
       discard: [ingredientCard('lechuga', 'alemán'), ingredientCard('pollo', 'francés')],
-      pendingNeg: {
-        actingIdx: 1,
-        card: actionCard('tenedor'),
-        eligibleIdxs: [0],
-        responses: {},
-      },
       selectedIdx: null,
     }),
     () => ({
@@ -800,6 +794,12 @@ export function buildTutorialScenario(step, { playerName = 'Jugador', user = nul
           burgers: [['pan', 'tomate', 'queso']],
         }),
       ],
+      pendingNeg: {
+        actingIdx: 1,
+        cardInfo: { emoji: '🍴', name: 'The Fork' },
+        eligibleIdxs: [0],
+        responses: {},
+      },
       selectedIdx: 0,
     }),
     () => ({
