@@ -36,6 +36,7 @@ import actionParrilla2 from './imagenes/acciones/parrilla3.png';
 import actionParrilla3 from './imagenes/acciones/parrilla4.png';
 import actionTridente from './imagenes/acciones/tridente.png';
 import actionPercheroCubierto from './imagenes/acciones/perchero cubierto.png';
+import vsiaImg from './imagenes/vsia.png';
 import burgerCarne from './imagenes/hamburguesas/ingredientes/carne.png';
 import burgerCebolla from './imagenes/hamburguesas/ingredientes/cebolla.png';
 import burgerHuevo from './imagenes/hamburguesas/ingredientes/huevo.png';
@@ -1861,7 +1862,9 @@ export default function App() {
       const avail = LANGUAGES.filter(l => !usedHats.includes(l));
       const aiHat = avail.length ? shuffle(avail)[0] : shuffle(LANGUAGES)[0];
       usedHats.push(aiHat);
-      ps.push(initPlayer(aiNames[i % aiNames.length], deckArr, aiHat, normalizedConfig, true));
+      ps.push(initPlayer(aiNames[i % aiNames.length], deckArr, aiHat, normalizedConfig, true, {
+        avatarUrl: vsiaImg,
+      }));
     }
     setPlayers(ps); setDeck(deckArr); setDiscard([]);
     setCp(0); setLog([]); setSelectedIdx(null); setModal(null);
@@ -1878,7 +1881,7 @@ export default function App() {
     const ps = onlinePls.map(p => initPlayer(p.name, deckArr, hatPicks[p.name] || p.hat, normalizedConfig, !!p.isAI, {
       username: p.username || null,
       userId: p.userId || null,
-      avatarUrl: p.avatarUrl || null,
+      avatarUrl: p.isAI ? vsiaImg : (p.avatarUrl || null),
     }));
     // Mark non-host players as remote
     ps.forEach((p, i) => { if (i !== 0 && !p.isAI) p.isRemote = true; });
