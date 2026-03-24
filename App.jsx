@@ -231,6 +231,62 @@ export default function App() {
   const tutorialCopy = getTutorialContent(uiLang);
   const tutorialActive = !!tutorialState?.active;
   const tutorialStepData = tutorialActive ? tutorialCopy.steps[tutorialState.step] : null;
+  const tutorialFocus = tutorialStepData?.focus || {};
+  const tutorialPopupStyle = (() => {
+    const base = {
+      position: 'fixed',
+      zIndex: 9700,
+    };
+    const focusCloset = !!(tutorialFocus.closet || tutorialFocus.hats || tutorialFocus.changeButton || tutorialFocus.addButton);
+    const focusHand = tutorialFocus.selectedCard !== undefined || tutorialFocus.actionCards;
+
+    if (isMobile) {
+      if (focusCloset) {
+        return {
+          ...base,
+          left: 10,
+          right: 10,
+          bottom: 86,
+          width: 'calc(100vw - 20px)',
+          maxWidth: 'calc(100vw - 20px)',
+        };
+      }
+      return {
+        ...base,
+        left: 10,
+        right: 10,
+        top: 74,
+        width: 'calc(100vw - 20px)',
+        maxWidth: 'calc(100vw - 20px)',
+      };
+    }
+
+    if (focusCloset) {
+      return {
+        ...base,
+        top: 92,
+        left: 16,
+        width: 360,
+        maxWidth: 360,
+      };
+    }
+    if (focusHand) {
+      return {
+        ...base,
+        right: 16,
+        bottom: 112,
+        width: 360,
+        maxWidth: 360,
+      };
+    }
+    return {
+      ...base,
+      top: 92,
+      right: 16,
+      width: 360,
+      maxWidth: 360,
+    };
+  })();
   const installCopy = INSTALL_PROMPT_COPY[uiLang] || INSTALL_PROMPT_COPY.en;
   const canOpenInstallPrompt = showIosInstallHint || !!deferredInstallPrompt;
   const isMobile = typeof window !== 'undefined' && window.innerWidth <= 640;
@@ -3947,6 +4003,7 @@ export default function App() {
           handleAuthSuccess={handleAuthSuccess}
           setPhase={setPhase}
           startGame={startGame}
+          startTutorialGame={startTutorialGame}
           socket={socket}
           setInviteJoinCode={setInviteJoinCode}
           inviteJoinCode={inviteJoinCode}
@@ -4625,14 +4682,7 @@ export default function App() {
       </div>
 
       {tutorialActive && tutorialStepData && (
-        <div style={{
-          position: 'fixed',
-          top: isMobile ? 74 : 92,
-          right: isMobile ? 10 : 16,
-          width: isMobile ? 'calc(100vw - 20px)' : 360,
-          maxWidth: isMobile ? 'calc(100vw - 20px)' : 360,
-          zIndex: 9700,
-        }}>
+        <div style={tutorialPopupStyle}>
           <div style={{
             borderRadius: 18,
             padding: isMobile ? '14px 14px 12px' : '16px 16px 14px',

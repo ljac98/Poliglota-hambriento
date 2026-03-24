@@ -30,7 +30,7 @@ import burgerPollo from '../../imagenes/hamburguesas/ingredientes/pollo.png';
 import burgerHuevo from '../../imagenes/hamburguesas/ingredientes/huevo.png';
 import burgerPalta from '../../imagenes/hamburguesas/ingredientes/palta.png';
 
-export function SetupScreen({ onStart, onOnline, onDownload, user, onLogout, onHistory, onFriends, T, installEntryVisible, installEntryTitle, installEntryDesc, installEntryButton, onOpenInstallPrompt }) {
+export function SetupScreen({ onStart, onStartTutorial, onOnline, onDownload, user, onLogout, onHistory, onFriends, T, installEntryVisible, installEntryTitle, installEntryDesc, installEntryButton, onOpenInstallPrompt }) {
   const uiGameLang = KEY_TO_LANG[getUILang()] || 'español';
   const cloneIngredients = INGREDIENTS.filter((ing) => ing !== 'pan');
   const [name, setName] = useState(user?.displayName || '');
@@ -44,6 +44,7 @@ export function SetupScreen({ onStart, onOnline, onDownload, user, onLogout, onH
   const [aiCount, setAiCount] = useState(2);
   const [aiDifficulty, setAiDifficulty] = useState('medium');
   const [showModeConfig, setShowModeConfig] = useState(false);
+  const [showVsAiModal, setShowVsAiModal] = useState(false);
   const [selectedStaircasePlayer, setSelectedStaircasePlayer] = useState(0);
   const [isDesktopWide, setIsDesktopWide] = useState(() => (typeof window !== 'undefined' ? window.innerWidth >= 1180 : false));
   const uiKey = getUILang();
@@ -355,6 +356,20 @@ export function SetupScreen({ onStart, onOnline, onDownload, user, onLogout, onH
     gap: 18,
     alignItems: 'start',
   } : null;
+  const normalStartDisabled = !name.trim() || !hat;
+  const startNormalVsAi = () => {
+    onStart(name.trim(), hat, {
+      mode: gameMode,
+      burgerCount,
+      ingredientCount,
+      chaosLevel,
+      ingredientPool,
+      cloneWildcardsEnabled,
+      aiDifficulty,
+      sharedBurgers: gameMode === 'clon' ? previewBurgers : null,
+    }, aiCount);
+    setShowVsAiModal(false);
+  };
   return (
     <div style={{
       minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -504,17 +519,7 @@ export function SetupScreen({ onStart, onOnline, onDownload, user, onLogout, onH
 
         <div style={{ display: 'flex', gap: 10 }}>
           <Btn
-            onClick={() => onStart(name.trim(), hat, {
-              mode: gameMode,
-              burgerCount,
-              ingredientCount,
-              chaosLevel,
-              ingredientPool,
-              cloneWildcardsEnabled,
-              aiDifficulty,
-              sharedBurgers: gameMode === 'clon' ? previewBurgers : null,
-            }, aiCount)}
-            disabled={!name.trim() || !hat}
+            onClick={() => setShowVsAiModal(true)}
             color="#FFD700"
             style={{ flex: 1, fontSize: 16, padding: '12px 0' }}
           >
@@ -812,6 +817,76 @@ export function SetupScreen({ onStart, onOnline, onDownload, user, onLogout, onH
             </div>
           </div>
           <Btn onClick={() => setShowModeConfig(false)} color="#333" style={{ color: '#aaa' }}>{T('close')}</Btn>
+        </Modal>
+      )}
+      {showVsAiModal && (
+        <Modal title={T('vsAIModePickerTitle')}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ color: '#d8ddf3', fontSize: 14, lineHeight: 1.45 }}>
+              {T('vsAIModePickerDesc')}
+            </div>
+            <div style={{ display: 'grid', gap: 12 }}>
+              <button
+                type="button"
+                onClick={startNormalVsAi}
+                disabled={normalStartDisabled}
+                style={{
+                  width: '100%',
+                  borderRadius: 16,
+                  padding: '14px 16px',
+                  border: normalStartDisabled ? '1px solid rgba(255,255,255,0.08)' : '2px solid rgba(255,215,0,0.35)',
+                  background: normalStartDisabled ? 'rgba(255,255,255,0.04)' : 'linear-gradient(180deg, rgba(255,215,0,0.14), rgba(255,255,255,0.04))',
+                  color: normalStartDisabled ? '#7f859f' : '#fff4b3',
+                  textAlign: 'left',
+                  cursor: normalStartDisabled ? 'not-allowed' : 'pointer',
+                  fontFamily: "'Fredoka',sans-serif",
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                }}
+              >
+                <img src={vsiaImg} alt={T('normalMatch')} style={{ width: 38, height: 38, objectFit: 'contain', opacity: normalStartDisabled ? 0.55 : 1 }} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <span style={{ fontSize: 16, fontWeight: 900 }}>{T('normalMatch')}</span>
+                  <span style={{ fontSize: 12, color: normalStartDisabled ? '#7f859f' : '#c8cde4' }}>
+                    {normalStartDisabled ? T('vsAIModePickerNeedSetup') : T('vsAIModePickerNormalDesc')}
+                  </span>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowVsAiModal(false);
+                  if (onStartTutorial) onStartTutorial();
+                }}
+                style={{
+                  width: '100%',
+                  borderRadius: 16,
+                  padding: '14px 16px',
+                  border: '2px solid rgba(78,205,196,0.3)',
+                  background: 'linear-gradient(180deg, rgba(78,205,196,0.16), rgba(255,255,255,0.04))',
+                  color: '#d7fffb',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  fontFamily: "'Fredoka',sans-serif",
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                }}
+              >
+                <img src={vsiaImg} alt={T('tutorialMatch')} style={{ width: 38, height: 38, objectFit: 'contain' }} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <span style={{ fontSize: 16, fontWeight: 900 }}>{T('tutorialMatch')}</span>
+                  <span style={{ fontSize: 12, color: '#b9dad8' }}>{T('vsAIModePickerTutorialDesc')}</span>
+                </div>
+              </button>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <Btn onClick={() => setShowVsAiModal(false)} color="#2a2a4a" style={{ color: '#fff' }}>
+                {T('close')}
+              </Btn>
+            </div>
+          </div>
         </Modal>
       )}
     </div>
