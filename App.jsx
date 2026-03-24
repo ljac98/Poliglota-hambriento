@@ -1008,6 +1008,13 @@ export default function App() {
     const targetFallback = hatStealFx.targetIdx === HI ? { x: window.innerWidth * 0.78, y: window.innerHeight * 0.33 } : getCenter(playerAreaRefs.current[hatStealFx.targetIdx], window.innerWidth * 0.15, window.innerHeight * 0.24);
     const source = getCenter(targetHatEl, targetFallback.x, targetFallback.y);
     const destination = getCenter(actorHatEl, actorFallback.x, actorFallback.y);
+    const dx = destination.x - source.x;
+    const dy = destination.y - source.y;
+    const distance = Math.max(Math.hypot(dx, dy), 1);
+    const tugPoint = {
+      x: source.x + (dx / distance) * 22,
+      y: source.y + (dy / distance) * 16,
+    };
 
     setHatStealAnim({
       x: source.x,
@@ -1033,13 +1040,22 @@ export default function App() {
     timers.push(setTimeout(() => {
       setHatStealAnim((prev) => prev ? {
         ...prev,
+        x: tugPoint.x,
+        y: tugPoint.y,
+        hatX: tugPoint.x,
+        hatY: tugPoint.y,
+      } : prev);
+    }, 340));
+    timers.push(setTimeout(() => {
+      setHatStealAnim((prev) => prev ? {
+        ...prev,
         moving: true,
         x: destination.x,
         y: destination.y,
         hatX: destination.x,
         hatY: destination.y,
       } : prev);
-    }, 420));
+    }, 470));
     timers.push(setTimeout(() => {
       setHatStealAnim((prev) => prev ? {
         ...prev,
@@ -1047,11 +1063,11 @@ export default function App() {
         moving: false,
         releasing: true,
       } : prev);
-    }, 1460));
+    }, 1510));
     timers.push(setTimeout(() => {
       setHatStealAnim(null);
       setHatStealFx(null);
-    }, 1840));
+    }, 1890));
 
     return () => {
       timers.forEach(clearTimeout);
@@ -5070,10 +5086,14 @@ export default function App() {
               position: 'fixed',
               left: hatStealAnim.x,
               top: hatStealAnim.y,
-              transform: `translate(-50%, -50%) ${hatStealAnim.moving ? 'scale(1)' : (hatStealAnim.releasing ? 'scale(0.94)' : 'scale(0.98)')}`,
+              transform: `translate(-50%, -50%) ${
+                hatStealAnim.moving
+                  ? 'scale(1)'
+                  : (hatStealAnim.releasing ? 'scale(0.94)' : (hatStealAnim.frame === 2 ? 'scale(1.04) rotate(-6deg)' : 'scale(0.98)'))
+              }`,
               transition: hatStealAnim.moving
                 ? 'left 0.92s ease-in-out, top 0.92s ease-in-out, transform 0.22s ease'
-                : 'transform 0.22s ease, opacity 0.22s ease',
+                : 'left 0.12s ease-out, top 0.12s ease-out, transform 0.22s ease, opacity 0.22s ease',
               width: isMobile ? 94 : 118,
               height: isMobile ? 94 : 118,
               display: 'flex',
@@ -5093,15 +5113,19 @@ export default function App() {
               position: 'fixed',
               left: hatStealAnim.hatX,
               top: hatStealAnim.hatY,
-              transform: `translate(-50%, -50%) ${hatStealAnim.moving ? 'scale(0.9)' : (hatStealAnim.releasing ? 'scale(1.06)' : 'scale(1)')}`,
+              transform: `translate(-50%, -50%) ${
+                hatStealAnim.moving
+                  ? 'scale(0.88) rotate(-10deg)'
+                  : (hatStealAnim.releasing ? 'scale(1.06)' : (hatStealAnim.frame === 2 ? 'scale(1.08) rotate(-12deg)' : 'scale(1)'))
+              }`,
               transition: hatStealAnim.moving
                 ? 'left 0.92s ease-in-out, top 0.92s ease-in-out, transform 0.22s ease'
-                : 'transform 0.22s ease, opacity 0.22s ease',
+                : 'left 0.12s ease-out, top 0.12s ease-out, transform 0.22s ease, opacity 0.22s ease',
               opacity: hatStealAnim.releasing ? 0.86 : 1,
               filter: 'drop-shadow(0 8px 12px rgba(0,0,0,.28))',
             }}
           >
-            <HatSVG lang={hatStealAnim.hatLang} size={isMobile ? 34 : 42} />
+            <HatSVG lang={hatStealAnim.hatLang} size={isMobile ? 28 : 34} />
           </div>
         </div>
       )}
