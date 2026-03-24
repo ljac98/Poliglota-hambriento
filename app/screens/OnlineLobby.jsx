@@ -989,7 +989,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
                 borderRadius: 10, background: 'rgba(255,255,255,.04)',
                 border: `2px solid ${PLAYER_COLORS[i % PLAYER_COLORS.length]}44`,
               }}>
-                <UserAvatar name={p.name} username={p.username} avatarUrl={p.isAI ? vsiaImg : undefined} size={34} />
+                <UserAvatar name={p.name} username={p.username} avatarUrl={p.isAI ? vsiaImg : p.avatarUrl} size={34} />
                 <div style={{
                   width: 28, height: 28, borderRadius: '50%',
                   background: PLAYER_COLORS[i % PLAYER_COLORS.length] + '33',
