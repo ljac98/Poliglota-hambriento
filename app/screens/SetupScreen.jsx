@@ -32,6 +32,15 @@ import burgerPalta from '../../imagenes/hamburguesas/ingredientes/palta.png';
 
 export function SetupScreen({ onStart, onStartTutorial, onOnline, onDownload, user, onLogout, onHistory, onFriends, T, installEntryVisible, installEntryTitle, installEntryDesc, installEntryButton, onOpenInstallPrompt }) {
   const uiGameLang = KEY_TO_LANG[getUILang()] || 'español';
+  const normalModeHint =
+    ({
+      es: 'Escoge el modo',
+      en: 'Choose the mode',
+      fr: 'Choisis le mode',
+      it: 'Scegli la modalita',
+      de: 'Wahle den Modus',
+      pt: 'Escolha o modo',
+    })[getUILang()] || 'Escoge el modo';
   const cloneIngredients = INGREDIENTS.filter((ing) => ing !== 'pan');
   const [name, setName] = useState(user?.displayName || '');
   const [hat, setHat] = useState(null);
@@ -849,7 +858,7 @@ export function SetupScreen({ onStart, onStartTutorial, onOnline, onDownload, us
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                   <span style={{ fontSize: 16, fontWeight: 900 }}>{T('normalMatch')}</span>
                   <span style={{ fontSize: 12, color: normalStartDisabled ? '#7f859f' : '#c8cde4' }}>
-                    {normalStartDisabled ? T('vsAIModePickerNeedSetup') : T('vsAIModePickerNormalDesc')}
+                    {normalStartDisabled ? normalModeHint : T('vsAIModePickerNormalDesc')}
                   </span>
                 </div>
               </button>
