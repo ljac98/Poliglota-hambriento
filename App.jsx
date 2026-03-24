@@ -194,6 +194,7 @@ export default function App() {
   const [chatInput, setChatInput] = useState('');
   const [showChat, setShowChat] = useState(false);
   const [unreadChat, setUnreadChat] = useState(0);
+  const [leaveNotice, setLeaveNotice] = useState(null);
   const chatEndRef = useRef(null);
   const showChatRef = useRef(showChat);
   const lastSyncCpRef = useRef(null);
@@ -1418,6 +1419,7 @@ export default function App() {
     });
     socket.on('playerRemovedFromGame', ({ playerIdx, playerName, activeCount, winner: leaveWinner }) => {
       setChatMessages(prev => [...prev, { playerName: 'Sistema', text: `${playerName} ha abandonado la partida`, timestamp: Date.now() }]);
+      setLeaveNotice({ playerName, id: `${playerName}-${Date.now()}` });
       // Remove player from game state (host removes, non-host gets via stateUpdate)
       setPlayers(prev => {
         const updated = prev.filter((_, i) => i !== playerIdx);
@@ -1457,6 +1459,12 @@ export default function App() {
   useEffect(() => {
     if (showChat) chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages, showChat]);
+
+  useEffect(() => {
+    if (!leaveNotice) return;
+    const timer = setTimeout(() => setLeaveNotice(null), 4200);
+    return () => clearTimeout(timer);
+  }, [leaveNotice]);
 
   useEffect(() => {
     if (!isOnline || !myRoomPlayerName || !Array.isArray(lobbyPlayers) || lobbyPlayers.length === 0) return;
@@ -4263,6 +4271,50 @@ export default function App() {
           )}
         </div>
       </div>
+
+      {leaveNotice && phase === 'playing' && (
+        <div style={{
+          position: 'fixed',
+          top: isMobile ? 72 : 88,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 9800,
+          pointerEvents: 'none',
+        }}>
+          <div style={{
+            minWidth: isMobile ? 260 : 340,
+            maxWidth: '80vw',
+            padding: isMobile ? '12px 16px' : '14px 18px',
+            borderRadius: 16,
+            border: '2px solid rgba(255,106,106,.45)',
+            background: 'linear-gradient(180deg, rgba(80,18,18,.96), rgba(28,10,10,.96))',
+            boxShadow: '0 18px 40px rgba(0,0,0,.38), 0 0 26px rgba(255,94,94,.16)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            animation: 'pulse 0.4s ease-out 1',
+          }}>
+            <div style={{
+              width: 42,
+              height: 42,
+              borderRadius: '50%',
+              background: 'rgba(255,255,255,.08)',
+              display: 'grid',
+              placeItems: 'center',
+              fontSize: 22,
+              flexShrink: 0,
+            }}>🚪</div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ color: '#FFD700', fontSize: isMobile ? 15 : 16, fontWeight: 900, lineHeight: 1.05 }}>
+                {leaveNotice.playerName} abandonó la partida
+              </div>
+              <div style={{ color: '#ffd8d8', fontSize: 12, fontWeight: 700, marginTop: 4 }}>
+                Se actualizó la mesa online.
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* â”€â”€ Game paused overlay (opponent left or alone) â”€â”€ */}
       {gamePaused && (
