@@ -5850,6 +5850,41 @@ export default function App() {
           <p style={{ color: '#888', fontSize: 12, marginBottom: 12 }}>
             {`Elige qué sombrero principal quieres reemplazar por ${T(modal.hatLang)}.`}
           </p>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            padding: 12,
+            borderRadius: 14,
+            border: `1px solid ${LANG_BORDER[modal.hatLang]}66`,
+            background: 'rgba(255,255,255,.04)',
+            marginBottom: 12,
+          }}>
+            <div style={{
+              width: 62,
+              height: 62,
+              borderRadius: 14,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'rgba(255,255,255,.05)',
+              border: `2px solid ${LANG_BORDER[modal.hatLang]}88`,
+              flexShrink: 0,
+            }}>
+              <HatSVG lang={modal.hatLang} size={40} />
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ color: '#fff3bf', fontWeight: 900, fontSize: 14, lineHeight: 1.05 }}>
+                {T(modal.hatLang)}
+              </div>
+              <div style={{ color: '#8a8fa8', fontSize: 11, fontWeight: 700, marginTop: 4 }}>
+                {T('chooseHat')}
+              </div>
+              <div style={{ color: '#cfd8ff', fontSize: 11, marginTop: 4 }}>
+                Este es el sombrero nuevo que vas a poner en tu principal.
+              </div>
+            </div>
+          </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
             {human.mainHats.map((hat, idx) => (
               <button
