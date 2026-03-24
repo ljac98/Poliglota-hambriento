@@ -831,7 +831,7 @@ io.on('connection', socket => {
       if (player) player.hat = hat;
       io.to(code).emit('lobbyUpdate', { players: serializeRoomPlayers(room) });
     }
-    socket.to(code).emit('lobbyHatPick', { playerName, hat });
+    io.to(code).emit('lobbyHatPick', { playerName, hat });
   });
 
   // ── Host starts the game ──

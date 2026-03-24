@@ -599,6 +599,10 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
   useEffect(() => {
     setHatPicks((prev) => {
       const next = {};
+      const playerNames = new Set(players.map((player) => player.name));
+      Object.keys(prev || {}).forEach((name) => {
+        if (playerNames.has(name)) next[name] = prev[name];
+      });
       players.forEach((player) => {
         if (player.hat) next[player.name] = player.hat;
       });
