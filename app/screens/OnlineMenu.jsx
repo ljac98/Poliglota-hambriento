@@ -71,7 +71,7 @@ export function OnlineMenu({ onCreated, onJoined, onBack, onDownload, initialCod
     });
 
     function doCreate() {
-      socket.emit('createRoom', { playerName: name.trim(), isPublic, roomName: roomName.trim() });
+      socket.emit('createRoom', { playerName: name.trim(), isPublic, roomName: roomName.trim(), avatarUrl: user?.avatarUrl || null });
     }
 
     if (socket.connected) {
@@ -109,7 +109,7 @@ export function OnlineMenu({ onCreated, onJoined, onBack, onDownload, initialCod
     });
 
     function doJoin() {
-      socket.emit('joinRoom', { playerName: joinName.trim(), code: joinCode.trim().toUpperCase() });
+      socket.emit('joinRoom', { playerName: joinName.trim(), code: joinCode.trim().toUpperCase(), avatarUrl: user?.avatarUrl || null });
     }
 
     if (socket.connected) {
@@ -137,7 +137,7 @@ export function OnlineMenu({ onCreated, onJoined, onBack, onDownload, initialCod
       window.history.replaceState({}, '', window.location.pathname);
       onJoined(lobbyName.trim(), roomCode, myIdx, pub, rn);
     });
-    socket.emit('joinRoom', { playerName: lobbyName.trim(), code: roomCode });
+    socket.emit('joinRoom', { playerName: lobbyName.trim(), code: roomCode, avatarUrl: user?.avatarUrl || null });
   }
 
   const tabStyle = (active) => ({

@@ -104,7 +104,7 @@ export function genBurger(size, ingredientPool = null) {
 }
 
 // ═══ PLAYER INITIALIZATION ═══
-export function initPlayer(name, deck, chosenHat, gameConfig, isAI = false) {
+export function initPlayer(name, deck, chosenHat, gameConfig, isAI = false, meta = {}) {
   const hand = deck.splice(0, 6);
   const perchero = LANGUAGES.filter(l => l !== chosenHat);
 
@@ -148,6 +148,9 @@ export function initPlayer(name, deck, chosenHat, gameConfig, isAI = false) {
   
   return {
     name,
+    username: meta.username || null,
+    userId: meta.userId || null,
+    avatarUrl: meta.avatarUrl || null,
     hand,
     mainHats: [chosenHat],
     manuallyAddedHats: [],

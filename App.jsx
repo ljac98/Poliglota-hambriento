@@ -1850,7 +1850,11 @@ export default function App() {
     const rawDeck = generateDeck(normalizedConfig);
     const deckArr = [...rawDeck];
     const ps = [];
-    ps.push(initPlayer(name, deckArr, hat, normalizedConfig, false));
+    ps.push(initPlayer(name, deckArr, hat, normalizedConfig, false, {
+      username: user?.username || null,
+      userId: user?.id || null,
+      avatarUrl: user?.avatarUrl || null,
+    }));
     const usedHats = [hat];
     const aiNames = shuffle([...AI_NAMES, 'Maestro Cocinero', 'Hambre Total', 'Chef PolÃ­glota']);
     for (let i = 0; i < aiCount; i++) {
@@ -1871,7 +1875,11 @@ export default function App() {
     const normalizedConfig = buildGameConfig(gameConfig);
     const rawDeck = generateDeck(normalizedConfig);
     const deckArr = [...rawDeck];
-    const ps = onlinePls.map(p => initPlayer(p.name, deckArr, hatPicks[p.name] || p.hat, normalizedConfig, !!p.isAI));
+    const ps = onlinePls.map(p => initPlayer(p.name, deckArr, hatPicks[p.name] || p.hat, normalizedConfig, !!p.isAI, {
+      username: p.username || null,
+      userId: p.userId || null,
+      avatarUrl: p.avatarUrl || null,
+    }));
     // Mark non-host players as remote
     ps.forEach((p, i) => { if (i !== 0 && !p.isAI) p.isRemote = true; });
     setPlayers(ps); setDeck(deckArr); setDiscard([]);
@@ -3798,6 +3806,12 @@ export default function App() {
       background: 'rgba(255,215,0,.06)', borderRadius: 12, padding: '8px 14px',
       border: '2px solid rgba(255,215,0,.2)', flexShrink: 0,
     }}>
+      <UserAvatar
+        name={human.name}
+        username={human.username}
+        avatarUrl={human.avatarUrl}
+        size={42}
+      />
       <div style={{ flex: 1 }}>
         <div style={{ fontWeight: 900, fontSize: 16, color: humanColor }}>{human.name}</div>
         <div style={{ fontSize: 11, color: '#777', display: 'inline-flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>

@@ -59,6 +59,23 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
     () => Object.fromEntries((players || []).filter((player) => !!player.hat).map((player) => [player.name, player.hat])),
     [players]
   );
+  const resolvedMyPlayer = useMemo(() => {
+    if (!Array.isArray(players) || players.length === 0) return null;
+    if (myName) {
+      const byName = players.find((player) => player.name === myName);
+      if (byName) return byName;
+    }
+    if (user?.id != null) {
+      const byUserId = players.find((player) => String(player.userId) === String(user.id));
+      if (byUserId) return byUserId;
+    }
+    if (user?.username) {
+      const byUsername = players.find((player) => player.username === user.username);
+      if (byUsername) return byUsername;
+    }
+    return players.length === 1 ? players[0] : null;
+  }, [myName, players, user]);
+  const resolvedMyName = resolvedMyPlayer?.name || myName || '';
   const playerWord = ({
     es: 'Jugador',
     en: 'Player',
@@ -97,7 +114,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
 
   function sendLobbyChat() {
     if (!lobbyChatInput.trim()) return;
-    socket.emit('chatMessage', { code: roomCode, playerName: myName, text: lobbyChatInput.trim() });
+    socket.emit('chatMessage', { code: roomCode, playerName: resolvedMyName || myName || 'Jugador', text: lobbyChatInput.trim() });
     setLobbyChatInput('');
   }
 
@@ -128,7 +145,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
     try { await sendFriendRequest(username); } catch {}
   }
 
-  const myHat = hatPicks[myName];
+  const myHat = resolvedMyPlayer?.hat || hatPicks[resolvedMyName];
   const desktopLeftPanelWidth = 500;
 
   const gameModes = [
@@ -592,14 +609,15 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
     .every((player) => !!hatPicks[player.name]);
 
   function getTakenBy(lang) {
-    return players.find((player) => player.name !== myName && hatPicks[player.name] === lang) || null;
+    return players.find((player) => player.name !== resolvedMyName && hatPicks[player.name] === lang) || null;
   }
 
   function pickHat(lang) {
+    if (!resolvedMyName) return;
     const takenBy = getTakenBy(lang);
-    if (takenBy && hatPicks[myName] !== lang) return;
-    onLocalHatPick?.(myName, lang);
-    socket.emit('lobbyHatPick', { code: roomCode, playerName: myName, hat: lang });
+    if (takenBy && hatPicks[resolvedMyName] !== lang) return;
+    onLocalHatPick?.(resolvedMyName, lang);
+    socket.emit('lobbyHatPick', { code: roomCode, playerName: resolvedMyName, hat: lang });
   }
 
   function handleStart() {
@@ -1003,7 +1021,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
                 ) : (
                   <span style={{ fontWeight: 700, color: '#eee' }}>{p.name}</span>
                 )}
-                {p.name === myName && <span style={{ fontSize: 11, color: '#888' }}>{T('you')}</span>}
+                {p.name === resolvedMyName && <span style={{ fontSize: 11, color: '#888' }}>{T('you')}</span>}
                 {p.isAI && <span style={{ fontSize: 11, color: '#FFB199', fontWeight: 800 }}>IA</span>}
                 {i === 0 && <span style={{ fontSize: 11, color: '#FFD700', marginLeft: 'auto' }}>{T('host')}</span>}
                 {hatPicks[p.name] && (
@@ -1029,7 +1047,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
                     {T('removeAiPlayer')}
                   </button>
                 )}
-                {user && p.username && p.name !== myName && !existingFriends.has(p.username) && (
+                {user && p.username && p.name !== resolvedMyName && !existingFriends.has(p.username) && (
                   <button
                     onClick={() => handleAddFriendFromLobby(p.username)}
                     disabled={friendReqSent.has(p.username)}

@@ -5,6 +5,7 @@ import { HatBadge } from '../../components/HatComponents.jsx';
 import HatSVG from '../../components/HatSVG.jsx';
 import { ING_IMG, ingChosen, ingKey } from '../utils/gameHelpers.js';
 import burgerIcon from '../../imagenes/hamburguesas/ham.png';
+import { UserAvatar } from './UserAvatar.jsx';
 
 export function OpponentCard({ player, index, color, isActive, onIngredientClick, onRegisterRef, onRegisterIngredientRef, T }) {
   const burger = player.burgers[player.currentBurger];
@@ -18,6 +19,12 @@ export function OpponentCard({ player, index, color, isActive, onIngredientClick
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+        <UserAvatar
+          name={player.name}
+          username={player.username}
+          avatarUrl={player.avatarUrl}
+          size={28}
+        />
         <HatSVG lang={player.mainHats[0] || LANGUAGES[0]} size={22} />
         <span style={{ fontWeight: 800, color, fontSize: 13 }}>{player.name}</span>
         {isActive && <span style={{ fontSize: 10, color: '#FFD700', marginLeft: 'auto' }}>{T('turn')}</span>}

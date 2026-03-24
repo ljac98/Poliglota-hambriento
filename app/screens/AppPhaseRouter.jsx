@@ -181,7 +181,7 @@ export function AppPhaseRouter({
             setRoomCode(code);
             setRoomIsPublic(!!pub);
             setRoomDisplayName(rn || '');
-            setLobbyPlayers([{ name, idx: 0 }]);
+            setLobbyPlayers([{ name, idx: 0, userId: user?.id || null, username: user?.username || null, avatarUrl: user?.avatarUrl || null }]);
             saveRoomSession({ roomCode: code, playerName: name, myPlayerIdx: 0, isHost: true, phase: 'onlineLobby' });
             setPhase('onlineLobby');
           }}

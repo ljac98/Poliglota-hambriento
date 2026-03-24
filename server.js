@@ -571,6 +571,7 @@ function serializeRoomPlayers(room) {
     idx: p.idx,
     userId: p.userId || null,
     username: p.username || null,
+    avatarUrl: p.avatarUrl || null,
     isAI: !!p.isAI,
     hat: p.hat || null,
   }));
@@ -665,12 +666,12 @@ io.on('connection', socket => {
   });
 
   // ── Create room ──
-  socket.on('createRoom', ({ playerName, isPublic, roomName }) => {
+  socket.on('createRoom', ({ playerName, isPublic, roomName, avatarUrl }) => {
     console.log(`📦 createRoom from ${socket.id}: playerName=${playerName}, isPublic=${isPublic}, roomName=${roomName}`);
     const code = genCode();
     rooms.set(code, {
       hostId: socket.id,
-      players: [{ id: socket.id, name: playerName, idx: 0, userId: socket.data.userId || null, username: socket.data.username || null, reconnectId: socket.data.reconnectId, isAI: false, hat: null }],
+      players: [{ id: socket.id, name: playerName, idx: 0, userId: socket.data.userId || null, username: socket.data.username || null, avatarUrl: avatarUrl || null, reconnectId: socket.data.reconnectId, isAI: false, hat: null }],
       started: false,
       isPublic: !!isPublic,
       roomName: roomName || '',
@@ -686,14 +687,14 @@ io.on('connection', socket => {
   });
 
   // ── Join room ──
-  socket.on('joinRoom', ({ code, playerName }) => {
+  socket.on('joinRoom', ({ code, playerName, avatarUrl }) => {
     const room = rooms.get(code);
     if (!room) return socket.emit('joinError', 'Sala no encontrada');
     if (room.started) return socket.emit('joinError', 'El juego ya comenzó');
     if (room.players.length >= MAX_ROOM_PLAYERS) return socket.emit('joinError', 'Sala llena (máximo 6 jugadores)');
     const firstAiIdx = room.players.findIndex(p => p.isAI);
     const idx = firstAiIdx === -1 ? room.players.length : firstAiIdx;
-    room.players.splice(idx, 0, { id: socket.id, name: playerName, idx, userId: socket.data.userId || null, username: socket.data.username || null, reconnectId: socket.data.reconnectId, isAI: false, hat: null });
+    room.players.splice(idx, 0, { id: socket.id, name: playerName, idx, userId: socket.data.userId || null, username: socket.data.username || null, avatarUrl: avatarUrl || null, reconnectId: socket.data.reconnectId, isAI: false, hat: null });
     reindexRoomPlayers(room);
     socket.join(code);
     socket.data.roomCode = code;

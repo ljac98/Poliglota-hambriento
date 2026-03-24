@@ -5,6 +5,7 @@ import HatSVG from '../../components/HatSVG.jsx';
 import ganador from '../../imagenes/campeon.png';
 import perdedor from '../../imagenes/perdedor.png';
 import burgerIcon from '../../imagenes/hamburguesas/ham.png';
+import { UserAvatar } from '../components/UserAvatar.jsx';
 
 export function GameOverScreen({ winner, players, onRestart, user, onHistory, T }) {
   const didWin = !!user && (winner?.id === user?.id || winner?.name === user?.displayName);
@@ -54,6 +55,12 @@ export function GameOverScreen({ winner, players, onRestart, user, onHistory, T 
               border: p.name === winner.name ? '2px solid #FFD700' : '2px solid transparent',
             }}
           >
+            <UserAvatar
+              name={p.name}
+              username={p.username}
+              avatarUrl={p.avatarUrl}
+              size={38}
+            />
             <HatSVG lang={p.mainHats[0] || LANGUAGES[0]} size={24} />
             <span style={{ fontWeight: 700, color: p.name === winner.name ? '#FFD700' : '#ccc' }}>{p.name}</span>
             <span
