@@ -2,10 +2,11 @@ import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-import { existsSync } from 'fs';
+import { dirname, extname, join } from 'path';
+import { existsSync, mkdirSync, unlinkSync } from 'fs';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import multer from 'multer';
 import pool, { initDB } from './db.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'hungry-poly-secret-key-change-in-prod';
@@ -17,6 +18,27 @@ app.use(express.json());
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const distPath = join(__dirname, 'dist');
+const uploadsPath = join(__dirname, 'uploads');
+const avatarUploadPath = join(uploadsPath, 'avatars');
+
+mkdirSync(avatarUploadPath, { recursive: true });
+
+const avatarStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, avatarUploadPath),
+  filename: (req, file, cb) => {
+    const safeExt = extname(file.originalname || '').toLowerCase() || '.jpg';
+    cb(null, `avatar-${req.userId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}${safeExt}`);
+  },
+});
+
+const uploadAvatar = multer({
+  storage: avatarStorage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (!file.mimetype?.startsWith('image/')) return cb(new Error('Solo se permiten imágenes'));
+    cb(null, true);
+  },
+});
 
 // ── Auth helpers ──
 function signToken(user) {
@@ -32,6 +54,15 @@ function getRequestUserId(req) {
   const token = req.headers.authorization?.split(' ')[1];
   const payload = verifyToken(token);
   return payload?.id || null;
+}
+
+function deleteStoredAvatar(avatarUrl) {
+  if (!avatarUrl || typeof avatarUrl !== 'string' || !avatarUrl.startsWith('/uploads/')) return;
+  try {
+    const relativeParts = avatarUrl.replace(/^\/+/, '').split('/').filter(Boolean);
+    const localPath = join(__dirname, ...relativeParts);
+    if (existsSync(localPath)) unlinkSync(localPath);
+  } catch {}
 }
 
 // ── REST API ──
@@ -478,16 +509,48 @@ app.get('/api/users/blocked', requireDB, requireAuth, async (req, res) => {
   }
 });
 
+app.post('/api/profile/avatar', requireDB, requireAuth, uploadAvatar.single('avatar'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'Falta imagen' });
+    const previous = await pool.query('SELECT avatar_url FROM users WHERE id = $1', [req.userId]);
+    const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+    const result = await pool.query(
+      'UPDATE users SET avatar_url = $1 WHERE id = $2 RETURNING id, username, display_name, avatar_url, wins, games_played',
+      [avatarUrl, req.userId]
+    );
+    deleteStoredAvatar(previous.rows[0]?.avatar_url);
+    const updated = result.rows[0];
+    res.json({
+      user: {
+        id: updated.id,
+        username: updated.username,
+        displayName: updated.display_name,
+        avatarUrl: updated.avatar_url,
+        wins: updated.wins,
+        gamesPlayed: updated.games_played,
+      },
+    });
+  } catch (err) {
+    if (req.file?.path) {
+      try { unlinkSync(req.file.path); } catch {}
+    }
+    if (err?.message === 'Solo se permiten imágenes') {
+      return res.status(400).json({ error: err.message });
+    }
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
 app.patch('/api/profile/avatar', requireDB, requireAuth, async (req, res) => {
   try {
     const { avatarUrl } = req.body || {};
-    if (avatarUrl && (typeof avatarUrl !== 'string' || avatarUrl.length > 800000)) {
-      return res.status(400).json({ error: 'Imagen demasiado grande' });
-    }
+    const nextAvatar = avatarUrl || null;
+    const previous = await pool.query('SELECT avatar_url FROM users WHERE id = $1', [req.userId]);
     const result = await pool.query(
       'UPDATE users SET avatar_url = $1 WHERE id = $2 RETURNING id, username, display_name, avatar_url, wins, games_played',
-      [avatarUrl || null, req.userId]
+      [nextAvatar, req.userId]
     );
+    if (!nextAvatar) deleteStoredAvatar(previous.rows[0]?.avatar_url);
     const updated = result.rows[0];
     res.json({
       user: {
@@ -543,6 +606,7 @@ io.use((socket, next) => {
 });
 
 // ── Static files ──
+app.use('/uploads', express.static(uploadsPath));
 if (existsSync(distPath)) {
   app.use(express.static(distPath));
   app.get('*', (req, res) => res.sendFile(join(distPath, 'index.html')));

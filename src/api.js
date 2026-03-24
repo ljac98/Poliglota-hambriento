@@ -30,10 +30,11 @@ export function saveUserLocally(user) {
 
 async function request(path, opts = {}) {
   const token = getToken();
+  const isFormData = typeof FormData !== 'undefined' && opts.body instanceof FormData;
   const res = await fetch(`${API_URL}${path}`, {
     ...opts,
     headers: {
-      'Content-Type': 'application/json',
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...opts.headers,
     },
@@ -71,6 +72,17 @@ export async function updateProfileAvatar(avatarUrl) {
   const data = await request('/api/profile/avatar', {
     method: 'PATCH',
     body: JSON.stringify({ avatarUrl }),
+  });
+  if (data?.user) saveUser(data.user);
+  return data.user;
+}
+
+export async function uploadProfileAvatar(file) {
+  const form = new FormData();
+  form.append('avatar', file);
+  const data = await request('/api/profile/avatar', {
+    method: 'POST',
+    body: form,
   });
   if (data?.user) saveUser(data.user);
   return data.user;

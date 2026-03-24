@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { getProfile, getHistory, getProfileFriends, removeFriend, saveUserLocally, sendFriendRequest, updateProfileAvatar } from '../../src/api.js';
+import { getProfile, getHistory, getProfileFriends, removeFriend, saveUserLocally, sendFriendRequest, updateProfileAvatar, uploadProfileAvatar } from '../../src/api.js';
 import { getUILang } from '../../src/translations.js';
 import { Btn } from '../components/Btn.jsx';
 import { Modal } from '../components/Modal.jsx';
@@ -153,7 +153,7 @@ export function ProfileScreen({ profileUserId, user, onUserUpdate, onOpenProfile
 
   const isOwnProfile = !!profile && !!user && profile.id === user.id;
 
-  function resizeImageToDataUrl(file) {
+  function resizeImageToBlob(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => {
@@ -168,7 +168,10 @@ export function ProfileScreen({ profileUserId, user, onUserUpdate, onOpenProfile
           canvas.height = height;
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
-          resolve(canvas.toDataURL('image/jpeg', 0.86));
+          canvas.toBlob((blob) => {
+            if (!blob) return reject(new Error('No se pudo procesar la imagen'));
+            resolve(blob);
+          }, 'image/jpeg', 0.86);
         };
         img.onerror = () => reject(new Error('No se pudo cargar la imagen'));
         img.src = reader.result;
@@ -214,8 +217,9 @@ export function ProfileScreen({ profileUserId, user, onUserUpdate, onOpenProfile
     setSavingAvatar(true);
     setStatusMessage('');
     try {
-      const avatarUrl = await resizeImageToDataUrl(file);
-      const updatedUser = await updateProfileAvatar(avatarUrl);
+      const avatarBlob = await resizeImageToBlob(file);
+      const uploadFile = new File([avatarBlob], 'avatar.jpg', { type: 'image/jpeg' });
+      const updatedUser = await uploadProfileAvatar(uploadFile);
       setProfile((prev) => prev ? { ...prev, avatarUrl: updatedUser.avatarUrl } : prev);
       if (user && updatedUser) {
         const nextUser = { ...user, avatarUrl: updatedUser.avatarUrl };

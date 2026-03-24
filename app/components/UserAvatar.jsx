@@ -1,5 +1,7 @@
 import React, { useMemo } from 'react';
 
+const API_BASE = import.meta.env.DEV ? 'http://localhost:3001' : '';
+
 function hashString(value = '') {
   let hash = 0;
   for (let i = 0; i < value.length; i += 1) {
@@ -21,6 +23,11 @@ export function UserAvatar({ name, username, avatarUrl, size = 44, square = fals
   const hueA = hash % 360;
   const hueB = (hash * 1.7 + 40) % 360;
   const initials = useMemo(() => getInitials(name, username), [name, username]);
+  const normalizedAvatarUrl = useMemo(() => {
+    if (!avatarUrl || typeof avatarUrl !== 'string') return null;
+    if (avatarUrl.startsWith('/uploads/')) return `${API_BASE}${avatarUrl}`;
+    return avatarUrl;
+  }, [avatarUrl]);
 
   return (
     <div
@@ -46,9 +53,9 @@ export function UserAvatar({ name, username, avatarUrl, size = 44, square = fals
         ...style,
       }}
     >
-      {avatarUrl ? (
+      {normalizedAvatarUrl ? (
         <img
-          src={avatarUrl}
+          src={normalizedAvatarUrl}
           alt={name || username || 'avatar'}
           style={{
             width: '100%',
