@@ -41,6 +41,7 @@ export function AppPhaseRouter({
   handleAuthSuccess,
   setPhase,
   startGame,
+  startTutorialGame,
   socket,
   setInviteJoinCode,
   inviteJoinCode,
@@ -145,6 +146,7 @@ export function AppPhaseRouter({
       <>{inviteToast}{friendReqToast}
         <SetupScreen
           onStart={startGame}
+          onStartTutorial={startTutorialGame}
           onOnline={() => setPhase('onlineMenu')}
           onDownload={() => { setDownloadReturnPhase('setup'); setPhase('download'); }}
           user={user}
