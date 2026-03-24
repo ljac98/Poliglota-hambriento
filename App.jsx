@@ -1033,7 +1033,7 @@ export default function App() {
         hatX: destination.x,
         hatY: destination.y,
       } : prev);
-    }, 140));
+    }, 220));
     timers.push(setTimeout(() => {
       setHatStealAnim((prev) => prev ? {
         ...prev,
@@ -1041,11 +1041,11 @@ export default function App() {
         moving: false,
         releasing: true,
       } : prev);
-    }, 820));
+    }, 1260));
     timers.push(setTimeout(() => {
       setHatStealAnim(null);
       setHatStealFx(null);
-    }, 1120));
+    }, 1640));
 
     return () => {
       timers.forEach(clearTimeout);
@@ -5066,8 +5066,8 @@ export default function App() {
               top: hatStealAnim.y,
               transform: `translate(-50%, -50%) ${hatStealAnim.moving ? 'scale(1)' : (hatStealAnim.releasing ? 'scale(0.94)' : 'scale(0.98)')}`,
               transition: hatStealAnim.moving
-                ? 'left 0.68s ease-in-out, top 0.68s ease-in-out, transform 0.18s ease'
-                : 'transform 0.18s ease, opacity 0.18s ease',
+                ? 'left 0.92s ease-in-out, top 0.92s ease-in-out, transform 0.22s ease'
+                : 'transform 0.22s ease, opacity 0.22s ease',
               width: isMobile ? 94 : 118,
               height: isMobile ? 94 : 118,
               display: 'flex',
@@ -5089,8 +5089,8 @@ export default function App() {
               top: hatStealAnim.hatY,
               transform: `translate(-50%, -50%) ${hatStealAnim.moving ? 'scale(0.9)' : (hatStealAnim.releasing ? 'scale(1.06)' : 'scale(1)')}`,
               transition: hatStealAnim.moving
-                ? 'left 0.68s ease-in-out, top 0.68s ease-in-out, transform 0.18s ease'
-                : 'transform 0.18s ease, opacity 0.18s ease',
+                ? 'left 0.92s ease-in-out, top 0.92s ease-in-out, transform 0.22s ease'
+                : 'transform 0.22s ease, opacity 0.22s ease',
               opacity: hatStealAnim.releasing ? 0.86 : 1,
               filter: 'drop-shadow(0 8px 12px rgba(0,0,0,.28))',
             }}
