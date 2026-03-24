@@ -30,7 +30,7 @@ import burgerPollo from '../../imagenes/hamburguesas/ingredientes/pollo.png';
 import burgerHuevo from '../../imagenes/hamburguesas/ingredientes/huevo.png';
 import burgerPalta from '../../imagenes/hamburguesas/ingredientes/palta.png';
 
-export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack, isPublic, roomDisplayName, T, user, onOpenProfile }) {
+export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack, isPublic, roomDisplayName, T, user, onOpenProfile, onLocalHatPick }) {
   const MAX_ROOM_PLAYERS = 6;
   const uiGameLang = KEY_TO_LANG[getUILang()] || 'español';
   const cloneIngredients = INGREDIENTS.filter((ing) => ing !== 'pan');
@@ -42,7 +42,6 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
   const [chaosLevel, setChaosLevel] = useState(2);
   const [aiDifficulty, setAiDifficulty] = useState('medium');
   const [showModeConfig, setShowModeConfig] = useState(false);
-  const [hatPicks, setHatPicks] = useState({});
   const [copied, setCopied] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [inviteFriends, setInviteFriends] = useState([]);
@@ -56,6 +55,10 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
   const lobbyChatEndRef = useRef(null);
   const [isDesktopWide, setIsDesktopWide] = useState(() => (typeof window !== 'undefined' ? window.innerWidth >= 1280 : false));
   const uiKey = getUILang();
+  const hatPicks = useMemo(
+    () => Object.fromEntries((players || []).filter((player) => !!player.hat).map((player) => [player.name, player.hat])),
+    [players]
+  );
   const playerWord = ({
     es: 'Jugador',
     en: 'Player',
@@ -127,22 +130,6 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
 
   const myHat = hatPicks[myName];
   const desktopLeftPanelWidth = 500;
-
-  // Listen for other players' hat picks
-  useEffect(() => {
-    const handleHatPick = ({ playerName, hat }) => {
-      setHatPicks(prev => ({ ...prev, [playerName]: hat }));
-    };
-    const handleHatReset = () => {
-      setHatPicks({});
-    };
-    socket.on('lobbyHatPick', handleHatPick);
-    socket.on('lobbyHatsReset', handleHatReset);
-    return () => {
-      socket.off('lobbyHatPick', handleHatPick);
-      socket.off('lobbyHatsReset', handleHatReset);
-    };
-  }, []);
 
   const gameModes = [
     { id: 'clon', label: T('modeClon'), desc: T('modeClonDesc'),img:modoclon },
@@ -495,8 +482,9 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
               const takenBy = getTakenBy(lang);
               const isTaken = !!takenBy;
               return (
-                <div
+                <button
                   key={`desktop-${lang}`}
+                  type="button"
                   onClick={() => !isTaken && pickHat(lang)}
                   style={{
                     minHeight: 62,
@@ -508,13 +496,16 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
                     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
                     opacity: isTaken ? 0.4 : 1, transition: 'all .15s',
                     boxShadow: myHat === lang ? '0 0 18px rgba(255,215,0,.18)' : 'none',
+                    appearance: 'none',
+                    WebkitAppearance: 'none',
+                    touchAction: 'manipulation',
                   }}
                 >
                   <HatSVG lang={lang} size={28} />
                   <span style={{ fontSize: 10, fontWeight: 800, color: myHat === lang ? '#FFD700' : LANG_TEXT[lang], textAlign: 'center', lineHeight: 1 }}>
                     {T(lang)}
                   </span>
-                </div>
+                </button>
               );
             })}
           </div>
@@ -596,20 +587,6 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
     alignItems: 'start',
   } : null;
 
-  useEffect(() => {
-    setHatPicks((prev) => {
-      const next = {};
-      const playerNames = new Set(players.map((player) => player.name));
-      Object.keys(prev || {}).forEach((name) => {
-        if (playerNames.has(name)) next[name] = prev[name];
-      });
-      players.forEach((player) => {
-        if (player.hat) next[player.name] = player.hat;
-      });
-      return next;
-    });
-  }, [players]);
-
   const allHumansReady = players
     .filter((player) => !player.isAI)
     .every((player) => !!hatPicks[player.name]);
@@ -621,7 +598,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
   function pickHat(lang) {
     const takenBy = getTakenBy(lang);
     if (takenBy && hatPicks[myName] !== lang) return;
-    setHatPicks(prev => ({ ...prev, [myName]: lang }));
+    onLocalHatPick?.(myName, lang);
     socket.emit('lobbyHatPick', { code: roomCode, playerName: myName, hat: lang });
   }
 
@@ -1089,8 +1066,9 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
               const takenBy = getTakenBy(lang);
               const isTaken = !!takenBy;
               return (
-                <div
+                <button
                   key={lang}
+                  type="button"
                   onClick={() => !isTaken && pickHat(lang)}
                   style={{
                     flex: '1 1 28%', minWidth: 75, padding: '6px 4px', borderRadius: 8, cursor: isTaken ? 'not-allowed' : 'pointer',
@@ -1098,6 +1076,9 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
                     background: myHat === lang ? 'rgba(255,215,0,.1)' : isTaken ? 'rgba(0,0,0,.2)' : 'rgba(255,255,255,.02)',
                     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
                     opacity: isTaken ? 0.4 : 1, transition: 'all .15s',
+                    appearance: 'none',
+                    WebkitAppearance: 'none',
+                    touchAction: 'manipulation',
                   }}
                 >
                   <HatSVG lang={lang} size={28} />
@@ -1105,7 +1086,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
                     {T(lang)}
                   </span>
                   {isTaken && <span style={{ fontSize: 9, color: '#888' }}>{takenBy.name}</span>}
-                </div>
+                </button>
               );
             })}
           </div>

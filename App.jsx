@@ -1387,7 +1387,11 @@ export default function App() {
       else setLobbyPlayers(prev => prev.map(player => ({ ...player, hat: null })));
       setChatMessages(prev => [...prev, { playerName: 'Sistema', text: 'El host cambió. Se reiniciaron los sombreros del lobby.', timestamp: Date.now() }]);
     });
-    socket.on('lobbyHatPick', () => {});  // handled via lobbyUpdate in server if needed
+    socket.on('lobbyHatPick', ({ playerName, hat }) => {
+      setLobbyPlayers((prev) => prev.map((player) => (
+        player.name === playerName ? { ...player, hat } : player
+      )));
+    });
     socket.on('playerLeft', ({ players: pls }) => setLobbyPlayers(pls));
     socket.on('becameHost', () => setIsHost(true));
     socket.on('chatMessage', (msg) => {

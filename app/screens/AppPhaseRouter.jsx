@@ -216,6 +216,11 @@ export function AppPhaseRouter({
           T={T}
           user={user}
           onOpenProfile={(id) => openProfile(id, 'onlineLobby')}
+          onLocalHatPick={(playerName, hat) => {
+            setLobbyPlayers((prev) => prev.map((player) => (
+              player.name === playerName ? { ...player, hat } : player
+            )));
+          }}
           onStart={(hatPicks, gameConfig) => {
             if (isHost) startOnlineGame(hatPicks, gameConfig, lobbyPlayers);
           }}
