@@ -232,6 +232,7 @@ export default function App() {
   const tutorialActive = !!tutorialState?.active;
   const tutorialStepData = tutorialActive ? tutorialCopy.steps[tutorialState.step] : null;
   const tutorialFocus = tutorialStepData?.focus || {};
+  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 640;
   const tutorialPopupStyle = (() => {
     const base = {
       position: 'fixed',
@@ -289,7 +290,6 @@ export default function App() {
   })();
   const installCopy = INSTALL_PROMPT_COPY[uiLang] || INSTALL_PROMPT_COPY.en;
   const canOpenInstallPrompt = showIosInstallHint || !!deferredInstallPrompt;
-  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 640;
   const handleSetLang = (lang) => { setUILang(lang); setUiLangState(lang); };
   const getActionText = useCallback((actionId) => {
     const base = getActionInfo(actionId);
