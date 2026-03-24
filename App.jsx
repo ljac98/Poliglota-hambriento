@@ -3383,6 +3383,8 @@ export default function App() {
       <div style={{ position: 'relative' }}>
         <button
           onClick={() => {
+            const latestUser = getSavedUser();
+            if (latestUser) setUser(latestUser);
             setShowQuickMenu(v => {
               const next = !v;
               if (!next) setShowNotificationsPanel(false);
