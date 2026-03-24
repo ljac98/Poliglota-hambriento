@@ -29,6 +29,7 @@ import burgerTomate from '../../imagenes/hamburguesas/ingredientes/tomates.png';
 import burgerPollo from '../../imagenes/hamburguesas/ingredientes/pollo.png';
 import burgerHuevo from '../../imagenes/hamburguesas/ingredientes/huevo.png';
 import burgerPalta from '../../imagenes/hamburguesas/ingredientes/palta.png';
+import { getRoomSession } from '../utils/roomSession.js';
 
 export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack, isPublic, roomDisplayName, T, user, onOpenProfile, onLocalHatPick }) {
   const MAX_ROOM_PLAYERS = 6;
@@ -55,6 +56,7 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
   const lobbyChatEndRef = useRef(null);
   const [isDesktopWide, setIsDesktopWide] = useState(() => (typeof window !== 'undefined' ? window.innerWidth >= 1280 : false));
   const uiKey = getUILang();
+  const sessionPlayerName = getRoomSession()?.playerName || '';
   const hatPicks = useMemo(
     () => Object.fromEntries((players || []).filter((player) => !!player.hat).map((player) => [player.name, player.hat])),
     [players]
@@ -69,6 +71,10 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
       const byName = players.find((player) => player.name === myName);
       if (byName) return byName;
     }
+    if (sessionPlayerName) {
+      const bySessionName = players.find((player) => player.name === sessionPlayerName);
+      if (bySessionName) return bySessionName;
+    }
     if (user?.id != null) {
       const byUserId = players.find((player) => String(player.userId) === String(user.id));
       if (byUserId) return byUserId;
@@ -77,9 +83,10 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
       const byUsername = players.find((player) => player.username === user.username);
       if (byUsername) return byUsername;
     }
-    return players.length === 1 ? players[0] : null;
-  }, [myName, players, user]);
-  const resolvedMyName = resolvedMyPlayer?.name || myName || '';
+    const humanPlayers = players.filter((player) => !player.isAI);
+    return humanPlayers.length === 1 ? humanPlayers[0] : (players.length === 1 ? players[0] : null);
+  }, [myName, players, sessionPlayerName, user, socket.id]);
+  const resolvedMyName = resolvedMyPlayer?.name || myName || sessionPlayerName || '';
   const playerWord = ({
     es: 'Jugador',
     en: 'Player',

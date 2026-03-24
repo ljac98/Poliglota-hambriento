@@ -35,6 +35,8 @@ import actionParrilla1 from './imagenes/acciones/parrilla2.png';
 import actionParrilla2 from './imagenes/acciones/parrilla3.png';
 import actionParrilla3 from './imagenes/acciones/parrilla4.png';
 import actionTridente from './imagenes/acciones/tridente.png';
+import actionLadron1 from './imagenes/acciones/ladron1.png';
+import actionLadron2 from './imagenes/acciones/ladron2.png';
 import actionPercheroCubierto from './imagenes/acciones/perchero cubierto.png';
 import vsiaImg from './imagenes/vsia.png';
 import burgerCarne from './imagenes/hamburguesas/ingredientes/carne.png';
@@ -248,6 +250,7 @@ export default function App() {
   const [lastEnsaladaEvent, setLastEnsaladaEvent] = useState(null);
   const [lastPizzaEvent, setLastPizzaEvent] = useState(null);
   const [lastParrillaEvent, setLastParrillaEvent] = useState(null);
+  const [lastHatStealEvent, setLastHatStealEvent] = useState(null);
   const [negationFx, setNegationFx] = useState(null);
   const [forkFx, setForkFx] = useState(null);
   const [comeComodinesFx, setComeComodinesFx] = useState(null);
@@ -256,6 +259,7 @@ export default function App() {
   const [ensaladaFx, setEnsaladaFx] = useState(null);
   const [pizzaFx, setPizzaFx] = useState(null);
   const [parrillaFx, setParrillaFx] = useState(null);
+  const [hatStealFx, setHatStealFx] = useState(null);
   const [forkAnim, setForkAnim] = useState(null);
   const [comeComodinesAnim, setComeComodinesAnim] = useState(null);
   const [glotonAnim, setGlotonAnim] = useState(null);
@@ -263,6 +267,7 @@ export default function App() {
   const [ensaladaAnim, setEnsaladaAnim] = useState(null);
   const [pizzaAnim, setPizzaAnim] = useState(null);
   const [parrillaAnim, setParrillaAnim] = useState(null);
+  const [hatStealAnim, setHatStealAnim] = useState(null);
   // Host-only ref that stores the resolve callback (not serializable over socket)
   const pendingNegRef = useRef(null);
   const lastNegationSeenRef = useRef(null);
@@ -273,11 +278,14 @@ export default function App() {
   const lastEnsaladaSeenRef = useRef(null);
   const lastPizzaSeenRef = useRef(null);
   const lastParrillaSeenRef = useRef(null);
+  const lastHatStealSeenRef = useRef(null);
   const playerAreaRefs = useRef({});
   const playerIngredientRefs = useRef({});
+  const playerMainHatRefs = useRef({});
   const humanBurgerAreaRef = useRef(null);
   const humanBurgerSlotRefs = useRef({});
   const handCardRefs = useRef({});
+  const humanMainHatRefs = useRef({});
 
   // â”€â”€ Voluntary leave state â”€â”€
   const [gamePaused, setGamePaused] = useState(false);
@@ -964,6 +972,87 @@ export default function App() {
     setParrillaFx(event);
   }, []);
 
+  const triggerHatStealEvent = useCallback((actingIdx, targetIdx, hatLang, actorName) => {
+    if (!hatLang && hatLang !== '') return;
+    const event = {
+      id: `${Date.now()}-${Math.random()}`,
+      actingIdx,
+      targetIdx,
+      hatLang,
+      actorName: actorName || 'Jugador',
+    };
+    setLastHatStealEvent(event);
+    lastHatStealSeenRef.current = event.id;
+    setHatStealFx(event);
+  }, []);
+
+  useEffect(() => {
+    if (!hatStealFx || typeof window === 'undefined') return undefined;
+    const findHatRef = (bucket, hatLang) => {
+      if (!bucket) return null;
+      const exact = Object.entries(bucket).find(([key]) => key.startsWith(`${hatLang}-`));
+      return exact?.[1] || Object.values(bucket)[0] || null;
+    };
+    const getCenter = (el, fallbackX, fallbackY) => {
+      if (!el) return { x: fallbackX, y: fallbackY };
+      const rect = el.getBoundingClientRect();
+      return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+    };
+    const actorHatEl = hatStealFx.actingIdx === HI
+      ? findHatRef(humanMainHatRefs.current, hatStealFx.hatLang)
+      : findHatRef(playerMainHatRefs.current[hatStealFx.actingIdx], hatStealFx.hatLang);
+    const targetHatEl = hatStealFx.targetIdx === HI
+      ? findHatRef(humanMainHatRefs.current, hatStealFx.hatLang)
+      : findHatRef(playerMainHatRefs.current[hatStealFx.targetIdx], hatStealFx.hatLang);
+    const actorFallback = hatStealFx.actingIdx === HI ? { x: window.innerWidth * 0.78, y: window.innerHeight * 0.33 } : getCenter(playerAreaRefs.current[hatStealFx.actingIdx], window.innerWidth * 0.15, window.innerHeight * 0.28);
+    const targetFallback = hatStealFx.targetIdx === HI ? { x: window.innerWidth * 0.78, y: window.innerHeight * 0.33 } : getCenter(playerAreaRefs.current[hatStealFx.targetIdx], window.innerWidth * 0.15, window.innerHeight * 0.24);
+    const source = getCenter(targetHatEl, targetFallback.x, targetFallback.y);
+    const destination = getCenter(actorHatEl, actorFallback.x, actorFallback.y);
+
+    setHatStealAnim({
+      x: source.x,
+      y: source.y,
+      hatX: source.x,
+      hatY: source.y,
+      destinationX: destination.x,
+      destinationY: destination.y,
+      hatLang: hatStealFx.hatLang,
+      frame: 1,
+      moving: false,
+      releasing: false,
+    });
+
+    const timers = [];
+    timers.push(setTimeout(() => {
+      setHatStealAnim((prev) => prev ? {
+        ...prev,
+        frame: 2,
+        moving: true,
+        x: destination.x,
+        y: destination.y,
+        hatX: destination.x,
+        hatY: destination.y,
+      } : prev);
+    }, 140));
+    timers.push(setTimeout(() => {
+      setHatStealAnim((prev) => prev ? {
+        ...prev,
+        frame: 1,
+        moving: false,
+        releasing: true,
+      } : prev);
+    }, 820));
+    timers.push(setTimeout(() => {
+      setHatStealAnim(null);
+      setHatStealFx(null);
+    }, 1120));
+
+    return () => {
+      timers.forEach(clearTimeout);
+      setHatStealAnim(null);
+    };
+  }, [hatStealFx, HI]);
+
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
     if (shouldLogoutOnLoad) {
@@ -1055,6 +1144,8 @@ export default function App() {
     setLastEnsaladaEvent(null);
     setLastPizzaEvent(null);
     setLastParrillaEvent(null);
+    setLastHatStealEvent(null);
+    setLastHatStealEvent(null);
     setNegationFx(null);
     setForkFx(null);
     setComeComodinesFx(null);
@@ -1063,6 +1154,8 @@ export default function App() {
     setEnsaladaFx(null);
     setPizzaFx(null);
     setParrillaFx(null);
+    setHatStealFx(null);
+    setHatStealFx(null);
     setForkAnim(null);
     setComeComodinesAnim(null);
     setGlotonAnim(null);
@@ -1070,6 +1163,8 @@ export default function App() {
     setEnsaladaAnim(null);
     setPizzaAnim(null);
     setParrillaAnim(null);
+    setHatStealAnim(null);
+    setHatStealAnim(null);
     pendingNegRef.current = null;
     lastNegationSeenRef.current = null;
     lastForkSeenRef.current = null;
@@ -1079,6 +1174,7 @@ export default function App() {
     lastEnsaladaSeenRef.current = null;
     lastPizzaSeenRef.current = null;
     lastParrillaSeenRef.current = null;
+    lastHatStealSeenRef.current = null;
     setGamePaused(false);
     setPausedMessage('');
     setShowChat(false);
@@ -1336,6 +1432,7 @@ export default function App() {
             setLastEnsaladaEvent(gameState.lastEnsaladaEvent || null);
             setLastPizzaEvent(gameState.lastPizzaEvent || null);
             setLastParrillaEvent(gameState.lastParrillaEvent || null);
+            setLastHatStealEvent(gameState.lastHatStealEvent || null);
             if (gameState.winner) { setWinner(gameState.winner); clearRoomSession(); setPhase('gameover'); }
           else setPhase('playing');
         } else if (!host) {
@@ -1516,6 +1613,7 @@ export default function App() {
       setLastEnsaladaEvent(state.lastEnsaladaEvent || null);
       setLastPizzaEvent(state.lastPizzaEvent || null);
       setLastParrillaEvent(state.lastParrillaEvent || null);
+      setLastHatStealEvent(state.lastHatStealEvent || null);
       if (state.lastNegationEvent?.id && state.lastNegationEvent.id !== lastNegationSeenRef.current && state.lastNegationEvent.actingIdx === myPlayerIdx) {
         lastNegationSeenRef.current = state.lastNegationEvent.id;
         setNegationFx(state.lastNegationEvent);
@@ -1548,6 +1646,10 @@ export default function App() {
         lastParrillaSeenRef.current = state.lastParrillaEvent.id;
         setParrillaFx(state.lastParrillaEvent);
       }
+      if (state.lastHatStealEvent?.id && state.lastHatStealEvent.id !== lastHatStealSeenRef.current) {
+        lastHatStealSeenRef.current = state.lastHatStealEvent.id;
+        setHatStealFx(state.lastHatStealEvent);
+      }
       if (state.winner) { setWinner(state.winner); clearRoomSession(); setPhase('gameover'); }
       else if (state.cp === myPlayerIdx && lastSyncCpRef.current !== myPlayerIdx) {
         // Only show transition when cp just changed to this player's turn
@@ -1573,11 +1675,11 @@ export default function App() {
       const syncModal = modal && privateModals.includes(modal.type) ? null : modal;
       socket.emit('syncState', {
         code: roomCode,
-        state: { players, deck, discard, cp, log, extraPlay, modal: syncModal, pendingNeg, lastNegationEvent, lastForkEvent, lastComeComodinesEvent, lastGlotonEvent, lastMilanesaEvent, lastEnsaladaEvent, lastPizzaEvent, lastParrillaEvent, winner, gameConfig: currentGameConfig, phase: 'playing' },
+        state: { players, deck, discard, cp, log, extraPlay, modal: syncModal, pendingNeg, lastNegationEvent, lastForkEvent, lastComeComodinesEvent, lastGlotonEvent, lastMilanesaEvent, lastEnsaladaEvent, lastPizzaEvent, lastParrillaEvent, lastHatStealEvent, winner, gameConfig: currentGameConfig, phase: 'playing' },
       });
     }, 80);
     return () => clearTimeout(syncRef.current);
-  }, [players, deck, discard, cp, log, extraPlay, modal, pendingNeg, lastNegationEvent, lastForkEvent, lastComeComodinesEvent, lastGlotonEvent, lastMilanesaEvent, lastEnsaladaEvent, lastPizzaEvent, lastParrillaEvent, winner, currentGameConfig, phase, isOnline, isHost]);
+  }, [players, deck, discard, cp, log, extraPlay, modal, pendingNeg, lastNegationEvent, lastForkEvent, lastComeComodinesEvent, lastGlotonEvent, lastMilanesaEvent, lastEnsaladaEvent, lastPizzaEvent, lastParrillaEvent, lastHatStealEvent, winner, currentGameConfig, phase, isOnline, isHost]);
 
   // â”€â”€ Socket: host processes remote player actions â”€â”€
   // We store the latest state in refs so the socket handler always has fresh values
@@ -1943,6 +2045,7 @@ export default function App() {
         const stealIdx = pls[ti].mainHats.indexOf(stealHat);
         const stolen = pls[ti].mainHats.splice(stealIdx, 1)[0];
         pls[actingIdx].mainHats.push(stolen);
+        triggerHatStealEvent(actingIdx, ti, stolen, pls[actingIdx]?.name || 'Jugador');
         if (pls[ti].mainHats.length > 0) {
           pls[ti].maxHand = Math.min(6, pls[ti].maxHand + 1);
         }
@@ -2621,6 +2724,7 @@ export default function App() {
             if (newPls[richest].mainHats.length > 0) {
               const stolen = newPls[richest].mainHats.splice(0, 1)[0];
               newPls[idx].mainHats.push(stolen);
+              triggerHatStealEvent(idx, richest, stolen, pls[idx]?.name || 'Jugador');
               if (newPls[richest].mainHats.length > 0) {
                 newPls[richest].maxHand = Math.min(6, newPls[richest].maxHand + 1);
               }
@@ -3176,6 +3280,7 @@ export default function App() {
     const stealIdx = newPls[targetIdx].mainHats.indexOf(hatLang);
     const stolen = newPls[targetIdx].mainHats.splice(stealIdx, 1)[0];
     newPls[HI].mainHats.push(stolen);
+    triggerHatStealEvent(HI, targetIdx, stolen, players[HI]?.name || 'Jugador');
     if (newPls[targetIdx].mainHats.length > 0) {
       newPls[targetIdx].maxHand = Math.min(6, newPls[targetIdx].maxHand + 1);
     }
@@ -3796,6 +3901,12 @@ export default function App() {
               if (el) playerIngredientRefs.current[playerIdx][ingIdx] = el;
               else if (playerIngredientRefs.current[playerIdx]) delete playerIngredientRefs.current[playerIdx][ingIdx];
             }}
+            onRegisterMainHatRef={(playerIdx, hatLang, hatIdx, el) => {
+              if (!playerMainHatRefs.current[playerIdx]) playerMainHatRefs.current[playerIdx] = {};
+              const key = `${hatLang}-${hatIdx}`;
+              if (el) playerMainHatRefs.current[playerIdx][key] = el;
+              else if (playerMainHatRefs.current[playerIdx]) delete playerMainHatRefs.current[playerIdx][key];
+            }}
             onIngredientClick={(ing) => setModal({ type: 'ingredientInfo', ingredient: ing })}
             T={T}
           />
@@ -4003,7 +4114,19 @@ export default function App() {
             ? { display: 'flex', gap: 4, flexWrap: 'wrap' }
             : { display: 'grid', gridTemplateRows: 'repeat(3, auto)', gridAutoFlow: 'column', gap: 4 }
           }>
-            {human.mainHats.map(h => <HatBadge key={h} lang={h} isMain size="lg" />)}
+            {human.mainHats.map((h, hatIdx) => (
+              <div
+                key={`${h}-${hatIdx}`}
+                ref={(el) => {
+                  const key = `${h}-${hatIdx}`;
+                  if (el) humanMainHatRefs.current[key] = el;
+                  else delete humanMainHatRefs.current[key];
+                }}
+                style={{ display: 'inline-flex' }}
+              >
+                <HatBadge lang={h} isMain size="lg" />
+              </div>
+            ))}
           </div>
         </div>
 
@@ -4925,6 +5048,55 @@ export default function App() {
               </>
             );
           })()}
+        </div>
+      )}
+
+      {hatStealAnim && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 9488,
+          pointerEvents: 'none',
+          overflow: 'hidden',
+        }}>
+          <div
+            style={{
+              position: 'fixed',
+              left: hatStealAnim.x,
+              top: hatStealAnim.y,
+              transform: `translate(-50%, -50%) ${hatStealAnim.moving ? 'scale(1)' : (hatStealAnim.releasing ? 'scale(0.94)' : 'scale(0.98)')}`,
+              transition: hatStealAnim.moving
+                ? 'left 0.68s ease-in-out, top 0.68s ease-in-out, transform 0.18s ease'
+                : 'transform 0.18s ease, opacity 0.18s ease',
+              width: isMobile ? 94 : 118,
+              height: isMobile ? 94 : 118,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              filter: 'drop-shadow(0 14px 24px rgba(0,0,0,.34))',
+            }}
+          >
+            <img
+              src={hatStealAnim.frame === 2 ? actionLadron2 : actionLadron1}
+              alt="Ladrón de sombreros"
+              style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+            />
+          </div>
+          <div
+            style={{
+              position: 'fixed',
+              left: hatStealAnim.hatX,
+              top: hatStealAnim.hatY,
+              transform: `translate(-50%, -50%) ${hatStealAnim.moving ? 'scale(0.9)' : (hatStealAnim.releasing ? 'scale(1.06)' : 'scale(1)')}`,
+              transition: hatStealAnim.moving
+                ? 'left 0.68s ease-in-out, top 0.68s ease-in-out, transform 0.18s ease'
+                : 'transform 0.18s ease, opacity 0.18s ease',
+              opacity: hatStealAnim.releasing ? 0.86 : 1,
+              filter: 'drop-shadow(0 8px 12px rgba(0,0,0,.28))',
+            }}
+          >
+            <HatSVG lang={hatStealAnim.hatLang} size={isMobile ? 34 : 42} />
+          </div>
         </div>
       )}
 

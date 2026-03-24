@@ -6,7 +6,7 @@ import { ING_IMG, ingChosen, ingKey } from '../utils/gameHelpers.js';
 import burgerIcon from '../../imagenes/hamburguesas/ham.png';
 import { UserAvatar } from './UserAvatar.jsx';
 
-export function OpponentCard({ player, index, color, isActive, onIngredientClick, onRegisterRef, onRegisterIngredientRef, T }) {
+export function OpponentCard({ player, index, color, isActive, onIngredientClick, onRegisterRef, onRegisterIngredientRef, onRegisterMainHatRef, T }) {
   const burger = player.burgers[player.currentBurger];
   return (
     <div
@@ -30,8 +30,14 @@ export function OpponentCard({ player, index, color, isActive, onIngredientClick
 
       {/* Main hats */}
       <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 4 }}>
-        {player.mainHats.map(h => (
-          <HatBadge key={h} lang={h} isMain size="sm" />
+        {player.mainHats.map((h, hatIdx) => (
+          <div
+            key={`${h}-${hatIdx}`}
+            ref={(el) => onRegisterMainHatRef?.(index, h, hatIdx, el)}
+            style={{ display: 'inline-flex' }}
+          >
+            <HatBadge lang={h} isMain size="sm" />
+          </div>
         ))}
       </div>
 
