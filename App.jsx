@@ -88,6 +88,10 @@ const BURGER_STACK_IMG = {
   queso: burgerQueso,
   tomate: burgerTomate,
 };
+const ACTION_STACK_IMG = {
+  ...BURGER_STACK_IMG,
+  pan: burgerPanAbajo,
+};
 import { clearRoomSession, getRoomSession, saveRoomSession } from './app/utils/roomSession.js';
 
 const INSTALL_PROMPT_COPY = {
@@ -4607,8 +4611,8 @@ export default function App() {
               justifyContent: 'center',
               boxShadow: '0 12px 28px rgba(0,0,0,.35)',
             }}>
-              {ING_IMG[forkAnim.ingredient]
-                ? <img src={ING_IMG[forkAnim.ingredient]} alt={forkAnim.ingredient} style={{ width: isMobile ? 38 : 44, height: isMobile ? 38 : 44, objectFit: 'contain' }} />
+              {ACTION_STACK_IMG[forkAnim.ingredient] || ING_IMG[forkAnim.ingredient]
+                ? <img src={ACTION_STACK_IMG[forkAnim.ingredient] || ING_IMG[forkAnim.ingredient]} alt={forkAnim.ingredient} style={{ width: isMobile ? 44 : 52, height: isMobile ? 44 : 52, objectFit: 'contain' }} />
                 : <span style={{ fontSize: isMobile ? 28 : 34 }}>{ING_EMOJI[forkAnim.ingredient] || '🍴'}</span>}
             </div>
             <img
@@ -4800,7 +4804,7 @@ export default function App() {
                   {BURGER_STACK_IMG[ing]
                     ? <img src={BURGER_STACK_IMG[ing]} alt={ing} style={{ width: '100%', height: 'auto', objectFit: 'contain' }} />
                     : ING_IMG[ing]
-                    ? <img src={ING_IMG[ing]} alt={ing} style={{ width: isMobile ? 40 : 48, height: isMobile ? 40 : 48, objectFit: 'contain' }} />
+                    ? <img src={ING_IMG[ing]} alt={ing} style={{ width: isMobile ? 44 : 52, height: isMobile ? 44 : 52, objectFit: 'contain' }} />
                     : <span style={{ fontSize: isMobile ? 24 : 30 }}>{ING_EMOJI[ing] || '🍔'}</span>}
                 </div>
               ))}
@@ -5192,7 +5196,7 @@ export default function App() {
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}>
-                    <img src={ING_IMG[ing]} alt={ing} style={{ width: isMobile ? 16 : 20, height: isMobile ? 16 : 20, objectFit: 'contain' }} />
+                    <img src={ACTION_STACK_IMG[ing] || ING_IMG[ing]} alt={ing} style={{ width: isMobile ? 22 : 28, height: isMobile ? 22 : 28, objectFit: 'contain' }} />
                   </div>
                 </div>
               );
