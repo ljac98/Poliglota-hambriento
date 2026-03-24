@@ -38,6 +38,7 @@ export function AppPhaseRouter({
   inviteToast,
   friendReqToast,
   setUser,
+  handleAuthSuccess,
   setPhase,
   startGame,
   socket,
@@ -81,7 +82,10 @@ export function AppPhaseRouter({
   if (phase === 'auth') {
     return (
       <AuthScreen
-        onAuth={(nextUser) => { setUser(nextUser); setPhase('setup'); }}
+        onAuth={(nextUser, meta) => {
+          if (handleAuthSuccess) handleAuthSuccess(nextUser, meta);
+          else { setUser(nextUser); setPhase('setup'); }
+        }}
         onGuest={() => setPhase('setup')}
         onDownload={() => { setDownloadReturnPhase('auth'); setPhase('download'); }}
         T={T}
