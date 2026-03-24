@@ -575,6 +575,7 @@ export default function App() {
       cheesy: false,
       pop: false,
       targetCount: targets[0].count || 1,
+      ingredientImg: ACTION_STACK_IMG.queso || burgerQueso,
       visible: true,
     });
 
@@ -587,6 +588,7 @@ export default function App() {
           cheesy: false,
           pop: false,
           targetCount: target.count || 1,
+          ingredientImg: ACTION_STACK_IMG.queso || burgerQueso,
           visible: true,
         });
       }, elapsed));
@@ -650,10 +652,12 @@ export default function App() {
       tridentY: targets[0]?.point.y || center.y,
       meatX: targets[0]?.point.x || center.x,
       meatY: targets[0]?.point.y || center.y,
-      meatImg: targets[0]?.ingredient === 'pollo' ? burgerPollo : burgerCarne,
+      meatImg: ACTION_STACK_IMG[targets[0]?.ingredient] || (targets[0]?.ingredient === 'pollo' ? burgerPollo : burgerCarne),
+      meatLabel: targets[0]?.ingredient || 'carne',
       showMeat: Boolean(targets[0]),
       visible: true,
       activePickup: 0,
+      totalPickups: targets.length,
       sizzle: false,
       frameImages: frames,
     });
@@ -675,7 +679,8 @@ export default function App() {
           tridentY: target.point.y,
           meatX: target.point.x,
           meatY: target.point.y,
-          meatImg: target.ingredient === 'pollo' ? burgerPollo : burgerCarne,
+          meatImg: ACTION_STACK_IMG[target.ingredient] || (target.ingredient === 'pollo' ? burgerPollo : burgerCarne),
+          meatLabel: target.ingredient,
           showMeat: true,
           activePickup: idx + 1,
         } : prev));
@@ -4943,8 +4948,16 @@ export default function App() {
               color: '#FFD700',
               fontWeight: 900,
               fontSize: isMobile ? 12 : 14,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
             }}>
-              + queso x{pizzaAnim.targetCount}
+              <img
+                src={pizzaAnim.ingredientImg || ACTION_STACK_IMG.queso || burgerQueso}
+                alt="Queso"
+                style={{ width: isMobile ? 24 : 30, height: isMobile ? 24 : 30, objectFit: 'contain' }}
+              />
+              <span>x{pizzaAnim.targetCount}</span>
             </div>
           </div>
         </div>
@@ -5069,6 +5082,31 @@ export default function App() {
                   transition: 'left 0.42s ease-in-out, top 0.42s ease-in-out, opacity 0.18s ease',
                 }}
               />
+              <div
+                style={{
+                  position: 'fixed',
+                  left: parrillaAnim.x,
+                  top: parrillaAnim.y + (isMobile ? 58 : 74),
+                  transform: 'translate(-50%, -50%)',
+                  padding: '5px 10px',
+                  borderRadius: 999,
+                  background: 'rgba(15,17,23,.86)',
+                  border: '2px solid rgba(255,140,66,.28)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  color: '#ffd8b8',
+                  fontWeight: 900,
+                  fontSize: isMobile ? 11 : 13,
+                }}
+              >
+                <img
+                  src={parrillaAnim.meatImg}
+                  alt={parrillaAnim.meatLabel || 'carne'}
+                  style={{ width: isMobile ? 22 : 28, height: isMobile ? 22 : 28, objectFit: 'contain' }}
+                />
+                <span>{Math.max(parrillaAnim.activePickup, 1)}/{parrillaAnim.totalPickups || 1}</span>
+              </div>
             </>
           )}
               </>
