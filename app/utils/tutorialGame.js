@@ -751,7 +751,7 @@ export function buildTutorialScenario(step, { playerName = 'Jugador', user = nul
           ...playerMeta,
           hand: [
             actionCard('tenedor'),
-            actionCard('ladron'),
+            actionCard('milanesa'),
             actionCard('basurero'),
           ],
           mainHats: ['español'],
@@ -769,7 +769,13 @@ export function buildTutorialScenario(step, { playerName = 'Jugador', user = nul
         }),
       ],
       discard: [ingredientCard('lechuga', 'alemán'), ingredientCard('pollo', 'francés')],
-      selectedIdx: 0,
+      pendingNeg: {
+        actingIdx: 1,
+        card: actionCard('tenedor'),
+        eligibleIdxs: [0],
+        responses: {},
+      },
+      selectedIdx: null,
     }),
     () => ({
       players: [
@@ -831,6 +837,7 @@ export function buildTutorialScenario(step, { playerName = 'Jugador', user = nul
     players: built.players,
     deck: [],
     discard: built.discard || [],
+    pendingNeg: built.pendingNeg || null,
     cp: 0,
     extraPlay: false,
     selectedIdx: built.selectedIdx ?? null,

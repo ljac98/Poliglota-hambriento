@@ -230,9 +230,15 @@ export default function App() {
   const uiGameLang = KEY_TO_LANG[uiLang] || LANGUAGES[0];
   const tutorialCopy = getTutorialContent(uiLang);
   const tutorialActive = !!tutorialState?.active;
+  const tutorialStep = tutorialState?.step ?? -1;
   const tutorialStepData = tutorialActive ? tutorialCopy.steps[tutorialState.step] : null;
   const tutorialFocus = tutorialStepData?.focus || {};
   const isMobile = typeof window !== 'undefined' && window.innerWidth <= 640;
+  const tutorialAllowsCardSelection = !tutorialActive || [1, 2, 5].includes(tutorialStep);
+  const tutorialAllowsPlayButton = !tutorialActive || [1, 5].includes(tutorialStep);
+  const tutorialAllowsChangeHat = !tutorialActive || tutorialStep === 3;
+  const tutorialAllowsAddHat = !tutorialActive || tutorialStep === 4;
+  const tutorialAllowsNegation = !tutorialActive || tutorialStep === 6;
   const tutorialPopupStyle = (() => {
     const base = {
       position: 'fixed',
@@ -1475,6 +1481,13 @@ export default function App() {
     setLog([]);
     setSelectedIdx(scenario.selectedIdx ?? null);
     setModal(null);
+    setPendingNeg(scenario.pendingNeg || null);
+    pendingNegRef.current = scenario.pendingNeg
+      ? {
+          ...scenario.pendingNeg,
+          resolveCallback: () => {},
+        }
+      : null;
     setWinner(null);
     setExtraPlay(!!scenario.extraPlay);
     setCurrentGameConfig(scenario.gameConfig || null);
@@ -1486,6 +1499,19 @@ export default function App() {
   function startTutorialGame() {
     setTutorialPrompt(null);
     setTutorialState({ active: true, step: 0 });
+  }
+
+  function advanceTutorialAfter(actionType) {
+    if (!tutorialActive) return false;
+    const shouldAdvance =
+      (tutorialStep === 1 && actionType === 'ingredient') ||
+      (tutorialStep === 3 && actionType === 'changeHat') ||
+      (tutorialStep === 4 && actionType === 'addHat') ||
+      (tutorialStep === 5 && actionType === 'actionCard') ||
+      (tutorialStep === 6 && actionType === 'negation');
+    if (!shouldAdvance) return false;
+    setTimeout(() => nextTutorialStep(), 500);
+    return true;
   }
 
   function finishTutorialGame() {
@@ -2084,6 +2110,7 @@ export default function App() {
   // Called by the local eligible player (host or non-host)
   function respondNegation(negar) {
     if (!pendingNeg) return;
+    if (!tutorialAllowsNegation && tutorialActive) return;
 
     // Non-host sends response via socket; host handles it in processRemoteAction
     if (isOnline && !isHost) {
@@ -2095,6 +2122,7 @@ export default function App() {
 
     if (negar) {
       cancelWithNegation(pendingNeg.actingIdx, HI, pendingNeg.card ?? pendingNegRef.current?.card);
+      advanceTutorialAfter('negation');
       return;
     }
     // Passed â€” record and check if all responded
@@ -3123,8 +3151,8 @@ export default function App() {
 
   // â”€â”€ Human: Play selected card â”€â”€
   function humanPlay() {
-    if (tutorialActive) return;
     if (selectedIdx === null) return;
+    if (!tutorialAllowsPlayButton) return;
     const human = players[HI];
     const card = human.hand[selectedIdx];
 
@@ -3163,6 +3191,11 @@ export default function App() {
       }
       setSelectedIdx(null);
       setExtraPlay(false);
+      if (advanceTutorialAfter('ingredient')) {
+        setPlayers(newPls);
+        setDiscard(newDiscard);
+        return;
+      }
       endTurn(newPls, deck, newDiscard, HI);
 
     } else if (card.type === 'action') {
@@ -3243,6 +3276,11 @@ export default function App() {
             triggerParrillaEvent(massResult);
           }
           const { players: ps2, discard: di2 } = massResult;
+          if (advanceTutorialAfter('actionCard')) {
+            setPlayers(ps2);
+            setDiscard(di2);
+            return;
+          }
           endTurn(ps2, dk, di2, HI);
 
       } else if (card.action === 'basurero') {
@@ -3301,7 +3339,7 @@ export default function App() {
 
   // â”€â”€ Modal resolvers â”€â”€
   function resolvePickTarget(targetIdx) {
-    if (tutorialActive) return;
+    if (tutorialActive && tutorialStep !== 5) return;
     const { cardIdx, action } = modal;
     setModal(null); setSelectedIdx(null);
 
@@ -3377,7 +3415,7 @@ export default function App() {
   }
 
   function resolvePickIngredient(ingIdx) {
-    if (tutorialActive) return;
+    if (tutorialActive && tutorialStep !== 5) return;
     const { targetIdx, newPls, newDiscard } = modal;
     setModal(null); setSelectedIdx(null);
     // Non-host: send complete action
@@ -3408,6 +3446,11 @@ export default function App() {
     newPls[HI] = up;
     let fd = newDiscard;
     if (done) { freed.forEach(ing => fd = [...fd, { type: 'ingredient', ingredient: ingKey(ing), id: `t${Date.now()}` }]); addLog(HI, 'Â¡completÃ³ una hamburguesa! ðŸŽ‰', newPls); }
+    if (advanceTutorialAfter('actionCard')) {
+      setPlayers(newPls);
+      setDiscard(fd);
+      return;
+    }
     endTurn(newPls, deck, fd, HI);
   }
 
@@ -3485,7 +3528,7 @@ export default function App() {
 
   // Manual: swap main hat from perchero (costs half your hand â€” player chooses which cards)
   function resolveManualCambiar(hatLang, cardIndices, replaceIdx = 0) {
-    if (tutorialActive) return;
+    if (!tutorialAllowsChangeHat) return;
     if (players[HI]?.closetCovered) return;
     setModal(null); setSelectedIdx(null);
     if (isOnline && !isHost) {
@@ -3505,12 +3548,14 @@ export default function App() {
     let newDiscard = [...discard, ...discarded];
     const cost = discarded.length;
     addLog(HI, `cambiÃ³ sombrero a ${hatLang} (descartÃ³ ${cost} carta${cost !== 1 ? 's' : ''}) â€” puede jugar un ingrediente`, newPls);
-    setPlayers(newPls); setDiscard(newDiscard); setExtraPlay(true); setPhase('transition');
+    setPlayers(newPls); setDiscard(newDiscard); setExtraPlay(true);
+    if (advanceTutorialAfter('changeHat')) return;
+    setPhase('transition');
   }
 
   // Manual: add an extra hat from perchero (costs discarding entire hand, reduces maxHand)
   function resolveManualAgregar(hatLang) {
-    if (tutorialActive) return;
+    if (!tutorialAllowsAddHat) return;
     if (players[HI]?.closetCovered) return;
     setModal(null); setSelectedIdx(null);
     if (isOnline && !isHost) {
@@ -3529,11 +3574,13 @@ export default function App() {
     const { drawn, deck: newDeck, discard: di2 } = drawN(deck, newDiscard, p.maxHand);
     p.hand = drawn;
     addLog(HI, `agregÃ³ sombrero ${hatLang} â€” mano mÃ¡x reducida a ${p.maxHand}`, newPls);
-    setPlayers(newPls); setDeck(newDeck); setDiscard(di2); setExtraPlay(true); setPhase('transition');
+    setPlayers(newPls); setDeck(newDeck); setDiscard(di2); setExtraPlay(true);
+    if (advanceTutorialAfter('addHat')) return;
+    setPhase('transition');
   }
 
   function resolveBasurero(cardId) {
-    if (tutorialActive) return;
+    if (tutorialActive && tutorialStep !== 5) return;
     const { cardIdx } = modal;
     setModal(null); setSelectedIdx(null);
     if (isOnline && !isHost) {
@@ -3549,6 +3596,11 @@ export default function App() {
       newDiscard = newDiscard.filter(c => c.id !== cardId);
       newPls[HI].hand.push(found);
       addLog(HI, 'rescatÃ³ una carta del ðŸ—‘ï¸ basurero', newPls);
+    }
+    if (advanceTutorialAfter('actionCard')) {
+      setPlayers(newPls);
+      setDiscard(newDiscard);
+      return;
     }
     endTurn(newPls, deck, newDiscard, HI);
   }
@@ -4325,15 +4377,15 @@ export default function App() {
     <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
       <button
         onClick={() => {
-          if (tutorialActive) return;
+          if (!tutorialAllowsChangeHat) return;
           setShowPercheroModal(false); setModal({ type: 'manual_cambiar' });
         }}
         title={T('changeHatTooltip')}
         style={{
           padding: '7px 12px', borderRadius: 8, border: tutorialActive && tutorialFocus.changeButton ? '2px solid #FFD700' : '1px solid rgba(156,39,176,0.3)',
           background: 'rgba(156,39,176,0.12)', color: '#BA68C8', fontSize: 13,
-          fontWeight: 700, cursor: tutorialActive ? 'default' : 'pointer', fontFamily: 'inherit',
-          opacity: tutorialActive ? 0.92 : 1,
+          fontWeight: 700, cursor: tutorialAllowsChangeHat ? 'pointer' : 'default', fontFamily: 'inherit',
+          opacity: tutorialAllowsChangeHat ? 1 : 0.92,
           boxShadow: tutorialActive && tutorialFocus.changeButton ? '0 0 0 3px rgba(255,215,0,0.14)' : 'none',
         }}
       >
@@ -4342,15 +4394,15 @@ export default function App() {
       {human.hand.length > 0 && (
         <button
           onClick={() => {
-            if (tutorialActive) return;
+            if (!tutorialAllowsAddHat) return;
             setShowPercheroModal(false); setModal({ type: 'manual_agregar' });
           }}
           title={T('addHatTooltip')}
           style={{
             padding: '7px 12px', borderRadius: 8, border: tutorialActive && tutorialFocus.addButton ? '2px solid #FFD700' : '1px solid rgba(156,39,176,0.3)',
             background: 'rgba(156,39,176,0.12)', color: '#BA68C8', fontSize: 13,
-            fontWeight: 700, cursor: tutorialActive ? 'default' : 'pointer', fontFamily: 'inherit',
-            opacity: tutorialActive ? 0.92 : 1,
+            fontWeight: 700, cursor: tutorialAllowsAddHat ? 'pointer' : 'default', fontFamily: 'inherit',
+            opacity: tutorialAllowsAddHat ? 1 : 0.92,
             boxShadow: tutorialActive && tutorialFocus.addButton ? '0 0 0 3px rgba(255,215,0,0.14)' : 'none',
           }}
         >
@@ -4481,7 +4533,7 @@ export default function App() {
                 else delete handCardRefs.current[i];
               }}
               onClick={() => {
-                if (!isHumanTurn || tutorialActive) return;
+                if (!isHumanTurn || !tutorialAllowsCardSelection) return;
                 if (extraPlay && card.type !== 'ingredient') return;
                 setSelectedIdx(isSelected ? null : i);
             }}
@@ -4533,7 +4585,7 @@ export default function App() {
                   </>)}
                 </div>
                 <div style={{ display: 'flex', gap: 4 }}>
-                  <Btn onClick={humanPlay} disabled={tutorialActive || (extraPlay && card.type !== 'ingredient') || (card.type === 'action' && isClosetActionBlocked(human, card.action))} color="#4CAF50" style={{ fontSize: 11, padding: '6px 12px' }}>
+                  <Btn onClick={humanPlay} disabled={!tutorialAllowsPlayButton || (extraPlay && card.type !== 'ingredient') || (card.type === 'action' && isClosetActionBlocked(human, card.action))} color="#4CAF50" style={{ fontSize: 11, padding: '6px 12px' }}>
                     {T('play')}
                   </Btn>
                   <Btn onClick={humanDiscard} disabled={tutorialActive || extraPlay} color="#FF7043" style={{ fontSize: 11, padding: '6px 12px' }}>
@@ -6081,7 +6133,7 @@ export default function App() {
                 </>)}
               </div>
               <div style={{ display: 'flex', gap: 8, width: '100%' }}>
-                <Btn onClick={() => { humanPlay(); }} disabled={tutorialActive || (extraPlay && card.type !== 'ingredient') || (card.type === 'action' && isClosetActionBlocked(human, card.action))} color="#4CAF50" style={{ flex: 1, fontSize: 14, padding: '10px 16px' }}>
+                <Btn onClick={() => { humanPlay(); }} disabled={!tutorialAllowsPlayButton || (extraPlay && card.type !== 'ingredient') || (card.type === 'action' && isClosetActionBlocked(human, card.action))} color="#4CAF50" style={{ flex: 1, fontSize: 14, padding: '10px 16px' }}>
                   {T('play')}
                 </Btn>
                 <Btn onClick={() => { humanDiscard(); }} disabled={tutorialActive || extraPlay} color="#FF7043" style={{ flex: 1, fontSize: 14, padding: '10px 16px' }}>
