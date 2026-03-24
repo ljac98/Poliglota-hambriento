@@ -48,6 +48,7 @@ export function AppPhaseRouter({
   setIsOnline,
   setIsHost,
   setMyPlayerIdx,
+  setMyRoomPlayerName,
   setRoomCode,
   setRoomIsPublic,
   setRoomDisplayName,
@@ -55,6 +56,7 @@ export function AppPhaseRouter({
   saveRoomSession,
   lobbyPlayers,
   myPlayerIdx,
+  myRoomPlayerName,
   isHost,
   roomIsPublic,
   roomDisplayName,
@@ -175,6 +177,7 @@ export function AppPhaseRouter({
             setIsOnline(true);
             setIsHost(true);
             setMyPlayerIdx(0);
+            setMyRoomPlayerName(name);
             setRoomCode(code);
             setRoomIsPublic(!!pub);
             setRoomDisplayName(rn || '');
@@ -186,6 +189,7 @@ export function AppPhaseRouter({
             setIsOnline(true);
             setIsHost(false);
             setMyPlayerIdx(myIdx);
+            setMyRoomPlayerName(name);
             setRoomCode(code);
             setRoomIsPublic(!!pub);
             setRoomDisplayName(rn || '');
@@ -208,7 +212,7 @@ export function AppPhaseRouter({
       <>{friendReqToast}
         <OnlineLobby
           roomCode={roomCode}
-          myName={lobbyPlayers[myPlayerIdx]?.name || ''}
+          myName={myRoomPlayerName || lobbyPlayers[myPlayerIdx]?.name || ''}
           isHost={isHost}
           players={lobbyPlayers}
           isPublic={roomIsPublic}

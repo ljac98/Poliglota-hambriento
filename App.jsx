@@ -185,6 +185,7 @@ export default function App() {
   const [isOnline, setIsOnline] = useState(false);
   const [isHost, setIsHost] = useState(false);
   const [myPlayerIdx, setMyPlayerIdx] = useState(0);
+  const [myRoomPlayerName, setMyRoomPlayerName] = useState(() => getRoomSession()?.playerName || '');
   const [roomCode, setRoomCode] = useState('');
   const [roomIsPublic, setRoomIsPublic] = useState(false);
   const [roomDisplayName, setRoomDisplayName] = useState('');
@@ -1106,6 +1107,7 @@ export default function App() {
     setIsOnline(false);
     setIsHost(false);
     setMyPlayerIdx(0);
+    setMyRoomPlayerName('');
     setRoomCode('');
     setRoomIsPublic(false);
     setRoomDisplayName('');
@@ -1307,6 +1309,7 @@ export default function App() {
       setIsOnline(true);
       setIsHost(host);
       setMyPlayerIdx(myIdx);
+      setMyRoomPlayerName(session.playerName || '');
       setRoomCode(session.roomCode);
       setRoomIsPublic(!!pub);
       setRoomDisplayName(rn || '');
@@ -1454,6 +1457,16 @@ export default function App() {
   useEffect(() => {
     if (showChat) chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages, showChat]);
+
+  useEffect(() => {
+    if (!isOnline || !myRoomPlayerName || !Array.isArray(lobbyPlayers) || lobbyPlayers.length === 0) return;
+    const nextIdx = lobbyPlayers.findIndex((player) => player.name === myRoomPlayerName);
+    if (nextIdx >= 0 && nextIdx !== myPlayerIdx) {
+      setMyPlayerIdx(nextIdx);
+      const session = getRoomSession();
+      if (session) saveRoomSession({ ...session, myPlayerIdx: nextIdx, playerName: myRoomPlayerName });
+    }
+  }, [isOnline, lobbyPlayers, myPlayerIdx, myRoomPlayerName]);
 
   // â”€â”€ Socket: non-host receives full game state from host â”€â”€
   useEffect(() => {
@@ -3675,6 +3688,7 @@ export default function App() {
           setIsOnline={setIsOnline}
           setIsHost={setIsHost}
           setMyPlayerIdx={setMyPlayerIdx}
+          setMyRoomPlayerName={setMyRoomPlayerName}
           setRoomCode={setRoomCode}
           setRoomIsPublic={setRoomIsPublic}
           setRoomDisplayName={setRoomDisplayName}
@@ -3682,6 +3696,7 @@ export default function App() {
           saveRoomSession={saveRoomSession}
           lobbyPlayers={lobbyPlayers}
           myPlayerIdx={myPlayerIdx}
+          myRoomPlayerName={myRoomPlayerName}
           isHost={isHost}
           roomIsPublic={roomIsPublic}
           roomDisplayName={roomDisplayName}
