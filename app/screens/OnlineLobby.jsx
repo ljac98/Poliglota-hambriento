@@ -133,8 +133,15 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
     const handleHatPick = ({ playerName, hat }) => {
       setHatPicks(prev => ({ ...prev, [playerName]: hat }));
     };
+    const handleHatReset = () => {
+      setHatPicks({});
+    };
     socket.on('lobbyHatPick', handleHatPick);
-    return () => socket.off('lobbyHatPick', handleHatPick);
+    socket.on('lobbyHatsReset', handleHatReset);
+    return () => {
+      socket.off('lobbyHatPick', handleHatPick);
+      socket.off('lobbyHatsReset', handleHatReset);
+    };
   }, []);
 
   const gameModes = [

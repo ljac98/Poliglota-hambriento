@@ -588,6 +588,13 @@ function resetLobbyHats(room) {
   });
 }
 
+function broadcastLobbyHatsReset(code, room) {
+  resetLobbyHats(room);
+  io.to(code).emit('lobbyHatsReset', {
+    players: serializeRoomPlayers(room),
+  });
+}
+
 function getNextRoomAiName(room) {
   const used = new Set(room.players.map(p => p.name));
   for (const name of ROOM_AI_NAMES) {
@@ -901,7 +908,7 @@ io.on('connection', socket => {
       const newHost = room.players.find(p => p.id && !p.disconnected && p.reconnectId !== reconnectId);
       if (newHost) {
         room.hostId = newHost.id;
-        if (!room.started) resetLobbyHats(room);
+        if (!room.started) broadcastLobbyHatsReset(code, room);
         io.to(newHost.id).emit('becameHost');
       }
     }
@@ -946,7 +953,7 @@ io.on('connection', socket => {
       const connectedPlayer = room.players.find(p => p.id && !p.disconnected);
       if (connectedPlayer) {
         room.hostId = connectedPlayer.id;
-        if (!room.started) resetLobbyHats(room);
+        if (!room.started) broadcastLobbyHatsReset(code, room);
         io.to(connectedPlayer.id).emit('becameHost');
       }
     }
@@ -1010,7 +1017,7 @@ io.on('connection', socket => {
         const connectedPlayer = room.players.find(p => p.id && !p.disconnected);
         if (connectedPlayer) {
           room.hostId = connectedPlayer.id;
-          if (!room.started) resetLobbyHats(room);
+          if (!room.started) broadcastLobbyHatsReset(code, room);
           io.to(connectedPlayer.id).emit('becameHost');
         }
       }
@@ -1057,7 +1064,7 @@ io.on('connection', socket => {
       if (room.hostId === socket.id) {
         room.hostId = room.players.find(p => p.id)?.id || null;
         if (room.hostId) {
-          if (!room.started) resetLobbyHats(room);
+          if (!room.started) broadcastLobbyHatsReset(code, room);
           io.to(room.hostId).emit('becameHost');
         }
       }

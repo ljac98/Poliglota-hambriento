@@ -1382,6 +1382,11 @@ export default function App() {
   useEffect(() => {
     if (!isOnline) return;
     socket.on('lobbyUpdate', ({ players: pls }) => setLobbyPlayers(pls));
+    socket.on('lobbyHatsReset', ({ players: pls }) => {
+      if (Array.isArray(pls)) setLobbyPlayers(pls);
+      else setLobbyPlayers(prev => prev.map(player => ({ ...player, hat: null })));
+      setChatMessages(prev => [...prev, { playerName: 'Sistema', text: 'El host cambió. Se reiniciaron los sombreros del lobby.', timestamp: Date.now() }]);
+    });
     socket.on('lobbyHatPick', () => {});  // handled via lobbyUpdate in server if needed
     socket.on('playerLeft', ({ players: pls }) => setLobbyPlayers(pls));
     socket.on('becameHost', () => setIsHost(true));
@@ -1430,6 +1435,7 @@ export default function App() {
     });
     return () => {
       socket.off('lobbyUpdate');
+      socket.off('lobbyHatsReset');
       socket.off('lobbyHatPick');
       socket.off('playerLeft');
       socket.off('becameHost');
