@@ -4320,15 +4320,20 @@ export default function App() {
     );
   })();
 
-  const percheroButtons = isHumanTurn && !extraPlay && !tutorialActive && human.perchero.length > 0 && !human.closetCovered && (
+  const shouldShowTutorialClosetButtons = tutorialActive && (tutorialFocus.closet || tutorialFocus.hats || tutorialFocus.changeButton || tutorialFocus.addButton);
+  const percheroButtons = isHumanTurn && !extraPlay && human.perchero.length > 0 && !human.closetCovered && (!tutorialActive || shouldShowTutorialClosetButtons) && (
     <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
       <button
-        onClick={() => { setShowPercheroModal(false); setModal({ type: 'manual_cambiar' }); }}
+        onClick={() => {
+          if (tutorialActive) return;
+          setShowPercheroModal(false); setModal({ type: 'manual_cambiar' });
+        }}
         title={T('changeHatTooltip')}
         style={{
           padding: '7px 12px', borderRadius: 8, border: tutorialActive && tutorialFocus.changeButton ? '2px solid #FFD700' : '1px solid rgba(156,39,176,0.3)',
           background: 'rgba(156,39,176,0.12)', color: '#BA68C8', fontSize: 13,
-          fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+          fontWeight: 700, cursor: tutorialActive ? 'default' : 'pointer', fontFamily: 'inherit',
+          opacity: tutorialActive ? 0.92 : 1,
           boxShadow: tutorialActive && tutorialFocus.changeButton ? '0 0 0 3px rgba(255,215,0,0.14)' : 'none',
         }}
       >
@@ -4336,12 +4341,16 @@ export default function App() {
       </button>
       {human.hand.length > 0 && (
         <button
-          onClick={() => { setShowPercheroModal(false); setModal({ type: 'manual_agregar' }); }}
+          onClick={() => {
+            if (tutorialActive) return;
+            setShowPercheroModal(false); setModal({ type: 'manual_agregar' });
+          }}
           title={T('addHatTooltip')}
           style={{
             padding: '7px 12px', borderRadius: 8, border: tutorialActive && tutorialFocus.addButton ? '2px solid #FFD700' : '1px solid rgba(156,39,176,0.3)',
             background: 'rgba(156,39,176,0.12)', color: '#BA68C8', fontSize: 13,
-            fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+            fontWeight: 700, cursor: tutorialActive ? 'default' : 'pointer', fontFamily: 'inherit',
+            opacity: tutorialActive ? 0.92 : 1,
             boxShadow: tutorialActive && tutorialFocus.addButton ? '0 0 0 3px rgba(255,215,0,0.14)' : 'none',
           }}
         >
