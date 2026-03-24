@@ -4103,7 +4103,6 @@ export default function App() {
   const human = players[HI] || players[0];
   const opponents = players.filter((_, i) => i !== HI);
   const isHumanTurn = cp === HI;
-  const tutorialFocus = tutorialStepData?.focus || {};
   const burger = human.burgers[human.currentBurger];
   const humanColor = PLAYER_COLORS[HI % PLAYER_COLORS.length];
   const hasSharedGoals = currentGameConfig?.mode === 'clon' && Array.isArray(currentGameConfig?.sharedBurgers) && currentGameConfig.sharedBurgers.length > 0;
