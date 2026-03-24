@@ -1630,7 +1630,7 @@ export default function App() {
       setExtraPlay(state.extraPlay || false);
       setCurrentGameConfig(state.gameConfig || null);
       setModal(currentModal => {
-        const privateModals = ['manual_cambiar', 'manual_cambiar_discard', 'manual_agregar', 'wildcard', 'basurero', 'pickHatReplace', 'pickHatExchange', 'pickHatSteal', 'ingredientInfo', 'pickTarget', 'pickIngredient', 'pickIngredientRemote'];
+        const privateModals = ['manual_cambiar', 'manual_cambiar_target', 'manual_cambiar_discard', 'manual_agregar', 'wildcard', 'basurero', 'pickHatReplace', 'pickHatExchange', 'pickHatSteal', 'ingredientInfo', 'pickTarget', 'pickIngredient', 'pickIngredientRemote'];
         if (state.modal) return state.modal;
         if (currentModal && privateModals.includes(currentModal.type)) return currentModal;
         return null;
@@ -1702,7 +1702,7 @@ export default function App() {
     clearTimeout(syncRef.current);
     if (!isOnline || !isHost || phase !== 'playing') return;
     syncRef.current = setTimeout(() => {
-      const privateModals = ['manual_cambiar', 'manual_cambiar_discard', 'manual_agregar', 'wildcard', 'basurero', 'pickHatReplace', 'pickHatExchange', 'pickHatSteal', 'ingredientInfo', 'pickTarget', 'pickIngredient', 'pickIngredientRemote'];
+      const privateModals = ['manual_cambiar', 'manual_cambiar_target', 'manual_cambiar_discard', 'manual_agregar', 'wildcard', 'basurero', 'pickHatReplace', 'pickHatExchange', 'pickHatSteal', 'ingredientInfo', 'pickTarget', 'pickIngredient', 'pickIngredientRemote'];
       const syncModal = modal && privateModals.includes(modal.type) ? null : modal;
       socket.emit('syncState', {
         code: roomCode,
@@ -2225,9 +2225,12 @@ export default function App() {
               if (p.closetCovered) return;
               const hi = p.perchero.indexOf(action.hatLang);
               if (hi === -1) return;
+              const replaceIdx = Number.isInteger(action.replaceIdx) && action.replaceIdx >= 0 && action.replaceIdx < p.mainHats.length
+                ? action.replaceIdx
+                : 0;
               p.perchero.splice(hi, 1);
-              const oldMain = p.mainHats[0];
-              p.mainHats[0] = action.hatLang;
+              const oldMain = p.mainHats[replaceIdx];
+              p.mainHats[replaceIdx] = action.hatLang;
               p.perchero.push(oldMain);
               let discarded;
               if (action.cardIndices) {
@@ -3333,19 +3336,20 @@ export default function App() {
   }
 
   // Manual: swap main hat from perchero (costs half your hand â€” player chooses which cards)
-  function resolveManualCambiar(hatLang, cardIndices) {
+  function resolveManualCambiar(hatLang, cardIndices, replaceIdx = 0) {
     if (players[HI]?.closetCovered) return;
     setModal(null); setSelectedIdx(null);
     if (isOnline && !isHost) {
-      socket.emit('playerAction', { code: roomCode, action: { type: 'manualCambiar', hatLang, cardIndices } });
+      socket.emit('playerAction', { code: roomCode, action: { type: 'manualCambiar', hatLang, cardIndices, replaceIdx } });
       return;
     }
     const newPls = clone(players);
     const p = newPls[HI];
     const hi = p.perchero.indexOf(hatLang);
     p.perchero.splice(hi, 1);
-    const oldMain = p.mainHats[0];
-    p.mainHats[0] = hatLang;
+    const safeReplaceIdx = Number.isInteger(replaceIdx) && replaceIdx >= 0 && replaceIdx < p.mainHats.length ? replaceIdx : 0;
+    const oldMain = p.mainHats[safeReplaceIdx];
+    p.mainHats[safeReplaceIdx] = hatLang;
     p.perchero.push(oldMain);
     const sorted = [...cardIndices].sort((a, b) => b - a);
     const discarded = sorted.map(i => p.hand.splice(i, 1)[0]);
@@ -5813,7 +5817,13 @@ export default function App() {
               <button
                 key={h}
                 type="button"
-                onClick={() => setModal({ type: 'manual_cambiar_discard', hatLang: h, selected: [] })}
+                onClick={() => {
+                  if ((human.mainHats?.length || 0) > 1) {
+                    setModal({ type: 'manual_cambiar_target', hatLang: h });
+                  } else {
+                    setModal({ type: 'manual_cambiar_discard', hatLang: h, replaceIdx: 0, selected: [] });
+                  }
+                }}
                 style={{
                   padding: 10, borderRadius: 10, cursor: 'pointer',
                   border: `2px solid ${LANG_BORDER[h]}88`,
@@ -5835,13 +5845,59 @@ export default function App() {
         </Modal>
       )}
 
+      {modal?.type === 'manual_cambiar_target' && (
+        <Modal title={`🎩 ${T('changeHat') || 'Cambiar sombrero'} — paso 2: elegir principal`}>
+          <p style={{ color: '#888', fontSize: 12, marginBottom: 12 }}>
+            {`Elige qué sombrero principal quieres reemplazar por ${T(modal.hatLang)}.`}
+          </p>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+            {human.mainHats.map((hat, idx) => (
+              <button
+                key={`${hat}-${idx}`}
+                type="button"
+                onClick={() => setModal({ type: 'manual_cambiar_discard', hatLang: modal.hatLang, replaceIdx: idx, selected: [] })}
+                style={{
+                  padding: 10,
+                  borderRadius: 10,
+                  cursor: 'pointer',
+                  border: `2px solid ${LANG_BORDER[hat]}88`,
+                  background: 'rgba(255,255,255,.04)',
+                  transition: 'all .15s',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 6,
+                  minWidth: 88,
+                  WebkitTapHighlightColor: 'transparent',
+                  touchAction: 'manipulation',
+                }}
+                onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,.1)'}
+                onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,.04)'}
+              >
+                <HatSVG lang={hat} size={38} />
+                <span style={{ fontSize: 11, fontWeight: 800, color: LANG_TEXT[hat], lineHeight: 1 }}>
+                  {T(hat)}
+                </span>
+                <span style={{ fontSize: 10, fontWeight: 700, color: '#8a8fa8' }}>
+                  {T('mainHat')} {idx + 1}
+                </span>
+              </button>
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Btn onClick={() => setModal({ type: 'manual_cambiar' })} color="#333" style={{ color: '#aaa' }}>{T('goBack')}</Btn>
+            <Btn onClick={() => setModal(null)} color="#333" style={{ color: '#aaa', flex: 1 }}>{T('cancel')}</Btn>
+          </div>
+        </Modal>
+      )}
+
       {/* Manual: Cambiar sombrero â€” paso 2: elegir cartas a descartar */}
       {modal?.type === 'manual_cambiar_discard' && (() => {
         const cost = Math.ceil(human.hand.length / 2);
         const sel = modal.selected;
         const remaining = cost - sel.length;
         return (
-          <Modal title={typeof T('changeHatStep2') === 'function' ? T('changeHatStep2')(T(modal.hatLang)) : T('changeHatStep2')}>
+          <Modal title={`🎩 ${T('changeHat') || 'Cambiar sombrero'} a ${T(modal.hatLang)} — paso 3: elegir cartas`}>
             <p style={{ color: '#888', fontSize: 12, marginBottom: 8 }}>
               <strong style={{ color: remaining > 0 ? '#FFD700' : '#4CAF50' }}>
                 {remaining > 0 ? (typeof T('moreCards') === 'function' ? T('moreCards')(remaining) : T('moreCards')) : T('ready')}
@@ -5875,9 +5931,17 @@ export default function App() {
               })}
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <Btn onClick={() => setModal({ type: 'manual_cambiar' })} color="#333" style={{ color: '#aaa' }}>{T('goBack')}</Btn>
               <Btn
-                onClick={() => resolveManualCambiar(modal.hatLang, modal.selected)}
+                onClick={() => setModal((human.mainHats?.length || 0) > 1
+                  ? { type: 'manual_cambiar_target', hatLang: modal.hatLang }
+                  : { type: 'manual_cambiar' })}
+                color="#333"
+                style={{ color: '#aaa' }}
+              >
+                {T('goBack')}
+              </Btn>
+              <Btn
+                onClick={() => resolveManualCambiar(modal.hatLang, modal.selected, modal.replaceIdx ?? 0)}
                 disabled={sel.length !== cost}
                 color="#9C27B0"
                 style={{ flex: 1 }}
