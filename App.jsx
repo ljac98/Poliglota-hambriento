@@ -1588,7 +1588,7 @@ export default function App() {
     setTutorialCarryOver(null);
     setPostTutorialGame(true);
     const name = user?.displayName || 'Jugador';
-    const hat = 'español';
+    const hat = 'espanol';
     const gameConfig = {
       mode: 'clon',
       burgerCount: 1,
@@ -4605,12 +4605,12 @@ export default function App() {
               }}>
                 <HatSVG lang={h} size={24} />
                 <span style={{
-                  fontSize: h === 'inglés' ? 8 : 7,
+                  fontSize: h === 'ingles' ? 8 : 7,
                   fontWeight: 900,
-                  color: h === 'inglés' ? '#FFD700' : LANG_TEXT[h],
+                  color: h === 'ingles' ? '#FFD700' : LANG_TEXT[h],
                   letterSpacing: 0.5,
                   marginTop: -2,
-                  textShadow: h === 'inglés' ? '0 1px 2px rgba(0,0,0,0.6)' : 'none',
+                  textShadow: h === 'ingles' ? '0 1px 2px rgba(0,0,0,0.6)' : 'none',
                 }}>
                   {getLocalizedLangShort(h, uiLang)}
                 </span>

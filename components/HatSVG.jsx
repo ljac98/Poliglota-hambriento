@@ -7,12 +7,12 @@ import hatIta from '../imagenes/sombreros/sobreros ita.png';
 import hatPor from '../imagenes/sombreros/sombrero por.png';
 
 const HAT_IMGS = {
-  alemán:    hatAle,
-  español:   hatEsp,
-  francés:   hatFra,
-  inglés:    hatIng,
+  aleman:    hatAle,
+  espanol:   hatEsp,
+  frances:   hatFra,
+  ingles:    hatIng,
   italiano:  hatIta,
-  portugués: hatPor,
+  portugues: hatPor,
 };
 
 const HatSVG = ({ lang, size = 40 }) => {

@@ -615,7 +615,7 @@ if (existsSync(distPath)) {
 const rooms = new Map();
 const genCode = () => Math.random().toString(36).substring(2, 7).toUpperCase();
 const ROOM_AI_NAMES = ['Chef Bot', 'Maestro IA', 'Hambre IA', 'Cocinero Bot', 'Rival Bot'];
-const ROOM_AI_HATS = ['español', 'inglés', 'francés', 'italiano', 'alemán', 'portugués'];
+const ROOM_AI_HATS = ['espanol', 'ingles', 'frances', 'italiano', 'aleman', 'portugues'];
 const MAX_ROOM_PLAYERS = 6;
 
 // Track which rooms already saved history (prevent duplicates)

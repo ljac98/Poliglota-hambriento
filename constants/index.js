@@ -15,45 +15,45 @@ export const ING_BG = {
 export const FRUITS_VEGS = ["lechuga","tomate","cebolla","palta"];
 
 // ═══ LANGUAGES ═══
-export const LANGUAGES = ["español","inglés","francés","italiano","alemán","portugués"];
+export const LANGUAGES = ["espanol","ingles","frances","italiano","aleman","portugues"];
 
 export const LANG_SHORT = {
-  español:"ESP", inglés:"ING", francés:"FRA",
-  italiano:"ITA", alemán:"ALE", portugués:"POR"
+  espanol:"ESP", ingles:"ING", frances:"FRA",
+  italiano:"ITA", aleman:"ALE", portugues:"POR"
 };
 
 export const LANG_BORDER = {
-  español:"#C41E1E", inglés:"#1a1a1a", francés:"#E65100",
-  italiano:"#8D7B5A", alemán:"#2E7D32", portugués:"#5D4037"
+  espanol:"#C41E1E", ingles:"#1a1a1a", frances:"#E65100",
+  italiano:"#8D7B5A", aleman:"#2E7D32", portugues:"#5D4037"
 };
 
 export const LANG_BG = {
-  español:"#FFF2CC", inglés:"#2A2A2A", francés:"#FFF0E8",
-  italiano:"#FFF8E1", alemán:"#E8F5E9", portugués:"#F5F0EB"
+  espanol:"#FFF2CC", ingles:"#2A2A2A", frances:"#FFF0E8",
+  italiano:"#FFF8E1", aleman:"#E8F5E9", portugues:"#F5F0EB"
 };
 
 export const LANG_TEXT = {
-  español:"#C41E1E", inglés:"#E0E0E0", francés:"#E65100",
-  italiano:"#8D7B5A", alemán:"#2E7D32", portugués:"#5D4037"
+  espanol:"#C41E1E", ingles:"#E0E0E0", frances:"#E65100",
+  italiano:"#8D7B5A", aleman:"#2E7D32", portugues:"#5D4037"
 };
 
 export const LANG_BADGE = {
-  español:"#DAA520", inglés:"#333", francés:"#E65100",
-  italiano:"#8D7B5A", alemán:"#2E7D32", portugués:"#5D4037"
+  espanol:"#DAA520", ingles:"#333", frances:"#E65100",
+  italiano:"#8D7B5A", aleman:"#2E7D32", portugues:"#5D4037"
 };
 
 // ═══ INGREDIENT TRANSLATIONS ═══
 export const ING_NAMES = {
-  pan:     {español:"Pan",     inglés:"Bread",   francés:"Pain",    italiano:"Pane",     alemán:"Brot",     portugués:"Pão"},
-  lechuga: {español:"Lechuga", inglés:"Lettuce", francés:"Laitue",  italiano:"Lattuga",  alemán:"Salat",    portugués:"Alface"},
-  tomate:  {español:"Tomate",  inglés:"Tomato",  francés:"Tomate",  italiano:"Pomodoro", alemán:"Tomate",   portugués:"Tomate"},
-  carne:   {español:"Carne",   inglés:"Beef",    francés:"Viande",  italiano:"Carne",    alemán:"Fleisch",  portugués:"Carne"},
-  queso:   {español:"Queso",   inglés:"Cheese",  francés:"Fromage", italiano:"Formaggio",alemán:"Käse",     portugués:"Queijo"},
-  pollo:   {español:"Pollo",   inglés:"Chicken", francés:"Poulet",  italiano:"Pollo",    alemán:"Hähnchen", portugués:"Frango"},
-  huevo:   {español:"Huevo",   inglés:"Egg",     francés:"Œuf",     italiano:"Uovo",     alemán:"Ei",       portugués:"Ovo"},
-  cebolla: {español:"Cebolla", inglés:"Onion",   francés:"Oignon",  italiano:"Cipolla",  alemán:"Zwiebel",  portugués:"Cebola"},
-  palta:   {español:"Palta",   inglés:"Avocado", francés:"Avocat",  italiano:"Avocado",  alemán:"Avocado",  portugués:"Abacate"},
-  perrito: {español:"Comodín", inglés:"Wildcard", francés:"Joker",  italiano:"Jolly",    alemán:"Joker",    portugués:"Coringa"},
+  pan:     {espanol:"Pan",     ingles:"Bread",   frances:"Pain",    italiano:"Pane",     aleman:"Brot",     portugues:"Pão"},
+  lechuga: {espanol:"Lechuga", ingles:"Lettuce", frances:"Laitue",  italiano:"Lattuga",  aleman:"Salat",    portugues:"Alface"},
+  tomate:  {espanol:"Tomate",  ingles:"Tomato",  frances:"Tomate",  italiano:"Pomodoro", aleman:"Tomate",   portugues:"Tomate"},
+  carne:   {espanol:"Carne",   ingles:"Beef",    frances:"Viande",  italiano:"Carne",    aleman:"Fleisch",  portugues:"Carne"},
+  queso:   {espanol:"Queso",   ingles:"Cheese",  frances:"Fromage", italiano:"Formaggio",aleman:"Käse",     portugues:"Queijo"},
+  pollo:   {espanol:"Pollo",   ingles:"Chicken", frances:"Poulet",  italiano:"Pollo",    aleman:"Hähnchen", portugues:"Frango"},
+  huevo:   {espanol:"Huevo",   ingles:"Egg",     frances:"Œuf",     italiano:"Uovo",     aleman:"Ei",       portugues:"Ovo"},
+  cebolla: {espanol:"Cebolla", ingles:"Onion",   frances:"Oignon",  italiano:"Cipolla",  aleman:"Zwiebel",  portugues:"Cebola"},
+  palta:   {espanol:"Palta",   ingles:"Avocado", frances:"Avocat",  italiano:"Avocado",  aleman:"Avocado",  portugues:"Abacate"},
+  perrito: {espanol:"Comodín", ingles:"Wildcard", frances:"Joker",  italiano:"Jolly",    aleman:"Joker",    portugues:"Coringa"},
 };
 
 export const getIngName = (ing, lang) => ING_NAMES[ing]?.[lang] || ing;
