@@ -4862,7 +4862,7 @@ export default function App() {
                       : <span style={{ color: '#FF7043', fontSize: 12 }}>{T('cantPlay')}</span>}
                   </>) : (<>
                     <span style={{ fontWeight: 700, fontSize: 14, color: '#FFD700' }}>{getActionText(card.action)?.name}</span>
-                    <span style={{ fontSize: 12, color: '#ccc' }}>{getActionText(card.action)?.desc}</span>
+                    <span style={{ fontSize: 12, color: noObjectives ? '#FF7043' : '#ccc' }}>{noObjectives ? T('actionNoObjectives') : getActionText(card.action)?.desc}</span>
                   </>)}
                 </div>
                 <div style={{ display: 'flex', gap: 4 }}>
@@ -4899,7 +4899,9 @@ export default function App() {
           ? <span style={{ color: '#4CAF50' }}>{T('canPlayThis')}</span>
           : <span style={{ color: '#FF7043' }}>{T('cantPlayNow')}</span>
       ) : (
-        <span style={{ color: '#FFD700' }}>{'\u26A1'} {getActionText(human.hand[selectedIdx]?.action)?.desc}</span>
+        human.hand[selectedIdx]?.type === 'action' && !hasActionObjectives(human.hand[selectedIdx]?.action, players, HI, discard)
+          ? <span style={{ color: '#FF7043' }}>{T('actionNoObjectives')}</span>
+          : <span style={{ color: '#FFD700' }}>{'\u26A1'} {getActionText(human.hand[selectedIdx]?.action)?.desc}</span>
       )}
     </div>
   );
@@ -6440,7 +6442,7 @@ export default function App() {
                     : <span style={{ color: '#FF7043', fontSize: 13 }}>{T('cantPlay')}</span>}
                 </>) : (<>
                   <span style={{ fontWeight: 700, fontSize: 16, color: '#FFD700' }}>{getActionText(card.action)?.name}</span>
-                  <span style={{ fontSize: 13, color: '#ccc' }}>{getActionText(card.action)?.desc}</span>
+                  <span style={{ fontSize: 13, color: noObjectivesMobile ? '#FF7043' : '#ccc' }}>{noObjectivesMobile ? T('actionNoObjectives') : getActionText(card.action)?.desc}</span>
                 </>)}
               </div>
               <div style={{ display: 'flex', gap: 8, width: '100%' }}>
