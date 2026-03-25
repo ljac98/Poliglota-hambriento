@@ -159,7 +159,7 @@ export const IngredientCard = ({ card, onClick, selected, small, large, playable
 };
 
 // ═══ ACTION CARD ═══
-export const ActionCard = ({ card, onClick, selected, small, large, playable }) => {
+export const ActionCard = ({ card, onClick, selected, small, large, playable, noObjectives }) => {
   const info = getActionInfo(card.action);
   const uiLang = getUILang();
   const nameKey = `actionName_${card.action}`;
@@ -167,7 +167,9 @@ export const ActionCard = ({ card, onClick, selected, small, large, playable }) 
   const trName = t(nameKey, uiLang);
   const trDesc = t(descKey, uiLang);
   const actionName = trName === nameKey ? info?.name : trName;
-  const actionDesc = trDesc === descKey ? info?.desc : trDesc;
+  const actionDesc = noObjectives
+    ? t('actionNoObjectives', uiLang)
+    : (trDesc === descKey ? info?.desc : trDesc);
   const dimmed = playable === false;
   const w = large ? 150 : (small ? 64 : 86);
   const h = large ? 200 : (small ? 94 : 126);
@@ -207,8 +209,8 @@ export const ActionCard = ({ card, onClick, selected, small, large, playable }) 
 };
 
 // ═══ GAME CARD (wrapper) ═══
-export const GameCard = ({ card, playable, large, ...props }) => {
+export const GameCard = ({ card, playable, large, noObjectives, ...props }) => {
   return card.type === "ingredient"
     ? <IngredientCard card={card} playable={playable} large={large} {...props} />
-    : <ActionCard card={card} playable={playable} large={large} {...props} />;
+    : <ActionCard card={card} playable={playable} large={large} noObjectives={noObjectives} {...props} />;
 };

@@ -76,6 +76,7 @@ import {
   filterTable,
   ingChosen,
   ingKey,
+  hasActionObjectives,
 } from './app/utils/gameHelpers.js';
 
 const BURGER_STACK_IMG = {
@@ -4796,9 +4797,13 @@ export default function App() {
       WebkitOverflowScrolling: 'touch',
     }}>
         {human.hand.map((card, i) => {
+          const actionHasObjectives = card.type === 'action'
+            ? hasActionObjectives(card.action, players, HI, discard)
+            : true;
           const playable = card.type === 'ingredient'
             ? canPlayCard(human, card)
-            : (extraPlay ? false : (isClosetActionBlocked(human, card.action) ? false : null));
+            : (extraPlay ? false : (isClosetActionBlocked(human, card.action) ? false : (actionHasObjectives ? null : false)));
+          const noObjectives = card.type === 'action' && !extraPlay && !isClosetActionBlocked(human, card.action) && !actionHasObjectives;
           const angle = handN > 1 ? -MAX_ANGLE + i * (2 * MAX_ANGLE / (handN - 1)) : 0;
           const isSelected = selectedIdx === i;
           return (
@@ -4861,7 +4866,7 @@ export default function App() {
                   </>)}
                 </div>
                 <div style={{ display: 'flex', gap: 4 }}>
-                  <Btn onClick={humanPlay} disabled={!tutorialAllowsPlayButton || (extraPlay && card.type !== 'ingredient') || (card.type === 'action' && isClosetActionBlocked(human, card.action))} color="#4CAF50" style={{ fontSize: 11, padding: '6px 12px' }}>
+                  <Btn onClick={humanPlay} disabled={!tutorialAllowsPlayButton || (extraPlay && card.type !== 'ingredient') || (card.type === 'action' && isClosetActionBlocked(human, card.action)) || noObjectives} color="#4CAF50" style={{ fontSize: 11, padding: '6px 12px' }}>
                     {T('play')}
                   </Btn>
                   <Btn onClick={humanDiscard} disabled={(!tutorialAllowsDiscard && tutorialActive) || extraPlay} color="#FF7043" style={{ fontSize: 11, padding: '6px 12px' }}>
@@ -4876,6 +4881,7 @@ export default function App() {
               playable={isHumanTurn ? playable : false}
               large={true}
               small={false}
+              noObjectives={isHumanTurn && noObjectives}
             />
           </div>
         );
@@ -6381,9 +6387,13 @@ export default function App() {
       {/* Mobile: Card detail modal */}
       {isMobile && isHumanTurn && selectedIdx !== null && human.hand[selectedIdx] && (() => {
         const card = human.hand[selectedIdx];
+        const actionHasObjectivesMobile = card.type === 'action'
+          ? hasActionObjectives(card.action, players, HI, discard)
+          : true;
         const playable = card.type === 'ingredient'
           ? canPlayCard(human, card)
-          : (extraPlay ? false : (isClosetActionBlocked(human, card.action) ? false : null));
+          : (extraPlay ? false : (isClosetActionBlocked(human, card.action) ? false : (actionHasObjectivesMobile ? null : false)));
+        const noObjectivesMobile = card.type === 'action' && !extraPlay && !isClosetActionBlocked(human, card.action) && !actionHasObjectivesMobile;
         const cleanTitle = (txt) => String(txt).replace('?? ', '').replace('??', '').replace('? ', '').replace('?', '');
         const actionTypeIcon = (() => {
           if (card.type !== 'action') return null;
@@ -6409,7 +6419,7 @@ export default function App() {
         return (
           <Modal title={mobileTitle}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-              <GameCard card={card} selected playable={playable} large />
+              <GameCard card={card} selected playable={playable} large noObjectives={noObjectivesMobile} />
               <div style={{
                 fontSize: 14, textAlign: 'center', padding: '8px 14px', borderRadius: 8,
                 background: 'rgba(0,0,0,0.5)', color: '#ddd',
@@ -6434,7 +6444,7 @@ export default function App() {
                 </>)}
               </div>
               <div style={{ display: 'flex', gap: 8, width: '100%' }}>
-                <Btn onClick={() => { humanPlay(); }} disabled={!tutorialAllowsPlayButton || (extraPlay && card.type !== 'ingredient') || (card.type === 'action' && isClosetActionBlocked(human, card.action))} color="#4CAF50" style={{ flex: 1, fontSize: 14, padding: '10px 16px' }}>
+                <Btn onClick={() => { humanPlay(); }} disabled={!tutorialAllowsPlayButton || (extraPlay && card.type !== 'ingredient') || (card.type === 'action' && isClosetActionBlocked(human, card.action)) || noObjectivesMobile} color="#4CAF50" style={{ flex: 1, fontSize: 14, padding: '10px 16px' }}>
                   {T('play')}
                 </Btn>
                 <Btn onClick={() => { humanDiscard(); }} disabled={(!tutorialAllowsDiscard && tutorialActive) || extraPlay} color="#FF7043" style={{ flex: 1, fontSize: 14, padding: '10px 16px' }}>

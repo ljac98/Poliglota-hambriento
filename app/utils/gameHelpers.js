@@ -45,6 +45,30 @@ export const ING_AFFECTED_BY = {
 };
 
 export const PLAYER_COLORS = ['#FFD700', '#00BCD4', '#FF7043', '#66BB6A', '#CE93D8'];
+
+export function hasActionObjectives(actionId, players, playerIdx, discard) {
+  const opponents = players.filter((_, i) => i !== playerIdx);
+  const massTargets = {
+    milanesa: ['pan', 'huevo'],
+    ensalada: FRUITS_VEGS,
+    pizza: ['queso'],
+    parrilla: ['pollo', 'carne'],
+  };
+  if (massTargets[actionId]) {
+    const needed = massTargets[actionId];
+    return opponents.some(p => p.table.some(ing => needed.includes(ingKey(ing))));
+  }
+  if (actionId === 'comecomodines') {
+    return opponents.some(p => p.table.some(ing => ingKey(ing) === 'perrito'));
+  }
+  if (actionId === 'tenedor' || actionId === 'gloton') {
+    return opponents.some(p => p.table.length > 0);
+  }
+  if (actionId === 'basurero') {
+    return discard.some(c => c.type === 'ingredient');
+  }
+  return true;
+}
 export const clone = o => JSON.parse(JSON.stringify(o));
 
 export function drawN(deck, discard, n) {
