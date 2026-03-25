@@ -186,6 +186,8 @@ export default function App() {
   const [historyReturnPhase, setHistoryReturnPhase] = useState('setup');
   const aiRunning = useRef(false);
   const aiRunningMeta = useRef({ idx: null, startedAt: 0 });
+  const languageMenuButtonRef = useRef(null);
+  const languageMenuTrayRef = useRef(null);
   const [turnTime, setTurnTime] = useState(60);
   const [currentGameConfig, setCurrentGameConfig] = useState(null);
   const turnTimerRef = useRef(null);
@@ -1919,6 +1921,17 @@ export default function App() {
   useEffect(() => { deckRef.current = deck; }, [deck]);
   useEffect(() => { discardRef.current = discard; }, [discard]);
   useEffect(() => { modalRef.current = modal; }, [modal]);
+  useEffect(() => {
+    if (!showLanguageMenu) return undefined;
+    const handleOutsideLanguageMenu = (event) => {
+      const target = event.target;
+      if (languageMenuButtonRef.current?.contains(target)) return;
+      if (languageMenuTrayRef.current?.contains(target)) return;
+      setShowLanguageMenu(false);
+    };
+    document.addEventListener('pointerdown', handleOutsideLanguageMenu, true);
+    return () => document.removeEventListener('pointerdown', handleOutsideLanguageMenu, true);
+  }, [showLanguageMenu]);
 
   useEffect(() => {
     if (!isOnline || !isHost) return;
@@ -4049,6 +4062,7 @@ export default function App() {
                   return (
                     <button
                       type="button"
+                      ref={languageMenuButtonRef}
                       onClick={() => setShowLanguageMenu(prev => !prev)}
                       style={{
                         padding: '10px 12px',
@@ -4092,11 +4106,11 @@ export default function App() {
                 })()}
                 <div style={{
                   position: 'absolute',
-                  left: isMobile ? 'auto' : 0,
-                  right: isMobile ? 'calc(100% + 10px)' : 0,
+                  left: isMobile ? 'calc(-168px - 10px)' : 0,
+                  right: 'auto',
                   top: isMobile ? 0 : 'calc(100% + 8px)',
                   zIndex: 40,
-                  maxHeight: showLanguageMenu ? (isMobile ? 360 : 120) : 0,
+                  maxHeight: showLanguageMenu ? 360 : 0,
                   opacity: showLanguageMenu ? 1 : 0,
                   transform: showLanguageMenu
                     ? 'translate(0, 0)'
@@ -4105,13 +4119,15 @@ export default function App() {
                   transition: 'max-height 0.24s ease, opacity 0.18s ease, transform 0.2s ease',
                   pointerEvents: showLanguageMenu ? 'auto' : 'none',
                 }}>
-                  <div style={{
+                  <div
+                    ref={languageMenuTrayRef}
+                    style={{
                     display: 'flex',
-                    flexDirection: isMobile ? 'column' : 'row',
-                    gap: isMobile ? 6 : 8,
-                    overflowX: isMobile ? 'visible' : 'auto',
+                    flexDirection: 'column',
+                    gap: 6,
+                    overflowX: 'visible',
                     padding: 10,
-                    width: isMobile ? 168 : 'auto',
+                    width: 168,
                     borderRadius: 14,
                     border: '1px solid rgba(255,215,0,0.22)',
                     background: 'rgba(18, 26, 48, 0.96)',
@@ -4135,18 +4151,18 @@ export default function App() {
                             cursor: 'pointer',
                             transition: 'all 0.18s ease',
                             display: 'flex',
-                            flexDirection: isMobile ? 'row' : 'column',
+                            flexDirection: 'row',
                             alignItems: 'center',
-                            justifyContent: isMobile ? 'flex-start' : 'center',
-                            gap: isMobile ? 10 : 5,
-                            minWidth: isMobile ? '100%' : 78,
+                            justifyContent: 'flex-start',
+                            gap: 10,
+                            minWidth: '100%',
                             flexShrink: 0,
-                            textAlign: isMobile ? 'left' : 'center',
+                            textAlign: 'left',
                           }}
                         >
                           <div style={{
-                            width: isMobile ? 34 : 40,
-                            height: isMobile ? 34 : 40,
+                            width: 34,
+                            height: 34,
                             borderRadius: 13,
                             border: active ? '2px solid #FFD700' : `1px solid ${LANG_BORDER[gameLang]}66`,
                             background: active ? 'rgba(255,215,0,0.12)' : LANG_BG[gameLang],
@@ -4155,26 +4171,24 @@ export default function App() {
                             justifyContent: 'center',
                             boxShadow: active ? '0 0 18px rgba(255,215,0,0.18)' : 'none',
                           }}>
-                            <HatSVG lang={gameLang} size={isMobile ? 21 : 26} />
+                            <HatSVG lang={gameLang} size={21} />
                           </div>
                           <span style={{
-                            fontSize: isMobile ? 10 : 11,
+                            fontSize: 10,
                             fontWeight: 900,
                             color: active ? '#FFD700' : LANG_TEXT[gameLang],
                             lineHeight: 1,
                           }}>
                             {getLocalizedLangShort(gameLang, uiLang)}
                           </span>
-                          {isMobile ? (
-                            <span style={{
-                              fontSize: 12,
-                              fontWeight: 800,
-                              color: active ? '#f8f4cf' : '#d7def8',
-                              lineHeight: 1.05,
-                            }}>
-                              {getLocalizedLangName(gameLang, uiLang)}
-                            </span>
-                          ) : null}
+                          <span style={{
+                            fontSize: 12,
+                            fontWeight: 800,
+                            color: active ? '#f8f4cf' : '#d7def8',
+                            lineHeight: 1.05,
+                          }}>
+                            {getLocalizedLangName(gameLang, uiLang)}
+                          </span>
                         </button>
                       );
                     })}
