@@ -229,6 +229,7 @@ export default function App() {
   const [uiLang, setUiLangState] = useState(() => getUILang());
   const [tutorialPrompt, setTutorialPrompt] = useState(null);
   const [tutorialState, setTutorialState] = useState(null);
+  const [tutorialCarryOver, setTutorialCarryOver] = useState(null);
   const T = useCallback((key) => t(key, uiLang), [uiLang]);
   const uiGameLang = KEY_TO_LANG[uiLang] || LANGUAGES[0];
   const tutorialCopy = getTutorialContent(uiLang);
@@ -237,11 +238,12 @@ export default function App() {
   const tutorialStepData = tutorialActive ? tutorialCopy.steps[tutorialState.step] : null;
   const tutorialFocus = tutorialStepData?.focus || {};
   const isMobile = typeof window !== 'undefined' && window.innerWidth <= 640;
-  const tutorialAllowsCardSelection = !tutorialActive || [1, 2, 5].includes(tutorialStep);
-  const tutorialAllowsPlayButton = !tutorialActive || [1, 5].includes(tutorialStep);
-  const tutorialAllowsChangeHat = !tutorialActive || tutorialStep === 3;
-  const tutorialAllowsAddHat = !tutorialActive || tutorialStep === 4;
-  const tutorialAllowsNegation = !tutorialActive || tutorialStep === 6;
+  const tutorialPractice = !!tutorialState?.practiceMode;
+  const tutorialAllowsCardSelection = !tutorialActive || tutorialPractice || [1, 2, 5].includes(tutorialStep);
+  const tutorialAllowsPlayButton = !tutorialActive || tutorialPractice || [1, 5].includes(tutorialStep);
+  const tutorialAllowsChangeHat = !tutorialActive || tutorialPractice || tutorialStep === 3;
+  const tutorialAllowsAddHat = !tutorialActive || tutorialPractice || tutorialStep === 4;
+  const tutorialAllowsNegation = !tutorialActive || tutorialPractice || tutorialStep === 6;
   const tutorialRecommendedHatLang = (() => {
     if (!tutorialActive || ![3, 4].includes(tutorialStep)) return null;
     const focusedIdx = tutorialFocus.selectedCard;
@@ -1233,6 +1235,7 @@ export default function App() {
 
   useEffect(() => {
     if (!tutorialActive) return;
+    if (tutorialState?.practiceMode) return;
     applyTutorialScenario(tutorialState.step);
   }, [tutorialActive, tutorialState?.step, user?.displayName, user?.id, user?.username, user?.avatarUrl]);
 
@@ -1509,6 +1512,16 @@ export default function App() {
       playerName: user?.displayName || 'Jugador',
       user,
     });
+    // Apply carryOver from previous tutorial steps (hat changes, basurero card)
+    if (tutorialCarryOver && step >= 4) {
+      const p = scenario.players[0];
+      if (tutorialCarryOver.mainHats) p.mainHats = [...tutorialCarryOver.mainHats];
+      if (tutorialCarryOver.perchero) p.perchero = [...tutorialCarryOver.perchero];
+      if (tutorialCarryOver.maxHand != null) p.maxHand = tutorialCarryOver.maxHand;
+    }
+    if (tutorialCarryOver?.basureroCard && step >= 6) {
+      scenario.players[0].hand.push(tutorialCarryOver.basureroCard);
+    }
     setPlayers(scenario.players);
     setDeck(scenario.deck || []);
     setDiscard(scenario.discard || []);
@@ -1533,6 +1546,7 @@ export default function App() {
 
   function startTutorialGame() {
     setTutorialPrompt(null);
+    setTutorialCarryOver(null);
     setTutorialState({ active: true, step: 0 });
   }
 
@@ -1551,6 +1565,7 @@ export default function App() {
 
   function finishTutorialGame() {
     setTutorialState(null);
+    setTutorialCarryOver(null);
     resetLocalGameState();
     setPhase('setup');
   }
@@ -1559,10 +1574,26 @@ export default function App() {
     if (!tutorialActive) return;
     const nextStep = tutorialState.step + 1;
     if (nextStep >= tutorialCopy.steps.length) {
-      finishTutorialGame();
+      startTutorialPracticeGame();
       return;
     }
     setTutorialState((prev) => ({ ...prev, step: nextStep }));
+  }
+
+  function startTutorialPracticeGame() {
+    const lastStep = tutorialCopy.steps.length - 1;
+    setTutorialState({ active: true, step: lastStep, practiceMode: true });
+    const name = user?.displayName || 'Jugador';
+    const hat = 'español';
+    const gameConfig = {
+      mode: 'clon',
+      burgerCount: 1,
+      ingredientCount: 3,
+      ingredientPool: ['lechuga', 'tomate', 'queso', 'carne', 'pollo'],
+      cloneWildcardsEnabled: true,
+      tutorial: true,
+    };
+    startGame(name, hat, gameConfig, 1);
   }
 
   function prevTutorialStep() {
@@ -3108,7 +3139,7 @@ export default function App() {
   // —— AI useEffect ——
   useEffect(() => {
     if (phase !== 'playing') return;
-    if (tutorialActive) return;
+    if (tutorialActive && !tutorialPractice) return;
     if (!players.length) return;
     if (players[cp]?.isRemote) return;
     if (!players[cp]?.isAI) return;
@@ -3136,7 +3167,7 @@ export default function App() {
       }
     }, 1200);
     return () => clearTimeout(timer);
-  }, [phase, cp, players, deck, discard, modal, pendingNeg, releaseAITurnLock, tutorialActive]);
+  }, [phase, cp, players, deck, discard, modal, pendingNeg, releaseAITurnLock, tutorialActive, tutorialPractice]);
   // â”€â”€ Turn timer (60s) â”€â”€
   useEffect(() => {
     clearInterval(turnTimerRef.current);
@@ -3385,7 +3416,7 @@ export default function App() {
 
   // â”€â”€ Modal resolvers â”€â”€
   function resolvePickTarget(targetIdx) {
-    if (tutorialActive && tutorialStep !== 5) return;
+    if (tutorialActive && !tutorialPractice && tutorialStep !== 5) return;
     const { cardIdx, action } = modal;
     setModal(null); setSelectedIdx(null);
 
@@ -3461,7 +3492,7 @@ export default function App() {
   }
 
   function resolvePickIngredient(ingIdx) {
-    if (tutorialActive && tutorialStep !== 5) return;
+    if (tutorialActive && !tutorialPractice && tutorialStep !== 5) return;
     const { targetIdx, newPls, newDiscard } = modal;
     setModal(null); setSelectedIdx(null);
     // Non-host: send complete action
@@ -3595,6 +3626,13 @@ export default function App() {
     const cost = discarded.length;
     addLog(HI, `cambiÃ³ sombrero a ${hatLang} (descartÃ³ ${cost} carta${cost !== 1 ? 's' : ''}) â€” puede jugar un ingrediente`, newPls);
     setPlayers(newPls); setDiscard(newDiscard); setExtraPlay(true);
+    if (tutorialActive) {
+      setTutorialCarryOver(prev => ({
+        ...prev,
+        mainHats: [...p.mainHats],
+        perchero: [...p.perchero],
+      }));
+    }
     if (advanceTutorialAfter('changeHat')) return;
     setPhase('transition');
   }
@@ -3621,12 +3659,20 @@ export default function App() {
     p.hand = drawn;
     addLog(HI, `agregÃ³ sombrero ${hatLang} â€” mano mÃ¡x reducida a ${p.maxHand}`, newPls);
     setPlayers(newPls); setDeck(newDeck); setDiscard(di2); setExtraPlay(true);
+    if (tutorialActive) {
+      setTutorialCarryOver(prev => ({
+        ...prev,
+        mainHats: [...p.mainHats],
+        perchero: [...p.perchero],
+        maxHand: p.maxHand,
+      }));
+    }
     if (advanceTutorialAfter('addHat')) return;
     setPhase('transition');
   }
 
   function resolveBasurero(cardId) {
-    if (tutorialActive && tutorialStep !== 5) return;
+    if (tutorialActive && !tutorialPractice && tutorialStep !== 5) return;
     const { cardIdx } = modal;
     setModal(null); setSelectedIdx(null);
     if (isOnline && !isHost) {
@@ -3642,6 +3688,12 @@ export default function App() {
       newDiscard = newDiscard.filter(c => c.id !== cardId);
       newPls[HI].hand.push(found);
       addLog(HI, 'rescatÃ³ una carta del ðŸ—‘ï¸ basurero', newPls);
+      if (tutorialActive) {
+        setTutorialCarryOver(prev => ({
+          ...prev,
+          basureroCard: found,
+        }));
+      }
     }
     if (advanceTutorialAfter('actionCard')) {
       setPlayers(newPls);
@@ -4272,6 +4324,9 @@ export default function App() {
           isOnline={isOnline}
           onLeftRoomReturn={handleLeftRoomReturn}
           onLeftRoomLeave={handleLeftRoomLeave}
+          isTutorial={tutorialPractice}
+          tutorialWinText={tutorialCopy.tutorialWin}
+          onTutorialFinish={finishTutorialGame}
         />
         {phase === 'setup' && tutorialPrompt === 'familiarity' && (
           <Modal title={tutorialCopy.promptTitle}>
@@ -4954,9 +5009,11 @@ export default function App() {
                 <span>🎓</span>
                 <span>{tutorialCopy.badge}</span>
               </div>
-              <div style={{ color: '#9ea4be', fontSize: 11, fontWeight: 700 }}>
-                {tutorialCopy.stepLabel} {tutorialState.step + 1}/{tutorialCopy.steps.length}
-              </div>
+              {!tutorialPractice && (
+                <div style={{ color: '#9ea4be', fontSize: 11, fontWeight: 700 }}>
+                  {tutorialCopy.stepLabel} {tutorialState.step + 1}/{tutorialCopy.steps.length}
+                </div>
+              )}
             </div>
             <div style={{ color: '#fff1b3', fontSize: 18, fontWeight: 900, lineHeight: 1.1, marginBottom: 8 }}>
               {tutorialStepData.title}
@@ -4986,23 +5043,31 @@ export default function App() {
                 </div>
               ) : null}
             </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-              <Btn onClick={finishTutorialGame} color="#2a2a4a" style={{ color: '#fff' }}>
-                {tutorialCopy.skip}
-              </Btn>
-              {tutorialState.step > 0 && (
-                <Btn onClick={prevTutorialStep} color="#4ecdc4" style={{ color: '#0f1117' }}>
-                  {tutorialCopy.prev}
+            {tutorialPractice ? (
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                <Btn onClick={finishTutorialGame} color="#2a2a4a" style={{ color: '#fff' }}>
+                  {tutorialCopy.skip}
                 </Btn>
-              )}
-              <Btn
-                onClick={tutorialState.step === tutorialCopy.steps.length - 1 ? finishTutorialGame : nextTutorialStep}
-                color="#FFD700"
-                style={{ color: '#111' }}
-              >
-                {tutorialState.step === tutorialCopy.steps.length - 1 ? tutorialCopy.finish : tutorialCopy.next}
-              </Btn>
-            </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                <Btn onClick={finishTutorialGame} color="#2a2a4a" style={{ color: '#fff' }}>
+                  {tutorialCopy.skip}
+                </Btn>
+                {tutorialState.step > 0 && (
+                  <Btn onClick={prevTutorialStep} color="#4ecdc4" style={{ color: '#0f1117' }}>
+                    {tutorialCopy.prev}
+                  </Btn>
+                )}
+                <Btn
+                  onClick={tutorialState.step === tutorialCopy.steps.length - 1 ? nextTutorialStep : nextTutorialStep}
+                  color="#FFD700"
+                  style={{ color: '#111' }}
+                >
+                  {tutorialCopy.next}
+                </Btn>
+              </div>
+            )}
           </div>
         </div>
       )}

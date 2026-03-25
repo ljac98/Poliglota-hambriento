@@ -71,6 +71,9 @@ export function AppPhaseRouter({
   isOnline,
   onLeftRoomReturn,
   onLeftRoomLeave,
+  isTutorial,
+  tutorialWinText,
+  onTutorialFinish,
 }) {
   if (phase === 'reconnecting') {
     return <ReconnectingScreen T={T} />;
@@ -263,7 +266,13 @@ export function AppPhaseRouter({
         players={players}
         user={user}
         T={T}
+        isTutorial={isTutorial}
+        tutorialWinText={tutorialWinText}
         onRestart={() => {
+          if (isTutorial && onTutorialFinish) {
+            onTutorialFinish();
+            return;
+          }
           if (isOnline) {
             socket.emit('leaveRoom');
             socket.disconnect();

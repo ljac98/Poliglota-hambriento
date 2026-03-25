@@ -58,6 +58,9 @@ const COPY = {
     prev: 'Anterior',
     finish: 'Terminar tutorial',
     skip: 'Salir del tutorial',
+    tutorialWin: '¡Felicidades, completaste el tutorial!',
+    addHatCostInfo: 'Este es el costo de agregar sombreros: se descarta toda tu mano y tu máximo de cartas se reduce en 1.',
+    practiceObjective: 'Objetivo: completar una hamburguesa.',
     steps: [
       {
         title: 'Sombreros principales y perchero',
@@ -101,6 +104,7 @@ const COPY = {
         bullets: [
           'Sirve cuando quieres mantener dos idiomas listos.',
           'Es más caro, pero te da más flexibilidad en turnos futuros.',
+          'Al agregar, se descarta toda tu mano y tu máximo de cartas baja en 1. Ese es el costo.',
         ],
         focus: { closet: true, addButton: true, selectedCard: 1 },
       },
@@ -124,14 +128,14 @@ const COPY = {
         focus: { selectedCard: 0, actionCards: true },
       },
       {
-        title: 'Resumen final',
-        body: 'Antes de terminar tu turno, revisa qué pide la hamburguesa, qué idiomas tienes activos y qué acciones conviene guardar.',
+        title: 'Probemos lo aprendido',
+        body: 'Ahora jugarás una partida real contra la IA. Usa todo lo que aprendiste para ganar.',
         bullets: [
-          'Hamburguesa + idioma correcto = ingrediente jugable.',
-          'Perchero = reserva de idiomas.',
-          'Cambiar y Agregar te abren nuevas cartas.',
+          'Objetivo: completar una hamburguesa.',
+          'Usa ingredientes, sombreros, acciones y negación.',
+          'Completa tu hamburguesa para ganar.',
         ],
-        focus: { hats: true, closet: true, actionCards: true },
+        focus: {},
       },
     ],
   },
@@ -150,6 +154,9 @@ const COPY = {
     prev: 'Back',
     finish: 'Finish tutorial',
     skip: 'Exit tutorial',
+    tutorialWin: 'Congratulations, you completed the tutorial!',
+    addHatCostInfo: 'This is the cost of adding hats: your entire hand is discarded and your max hand size is reduced by 1.',
+    practiceObjective: 'Goal: complete a burger.',
     steps: [
       {
         title: 'Main hats and closet',
@@ -193,6 +200,7 @@ const COPY = {
         bullets: [
           'It is useful when you want two languages active at once.',
           'It costs more, but gives more flexibility later.',
+          'Adding discards your entire hand and reduces your max hand by 1. That is the cost.',
         ],
         focus: { closet: true, addButton: true, selectedCard: 1 },
       },
@@ -216,14 +224,14 @@ const COPY = {
         focus: { selectedCard: 0, actionCards: true },
       },
       {
-        title: 'Final recap',
-        body: 'Before ending your turn, check what the burger needs, which languages are active, and which action cards are worth saving.',
+        title: "Let's practice!",
+        body: 'Now you will play a real match against the AI. Use everything you learned to win.',
         bullets: [
-          'Burger need + matching hat = playable ingredient.',
-          'Closet = language reserve.',
-          'Change and Add unlock new cards.',
+          'Goal: complete a burger.',
+          'Use ingredients, hats, actions and negation.',
+          'Complete your burger to win.',
         ],
-        focus: { hats: true, closet: true, actionCards: true },
+        focus: {},
       },
     ],
   },
@@ -242,6 +250,9 @@ const COPY = {
     prev: 'Retour',
     finish: 'Terminer le tutoriel',
     skip: 'Quitter le tutoriel',
+    tutorialWin: 'Félicitations, tu as terminé le tutoriel !',
+    addHatCostInfo: 'Voici le coût d ajouter des chapeaux : toute ta main est défaussée et ton maximum de cartes diminue de 1.',
+    practiceObjective: 'Objectif : compléter un burger.',
     steps: [
       {
         title: 'Chapeaux principaux et placard',
@@ -285,6 +296,7 @@ const COPY = {
         bullets: [
           'C est utile quand tu veux garder deux langues actives en meme temps.',
           'C est plus couteux, mais cela donne plus de flexibilite pour les prochains tours.',
+          'Ajouter defausse toute ta main et reduit ton maximum de cartes de 1. C est le cout.',
         ],
         focus: { closet: true, addButton: true, selectedCard: 1 },
       },
@@ -308,14 +320,14 @@ const COPY = {
         focus: { selectedCard: 0, actionCards: true },
       },
       {
-        title: 'Resume final',
-        body: 'Avant de terminer ton tour, verifie ce que le burger demande, quelles langues sont actives et quelles actions valent la peine d etre conservees.',
+        title: 'Pratiquons !',
+        body: 'Tu vas maintenant jouer une vraie partie contre l IA. Utilise tout ce que tu as appris pour gagner.',
         bullets: [
-          'Burger requis + chapeau correspondant = ingredient jouable.',
-          'Placard = reserve de langues.',
-          'Echanger et Ajouter ouvrent de nouvelles cartes.',
+          'Objectif : completer un burger.',
+          'Utilise ingredients, chapeaux, actions et negation.',
+          'Complete ton burger pour gagner.',
         ],
-        focus: { hats: true, closet: true, actionCards: true },
+        focus: {},
       },
     ],
   },
@@ -334,6 +346,9 @@ const COPY = {
     prev: 'Indietro',
     finish: 'Termina tutorial',
     skip: 'Esci dal tutorial',
+    tutorialWin: 'Congratulazioni, hai completato il tutorial!',
+    addHatCostInfo: 'Questo e il costo di aggiungere cappelli: tutta la mano viene scartata e il massimo di carte si riduce di 1.',
+    practiceObjective: 'Obiettivo: completare un hamburger.',
     steps: [
       {
         title: 'Cappelli principali e armadio',
@@ -377,6 +392,7 @@ const COPY = {
         bullets: [
           'Serve quando vuoi tenere attive due lingue allo stesso tempo.',
           'Costa di piu, ma ti da piu flessibilita nei turni futuri.',
+          'Aggiungere scarta tutta la mano e riduce il massimo di carte di 1. Questo e il costo.',
         ],
         focus: { closet: true, addButton: true, selectedCard: 1 },
       },
@@ -400,14 +416,14 @@ const COPY = {
         focus: { selectedCard: 0, actionCards: true },
       },
       {
-        title: 'Riepilogo finale',
-        body: 'Prima di terminare il turno, controlla cosa richiede l hamburger, quali lingue sono attive e quali carte azione conviene conservare.',
+        title: 'Mettiamo in pratica!',
+        body: 'Ora giocherai una partita vera contro l IA. Usa tutto quello che hai imparato per vincere.',
         bullets: [
-          'Richiesta dell hamburger + cappello corretto = ingrediente giocabile.',
-          'Armadio = riserva di lingue.',
-          'Cambia e Aggiungi sbloccano nuove carte.',
+          'Obiettivo: completare un hamburger.',
+          'Usa ingredienti, cappelli, azioni e negazione.',
+          'Completa il tuo hamburger per vincere.',
         ],
-        focus: { hats: true, closet: true, actionCards: true },
+        focus: {},
       },
     ],
   },
@@ -426,6 +442,9 @@ const COPY = {
     prev: 'Zuruck',
     finish: 'Tutorial beenden',
     skip: 'Tutorial verlassen',
+    tutorialWin: 'Herzlichen Gluckwunsch, du hast das Tutorial abgeschlossen!',
+    addHatCostInfo: 'Das sind die Kosten fur das Hinzufugen von Huten: Deine gesamte Hand wird abgeworfen und dein Handlimit sinkt um 1.',
+    practiceObjective: 'Ziel: einen Burger vervollstandigen.',
     steps: [
       {
         title: 'Haupthute und Schrank',
@@ -469,6 +488,7 @@ const COPY = {
         bullets: [
           'Das ist stark, wenn du zwei Sprachen gleichzeitig aktiv haben willst.',
           'Es kostet mehr, gibt dir aber mehr Flexibilitat fur spatere Zuge.',
+          'Hinzufugen wirft deine gesamte Hand ab und senkt dein Handlimit um 1. Das sind die Kosten.',
         ],
         focus: { closet: true, addButton: true, selectedCard: 1 },
       },
@@ -492,14 +512,14 @@ const COPY = {
         focus: { selectedCard: 0, actionCards: true },
       },
       {
-        title: 'Letzte Zusammenfassung',
-        body: 'Bevor du deinen Zug beendest, prufe, was der Burger braucht, welche Sprachen aktiv sind und welche Aktionskarten du lieber behalten solltest.',
+        title: 'Lass uns uben!',
+        body: 'Jetzt spielst du eine echte Partie gegen die KI. Nutze alles, was du gelernt hast, um zu gewinnen.',
         bullets: [
-          'Burger-Anforderung + passender Hut = spielbare Zutat.',
-          'Schrank = Sprachreserve.',
-          'Wechseln und Hinzufugen schalten neue Karten frei.',
+          'Ziel: einen Burger vervollstandigen.',
+          'Nutze Zutaten, Hute, Aktionen und Negation.',
+          'Vervollstandige deinen Burger, um zu gewinnen.',
         ],
-        focus: { hats: true, closet: true, actionCards: true },
+        focus: {},
       },
     ],
   },
@@ -518,6 +538,9 @@ const COPY = {
     prev: 'Voltar',
     finish: 'Terminar tutorial',
     skip: 'Sair do tutorial',
+    tutorialWin: 'Parabens, completaste o tutorial!',
+    addHatCostInfo: 'Este e o custo de adicionar chapeus: toda a tua mao e descartada e o maximo de cartas diminui em 1.',
+    practiceObjective: 'Objetivo: completar um hamburguer.',
     steps: [
       {
         title: 'Chapeus principais e armario',
@@ -561,6 +584,7 @@ const COPY = {
         bullets: [
           'Serve quando queres manter duas linguas ativas ao mesmo tempo.',
           'Custa mais, mas da-te mais flexibilidade nos turnos seguintes.',
+          'Adicionar descarta toda a tua mao e reduz o maximo de cartas em 1. Esse e o custo.',
         ],
         focus: { closet: true, addButton: true, selectedCard: 1 },
       },
@@ -584,14 +608,14 @@ const COPY = {
         focus: { selectedCard: 0, actionCards: true },
       },
       {
-        title: 'Resumo final',
-        body: 'Antes de terminares o turno, verifica o que o hamburguer pede, que linguas estao ativas e que cartas de acao vale a pena guardar.',
+        title: 'Vamos praticar!',
+        body: 'Agora vais jogar uma partida real contra a IA. Usa tudo o que aprendeste para ganhar.',
         bullets: [
-          'Necessidade do hamburguer + chapeu correspondente = ingrediente jogavel.',
-          'Armario = reserva de linguas.',
-          'Trocar e Adicionar desbloqueiam novas cartas.',
+          'Objetivo: completar um hamburguer.',
+          'Usa ingredientes, chapeus, acoes e negacao.',
+          'Completa o teu hamburguer para ganhar.',
         ],
-        focus: { hats: true, closet: true, actionCards: true },
+        focus: {},
       },
     ],
   },
@@ -767,41 +791,57 @@ export function buildTutorialScenario(step, { playerName = 'Jugador', user = nul
           table: ['tomate', 'queso'],
           burgers: [['pan', 'tomate', 'queso']],
         }),
+        createPlayer({
+          name: 'Chef Rival',
+          username: null,
+          userId: null,
+          avatarUrl: null,
+          isAI: true,
+          hand: [],
+          mainHats: ['francés'],
+          perchero: ['español', 'inglés', 'italiano', 'alemán', 'portugués'],
+          table: ['pan', 'carne'],
+          burgers: [['pan', 'carne', 'queso']],
+        }),
       ],
       discard: [ingredientCard('lechuga', 'alemán'), ingredientCard('pollo', 'francés')],
       selectedIdx: null,
     }),
-    () => ({
-      players: [
-        createPlayer({
-          ...playerMeta,
-          hand: [
-            actionCard('negacion'),
-            actionCard('tenedor'),
-            ingredientCard('queso', 'español'),
-          ],
-          mainHats: ['español'],
-          perchero: ['inglés', 'francés', 'italiano', 'alemán', 'portugués'],
-          table: ['pan'],
-          burgers: [['pan', 'queso', 'tomate']],
-        }),
-        createPlayer({
-          ...opponentMeta,
-          hand: [],
-          mainHats: ['inglés'],
-          perchero: ['español', 'francés', 'italiano', 'alemán', 'portugués'],
-          table: ['tomate'],
-          burgers: [['pan', 'tomate', 'queso']],
-        }),
-      ],
-      pendingNeg: {
-        actingIdx: 1,
-        cardInfo: { emoji: '🍴', name: 'The Fork' },
-        eligibleIdxs: [0],
-        responses: {},
-      },
-      selectedIdx: 0,
-    }),
+    () => {
+      const opponentFork = actionCard('tenedor');
+      return {
+        players: [
+          createPlayer({
+            ...playerMeta,
+            hand: [
+              actionCard('negacion'),
+              actionCard('tenedor'),
+              ingredientCard('queso', 'español'),
+            ],
+            mainHats: ['español'],
+            perchero: ['inglés', 'francés', 'italiano', 'alemán', 'portugués'],
+            table: ['pan'],
+            burgers: [['pan', 'queso', 'tomate']],
+          }),
+          createPlayer({
+            ...opponentMeta,
+            hand: [opponentFork],
+            mainHats: ['inglés'],
+            perchero: ['español', 'francés', 'italiano', 'alemán', 'portugués'],
+            table: ['tomate'],
+            burgers: [['pan', 'tomate', 'queso']],
+          }),
+        ],
+        pendingNeg: {
+          actingIdx: 1,
+          card: opponentFork,
+          cardInfo: { emoji: '🍴', name: 'The Fork' },
+          eligibleIdxs: [0],
+          responses: {},
+        },
+        selectedIdx: 0,
+      };
+    },
     () => ({
       players: [
         createPlayer({

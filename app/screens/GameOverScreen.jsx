@@ -7,15 +7,17 @@ import perdedor from '../../imagenes/perdedor.png';
 import burgerIcon from '../../imagenes/hamburguesas/ham.png';
 import { UserAvatar } from '../components/UserAvatar.jsx';
 
-export function GameOverScreen({ winner, players, onRestart, user, onHistory, T }) {
+export function GameOverScreen({ winner, players, onRestart, user, onHistory, T, isTutorial, tutorialWinText }) {
   const didWin = !!user && (winner?.id === user?.id || winner?.name === user?.displayName);
   const wonByAbandon = winner?.reason === 'abandon';
   const headerImage = didWin ? ganador : perdedor;
-  const titleText = didWin
-    ? (wonByAbandon
-      ? T('wonByAbandon')
-      : (typeof T('playerWon') === 'function' ? T('playerWon')(winner.name) : T('playerWon')))
-    : T('youLost');
+  const titleText = isTutorial && didWin
+    ? (tutorialWinText || 'Congratulations!')
+    : didWin
+      ? (wonByAbandon
+        ? T('wonByAbandon')
+        : (typeof T('playerWon') === 'function' ? T('playerWon')(winner.name) : T('playerWon')))
+      : T('youLost');
   const subtitleText = didWin
     ? (wonByAbandon
       ? (typeof T('abandonSubtitle') === 'function' ? T('abandonSubtitle')(winner.leftPlayerName || '') : T('abandonSubtitle'))
