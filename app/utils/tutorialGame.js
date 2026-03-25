@@ -83,7 +83,7 @@ const COPY = {
       },
       {
         title: 'Ingrediente correcto y sombrero correcto',
-        body: 'Aquí sí puedes jugar la lechuga porque tu hamburguesa la necesita y tu sombrero principal es espanol.',
+        body: 'Aquí sí puedes jugar la lechuga porque tu hamburguesa la necesita y tu sombrero principal es español.',
         bullets: [
           'Las cartas jugables aparecen habilitadas.',
           'Si una carta coincide con el ingrediente faltante y con tu sombrero, la puedes bajar a la mesa.',
@@ -92,7 +92,7 @@ const COPY = {
       },
       {
         title: 'Ingrediente correcto, sombrero incorrecto',
-        body: 'Ahora el queso sí sirve para la hamburguesa, pero no lo puedes jugar porque solo tienes sombrero espanol y la carta está en ingles.',
+        body: 'Ahora el queso sí sirve para la hamburguesa, pero no lo puedes jugar porque solo tienes sombrero español y la carta está en inglés.',
         bullets: [
           'No basta con tener el ingrediente correcto.',
           'También necesitas un sombrero principal del idioma de esa carta.',
@@ -832,6 +832,33 @@ export function buildTutorialScenario(step, { playerName = 'Jugador', user = nul
   };
 
   const scenarios = [
+    // Step 0: Game objective
+    () => ({
+      players: [
+        createPlayer({
+          ...playerMeta,
+          hand: [
+            ingredientCard('lechuga', 'espanol'),
+            ingredientCard('queso', 'ingles'),
+            actionCard('tenedor'),
+            actionCard('negacion'),
+          ],
+          mainHats: ['espanol'],
+          perchero: ['ingles', 'frances', 'italiano', 'aleman', 'portugues'],
+          table: [],
+          burgers: [['pan', 'lechuga', 'queso']],
+        }),
+        createPlayer({
+          ...opponentMeta,
+          hand: [],
+          mainHats: ['ingles'],
+          perchero: ['espanol', 'frances', 'italiano', 'aleman', 'portugues'],
+          table: ['tomate'],
+          burgers: [['pan', 'tomate', 'queso']],
+        }),
+      ],
+      selectedIdx: 0,
+    }),
     () => ({
       players: [
         createPlayer({
@@ -961,7 +988,33 @@ export function buildTutorialScenario(step, { playerName = 'Jugador', user = nul
       ],
       selectedIdx: 1,
     }),
-    // Step 5: Wildcards
+    // Step 6: Discard
+    () => ({
+      players: [
+        createPlayer({
+          ...playerMeta,
+          hand: [
+            ingredientCard('queso', 'frances'),
+            ingredientCard('carne', 'aleman'),
+            ingredientCard('pollo', 'portugues'),
+          ],
+          mainHats: ['espanol'],
+          perchero: ['ingles', 'frances', 'italiano', 'aleman', 'portugues'],
+          table: ['pan'],
+          burgers: [['pan', 'tomate', 'queso']],
+        }),
+        createPlayer({
+          ...opponentMeta,
+          hand: [],
+          mainHats: ['ingles'],
+          perchero: ['espanol', 'frances', 'italiano', 'aleman', 'portugues'],
+          table: ['tomate'],
+          burgers: [['pan', 'tomate', 'queso']],
+        }),
+      ],
+      selectedIdx: 0,
+    }),
+    // Step 7: Wildcards
     () => ({
       players: [
         createPlayer({

@@ -240,13 +240,14 @@ export default function App() {
   const tutorialFocus = tutorialStepData?.focus || {};
   const isMobile = typeof window !== 'undefined' && window.innerWidth <= 640;
   const tutorialPractice = !!tutorialState?.practiceMode;
-  const tutorialAllowsCardSelection = !tutorialActive || tutorialPractice || [1, 2, 5, 6].includes(tutorialStep);
-  const tutorialAllowsPlayButton = !tutorialActive || tutorialPractice || [1, 5, 6].includes(tutorialStep);
-  const tutorialAllowsChangeHat = !tutorialActive || tutorialPractice || tutorialStep === 3;
-  const tutorialAllowsAddHat = !tutorialActive || tutorialPractice || tutorialStep === 4;
-  const tutorialAllowsNegation = !tutorialActive || tutorialPractice || tutorialStep === 7;
+  const tutorialAllowsCardSelection = !tutorialActive || tutorialPractice || [2, 3, 6, 7, 8].includes(tutorialStep);
+  const tutorialAllowsPlayButton = !tutorialActive || tutorialPractice || [2, 7, 8].includes(tutorialStep);
+  const tutorialAllowsDiscard = !tutorialActive || tutorialPractice || tutorialStep === 6;
+  const tutorialAllowsChangeHat = !tutorialActive || tutorialPractice || tutorialStep === 4;
+  const tutorialAllowsAddHat = !tutorialActive || tutorialPractice || tutorialStep === 5;
+  const tutorialAllowsNegation = !tutorialActive || tutorialPractice || tutorialStep === 9;
   const tutorialRecommendedHatLang = (() => {
-    if (!tutorialActive || ![3, 4].includes(tutorialStep)) return null;
+    if (!tutorialActive || ![4, 5].includes(tutorialStep)) return null;
     const focusedIdx = tutorialFocus.selectedCard;
     if (!Number.isInteger(focusedIdx)) return null;
     const focusedCard = players?.[HI]?.hand?.[focusedIdx];
@@ -256,22 +257,22 @@ export default function App() {
     if (!tutorialRecommendedHatLang) return null;
     const langLabel = T(tutorialRecommendedHatLang);
     const copyByUi = {
-      es: tutorialStep === 3
+      es: tutorialStep === 4
         ? `Tutorial: cambia a ${langLabel} para poder jugar la carta seleccionada.`
         : `Tutorial: agrega ${langLabel} para conservar tu sombrero actual y abrir también la carta seleccionada.`,
-      en: tutorialStep === 3
+      en: tutorialStep === 4
         ? `Tutorial: switch to ${langLabel} so you can play the selected card.`
         : `Tutorial: add ${langLabel} so you keep your current hat and also unlock the selected card.`,
-      fr: tutorialStep === 3
+      fr: tutorialStep === 4
         ? `Tutoriel : passe a ${langLabel} pour pouvoir jouer la carte selectionnee.`
         : `Tutoriel : ajoute ${langLabel} pour garder ton chapeau actuel et debloquer aussi la carte selectionnee.`,
-      it: tutorialStep === 3
+      it: tutorialStep === 4
         ? `Tutorial: passa a ${langLabel} per poter giocare la carta selezionata.`
         : `Tutorial: aggiungi ${langLabel} per mantenere il cappello attuale e sbloccare anche la carta selezionata.`,
-      de: tutorialStep === 3
+      de: tutorialStep === 4
         ? `Tutorial: wechsle zu ${langLabel}, damit du die ausgewahlte Karte spielen kannst.`
         : `Tutorial: fage ${langLabel} hinzu, damit dein aktueller Hut bleibt und die ausgewahlte Karte auch spielbar wird.`,
-      pt: tutorialStep === 3
+      pt: tutorialStep === 4
         ? `Tutorial: troca para ${langLabel} para poderes jogar a carta selecionada.`
         : `Tutorial: adiciona ${langLabel} para manter o teu chapeu atual e desbloquear tambem a carta selecionada.`,
     };
@@ -286,6 +287,16 @@ export default function App() {
     const focusHand = tutorialFocus.selectedCard !== undefined || tutorialFocus.actionCards;
 
     if (isMobile) {
+      if (tutorialStep === 0 && focusCloset && focusHand) {
+        return {
+          ...base,
+          left: 10,
+          right: 10,
+          top: 74,
+          width: 'calc(100vw - 20px)',
+          maxWidth: 'calc(100vw - 20px)',
+        };
+      }
       if (focusCloset) {
         return {
           ...base,
@@ -306,6 +317,15 @@ export default function App() {
       };
     }
 
+    if (tutorialStep === 0 && focusCloset && focusHand) {
+      return {
+        ...base,
+        right: 16,
+        bottom: 112,
+        width: 360,
+        maxWidth: 360,
+      };
+    }
     if (focusCloset) {
       return {
         ...base,
@@ -1514,13 +1534,13 @@ export default function App() {
       user,
     });
     // Apply carryOver from previous tutorial steps (hat changes, basurero card)
-    if (tutorialCarryOver && step >= 5) {
+    if (tutorialCarryOver && step >= 7) {
       const p = scenario.players[0];
       if (tutorialCarryOver.mainHats) p.mainHats = [...tutorialCarryOver.mainHats];
       if (tutorialCarryOver.perchero) p.perchero = [...tutorialCarryOver.perchero];
       if (tutorialCarryOver.maxHand != null) p.maxHand = tutorialCarryOver.maxHand;
     }
-    if (tutorialCarryOver?.basureroCard && step >= 7) {
+    if (tutorialCarryOver?.basureroCard && step >= 9) {
       scenario.players[0].hand.push(tutorialCarryOver.basureroCard);
     }
     setPlayers(scenario.players);
@@ -1554,12 +1574,13 @@ export default function App() {
   function advanceTutorialAfter(actionType) {
     if (!tutorialActive) return false;
     const shouldAdvance =
-      (tutorialStep === 1 && actionType === 'ingredient') ||
-      (tutorialStep === 3 && actionType === 'changeHat') ||
-      (tutorialStep === 4 && actionType === 'addHat') ||
-      (tutorialStep === 5 && actionType === 'wildcard') ||
-      (tutorialStep === 6 && actionType === 'actionCard') ||
-      (tutorialStep === 7 && actionType === 'negation');
+      (tutorialStep === 2 && actionType === 'ingredient') ||
+      (tutorialStep === 4 && actionType === 'changeHat') ||
+      (tutorialStep === 5 && actionType === 'addHat') ||
+      (tutorialStep === 6 && actionType === 'discard') ||
+      (tutorialStep === 7 && actionType === 'wildcard') ||
+      (tutorialStep === 8 && actionType === 'actionCard') ||
+      (tutorialStep === 9 && actionType === 'negation');
     if (!shouldAdvance) return false;
     setTimeout(() => nextTutorialStep(), 500);
     return true;
@@ -3378,7 +3399,7 @@ export default function App() {
   }
 
   function humanDiscard() {
-    if (tutorialActive) return;
+    if (tutorialActive && !tutorialPractice && tutorialStep !== 6) return;
     if (selectedIdx === null) return;
     if (isOnline && !isHost) {
       socket.emit('playerAction', { code: roomCode, action: { type: 'discard', cardIdx: selectedIdx } });
@@ -3390,11 +3411,16 @@ export default function App() {
     const newPls = clone(players);
     const discarded = newPls[HI].hand.splice(selectedIdx, 1)[0];
     setSelectedIdx(null);
+    if (advanceTutorialAfter('discard')) {
+      setPlayers(newPls);
+      setDiscard([...discard, discarded]);
+      return;
+    }
     endTurn(newPls, deck, [...discard, discarded], HI);
   }
 
   function confirmWildcard(chosenIng) {
-    if (tutorialActive && !tutorialPractice && tutorialStep !== 5) return;
+    if (tutorialActive && !tutorialPractice && tutorialStep !== 7) return;
     const { cardIdx } = modal;
     setModal(null); setSelectedIdx(null);
     if (isOnline && !isHost) {
@@ -3424,7 +3450,7 @@ export default function App() {
 
   // â”€â”€ Modal resolvers â”€â”€
   function resolvePickTarget(targetIdx) {
-    if (tutorialActive && !tutorialPractice && tutorialStep !== 6) return;
+    if (tutorialActive && !tutorialPractice && tutorialStep !== 8) return;
     const { cardIdx, action } = modal;
     setModal(null); setSelectedIdx(null);
 
@@ -3500,7 +3526,7 @@ export default function App() {
   }
 
   function resolvePickIngredient(ingIdx) {
-    if (tutorialActive && !tutorialPractice && tutorialStep !== 6) return;
+    if (tutorialActive && !tutorialPractice && tutorialStep !== 8) return;
     const { targetIdx, newPls, newDiscard } = modal;
     setModal(null); setSelectedIdx(null);
     // Non-host: send complete action
@@ -3680,7 +3706,7 @@ export default function App() {
   }
 
   function resolveBasurero(cardId) {
-    if (tutorialActive && !tutorialPractice && tutorialStep !== 6) return;
+    if (tutorialActive && !tutorialPractice && tutorialStep !== 8) return;
     const { cardIdx } = modal;
     setModal(null); setSelectedIdx(null);
     if (isOnline && !isHost) {
@@ -4838,7 +4864,7 @@ export default function App() {
                   <Btn onClick={humanPlay} disabled={!tutorialAllowsPlayButton || (extraPlay && card.type !== 'ingredient') || (card.type === 'action' && isClosetActionBlocked(human, card.action))} color="#4CAF50" style={{ fontSize: 11, padding: '6px 12px' }}>
                     {T('play')}
                   </Btn>
-                  <Btn onClick={humanDiscard} disabled={tutorialActive || extraPlay} color="#FF7043" style={{ fontSize: 11, padding: '6px 12px' }}>
+                  <Btn onClick={humanDiscard} disabled={(!tutorialAllowsDiscard && tutorialActive) || extraPlay} color="#FF7043" style={{ fontSize: 11, padding: '6px 12px' }}>
                     {T('discard')}
                   </Btn>
                 </div>
@@ -6411,7 +6437,7 @@ export default function App() {
                 <Btn onClick={() => { humanPlay(); }} disabled={!tutorialAllowsPlayButton || (extraPlay && card.type !== 'ingredient') || (card.type === 'action' && isClosetActionBlocked(human, card.action))} color="#4CAF50" style={{ flex: 1, fontSize: 14, padding: '10px 16px' }}>
                   {T('play')}
                 </Btn>
-                <Btn onClick={() => { humanDiscard(); }} disabled={tutorialActive || extraPlay} color="#FF7043" style={{ flex: 1, fontSize: 14, padding: '10px 16px' }}>
+                <Btn onClick={() => { humanDiscard(); }} disabled={(!tutorialAllowsDiscard && tutorialActive) || extraPlay} color="#FF7043" style={{ flex: 1, fontSize: 14, padding: '10px 16px' }}>
                   {T('discard')}
                 </Btn>
               </div>
@@ -6433,7 +6459,7 @@ export default function App() {
           <p style={{ color: '#888', fontSize: 12, marginBottom: 12 }}>
             {typeof T('changeHatStep1Desc') === 'function' ? T('changeHatStep1Desc')(Math.ceil(human.hand.length / 2)) : T('changeHatStep1Desc')}
           </p>
-          {tutorialActive && tutorialStep === 3 && tutorialHatHintText ? (
+          {tutorialActive && tutorialStep === 4 && tutorialHatHintText ? (
             <div style={{
               marginBottom: 12,
               padding: '10px 12px',
@@ -6486,7 +6512,7 @@ export default function App() {
           <p style={{ color: '#888', fontSize: 12, marginBottom: 12 }}>
             {`Elige qué sombrero principal quieres reemplazar por ${T(modal.hatLang)}.`}
           </p>
-          {tutorialActive && tutorialStep === 3 && tutorialHatHintText ? (
+          {tutorialActive && tutorialStep === 4 && tutorialHatHintText ? (
             <div style={{
               marginBottom: 12,
               padding: '10px 12px',
