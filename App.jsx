@@ -178,6 +178,7 @@ export default function App() {
   const [onlineMenuTab, setOnlineMenuTab] = useState('');
   const [showQuickMenu, setShowQuickMenu] = useState(false);
   const [showNotificationsPanel, setShowNotificationsPanel] = useState(false);
+  const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   const [profileUserId, setProfileUserId] = useState(Number.isFinite(initialProfileId) ? initialProfileId : (savedUserOnLoad?.id || null));
   const [profileReturnPhase, setProfileReturnPhase] = useState('setup');
   const [profileBackStack, setProfileBackStack] = useState([]);
@@ -4010,67 +4011,112 @@ export default function App() {
               <div style={{ color: '#f8f4cf', fontSize: 13, fontWeight: 900, letterSpacing: 0.3 }}>
                 {T('gameLanguageMenu')}
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
-                {Object.entries(KEY_TO_LANG).map(([langKey, gameLang]) => {
-                  const active = uiLang === langKey;
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {(() => {
+                  const selectedGameLang = KEY_TO_LANG[uiLang] || LANGUAGES[0];
                   return (
                     <button
-                      key={langKey}
                       type="button"
-                      onClick={() => handleSetLang(langKey)}
+                      onClick={() => setShowLanguageMenu(prev => !prev)}
                       style={{
-                        padding: '10px 8px 9px',
-                        borderRadius: 12,
-                        border: active ? '2px solid #ffd700' : `1px solid ${LANG_BORDER[gameLang]}55`,
-                        background: active ? 'rgba(255,215,0,0.12)' : 'rgba(12,18,32,0.72)',
-                        fontFamily: "'Fredoka',sans-serif",
-                        fontWeight: 800,
-                        fontSize: 12,
-                        lineHeight: 1.15,
-                        cursor: 'pointer',
-                        transition: 'all 0.18s ease',
+                        padding: '10px 12px',
+                        borderRadius: 14,
+                        border: '2px solid #FFD700',
+                        background: 'rgba(255,215,0,0.12)',
                         display: 'flex',
-                        flexDirection: 'column',
                         alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 5,
-                        minHeight: 86,
-                        boxShadow: active ? '0 0 0 1px rgba(255,215,0,0.18), 0 10px 18px rgba(0,0,0,0.18)' : 'none',
+                        gap: 10,
+                        cursor: 'pointer',
+                        width: '100%',
                       }}
                     >
                       <div style={{
-                        width: 44,
-                        height: 44,
+                        width: 42,
+                        height: 42,
                         borderRadius: 14,
-                        border: active ? '2px solid #FFD700' : `1px solid ${LANG_BORDER[gameLang]}66`,
-                        background: active ? 'rgba(255,215,0,0.12)' : LANG_BG[gameLang],
+                        border: '2px solid #FFD700',
+                        background: LANG_BG[selectedGameLang],
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        boxShadow: active ? '0 0 18px rgba(255,215,0,0.18)' : 'none',
+                        boxShadow: '0 0 16px rgba(255,215,0,0.18)',
+                        flexShrink: 0,
                       }}>
-                        <HatSVG lang={gameLang} size={28} />
+                        <HatSVG lang={selectedGameLang} size={28} />
                       </div>
-                      <span style={{
-                        fontSize: 11,
-                        fontWeight: 900,
-                        color: active ? '#FFD700' : LANG_TEXT[gameLang],
-                        lineHeight: 1,
-                      }}>
-                        {getLocalizedLangShort(gameLang, uiLang)}
-                      </span>
-                      <span style={{
-                        fontSize: 11,
-                        fontWeight: 800,
-                        color: active ? '#f8f4cf' : '#d7def8',
-                        textAlign: 'center',
-                        lineHeight: 1.05,
-                      }}>
-                        {getLocalizedLangName(gameLang, uiLang)}
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 3, minWidth: 0, flex: 1 }}>
+                        <span style={{ fontSize: 11, fontWeight: 900, color: '#FFD700', lineHeight: 1 }}>
+                          {getLocalizedLangShort(selectedGameLang, uiLang)}
+                        </span>
+                        <span style={{ fontSize: 12, fontWeight: 800, color: '#f8f4cf', lineHeight: 1.05 }}>
+                          {getLocalizedLangName(selectedGameLang, uiLang)}
+                        </span>
+                      </div>
+                      <span style={{ color: '#FFD700', fontSize: 18, fontWeight: 900, lineHeight: 1 }}>
+                        {showLanguageMenu ? '−' : '+'}
                       </span>
                     </button>
                   );
-                })}
+                })()}
+                {showLanguageMenu ? (
+                  <div style={{
+                    display: 'flex',
+                    gap: 8,
+                    overflowX: 'auto',
+                    paddingBottom: 2,
+                  }}>
+                    {Object.entries(KEY_TO_LANG).map(([langKey, gameLang]) => {
+                      const active = uiLang === langKey;
+                      return (
+                        <button
+                          key={langKey}
+                          type="button"
+                          onClick={() => {
+                            handleSetLang(langKey);
+                            setShowLanguageMenu(false);
+                          }}
+                          style={{
+                            padding: '9px 8px 8px',
+                            borderRadius: 12,
+                            border: active ? '2px solid #ffd700' : `1px solid ${LANG_BORDER[gameLang]}55`,
+                            background: active ? 'rgba(255,215,0,0.12)' : 'rgba(12,18,32,0.72)',
+                            cursor: 'pointer',
+                            transition: 'all 0.18s ease',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 5,
+                            minWidth: 78,
+                            flexShrink: 0,
+                          }}
+                        >
+                          <div style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 13,
+                            border: active ? '2px solid #FFD700' : `1px solid ${LANG_BORDER[gameLang]}66`,
+                            background: active ? 'rgba(255,215,0,0.12)' : LANG_BG[gameLang],
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            boxShadow: active ? '0 0 18px rgba(255,215,0,0.18)' : 'none',
+                          }}>
+                            <HatSVG lang={gameLang} size={26} />
+                          </div>
+                          <span style={{
+                            fontSize: 11,
+                            fontWeight: 900,
+                            color: active ? '#FFD700' : LANG_TEXT[gameLang],
+                            lineHeight: 1,
+                          }}>
+                            {getLocalizedLangShort(gameLang, uiLang)}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : null}
               </div>
             </div>
             {phase === 'playing' && (
