@@ -247,6 +247,31 @@ export default function App() {
     const focusedCard = players?.[HI]?.hand?.[focusedIdx];
     return focusedCard?.type === 'ingredient' ? focusedCard.language : null;
   })();
+  const tutorialHatHintText = (() => {
+    if (!tutorialRecommendedHatLang) return null;
+    const langLabel = T(tutorialRecommendedHatLang);
+    const copyByUi = {
+      es: tutorialStep === 3
+        ? `Tutorial: cambia a ${langLabel} para poder jugar la carta seleccionada.`
+        : `Tutorial: agrega ${langLabel} para conservar tu sombrero actual y abrir también la carta seleccionada.`,
+      en: tutorialStep === 3
+        ? `Tutorial: switch to ${langLabel} so you can play the selected card.`
+        : `Tutorial: add ${langLabel} so you keep your current hat and also unlock the selected card.`,
+      fr: tutorialStep === 3
+        ? `Tutoriel : passe a ${langLabel} pour pouvoir jouer la carte selectionnee.`
+        : `Tutoriel : ajoute ${langLabel} pour garder ton chapeau actuel et debloquer aussi la carte selectionnee.`,
+      it: tutorialStep === 3
+        ? `Tutorial: passa a ${langLabel} per poter giocare la carta selezionata.`
+        : `Tutorial: aggiungi ${langLabel} per mantenere il cappello attuale e sbloccare anche la carta selezionata.`,
+      de: tutorialStep === 3
+        ? `Tutorial: wechsle zu ${langLabel}, damit du die ausgewahlte Karte spielen kannst.`
+        : `Tutorial: fage ${langLabel} hinzu, damit dein aktueller Hut bleibt und die ausgewahlte Karte auch spielbar wird.`,
+      pt: tutorialStep === 3
+        ? `Tutorial: troca para ${langLabel} para poderes jogar a carta selecionada.`
+        : `Tutorial: adiciona ${langLabel} para manter o teu chapeu atual e desbloquear tambem a carta selecionada.`,
+    };
+    return copyByUi[uiLang] || copyByUi.en;
+  })();
   const tutorialPopupStyle = (() => {
     const base = {
       position: 'fixed',
@@ -4067,23 +4092,26 @@ export default function App() {
                 })()}
                 <div style={{
                   position: 'absolute',
-                  left: 0,
-                  right: 0,
-                  top: 'calc(100% + 8px)',
+                  left: isMobile ? 'auto' : 0,
+                  right: isMobile ? 'calc(100% + 10px)' : 0,
+                  top: isMobile ? 0 : 'calc(100% + 8px)',
                   zIndex: 40,
-                  maxHeight: showLanguageMenu ? 120 : 0,
+                  maxHeight: showLanguageMenu ? (isMobile ? 360 : 120) : 0,
                   opacity: showLanguageMenu ? 1 : 0,
-                  transform: showLanguageMenu ? 'translateY(0)' : 'translateY(-6px)',
+                  transform: showLanguageMenu
+                    ? 'translate(0, 0)'
+                    : (isMobile ? 'translateX(8px)' : 'translateY(-6px)'),
                   overflow: 'hidden',
                   transition: 'max-height 0.24s ease, opacity 0.18s ease, transform 0.2s ease',
                   pointerEvents: showLanguageMenu ? 'auto' : 'none',
                 }}>
                   <div style={{
-                    display: isMobile ? 'grid' : 'flex',
-                    gridTemplateColumns: isMobile ? 'repeat(6, minmax(0, 1fr))' : undefined,
-                    gap: isMobile ? 4 : 8,
+                    display: 'flex',
+                    flexDirection: isMobile ? 'column' : 'row',
+                    gap: isMobile ? 6 : 8,
                     overflowX: isMobile ? 'visible' : 'auto',
                     padding: 10,
+                    width: isMobile ? 168 : 'auto',
                     borderRadius: 14,
                     border: '1px solid rgba(255,215,0,0.22)',
                     background: 'rgba(18, 26, 48, 0.96)',
@@ -4107,12 +4135,13 @@ export default function App() {
                             cursor: 'pointer',
                             transition: 'all 0.18s ease',
                             display: 'flex',
-                            flexDirection: 'column',
+                            flexDirection: isMobile ? 'row' : 'column',
                             alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: 5,
-                            minWidth: isMobile ? 0 : 78,
+                            justifyContent: isMobile ? 'flex-start' : 'center',
+                            gap: isMobile ? 10 : 5,
+                            minWidth: isMobile ? '100%' : 78,
                             flexShrink: 0,
+                            textAlign: isMobile ? 'left' : 'center',
                           }}
                         >
                           <div style={{
@@ -4136,6 +4165,16 @@ export default function App() {
                           }}>
                             {getLocalizedLangShort(gameLang, uiLang)}
                           </span>
+                          {isMobile ? (
+                            <span style={{
+                              fontSize: 12,
+                              fontWeight: 800,
+                              color: active ? '#f8f4cf' : '#d7def8',
+                              lineHeight: 1.05,
+                            }}>
+                              {getLocalizedLangName(gameLang, uiLang)}
+                            </span>
+                          ) : null}
                         </button>
                       );
                     })}
@@ -4928,6 +4967,21 @@ export default function App() {
                   • {bullet}
                 </div>
               ))}
+              {tutorialHatHintText ? (
+                <div style={{
+                  marginTop: 2,
+                  padding: '8px 10px',
+                  borderRadius: 12,
+                  border: tutorialRecommendedHatLang ? `1px solid ${LANG_BORDER[tutorialRecommendedHatLang]}88` : '1px solid rgba(255,215,0,0.25)',
+                  background: 'rgba(255,215,0,0.08)',
+                  color: '#fff3bf',
+                  fontSize: 12,
+                  fontWeight: 800,
+                  lineHeight: 1.4,
+                }}>
+                  {tutorialHatHintText}
+                </div>
+              ) : null}
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
               <Btn onClick={finishTutorialGame} color="#2a2a4a" style={{ color: '#fff' }}>
@@ -6303,6 +6357,21 @@ export default function App() {
           <p style={{ color: '#888', fontSize: 12, marginBottom: 12 }}>
             {typeof T('changeHatStep1Desc') === 'function' ? T('changeHatStep1Desc')(Math.ceil(human.hand.length / 2)) : T('changeHatStep1Desc')}
           </p>
+          {tutorialActive && tutorialStep === 3 && tutorialHatHintText ? (
+            <div style={{
+              marginBottom: 12,
+              padding: '10px 12px',
+              borderRadius: 12,
+              border: tutorialRecommendedHatLang ? `1px solid ${LANG_BORDER[tutorialRecommendedHatLang]}88` : '1px solid rgba(255,215,0,0.25)',
+              background: 'rgba(255,215,0,0.08)',
+              color: '#fff3bf',
+              fontSize: 12,
+              fontWeight: 800,
+              lineHeight: 1.35,
+            }}>
+              {tutorialHatHintText}
+            </div>
+          ) : null}
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
             {human.perchero.map(h => (
               <button
@@ -6341,6 +6410,21 @@ export default function App() {
           <p style={{ color: '#888', fontSize: 12, marginBottom: 12 }}>
             {`Elige qué sombrero principal quieres reemplazar por ${T(modal.hatLang)}.`}
           </p>
+          {tutorialActive && tutorialStep === 3 && tutorialHatHintText ? (
+            <div style={{
+              marginBottom: 12,
+              padding: '10px 12px',
+              borderRadius: 12,
+              border: tutorialRecommendedHatLang ? `1px solid ${LANG_BORDER[tutorialRecommendedHatLang]}88` : '1px solid rgba(255,215,0,0.25)',
+              background: 'rgba(255,215,0,0.08)',
+              color: '#fff3bf',
+              fontSize: 12,
+              fontWeight: 800,
+              lineHeight: 1.35,
+            }}>
+              {tutorialHatHintText}
+            </div>
+          ) : null}
           <div style={{
             display: 'flex',
             alignItems: 'center',
@@ -6485,6 +6569,21 @@ export default function App() {
           <p style={{ color: '#888', fontSize: 12, marginBottom: 12 }}>
             {typeof T('addHatDesc') === 'function' ? T('addHatDesc')(Math.max(1, human.maxHand - 1)) : T('addHatDesc')}
           </p>
+          {tutorialActive && tutorialStep === 4 && tutorialHatHintText ? (
+            <div style={{
+              marginBottom: 12,
+              padding: '10px 12px',
+              borderRadius: 12,
+              border: tutorialRecommendedHatLang ? `1px solid ${LANG_BORDER[tutorialRecommendedHatLang]}88` : '1px solid rgba(255,215,0,0.25)',
+              background: 'rgba(255,215,0,0.08)',
+              color: '#fff3bf',
+              fontSize: 12,
+              fontWeight: 800,
+              lineHeight: 1.35,
+            }}>
+              {tutorialHatHintText}
+            </div>
+          ) : null}
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
             {human.perchero.map(h => (
               <button
