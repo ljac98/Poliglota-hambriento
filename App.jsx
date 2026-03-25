@@ -8,7 +8,7 @@ import {
 } from './constants';
 import { generateDeck, genBurger, initPlayer, canPlayCard } from './game';
 import { shuffle, randInt, uid } from './game/utils';
-import { t, getUILang, setUILang, KEY_TO_LANG, getLocalizedLangShort } from './src/translations.js';
+import { t, getUILang, setUILang, KEY_TO_LANG, getLocalizedLangName, getLocalizedLangShort } from './src/translations.js';
 import { GameCard } from './components/Cards';
 import { BurgerTarget, LogEntry } from './components/GameUI';
 import { HatBadge } from './components/HatComponents.jsx';
@@ -3998,6 +3998,81 @@ export default function App() {
             <Btn onClick={goToFriends} color="#7ad8ff" style={{ color: '#102033', width: '100%', justifyContent: 'center' }}>
               {T('friends')}
             </Btn>
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 10,
+              padding: 12,
+              borderRadius: 16,
+              border: '1px solid rgba(255,215,0,0.18)',
+              background: 'rgba(255,255,255,0.04)',
+            }}>
+              <div style={{ color: '#f8f4cf', fontSize: 13, fontWeight: 900, letterSpacing: 0.3 }}>
+                {T('gameLanguageMenu')}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
+                {Object.entries(KEY_TO_LANG).map(([langKey, gameLang]) => {
+                  const active = uiLang === langKey;
+                  return (
+                    <button
+                      key={langKey}
+                      type="button"
+                      onClick={() => handleSetLang(langKey)}
+                      style={{
+                        padding: '10px 8px 9px',
+                        borderRadius: 12,
+                        border: active ? '2px solid #ffd700' : `1px solid ${LANG_BORDER[gameLang]}55`,
+                        background: active ? 'rgba(255,215,0,0.12)' : 'rgba(12,18,32,0.72)',
+                        fontFamily: "'Fredoka',sans-serif",
+                        fontWeight: 800,
+                        fontSize: 12,
+                        lineHeight: 1.15,
+                        cursor: 'pointer',
+                        transition: 'all 0.18s ease',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 5,
+                        minHeight: 86,
+                        boxShadow: active ? '0 0 0 1px rgba(255,215,0,0.18), 0 10px 18px rgba(0,0,0,0.18)' : 'none',
+                      }}
+                    >
+                      <div style={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: 14,
+                        border: active ? '2px solid #FFD700' : `1px solid ${LANG_BORDER[gameLang]}66`,
+                        background: active ? 'rgba(255,215,0,0.12)' : LANG_BG[gameLang],
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: active ? '0 0 18px rgba(255,215,0,0.18)' : 'none',
+                      }}>
+                        <HatSVG lang={gameLang} size={28} />
+                      </div>
+                      <span style={{
+                        fontSize: 11,
+                        fontWeight: 900,
+                        color: active ? '#FFD700' : LANG_TEXT[gameLang],
+                        lineHeight: 1,
+                      }}>
+                        {getLocalizedLangShort(gameLang, uiLang)}
+                      </span>
+                      <span style={{
+                        fontSize: 11,
+                        fontWeight: 800,
+                        color: active ? '#f8f4cf' : '#d7def8',
+                        textAlign: 'center',
+                        lineHeight: 1.05,
+                      }}>
+                        {getLocalizedLangName(gameLang, uiLang)}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
             {phase === 'playing' && (
               <Btn onClick={handleQuickLeaveGame} color="#ff4444" style={{ color: '#fff', width: '100%', justifyContent: 'center' }}>
                 {T('leaveLocal')}
