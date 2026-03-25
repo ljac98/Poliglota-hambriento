@@ -4091,9 +4091,6 @@ export default function App() {
                         <HatSVG lang={selectedGameLang} size={28} />
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 3, minWidth: 0, flex: 1 }}>
-                        <span style={{ fontSize: 11, fontWeight: 900, color: '#FFD700', lineHeight: 1 }}>
-                          {getLocalizedLangShort(selectedGameLang, uiLang)}
-                        </span>
                         <span style={{ fontSize: 12, fontWeight: 800, color: '#f8f4cf', lineHeight: 1.05 }}>
                           {getLocalizedLangName(selectedGameLang, uiLang)}
                         </span>
@@ -4106,7 +4103,7 @@ export default function App() {
                 })()}
                 <div style={{
                   position: 'absolute',
-                  left: isMobile ? 'calc(-168px - 10px)' : 0,
+                  left: isMobile ? 'calc(-190px - 10px)' : 0,
                   right: 'auto',
                   top: isMobile ? 0 : 'calc(100% + 8px)',
                   zIndex: 40,
@@ -4127,7 +4124,7 @@ export default function App() {
                     gap: 6,
                     overflowX: 'visible',
                     padding: 10,
-                    width: 168,
+                    width: 190,
                     borderRadius: 14,
                     border: '1px solid rgba(255,215,0,0.22)',
                     background: 'rgba(18, 26, 48, 0.96)',
@@ -4173,14 +4170,6 @@ export default function App() {
                           }}>
                             <HatSVG lang={gameLang} size={21} />
                           </div>
-                          <span style={{
-                            fontSize: 10,
-                            fontWeight: 900,
-                            color: active ? '#FFD700' : LANG_TEXT[gameLang],
-                            lineHeight: 1,
-                          }}>
-                            {getLocalizedLangShort(gameLang, uiLang)}
-                          </span>
                           <span style={{
                             fontSize: 12,
                             fontWeight: 800,
