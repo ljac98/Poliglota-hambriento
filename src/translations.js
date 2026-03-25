@@ -305,7 +305,7 @@ const translations = {
     aloneDesc: 'Todos los demas jugadores se han ido',
     backToLobby: 'Volver al lobby',
     // Languages
-    'español': 'Español',
+    espanol: 'Español',
     ingles: 'Ingles',
     frances: 'Frances',
     italiano: 'Italiano',
