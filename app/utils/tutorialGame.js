@@ -109,6 +109,16 @@ const COPY = {
         focus: { closet: true, addButton: true, selectedCard: 1 },
       },
       {
+        title: 'Comodines',
+        body: 'El comodín (perrito) es un ingrediente especial que puede sustituir cualquier ingrediente que te falte. Solo necesitas tener el sombrero del idioma de la carta.',
+        bullets: [
+          'Selecciona el comodín y juégalo.',
+          'Elige qué ingrediente quieres que represente.',
+          'Es muy flexible, pero sigue necesitando un sombrero del idioma correcto.',
+        ],
+        focus: { selectedCard: 0 },
+      },
+      {
         title: 'Cartas de acción',
         body: 'Las acciones cambian la partida: unas afectan a un jugador, otras a todos y otras interactúan con descarte o sombreros.',
         bullets: [
@@ -203,6 +213,16 @@ const COPY = {
           'Adding discards your entire hand and reduces your max hand by 1. That is the cost.',
         ],
         focus: { closet: true, addButton: true, selectedCard: 1 },
+      },
+      {
+        title: 'Wildcards',
+        body: 'The wildcard (hot dog) is a special ingredient that can substitute any missing ingredient. You only need a hat matching the card language.',
+        bullets: [
+          'Select the wildcard and play it.',
+          'Choose which ingredient it will represent.',
+          'It is very flexible, but still requires a hat in the right language.',
+        ],
+        focus: { selectedCard: 0 },
       },
       {
         title: 'Action cards',
@@ -301,6 +321,16 @@ const COPY = {
         focus: { closet: true, addButton: true, selectedCard: 1 },
       },
       {
+        title: 'Jokers',
+        body: 'Le joker (hot-dog) est un ingredient special qui peut remplacer n importe quel ingredient manquant. Il suffit d avoir un chapeau dans la langue de la carte.',
+        bullets: [
+          'Selectionne le joker et joue-le.',
+          'Choisis quel ingredient il representera.',
+          'Tres flexible, mais il faut quand meme un chapeau dans la bonne langue.',
+        ],
+        focus: { selectedCard: 0 },
+      },
+      {
         title: 'Cartes action',
         body: 'Les cartes action changent la partie : certaines affectent un joueur, d autres tout le monde, et d autres encore interagissent avec la defausse ou les chapeaux.',
         bullets: [
@@ -395,6 +425,16 @@ const COPY = {
           'Aggiungere scarta tutta la mano e riduce il massimo di carte di 1. Questo e il costo.',
         ],
         focus: { closet: true, addButton: true, selectedCard: 1 },
+      },
+      {
+        title: 'Jolly',
+        body: 'Il jolly (hot dog) e un ingrediente speciale che puo sostituire qualsiasi ingrediente mancante. Basta avere un cappello nella lingua della carta.',
+        bullets: [
+          'Seleziona il jolly e giocalo.',
+          'Scegli quale ingrediente rappresentera.',
+          'Molto flessibile, ma serve comunque un cappello nella lingua giusta.',
+        ],
+        focus: { selectedCard: 0 },
       },
       {
         title: 'Carte azione',
@@ -493,6 +533,16 @@ const COPY = {
         focus: { closet: true, addButton: true, selectedCard: 1 },
       },
       {
+        title: 'Joker',
+        body: 'Der Joker (Hot Dog) ist eine spezielle Zutat, die jede fehlende Zutat ersetzen kann. Du brauchst nur einen Hut in der Sprache der Karte.',
+        bullets: [
+          'Wahle den Joker aus und spiele ihn.',
+          'Bestimme, welche Zutat er darstellen soll.',
+          'Sehr flexibel, aber er braucht trotzdem einen Hut in der richtigen Sprache.',
+        ],
+        focus: { selectedCard: 0 },
+      },
+      {
         title: 'Aktionskarten',
         body: 'Aktionskarten verandern die Partie: einige betreffen einen Spieler, andere alle, und wieder andere interagieren mit Ablagestapel oder Huten.',
         bullets: [
@@ -587,6 +637,16 @@ const COPY = {
           'Adicionar descarta toda a tua mao e reduz o maximo de cartas em 1. Esse e o custo.',
         ],
         focus: { closet: true, addButton: true, selectedCard: 1 },
+      },
+      {
+        title: 'Coringas',
+        body: 'O coringa (cachorro-quente) e um ingrediente especial que pode substituir qualquer ingrediente em falta. So precisas de um chapeu na lingua da carta.',
+        bullets: [
+          'Seleciona o coringa e joga-o.',
+          'Escolhe que ingrediente ele vai representar.',
+          'Muito flexivel, mas continua a precisar de um chapeu na lingua certa.',
+        ],
+        focus: { selectedCard: 0 },
       },
       {
         title: 'Cartas de acao',
@@ -768,6 +828,32 @@ export function buildTutorialScenario(step, { playerName = 'Jugador', user = nul
         }),
       ],
       selectedIdx: 1,
+    }),
+    // Step 5: Wildcards
+    () => ({
+      players: [
+        createPlayer({
+          ...playerMeta,
+          hand: [
+            ingredientCard('perrito', 'español'),
+            ingredientCard('tomate', 'español'),
+            actionCard('tenedor'),
+          ],
+          mainHats: ['español'],
+          perchero: ['inglés', 'francés', 'italiano', 'alemán', 'portugués'],
+          table: ['pan'],
+          burgers: [['pan', 'lechuga', 'queso']],
+        }),
+        createPlayer({
+          ...opponentMeta,
+          hand: [],
+          mainHats: ['inglés'],
+          perchero: ['español', 'francés', 'italiano', 'alemán', 'portugués'],
+          table: ['tomate'],
+          burgers: [['pan', 'tomate', 'queso']],
+        }),
+      ],
+      selectedIdx: 0,
     }),
     () => ({
       players: [

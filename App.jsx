@@ -239,11 +239,11 @@ export default function App() {
   const tutorialFocus = tutorialStepData?.focus || {};
   const isMobile = typeof window !== 'undefined' && window.innerWidth <= 640;
   const tutorialPractice = !!tutorialState?.practiceMode;
-  const tutorialAllowsCardSelection = !tutorialActive || tutorialPractice || [1, 2, 5].includes(tutorialStep);
-  const tutorialAllowsPlayButton = !tutorialActive || tutorialPractice || [1, 5].includes(tutorialStep);
+  const tutorialAllowsCardSelection = !tutorialActive || tutorialPractice || [1, 2, 5, 6].includes(tutorialStep);
+  const tutorialAllowsPlayButton = !tutorialActive || tutorialPractice || [1, 5, 6].includes(tutorialStep);
   const tutorialAllowsChangeHat = !tutorialActive || tutorialPractice || tutorialStep === 3;
   const tutorialAllowsAddHat = !tutorialActive || tutorialPractice || tutorialStep === 4;
-  const tutorialAllowsNegation = !tutorialActive || tutorialPractice || tutorialStep === 6;
+  const tutorialAllowsNegation = !tutorialActive || tutorialPractice || tutorialStep === 7;
   const tutorialRecommendedHatLang = (() => {
     if (!tutorialActive || ![3, 4].includes(tutorialStep)) return null;
     const focusedIdx = tutorialFocus.selectedCard;
@@ -1513,13 +1513,13 @@ export default function App() {
       user,
     });
     // Apply carryOver from previous tutorial steps (hat changes, basurero card)
-    if (tutorialCarryOver && step >= 4) {
+    if (tutorialCarryOver && step >= 5) {
       const p = scenario.players[0];
       if (tutorialCarryOver.mainHats) p.mainHats = [...tutorialCarryOver.mainHats];
       if (tutorialCarryOver.perchero) p.perchero = [...tutorialCarryOver.perchero];
       if (tutorialCarryOver.maxHand != null) p.maxHand = tutorialCarryOver.maxHand;
     }
-    if (tutorialCarryOver?.basureroCard && step >= 6) {
+    if (tutorialCarryOver?.basureroCard && step >= 7) {
       scenario.players[0].hand.push(tutorialCarryOver.basureroCard);
     }
     setPlayers(scenario.players);
@@ -1556,8 +1556,9 @@ export default function App() {
       (tutorialStep === 1 && actionType === 'ingredient') ||
       (tutorialStep === 3 && actionType === 'changeHat') ||
       (tutorialStep === 4 && actionType === 'addHat') ||
-      (tutorialStep === 5 && actionType === 'actionCard') ||
-      (tutorialStep === 6 && actionType === 'negation');
+      (tutorialStep === 5 && actionType === 'wildcard') ||
+      (tutorialStep === 6 && actionType === 'actionCard') ||
+      (tutorialStep === 7 && actionType === 'negation');
     if (!shouldAdvance) return false;
     setTimeout(() => nextTutorialStep(), 500);
     return true;
@@ -1581,8 +1582,8 @@ export default function App() {
   }
 
   function startTutorialPracticeGame() {
-    const lastStep = tutorialCopy.steps.length - 1;
-    setTutorialState({ active: true, step: lastStep, practiceMode: true });
+    setTutorialState(null);
+    setTutorialCarryOver(null);
     const name = user?.displayName || 'Jugador';
     const hat = 'español';
     const gameConfig = {
@@ -1591,7 +1592,6 @@ export default function App() {
       ingredientCount: 3,
       ingredientPool: ['lechuga', 'tomate', 'queso', 'carne', 'pollo'],
       cloneWildcardsEnabled: true,
-      tutorial: true,
     };
     startGame(name, hat, gameConfig, 1);
   }
@@ -3391,7 +3391,7 @@ export default function App() {
   }
 
   function confirmWildcard(chosenIng) {
-    if (tutorialActive) return;
+    if (tutorialActive && !tutorialPractice && tutorialStep !== 5) return;
     const { cardIdx } = modal;
     setModal(null); setSelectedIdx(null);
     if (isOnline && !isHost) {
@@ -3410,13 +3410,18 @@ export default function App() {
       freed.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `f${Date.now()}${Math.random()}` }));
       addLog(HI, 'Â¡completÃ³ una hamburguesa! ðŸŽ‰', newPls);
     }
+    if (advanceTutorialAfter('wildcard')) {
+      setPlayers(newPls);
+      setDiscard(newDiscard);
+      return;
+    }
     setExtraPlay(false);
     endTurn(newPls, deck, newDiscard, HI);
   }
 
   // â”€â”€ Modal resolvers â”€â”€
   function resolvePickTarget(targetIdx) {
-    if (tutorialActive && !tutorialPractice && tutorialStep !== 5) return;
+    if (tutorialActive && !tutorialPractice && tutorialStep !== 6) return;
     const { cardIdx, action } = modal;
     setModal(null); setSelectedIdx(null);
 
@@ -3492,7 +3497,7 @@ export default function App() {
   }
 
   function resolvePickIngredient(ingIdx) {
-    if (tutorialActive && !tutorialPractice && tutorialStep !== 5) return;
+    if (tutorialActive && !tutorialPractice && tutorialStep !== 6) return;
     const { targetIdx, newPls, newDiscard } = modal;
     setModal(null); setSelectedIdx(null);
     // Non-host: send complete action
@@ -3672,7 +3677,7 @@ export default function App() {
   }
 
   function resolveBasurero(cardId) {
-    if (tutorialActive && !tutorialPractice && tutorialStep !== 5) return;
+    if (tutorialActive && !tutorialPractice && tutorialStep !== 6) return;
     const { cardIdx } = modal;
     setModal(null); setSelectedIdx(null);
     if (isOnline && !isHost) {
