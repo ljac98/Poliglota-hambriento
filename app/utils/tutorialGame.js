@@ -63,6 +63,16 @@ const COPY = {
     practiceObjective: 'Objetivo: completar una hamburguesa.',
     steps: [
       {
+        title: 'Objetivo del juego',
+        body: 'Tu meta es armar hamburguesas. Juegas ingredientes de tu mano que coincidan con tu sombrero principal para completar la receta.',
+        bullets: [
+          'Mira tu receta: muestra los ingredientes que necesitas para completar la hamburguesa.',
+          'Solo puedes jugar ingredientes cuyo idioma coincida con tu sombrero principal.',
+          'Cuando completes una hamburguesa, avanzas a la siguiente. ¡Completa todas para ganar!',
+        ],
+        focus: { hats: true, selectedCard: 0 },
+      },
+      {
         title: 'Sombreros principales y perchero',
         body: 'Tus sombreros principales deciden en qué idiomas puedes jugar ingredientes. El perchero guarda los sombreros extra para cambiar o agregar.',
         bullets: [
@@ -73,7 +83,7 @@ const COPY = {
       },
       {
         title: 'Ingrediente correcto y sombrero correcto',
-        body: 'Aquí sí puedes jugar la lechuga porque tu hamburguesa la necesita y tu sombrero principal es español.',
+        body: 'Aquí sí puedes jugar la lechuga porque tu hamburguesa la necesita y tu sombrero principal es espanol.',
         bullets: [
           'Las cartas jugables aparecen habilitadas.',
           'Si una carta coincide con el ingrediente faltante y con tu sombrero, la puedes bajar a la mesa.',
@@ -82,7 +92,7 @@ const COPY = {
       },
       {
         title: 'Ingrediente correcto, sombrero incorrecto',
-        body: 'Ahora el queso sí sirve para la hamburguesa, pero no lo puedes jugar porque solo tienes sombrero español y la carta está en inglés.',
+        body: 'Ahora el queso sí sirve para la hamburguesa, pero no lo puedes jugar porque solo tienes sombrero espanol y la carta está en ingles.',
         bullets: [
           'No basta con tener el ingrediente correcto.',
           'También necesitas un sombrero principal del idioma de esa carta.',
@@ -95,6 +105,7 @@ const COPY = {
         bullets: [
           'Úsalo cuando ya sabes qué idioma necesitas inmediatamente.',
           'Es la forma barata de abrir un idioma nuevo por un turno.',
+          'Si tras cambiar no puedes jugar nada, aparece el botón Pasar turno para terminar.',
         ],
         focus: { closet: true, changeButton: true, selectedCard: 0 },
       },
@@ -105,8 +116,19 @@ const COPY = {
           'Sirve cuando quieres mantener dos idiomas listos.',
           'Es más caro, pero te da más flexibilidad en turnos futuros.',
           'Al agregar, se descarta toda tu mano y tu máximo de cartas baja en 1. Ese es el costo.',
+          'Si tras agregar o cambiar sombrero no puedes jugar nada, usa el botón Pasar turno.',
         ],
         focus: { closet: true, addButton: true, selectedCard: 1 },
+      },
+      {
+        title: 'Descartar',
+        body: 'Además de jugar una carta, otra opción en tu turno es descartarla. Selecciona una carta y usa el botón Descartar.',
+        bullets: [
+          'Descartar es una acción alternativa: en vez de jugar la carta, la envías al descarte.',
+          'Es útil cuando no tienes cartas jugables o prefieres deshacerte de algo.',
+          'Selecciona una carta y presiona Descartar.',
+        ],
+        focus: { selectedCard: 0, discardButton: true },
       },
       {
         title: 'Comodines',
@@ -169,6 +191,16 @@ const COPY = {
     practiceObjective: 'Goal: complete a burger.',
     steps: [
       {
+        title: 'Game objective',
+        body: 'Your goal is to build burgers. You play ingredients from your hand that match your main hat to complete the recipe.',
+        bullets: [
+          'Look at your recipe: it shows the ingredients you need to complete the burger.',
+          'You can only play ingredients whose language matches your main hat.',
+          'When you complete a burger, you advance to the next one. Complete them all to win!',
+        ],
+        focus: { hats: true, selectedCard: 0 },
+      },
+      {
         title: 'Main hats and closet',
         body: 'Your main hats decide which card languages you can play. The closet stores extra hats you can change to or add.',
         bullets: [
@@ -201,6 +233,7 @@ const COPY = {
         bullets: [
           'Use it when you know exactly which language you need right now.',
           'It is the cheaper way to unlock a new language for the turn.',
+          'If you cannot play anything after changing, the Skip Turn button appears to end your turn.',
         ],
         focus: { closet: true, changeButton: true, selectedCard: 0 },
       },
@@ -211,8 +244,19 @@ const COPY = {
           'It is useful when you want two languages active at once.',
           'It costs more, but gives more flexibility later.',
           'Adding discards your entire hand and reduces your max hand by 1. That is the cost.',
+          'If you cannot play anything after adding or changing a hat, use the Skip Turn button.',
         ],
         focus: { closet: true, addButton: true, selectedCard: 1 },
+      },
+      {
+        title: 'Discard',
+        body: 'Besides playing a card, another option on your turn is to discard it. Select a card and use the Discard button.',
+        bullets: [
+          'Discarding is an alternative action: instead of playing a card, you send it to the discard pile.',
+          'It is useful when you have no playable cards or want to get rid of something.',
+          'Select a card and press Discard.',
+        ],
+        focus: { selectedCard: 0, discardButton: true },
       },
       {
         title: 'Wildcards',
@@ -275,6 +319,16 @@ const COPY = {
     practiceObjective: 'Objectif : compléter un burger.',
     steps: [
       {
+        title: 'Objectif du jeu',
+        body: 'Ton but est de construire des burgers. Tu joues des ingredients de ta main qui correspondent a ton chapeau principal pour completer la recette.',
+        bullets: [
+          'Regarde ta recette : elle montre les ingredients necessaires pour completer le burger.',
+          'Tu ne peux jouer que des ingredients dont la langue correspond a ton chapeau principal.',
+          'Quand tu completes un burger, tu passes au suivant. Complete-les tous pour gagner !',
+        ],
+        focus: { hats: true, selectedCard: 0 },
+      },
+      {
         title: 'Chapeaux principaux et placard',
         body: 'Tes chapeaux principaux decident dans quelles langues tu peux jouer tes cartes. Le placard garde les chapeaux supplementaires que tu peux echanger ou ajouter.',
         bullets: [
@@ -307,6 +361,7 @@ const COPY = {
         bullets: [
           'Utilise-le quand tu sais exactement quelle langue il te faut tout de suite.',
           'C est la facon la moins couteuse d ouvrir une nouvelle langue pour ce tour.',
+          'Si tu ne peux rien jouer apres avoir change, le bouton Passer le tour apparait pour terminer ton tour.',
         ],
         focus: { closet: true, changeButton: true, selectedCard: 0 },
       },
@@ -317,8 +372,19 @@ const COPY = {
           'C est utile quand tu veux garder deux langues actives en meme temps.',
           'C est plus couteux, mais cela donne plus de flexibilite pour les prochains tours.',
           'Ajouter defausse toute ta main et reduit ton maximum de cartes de 1. C est le cout.',
+          'Si tu ne peux rien jouer apres avoir ajoute ou change de chapeau, utilise le bouton Passer le tour.',
         ],
         focus: { closet: true, addButton: true, selectedCard: 1 },
+      },
+      {
+        title: 'Defausser',
+        body: 'En plus de jouer une carte, une autre option pendant ton tour est de la defausser. Selectionne une carte et utilise le bouton Defausser.',
+        bullets: [
+          'Defausser est une action alternative : au lieu de jouer une carte, tu l envoies a la defausse.',
+          'C est utile quand tu n as pas de cartes jouables ou que tu veux te debarrasser de quelque chose.',
+          'Selectionne une carte et appuie sur Defausser.',
+        ],
+        focus: { selectedCard: 0, discardButton: true },
       },
       {
         title: 'Jokers',
@@ -381,6 +447,16 @@ const COPY = {
     practiceObjective: 'Obiettivo: completare un hamburger.',
     steps: [
       {
+        title: 'Obiettivo del gioco',
+        body: 'Il tuo obiettivo e costruire hamburger. Giochi ingredienti dalla tua mano che corrispondono al tuo cappello principale per completare la ricetta.',
+        bullets: [
+          'Guarda la tua ricetta: mostra gli ingredienti necessari per completare l hamburger.',
+          'Puoi giocare solo ingredienti la cui lingua corrisponde al tuo cappello principale.',
+          'Quando completi un hamburger, passi al successivo. Completali tutti per vincere!',
+        ],
+        focus: { hats: true, selectedCard: 0 },
+      },
+      {
         title: 'Cappelli principali e armadio',
         body: 'I tuoi cappelli principali decidono in quali lingue puoi giocare le carte. L armadio conserva i cappelli extra che puoi cambiare o aggiungere.',
         bullets: [
@@ -413,6 +489,7 @@ const COPY = {
         bullets: [
           'Usalo quando sai esattamente quale lingua ti serve subito.',
           'E il modo piu economico per sbloccare una nuova lingua in quel turno.',
+          'Se non puoi giocare nulla dopo aver cambiato, appare il pulsante Passa turno per terminare.',
         ],
         focus: { closet: true, changeButton: true, selectedCard: 0 },
       },
@@ -423,8 +500,19 @@ const COPY = {
           'Serve quando vuoi tenere attive due lingue allo stesso tempo.',
           'Costa di piu, ma ti da piu flessibilita nei turni futuri.',
           'Aggiungere scarta tutta la mano e riduce il massimo di carte di 1. Questo e il costo.',
+          'Se non puoi giocare nulla dopo aver aggiunto o cambiato cappello, usa il pulsante Passa turno.',
         ],
         focus: { closet: true, addButton: true, selectedCard: 1 },
+      },
+      {
+        title: 'Scartare',
+        body: 'Oltre a giocare una carta, un altra opzione nel tuo turno e scartarla. Seleziona una carta e usa il pulsante Scarta.',
+        bullets: [
+          'Scartare e un azione alternativa: invece di giocare una carta, la mandi nella pila degli scarti.',
+          'E utile quando non hai carte giocabili o vuoi liberarti di qualcosa.',
+          'Seleziona una carta e premi Scarta.',
+        ],
+        focus: { selectedCard: 0, discardButton: true },
       },
       {
         title: 'Jolly',
@@ -487,6 +575,16 @@ const COPY = {
     practiceObjective: 'Ziel: einen Burger vervollstandigen.',
     steps: [
       {
+        title: 'Spielziel',
+        body: 'Dein Ziel ist es, Burger zu bauen. Du spielst Zutaten aus deiner Hand, die zu deinem Haupthut passen, um das Rezept zu vervollstandigen.',
+        bullets: [
+          'Schau dir dein Rezept an: es zeigt die Zutaten, die du brauchst, um den Burger fertigzustellen.',
+          'Du kannst nur Zutaten spielen, deren Sprache mit deinem Haupthut ubereinstimmt.',
+          'Wenn du einen Burger fertigstellst, gehst du zum nachsten. Stelle alle fertig, um zu gewinnen!',
+        ],
+        focus: { hats: true, selectedCard: 0 },
+      },
+      {
         title: 'Haupthute und Schrank',
         body: 'Deine Haupthute entscheiden, in welchen Sprachen du Karten spielen kannst. Der Schrank bewahrt zusatzliche Hute auf, die du wechseln oder hinzufugen kannst.',
         bullets: [
@@ -519,6 +617,7 @@ const COPY = {
         bullets: [
           'Nutze es, wenn du genau weisst, welche Sprache du sofort brauchst.',
           'Das ist die gunstigste Art, fur diesen Zug eine neue Sprache freizuschalten.',
+          'Wenn du nach dem Wechsel nichts spielen kannst, erscheint der Zug-passen-Button.',
         ],
         focus: { closet: true, changeButton: true, selectedCard: 0 },
       },
@@ -529,8 +628,19 @@ const COPY = {
           'Das ist stark, wenn du zwei Sprachen gleichzeitig aktiv haben willst.',
           'Es kostet mehr, gibt dir aber mehr Flexibilitat fur spatere Zuge.',
           'Hinzufugen wirft deine gesamte Hand ab und senkt dein Handlimit um 1. Das sind die Kosten.',
+          'Wenn du nach dem Hinzufugen oder Wechseln nichts spielen kannst, benutze den Zug-passen-Button.',
         ],
         focus: { closet: true, addButton: true, selectedCard: 1 },
+      },
+      {
+        title: 'Abwerfen',
+        body: 'Neben dem Spielen einer Karte ist eine weitere Option in deinem Zug, sie abzuwerfen. Wahle eine Karte und benutze den Abwerfen-Button.',
+        bullets: [
+          'Abwerfen ist eine alternative Aktion: statt eine Karte zu spielen, schickst du sie auf den Ablagestapel.',
+          'Nutzlich wenn du keine spielbaren Karten hast oder etwas loswerden willst.',
+          'Wahle eine Karte und drucke Abwerfen.',
+        ],
+        focus: { selectedCard: 0, discardButton: true },
       },
       {
         title: 'Joker',
@@ -593,6 +703,16 @@ const COPY = {
     practiceObjective: 'Objetivo: completar um hamburguer.',
     steps: [
       {
+        title: 'Objetivo do jogo',
+        body: 'O teu objetivo e montar hamburgueres. Jogas ingredientes da tua mao que correspondam ao teu chapeu principal para completar a receita.',
+        bullets: [
+          'Ve a tua receita: mostra os ingredientes que precisas para completar o hamburguer.',
+          'So podes jogar ingredientes cuja lingua corresponda ao teu chapeu principal.',
+          'Quando completas um hamburguer, avancas para o seguinte. Completa todos para ganhar!',
+        ],
+        focus: { hats: true, selectedCard: 0 },
+      },
+      {
         title: 'Chapeus principais e armario',
         body: 'Os teus chapeus principais decidem em que linguas podes jogar cartas. O armario guarda os chapeus extra que podes trocar ou adicionar.',
         bullets: [
@@ -625,6 +745,7 @@ const COPY = {
         bullets: [
           'Usa quando sabes exatamente de que lingua precisas naquele momento.',
           'E a forma mais barata de desbloquear uma nova lingua nesse turno.',
+          'Se nao puderes jogar nada apos trocar, aparece o botao Passar vez para terminar.',
         ],
         focus: { closet: true, changeButton: true, selectedCard: 0 },
       },
@@ -635,8 +756,19 @@ const COPY = {
           'Serve quando queres manter duas linguas ativas ao mesmo tempo.',
           'Custa mais, mas da-te mais flexibilidade nos turnos seguintes.',
           'Adicionar descarta toda a tua mao e reduz o maximo de cartas em 1. Esse e o custo.',
+          'Se nao puderes jogar nada apos adicionar ou trocar chapeu, usa o botao Passar vez.',
         ],
         focus: { closet: true, addButton: true, selectedCard: 1 },
+      },
+      {
+        title: 'Descartar',
+        body: 'Alem de jogar uma carta, outra opcao no teu turno e descarta-la. Seleciona uma carta e usa o botao Descartar.',
+        bullets: [
+          'Descartar e uma acao alternativa: em vez de jogar uma carta, envias para o descarte.',
+          'E util quando nao tens cartas jogaveis ou queres livrar-te de algo.',
+          'Seleciona uma carta e carrega em Descartar.',
+        ],
+        focus: { selectedCard: 0, discardButton: true },
       },
       {
         title: 'Coringas',
@@ -705,21 +837,21 @@ export function buildTutorialScenario(step, { playerName = 'Jugador', user = nul
         createPlayer({
           ...playerMeta,
           hand: [
-            ingredientCard('lechuga', 'español'),
-            ingredientCard('queso', 'inglés'),
+            ingredientCard('lechuga', 'espanol'),
+            ingredientCard('queso', 'ingles'),
             actionCard('tenedor'),
             actionCard('negacion'),
           ],
-          mainHats: ['español'],
-          perchero: ['inglés', 'francés', 'italiano', 'alemán', 'portugués'],
+          mainHats: ['espanol'],
+          perchero: ['ingles', 'frances', 'italiano', 'aleman', 'portugues'],
           table: [],
           burgers: [['pan', 'lechuga', 'queso']],
         }),
         createPlayer({
           ...opponentMeta,
           hand: [],
-          mainHats: ['inglés'],
-          perchero: ['español', 'francés', 'italiano', 'alemán', 'portugués'],
+          mainHats: ['ingles'],
+          perchero: ['espanol', 'frances', 'italiano', 'aleman', 'portugues'],
           table: ['tomate'],
           burgers: [['pan', 'tomate', 'queso']],
         }),
@@ -731,20 +863,20 @@ export function buildTutorialScenario(step, { playerName = 'Jugador', user = nul
         createPlayer({
           ...playerMeta,
           hand: [
-            ingredientCard('lechuga', 'español'),
-            ingredientCard('queso', 'inglés'),
+            ingredientCard('lechuga', 'espanol'),
+            ingredientCard('queso', 'ingles'),
             actionCard('tenedor'),
           ],
-          mainHats: ['español'],
-          perchero: ['inglés', 'francés', 'italiano', 'alemán', 'portugués'],
+          mainHats: ['espanol'],
+          perchero: ['ingles', 'frances', 'italiano', 'aleman', 'portugues'],
           table: [],
           burgers: [['pan', 'lechuga', 'queso']],
         }),
         createPlayer({
           ...opponentMeta,
           hand: [],
-          mainHats: ['inglés'],
-          perchero: ['español', 'francés', 'italiano', 'alemán', 'portugués'],
+          mainHats: ['ingles'],
+          perchero: ['espanol', 'frances', 'italiano', 'aleman', 'portugues'],
           table: ['tomate'],
           burgers: [['pan', 'tomate', 'queso']],
         }),
@@ -756,20 +888,20 @@ export function buildTutorialScenario(step, { playerName = 'Jugador', user = nul
         createPlayer({
           ...playerMeta,
           hand: [
-            ingredientCard('queso', 'inglés'),
-            ingredientCard('tomate', 'español'),
+            ingredientCard('queso', 'ingles'),
+            ingredientCard('tomate', 'espanol'),
             actionCard('tenedor'),
           ],
-          mainHats: ['español'],
-          perchero: ['inglés', 'francés', 'italiano', 'alemán', 'portugués'],
+          mainHats: ['espanol'],
+          perchero: ['ingles', 'frances', 'italiano', 'aleman', 'portugues'],
           table: ['lechuga'],
           burgers: [['pan', 'lechuga', 'queso']],
         }),
         createPlayer({
           ...opponentMeta,
           hand: [],
-          mainHats: ['inglés'],
-          perchero: ['español', 'francés', 'italiano', 'alemán', 'portugués'],
+          mainHats: ['ingles'],
+          perchero: ['espanol', 'frances', 'italiano', 'aleman', 'portugues'],
           table: ['tomate'],
           burgers: [['pan', 'tomate', 'queso']],
         }),
@@ -781,21 +913,21 @@ export function buildTutorialScenario(step, { playerName = 'Jugador', user = nul
         createPlayer({
           ...playerMeta,
           hand: [
-            ingredientCard('queso', 'inglés'),
-            ingredientCard('pan', 'español'),
-            ingredientCard('tomate', 'español'),
+            ingredientCard('queso', 'ingles'),
+            ingredientCard('pan', 'espanol'),
+            ingredientCard('tomate', 'espanol'),
             actionCard('tenedor'),
           ],
-          mainHats: ['español'],
-          perchero: ['inglés', 'francés', 'italiano', 'alemán', 'portugués'],
+          mainHats: ['espanol'],
+          perchero: ['ingles', 'frances', 'italiano', 'aleman', 'portugues'],
           table: ['lechuga'],
           burgers: [['pan', 'lechuga', 'queso']],
         }),
         createPlayer({
           ...opponentMeta,
           hand: [],
-          mainHats: ['inglés'],
-          perchero: ['español', 'francés', 'italiano', 'alemán', 'portugués'],
+          mainHats: ['ingles'],
+          perchero: ['espanol', 'frances', 'italiano', 'aleman', 'portugues'],
           table: ['tomate'],
           burgers: [['pan', 'tomate', 'queso']],
         }),
@@ -807,13 +939,13 @@ export function buildTutorialScenario(step, { playerName = 'Jugador', user = nul
         createPlayer({
           ...playerMeta,
           hand: [
-            ingredientCard('tomate', 'español'),
-            ingredientCard('queso', 'inglés'),
-            ingredientCard('pollo', 'inglés'),
+            ingredientCard('tomate', 'espanol'),
+            ingredientCard('queso', 'ingles'),
+            ingredientCard('pollo', 'ingles'),
             actionCard('tenedor'),
           ],
-          mainHats: ['español'],
-          perchero: ['inglés', 'francés', 'italiano', 'alemán', 'portugués'],
+          mainHats: ['espanol'],
+          perchero: ['ingles', 'frances', 'italiano', 'aleman', 'portugues'],
           table: ['pan'],
           burgers: [['pan', 'tomate', 'queso']],
           maxHand: 5,
@@ -821,8 +953,8 @@ export function buildTutorialScenario(step, { playerName = 'Jugador', user = nul
         createPlayer({
           ...opponentMeta,
           hand: [],
-          mainHats: ['francés'],
-          perchero: ['español', 'inglés', 'italiano', 'alemán', 'portugués'],
+          mainHats: ['frances'],
+          perchero: ['espanol', 'ingles', 'italiano', 'aleman', 'portugues'],
           table: ['carne'],
           burgers: [['pan', 'carne', 'queso']],
         }),
@@ -835,20 +967,20 @@ export function buildTutorialScenario(step, { playerName = 'Jugador', user = nul
         createPlayer({
           ...playerMeta,
           hand: [
-            ingredientCard('perrito', 'español'),
-            ingredientCard('tomate', 'español'),
+            ingredientCard('perrito', 'espanol'),
+            ingredientCard('tomate', 'espanol'),
             actionCard('tenedor'),
           ],
-          mainHats: ['español'],
-          perchero: ['inglés', 'francés', 'italiano', 'alemán', 'portugués'],
+          mainHats: ['espanol'],
+          perchero: ['ingles', 'frances', 'italiano', 'aleman', 'portugues'],
           table: ['pan'],
           burgers: [['pan', 'lechuga', 'queso']],
         }),
         createPlayer({
           ...opponentMeta,
           hand: [],
-          mainHats: ['inglés'],
-          perchero: ['español', 'francés', 'italiano', 'alemán', 'portugués'],
+          mainHats: ['ingles'],
+          perchero: ['espanol', 'frances', 'italiano', 'aleman', 'portugues'],
           table: ['tomate'],
           burgers: [['pan', 'tomate', 'queso']],
         }),
@@ -864,16 +996,16 @@ export function buildTutorialScenario(step, { playerName = 'Jugador', user = nul
             actionCard('milanesa'),
             actionCard('basurero'),
           ],
-          mainHats: ['español'],
-          perchero: ['inglés', 'francés', 'italiano', 'alemán', 'portugués'],
+          mainHats: ['espanol'],
+          perchero: ['ingles', 'frances', 'italiano', 'aleman', 'portugues'],
           table: ['pan'],
           burgers: [['pan', 'tomate', 'queso']],
         }),
         createPlayer({
           ...opponentMeta,
           hand: [],
-          mainHats: ['inglés'],
-          perchero: ['español', 'francés', 'italiano', 'alemán', 'portugués'],
+          mainHats: ['ingles'],
+          perchero: ['espanol', 'frances', 'italiano', 'aleman', 'portugues'],
           table: ['tomate', 'queso'],
           burgers: [['pan', 'tomate', 'queso']],
         }),
@@ -884,13 +1016,13 @@ export function buildTutorialScenario(step, { playerName = 'Jugador', user = nul
           avatarUrl: null,
           isAI: true,
           hand: [],
-          mainHats: ['francés'],
-          perchero: ['español', 'inglés', 'italiano', 'alemán', 'portugués'],
+          mainHats: ['frances'],
+          perchero: ['espanol', 'ingles', 'italiano', 'aleman', 'portugues'],
           table: ['pan', 'carne'],
           burgers: [['pan', 'carne', 'queso']],
         }),
       ],
-      discard: [ingredientCard('lechuga', 'alemán'), ingredientCard('pollo', 'francés')],
+      discard: [ingredientCard('lechuga', 'aleman'), ingredientCard('pollo', 'frances')],
       selectedIdx: null,
     }),
     () => {
@@ -902,18 +1034,18 @@ export function buildTutorialScenario(step, { playerName = 'Jugador', user = nul
             hand: [
               actionCard('negacion'),
               actionCard('tenedor'),
-              ingredientCard('queso', 'español'),
+              ingredientCard('queso', 'espanol'),
             ],
-            mainHats: ['español'],
-            perchero: ['inglés', 'francés', 'italiano', 'alemán', 'portugués'],
+            mainHats: ['espanol'],
+            perchero: ['ingles', 'frances', 'italiano', 'aleman', 'portugues'],
             table: ['pan'],
             burgers: [['pan', 'queso', 'tomate']],
           }),
           createPlayer({
             ...opponentMeta,
             hand: [opponentFork],
-            mainHats: ['inglés'],
-            perchero: ['español', 'francés', 'italiano', 'alemán', 'portugués'],
+            mainHats: ['ingles'],
+            perchero: ['espanol', 'frances', 'italiano', 'aleman', 'portugues'],
             table: ['tomate'],
             burgers: [['pan', 'tomate', 'queso']],
           }),
@@ -933,21 +1065,21 @@ export function buildTutorialScenario(step, { playerName = 'Jugador', user = nul
         createPlayer({
           ...playerMeta,
           hand: [
-            ingredientCard('tomate', 'español'),
-            ingredientCard('queso', 'inglés'),
+            ingredientCard('tomate', 'espanol'),
+            ingredientCard('queso', 'ingles'),
             actionCard('tenedor'),
             actionCard('negacion'),
           ],
-          mainHats: ['español'],
-          perchero: ['inglés', 'francés', 'italiano', 'alemán', 'portugués'],
+          mainHats: ['espanol'],
+          perchero: ['ingles', 'frances', 'italiano', 'aleman', 'portugues'],
           table: ['pan'],
           burgers: [['pan', 'tomate', 'queso']],
         }),
         createPlayer({
           ...opponentMeta,
           hand: [],
-          mainHats: ['inglés'],
-          perchero: ['español', 'francés', 'italiano', 'alemán', 'portugués'],
+          mainHats: ['ingles'],
+          perchero: ['espanol', 'frances', 'italiano', 'aleman', 'portugues'],
           table: ['tomate', 'queso'],
           burgers: [['pan', 'tomate', 'queso']],
         }),

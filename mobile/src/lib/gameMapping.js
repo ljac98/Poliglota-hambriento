@@ -1,10 +1,10 @@
 export const UI_TO_GAME_HAT = {
-  espanol: 'español',
-  ingles: 'inglés',
-  frances: 'francés',
+  espanol: 'espanol',
+  ingles: 'ingles',
+  frances: 'frances',
   italiano: 'italiano',
-  aleman: 'alemán',
-  portugues: 'portugués',
+  aleman: 'aleman',
+  portugues: 'portugues',
 };
 
 export const GAME_TO_UI_HAT = Object.fromEntries(

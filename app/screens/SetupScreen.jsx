@@ -31,7 +31,7 @@ import burgerHuevo from '../../imagenes/hamburguesas/ingredientes/huevo.png';
 import burgerPalta from '../../imagenes/hamburguesas/ingredientes/palta.png';
 
 export function SetupScreen({ onStart, onStartTutorial, onOnline, onDownload, user, onLogout, onHistory, onFriends, T, installEntryVisible, installEntryTitle, installEntryDesc, installEntryButton, onOpenInstallPrompt }) {
-  const uiGameLang = KEY_TO_LANG[getUILang()] || 'español';
+  const uiGameLang = KEY_TO_LANG[getUILang()] || 'espanol';
   const normalModeHint =
     ({
       es: 'Escoge el modo',

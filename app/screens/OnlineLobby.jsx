@@ -33,7 +33,7 @@ import { getRoomSession } from '../utils/roomSession.js';
 
 export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack, isPublic, roomDisplayName, T, user, onOpenProfile, onLocalHatPick }) {
   const MAX_ROOM_PLAYERS = 6;
-  const uiGameLang = KEY_TO_LANG[getUILang()] || 'español';
+  const uiGameLang = KEY_TO_LANG[getUILang()] || 'espanol';
   const cloneIngredients = INGREDIENTS.filter((ing) => ing !== 'pan');
   const [gameMode, setGameMode] = useState('clon');
   const [burgerCount, setBurgerCount] = useState(2);

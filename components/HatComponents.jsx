@@ -9,22 +9,22 @@ export const HatBadge = ({ lang, isMain, onClick, size = "md" }) => {
   const langShort = getLocalizedLangShort(lang, uiLang);
   const s = size === "sm" ? 22 : size === "lg" ? 42 : 32;
   const HAT_TILE_BG = {
-    'espaÃ±ol': '#FFD978',
-    'inglÃ©s': '#2F3640',
-    'francÃ©s': '#FFDCC8',
+    'espanol': '#FFD978',
+    'ingles': '#2F3640',
+    'frances': '#FFDCC8',
     italiano: '#F2E6C9',
-    'alemÃ¡n': '#CCEFCE',
-    'portuguÃ©s': '#E8D8C9',
+    'aleman': '#CCEFCE',
+    'portugues': '#E8D8C9',
   };
   const HAT_TILE_TEXT = {
-    'espaÃ±ol': '#4F2A00',
-    'inglÃ©s': '#FFFFFF',
-    'francÃ©s': '#6A2C00',
+    'espanol': '#4F2A00',
+    'ingles': '#FFFFFF',
+    'frances': '#6A2C00',
     italiano: '#4A3A23',
-    'alemÃ¡n': '#155E1E',
-    'portuguÃ©s': '#3F2B1D',
+    'aleman': '#155E1E',
+    'portugues': '#3F2B1D',
   };
-  const isEnglishHat = lang === 'inglés';
+  const isEnglishHat = lang === 'ingles';
   const tileBg = isEnglishHat
     ? '#1F2630'
     : (HAT_TILE_BG[lang] || LANG_BG[lang] || 'rgba(255,255,255,0.08)');

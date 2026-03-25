@@ -4,7 +4,7 @@ import {
   toGameIngredient,
 } from './gameMapping';
 
-export const LANGUAGES = ['español', 'inglés', 'francés', 'italiano', 'alemán', 'portugués'];
+export const LANGUAGES = ['espanol', 'ingles', 'frances', 'italiano', 'aleman', 'portugues'];
 export const INGREDIENTS = ['pan', 'lechuga', 'tomate', 'carne', 'queso', 'pollo', 'huevo', 'cebolla', 'palta'];
 export const FRUITS_VEGS = ['lechuga', 'tomate', 'cebolla', 'palta'];
 export const ACTION_CARDS = [

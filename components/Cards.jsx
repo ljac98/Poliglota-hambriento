@@ -83,14 +83,14 @@ const ING_IMG = {
 // ═══ INGREDIENT CARD (Lotería style) ═══
 export const IngredientCard = ({ card, onClick, selected, small, large, playable }) => {
   const { ingredient: ing } = card;
-  const lang = card.language || 'español';
+  const lang = card.language || 'espanol';
   const uiLang = getUILang();
   const langShort = getLocalizedLangShort(lang, uiLang);
   const isWild = ing === "perrito";
   const border = LANG_BORDER[lang];
   const bg = LANG_BG[lang];
   const txtColor = LANG_TEXT[lang];
-  const isDark = lang === "inglés";
+  const isDark = lang === "ingles";
   const w = large ? 150 : (small ? 64 : 86);
   const h = large ? 200 : (small ? 94 : 126);
   const dimmed = playable === false;
