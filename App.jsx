@@ -4011,7 +4011,7 @@ export default function App() {
               <div style={{ color: '#f8f4cf', fontSize: 13, fontWeight: 900, letterSpacing: 0.3 }}>
                 {T('gameLanguageMenu')}
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, position: 'relative' }}>
                 {(() => {
                   const selectedGameLang = KEY_TO_LANG[uiLang] || LANGUAGES[0];
                   return (
@@ -4058,12 +4058,28 @@ export default function App() {
                     </button>
                   );
                 })()}
-                {showLanguageMenu ? (
+                <div style={{
+                  position: 'absolute',
+                  left: 0,
+                  right: 0,
+                  top: 'calc(100% + 8px)',
+                  zIndex: 40,
+                  maxHeight: showLanguageMenu ? 120 : 0,
+                  opacity: showLanguageMenu ? 1 : 0,
+                  transform: showLanguageMenu ? 'translateY(0)' : 'translateY(-6px)',
+                  overflow: 'hidden',
+                  transition: 'max-height 0.24s ease, opacity 0.18s ease, transform 0.2s ease',
+                  pointerEvents: showLanguageMenu ? 'auto' : 'none',
+                }}>
                   <div style={{
                     display: 'flex',
                     gap: 8,
                     overflowX: 'auto',
-                    paddingBottom: 2,
+                    padding: 10,
+                    borderRadius: 14,
+                    border: '1px solid rgba(255,215,0,0.22)',
+                    background: 'rgba(18, 26, 48, 0.96)',
+                    boxShadow: '0 18px 34px rgba(0,0,0,0.35)',
                   }}>
                     {Object.entries(KEY_TO_LANG).map(([langKey, gameLang]) => {
                       const active = uiLang === langKey;
@@ -4116,7 +4132,7 @@ export default function App() {
                       );
                     })}
                   </div>
-                ) : null}
+                </div>
               </div>
             </div>
             {phase === 'playing' && (
