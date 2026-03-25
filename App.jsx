@@ -240,6 +240,13 @@ export default function App() {
   const tutorialAllowsChangeHat = !tutorialActive || tutorialStep === 3;
   const tutorialAllowsAddHat = !tutorialActive || tutorialStep === 4;
   const tutorialAllowsNegation = !tutorialActive || tutorialStep === 6;
+  const tutorialRecommendedHatLang = (() => {
+    if (!tutorialActive || ![3, 4].includes(tutorialStep)) return null;
+    const focusedIdx = tutorialFocus.selectedCard;
+    if (!Number.isInteger(focusedIdx)) return null;
+    const focusedCard = players?.[HI]?.hand?.[focusedIdx];
+    return focusedCard?.type === 'ingredient' ? focusedCard.language : null;
+  })();
   const tutorialPopupStyle = (() => {
     const base = {
       position: 'fixed',
@@ -4072,9 +4079,10 @@ export default function App() {
                   pointerEvents: showLanguageMenu ? 'auto' : 'none',
                 }}>
                   <div style={{
-                    display: 'flex',
-                    gap: 8,
-                    overflowX: 'auto',
+                    display: isMobile ? 'grid' : 'flex',
+                    gridTemplateColumns: isMobile ? 'repeat(6, minmax(0, 1fr))' : undefined,
+                    gap: isMobile ? 4 : 8,
+                    overflowX: isMobile ? 'visible' : 'auto',
                     padding: 10,
                     borderRadius: 14,
                     border: '1px solid rgba(255,215,0,0.22)',
@@ -4103,13 +4111,13 @@ export default function App() {
                             alignItems: 'center',
                             justifyContent: 'center',
                             gap: 5,
-                            minWidth: 78,
+                            minWidth: isMobile ? 0 : 78,
                             flexShrink: 0,
                           }}
                         >
                           <div style={{
-                            width: 40,
-                            height: 40,
+                            width: isMobile ? 34 : 40,
+                            height: isMobile ? 34 : 40,
                             borderRadius: 13,
                             border: active ? '2px solid #FFD700' : `1px solid ${LANG_BORDER[gameLang]}66`,
                             background: active ? 'rgba(255,215,0,0.12)' : LANG_BG[gameLang],
@@ -4118,10 +4126,10 @@ export default function App() {
                             justifyContent: 'center',
                             boxShadow: active ? '0 0 18px rgba(255,215,0,0.18)' : 'none',
                           }}>
-                            <HatSVG lang={gameLang} size={26} />
+                            <HatSVG lang={gameLang} size={isMobile ? 21 : 26} />
                           </div>
                           <span style={{
-                            fontSize: 11,
+                            fontSize: isMobile ? 10 : 11,
                             fontWeight: 900,
                             color: active ? '#FFD700' : LANG_TEXT[gameLang],
                             lineHeight: 1,
