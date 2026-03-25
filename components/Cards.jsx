@@ -167,9 +167,7 @@ export const ActionCard = ({ card, onClick, selected, small, large, playable, no
   const trName = t(nameKey, uiLang);
   const trDesc = t(descKey, uiLang);
   const actionName = trName === nameKey ? info?.name : trName;
-  const actionDesc = noObjectives
-    ? t('actionNoObjectives', uiLang)
-    : (trDesc === descKey ? info?.desc : trDesc);
+  const actionDesc = trDesc === descKey ? info?.desc : trDesc;
   const dimmed = playable === false;
   const w = large ? 150 : (small ? 64 : 86);
   const h = large ? 200 : (small ? 94 : 126);
