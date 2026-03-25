@@ -230,6 +230,7 @@ export default function App() {
   const [tutorialPrompt, setTutorialPrompt] = useState(null);
   const [tutorialState, setTutorialState] = useState(null);
   const [tutorialCarryOver, setTutorialCarryOver] = useState(null);
+  const [postTutorialGame, setPostTutorialGame] = useState(false);
   const T = useCallback((key) => t(key, uiLang), [uiLang]);
   const uiGameLang = KEY_TO_LANG[uiLang] || LANGUAGES[0];
   const tutorialCopy = getTutorialContent(uiLang);
@@ -1567,6 +1568,7 @@ export default function App() {
   function finishTutorialGame() {
     setTutorialState(null);
     setTutorialCarryOver(null);
+    setPostTutorialGame(false);
     resetLocalGameState();
     setPhase('setup');
   }
@@ -1584,6 +1586,7 @@ export default function App() {
   function startTutorialPracticeGame() {
     setTutorialState(null);
     setTutorialCarryOver(null);
+    setPostTutorialGame(true);
     const name = user?.displayName || 'Jugador';
     const hat = 'español';
     const gameConfig = {
@@ -4329,7 +4332,7 @@ export default function App() {
           isOnline={isOnline}
           onLeftRoomReturn={handleLeftRoomReturn}
           onLeftRoomLeave={handleLeftRoomLeave}
-          isTutorial={tutorialPractice}
+          isTutorial={tutorialPractice || postTutorialGame}
           tutorialWinText={tutorialCopy.tutorialWin}
           onTutorialFinish={finishTutorialGame}
         />
