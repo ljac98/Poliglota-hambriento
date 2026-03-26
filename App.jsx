@@ -6,7 +6,7 @@ import {
   ING_EMOJI, ING_BG, AI_NAMES, getIngName, getActionInfo,
   ING_NAMES, ACTION_CARDS,
 } from './constants';
-import { generateDeck, genBurger, initPlayer, canPlayCard } from './game';
+import { generateDeck, initPlayer, canPlayCard } from './game';
 import { shuffle, randInt, uid } from './game/utils';
 import { t, getUILang, setUILang, KEY_TO_LANG, getLocalizedLangName, getLocalizedLangShort } from './src/translations.js';
 import { GameCard } from './components/Cards';
@@ -79,6 +79,13 @@ const ACTION_STACK_IMG = {
 };
 import { clearRoomSession, getRoomSession, saveRoomSession } from './app/utils/roomSession.js';
 import { buildTutorialScenario, getTutorialContent } from './app/utils/tutorialGame.js';
+import { getTutorialPermissions, shouldAdvanceTutorialStep } from './app/services/tutorialRules.js';
+import { actionCanBeNegated, isClosetActionBlocked } from './app/services/negationRules.js';
+import { createClosetCoverPolicy } from './app/services/closetCoverPolicy.js';
+import { normalizeGameConfig } from './app/services/gameConfigService.js';
+import { createTurnEngine } from './app/services/turnEngine.js';
+import { createRemoteActionService } from './app/services/remoteActionService.js';
+import { createTargetedActionService } from './app/services/targetedActionService.js';
 
 const INSTALL_PROMPT_COPY = {
   es: {
@@ -225,12 +232,15 @@ export default function App() {
   const tutorialFocus = tutorialStepData?.focus || {};
   const isMobile = typeof window !== 'undefined' && window.innerWidth <= 640;
   const tutorialPractice = !!tutorialState?.practiceMode;
-  const tutorialAllowsCardSelection = !tutorialActive || tutorialPractice || [2, 3, 6, 7, 8].includes(tutorialStep);
-  const tutorialAllowsPlayButton = !tutorialActive || tutorialPractice || [2, 7, 8].includes(tutorialStep);
+  const tutorialPermissions = tutorialPractice
+    ? getTutorialPermissions(false, tutorialStep)
+    : getTutorialPermissions(tutorialActive, tutorialStep);
+  const tutorialAllowsCardSelection = tutorialPermissions.canSelectCards;
+  const tutorialAllowsPlayButton = tutorialPermissions.canUsePlayButton;
   const tutorialAllowsDiscard = !tutorialActive || tutorialPractice || tutorialStep === 6;
-  const tutorialAllowsChangeHat = !tutorialActive || tutorialPractice || tutorialStep === 4;
-  const tutorialAllowsAddHat = !tutorialActive || tutorialPractice || tutorialStep === 5;
-  const tutorialAllowsNegation = !tutorialActive || tutorialPractice || tutorialStep === 9;
+  const tutorialAllowsChangeHat = tutorialPermissions.canChangeHat;
+  const tutorialAllowsAddHat = tutorialPermissions.canAddHat;
+  const tutorialAllowsNegation = tutorialPermissions.canNegate;
   const tutorialRecommendedHatLang = (() => {
     if (!tutorialActive || ![4, 5].includes(tutorialStep)) return null;
     const focusedIdx = tutorialFocus.selectedCard;
@@ -1554,16 +1564,7 @@ export default function App() {
   }
 
   function advanceTutorialAfter(actionType) {
-    if (!tutorialActive) return false;
-    const shouldAdvance =
-      (tutorialStep === 2 && actionType === 'ingredient') ||
-      (tutorialStep === 4 && actionType === 'changeHat') ||
-      (tutorialStep === 5 && actionType === 'addHat') ||
-      (tutorialStep === 6 && actionType === 'discard') ||
-      (tutorialStep === 7 && actionType === 'wildcard') ||
-      (tutorialStep === 8 && actionType === 'actionCard') ||
-      (tutorialStep === 9 && actionType === 'negation');
-    if (!shouldAdvance) return false;
+    if (!shouldAdvanceTutorialStep(tutorialActive, tutorialStep, actionType)) return false;
     setTimeout(() => nextTutorialStep(), 500);
     return true;
   }
@@ -2029,34 +2030,33 @@ export default function App() {
     return threat >= 24 && Math.random() < aiConfig.negationChance;
   }
 
-  function actionCanBeNegated(card, affectedIdxs) {
-    if (!card?.action) return false;
-    if (card.action === 'basurero') return false;
-    if (Array.isArray(affectedIdxs) && affectedIdxs.length > 0) return true;
-    return ['milanesa', 'ensalada', 'pizza', 'parrilla', 'comecomodines'].includes(card.action);
-  }
-
-  function isClosetActionBlocked(playerLike, actionId) {
-    if (!playerLike?.closetCovered) return false;
-    return ['ladron', 'intercambio_sombreros'].includes(actionId);
-  }
-
-  function getClosetCoverDiscardIndices(playerLike) {
-    if (!playerLike || playerLike.hand.length < 2) return [];
-    const needs = getRemainingNeeds(playerLike);
-    return playerLike.hand
-      .map((card, idx) => ({ idx, score: getCardKeepScore(card, playerLike.mainHats, needs) }))
-      .sort((a, b) => a.score - b.score)
-      .slice(0, 2)
-      .map((item) => item.idx);
-  }
-
-  function shouldAIAvoidClosetCover(playerLike) {
-    if (!playerLike || playerLike.hand.length < 2) return false;
-    if (playerLike.perchero?.length > 0) return true;
-    if (playerLike.mainHats?.length > 1) return true;
-    return playerLike.hand.some((card) => card.type === 'action' && ['ladron', 'intercambio_sombreros'].includes(card.action));
-  }
+  const closetCoverPolicy = createClosetCoverPolicy({
+    getRemainingNeeds,
+    getCardKeepScore,
+  });
+  const turnEngine = createTurnEngine({
+    drawN,
+    clonePlayers: clone,
+    checkWin,
+  });
+  const remoteActionService = createRemoteActionService({
+    canPlayCard,
+    advanceBurger,
+    drawN,
+    getIngName,
+    ingEmoji: ING_EMOJI,
+    ingKey,
+    uid,
+  });
+  const targetedActionService = createTargetedActionService({
+    advanceBurger,
+    ingKey,
+    uid,
+    getTableSlotIndexForCurrentBurger,
+    triggerGlotonEvent,
+    triggerHatStealEvent,
+    filterTable,
+  });
 
   function finishClosetCoverAction(basePlayers, baseDeck, baseDiscard, actingIdx, targetIdx, blocked) {
     const nextPlayers = clone(basePlayers);
@@ -2082,9 +2082,9 @@ export default function App() {
       return;
     }
     if (target.isAI) {
-      const shouldAvoid = shouldAIAvoidClosetCover(target);
+      const shouldAvoid = closetCoverPolicy.shouldAvoid(target);
       if (shouldAvoid) {
-        const discardIndices = getClosetCoverDiscardIndices(target).sort((a, b) => b - a);
+        const discardIndices = closetCoverPolicy.getDiscardIndices(target).sort((a, b) => b - a);
         const nextPlayers = clone(basePlayers);
         const nextDiscard = [...baseDiscard];
         discardIndices.forEach((discardIdx) => {
@@ -2222,24 +2222,8 @@ export default function App() {
   }
 
   // -- Start game (local / vs AI) --
-  function buildGameConfig(gameConfig) {
-    if (!gameConfig || gameConfig.mode !== 'clon') return gameConfig;
-    if (Array.isArray(gameConfig.sharedBurgers) && gameConfig.sharedBurgers.length > 0) {
-      return {
-        ...gameConfig,
-        sharedBurgers: gameConfig.sharedBurgers.map((burger) => [...burger]),
-      };
-    }
-    return {
-      ...gameConfig,
-      sharedBurgers: Array.from(
-        { length: gameConfig.burgerCount },
-        () => genBurger(gameConfig.ingredientCount, gameConfig.ingredientPool),
-      ),
-    };
-  }
   function startGame(name, hat, gameConfig, aiCount) {
-    const normalizedConfig = buildGameConfig(gameConfig);
+    const normalizedConfig = normalizeGameConfig(gameConfig);
     const rawDeck = generateDeck(normalizedConfig);
     const deckArr = [...rawDeck];
     const ps = [];
@@ -2267,7 +2251,7 @@ export default function App() {
 
   // â”€â”€ Start game (online host) â”€â”€
   function startOnlineGame(hatPicks, gameConfig, onlinePls) {
-    const normalizedConfig = buildGameConfig(gameConfig);
+    const normalizedConfig = normalizeGameConfig(gameConfig);
     const rawDeck = generateDeck(normalizedConfig);
     const deckArr = [...rawDeck];
     const ps = onlinePls.map(p => initPlayer(p.name, deckArr, hatPicks[p.name] || p.hat, normalizedConfig, !!p.isAI, {
@@ -2289,81 +2273,38 @@ export default function App() {
 
   // â”€â”€ Shared targeted action resolution (used by host for both local and remote players) â”€â”€
   function applyTargetedAction(card, actingIdx, ti, action, pls, dk, di) {
-    if (card.action === 'gloton') {
-      triggerGlotonEvent(actingIdx, ti, [...pls[ti].table], pls[actingIdx]?.name || 'Jugador');
-      pls[ti].table.forEach(ing => di.push({ type: 'ingredient', ingredient: ingKey(ing), id: uid() }));
-      pls[ti].table = [];
-      endTurnFromRemote(pls, dk, di, actingIdx);
-    } else if (card.action === 'tenedor' && action.ingIdx !== undefined) {
-      const sourceSlotIdx = ti === HI ? getTableSlotIndexForCurrentBurger(pls[ti], action.ingIdx) : null;
-      const stolen = pls[ti].table.splice(action.ingIdx, 1)[0];
-      pls[actingIdx].table.push(stolen);
-      const forkEvent = {
-        id: `${Date.now()}-${Math.random()}`,
-        actingIdx,
-        targetIdx: ti,
-        actorName: pls[actingIdx]?.name || 'Oponente',
-        ingredient: ingKey(stolen),
-        stolenRaw: stolen,
-        sourceIngIdx: action.ingIdx,
-        sourceSlotIdx,
-      };
-      setLastForkEvent(forkEvent);
+    const result = targetedActionService.apply({
+      card,
+      actingIdx,
+      targetIdx: ti,
+      action,
+      players: pls,
+      discard: di,
+      humanIdx: HI,
+    });
+
+    if (!result) return;
+
+    if (result.forkEvent) {
+      setLastForkEvent(result.forkEvent);
       if (!isOnline || ti === HI || actingIdx === HI) {
-        lastForkSeenRef.current = forkEvent.id;
-        setForkFx(forkEvent);
+        lastForkSeenRef.current = result.forkEvent.id;
+        setForkFx(result.forkEvent);
       }
-      const { player: up, freed, done } = advanceBurger(pls[actingIdx]);
-      pls[actingIdx] = up;
-      if (done) { freed.forEach(ing => di.push({ type: 'ingredient', ingredient: ingKey(ing), id: uid() })); }
-      endTurnFromRemote(pls, dk, di, actingIdx);
-    } else if (card.action === 'ladron') {
-      if (pls[ti].mainHats.length > 0) {
-        const stealHat = action.hatLang && pls[ti].mainHats.includes(action.hatLang)
-          ? action.hatLang
-          : pls[ti].mainHats[0];
-        const stealIdx = pls[ti].mainHats.indexOf(stealHat);
-        const stolen = pls[ti].mainHats.splice(stealIdx, 1)[0];
-        pls[actingIdx].mainHats.push(stolen);
-        triggerHatStealEvent(actingIdx, ti, stolen, pls[actingIdx]?.name || 'Jugador');
-        if (pls[ti].mainHats.length > 0) {
-          pls[ti].maxHand = Math.min(6, pls[ti].maxHand + 1);
-        }
-        if (pls[ti].mainHats.length === 0 && pls[ti].perchero.length > 0) {
-          setPlayers(pls); setDiscard(di);
-          setModal({ type: 'pickHatReplace', newPls: pls, newDiscard: di, victimIdx: ti, fromIdx: actingIdx });
-          return;
-        }
-      }
-      endTurnFromRemote(pls, dk, di, actingIdx);
-    } else if (card.action === 'intercambio_sombreros') {
-      const myHat = action.myHat;
-      const theirHat = action.theirHat;
-      if (myHat && theirHat) {
-        const mi = pls[actingIdx].mainHats.indexOf(myHat);
-        const ti2 = pls[ti].mainHats.indexOf(theirHat);
-        if (mi !== -1 && ti2 !== -1) {
-          pls[actingIdx].mainHats.splice(mi, 1);
-          pls[ti].mainHats.splice(ti2, 1);
-          pls[actingIdx].mainHats.push(theirHat);
-          pls[ti].mainHats.push(myHat);
-        }
-      } else {
-        const tmp = pls[actingIdx].mainHats[0];
-        pls[actingIdx].mainHats[0] = pls[ti].mainHats[0];
-        pls[ti].mainHats[0] = tmp;
-      }
-      endTurnFromRemote(pls, dk, di, actingIdx);
-    } else if (card.action === 'intercambio_hamburguesa') {
-      const tmp = pls[actingIdx].table;
-      pls[actingIdx].table = pls[ti].table;
-      pls[ti].table = tmp;
-      filterTable(pls[actingIdx], di);
-      filterTable(pls[ti], di);
-      endTurnFromRemote(pls, dk, di, actingIdx);
-    } else if (card.action === 'perchero_cubierto') {
-      promptClosetCoverResponse(actingIdx, ti, pls, dk, di);
     }
+
+    if (result.kind === 'needs_hat_replace') {
+      setPlayers(result.players); setDiscard(result.discard);
+      setModal({ type: 'pickHatReplace', newPls: result.players, newDiscard: result.discard, victimIdx: result.victimIdx, fromIdx: result.fromIdx });
+      return;
+    }
+
+    if (result.kind === 'closet_cover') {
+      promptClosetCoverResponse(actingIdx, ti, result.players, dk, result.discard);
+      return;
+    }
+
+    endTurnFromRemote(result.players, dk, result.discard, actingIdx);
   }
 
   // â”€â”€ Host: process remote player action â”€â”€
@@ -2378,35 +2319,40 @@ export default function App() {
             const { type } = action;
 
             if (type === 'playIngredient') {
-              const card = pls[idx].hand[action.cardIdx];
-              if (!card || !canPlayCard(pls[idx], card)) return;
-              addLog(idx, `jugÃ³ ${getIngName(card.ingredient, card.language)} ${ING_EMOJI[card.ingredient]}`, pls);
-              pls[idx].hand.splice(action.cardIdx, 1);
-              pls[idx].table.push(card.ingredient);
-              const { player: up, freed, done } = advanceBurger(pls[idx]);
-              pls[idx] = up;
-              di = [...di, card];
-              if (done) { freed.forEach(ing => di.push({ type: 'ingredient', ingredient: ingKey(ing), id: uid() })); addLog(idx, 'Â¡completÃ³ una hamburguesa! ðŸŽ‰', pls); }
+              const result = remoteActionService.playIngredient({
+                players: pls,
+                discard: di,
+                idx,
+                cardIdx: action.cardIdx,
+                addLog,
+              });
+              if (!result) return;
+              di = result.discard;
               setTimeout(() => endTurnFromRemote(pls, dk, di, idx), 0);
 
             } else if (type === 'playWildcard') {
-              const card = pls[idx].hand[action.cardIdx];
-              if (!card) return;
-              addLog(idx, 'jugÃ³ ðŸŒ­ ComodÃ­n', pls);
-              pls[idx].hand.splice(action.cardIdx, 1);
-              pls[idx].table.push('perrito|' + action.ingredient);
-              const { player: up, freed, done } = advanceBurger(pls[idx]);
-              pls[idx] = up;
-              di = [...di, card];
-              if (done) { freed.forEach(ing => di.push({ type: 'ingredient', ingredient: ingKey(ing), id: uid() })); addLog(idx, 'Â¡completÃ³ una hamburguesa! ðŸŽ‰', pls); }
+              const result = remoteActionService.playWildcard({
+                players: pls,
+                discard: di,
+                idx,
+                cardIdx: action.cardIdx,
+                ingredient: action.ingredient,
+                addLog,
+              });
+              if (!result) return;
+              di = result.discard;
               setTimeout(() => endTurnFromRemote(pls, dk, di, idx), 0);
 
             } else if (type === 'discard') {
-              const card = pls[idx].hand[action.cardIdx];
-              if (!card) return;
-              addLog(idx, `descartÃ³ una carta`, pls);
-              pls[idx].hand.splice(action.cardIdx, 1);
-              di = [...di, card];
+              const result = remoteActionService.discardCard({
+                players: pls,
+                discard: di,
+                idx,
+                cardIdx: action.cardIdx,
+                addLog,
+              });
+              if (!result) return;
+              di = result.discard;
               setTimeout(() => endTurnFromRemote(pls, dk, di, idx), 0);
 
             } else if (type === 'playMass') {
@@ -2457,56 +2403,44 @@ export default function App() {
               return;
 
             } else if (type === 'playBasurero') {
-              const card = pls[idx].hand[action.cardIdx];
-              if (!card) return;
-              pls[idx].hand.splice(action.cardIdx, 1);
-              di = [...di, card];
-              const found = di.find(c => c.id === action.pickedCardId);
-              if (found) {
-                di = di.filter(c => c.id !== action.pickedCardId);
-                pls[idx].hand.push(found);
-                addLog(idx, 'rescatÃ³ una carta del ðŸ—‘ï¸ basurero', pls);
-              }
+              const result = remoteActionService.playBasurero({
+                players: pls,
+                discard: di,
+                idx,
+                cardIdx: action.cardIdx,
+                pickedCardId: action.pickedCardId,
+                addLog,
+              });
+              if (!result) return;
+              di = result.discard;
               setTimeout(() => endTurnFromRemote(pls, dk, di, idx), 0);
 
             } else if (type === 'manualCambiar') {
-              const p = pls[idx];
-              if (p.closetCovered) return;
-              const hi = p.perchero.indexOf(action.hatLang);
-              if (hi === -1) return;
-              const replaceIdx = Number.isInteger(action.replaceIdx) && action.replaceIdx >= 0 && action.replaceIdx < p.mainHats.length
-                ? action.replaceIdx
-                : 0;
-              p.perchero.splice(hi, 1);
-              const oldMain = p.mainHats[replaceIdx];
-              p.mainHats[replaceIdx] = action.hatLang;
-              p.perchero.push(oldMain);
-              let discarded;
-              if (action.cardIndices) {
-                const sorted = [...action.cardIndices].sort((a, b) => b - a);
-                discarded = sorted.map(i => p.hand.splice(i, 1)[0]);
-              } else {
-                const cost = Math.ceil(p.hand.length / 2);
-                discarded = p.hand.splice(0, cost);
-              }
-              di = [...di, ...discarded];
-              addLog(idx, `cambiÃ³ sombrero a ${action.hatLang} (descartÃ³ ${discarded.length} cartas)`, pls);
+              const result = remoteActionService.manualCambiar({
+                players: pls,
+                discard: di,
+                idx,
+                hatLang: action.hatLang,
+                replaceIdx: action.replaceIdx,
+                cardIndices: action.cardIndices,
+                addLog,
+              });
+              if (!result) return;
+              di = result.discard;
               setPlayers(pls); setDiscard(di); setExtraPlay(true);
 
             } else if (type === 'manualAgregar') {
-              const p = pls[idx];
-              if (p.closetCovered) return;
-              const hi = p.perchero.indexOf(action.hatLang);
-              if (hi === -1) return;
-              p.perchero.splice(hi, 1);
-              p.mainHats.push(action.hatLang);
-              p.manuallyAddedHats = [...(p.manuallyAddedHats || []), action.hatLang];
-              di = [...di, ...p.hand];
-              p.hand = [];
-              p.maxHand = Math.max(1, p.maxHand - 1);
-              const { drawn, deck: nd, discard: nd2 } = drawN(dk, di, p.maxHand);
-              p.hand = drawn; dk = nd; di = nd2;
-              addLog(idx, `agregÃ³ sombrero ${action.hatLang} â€” mano mÃ¡x reducida a ${p.maxHand}`, pls);
+              const result = remoteActionService.manualAgregar({
+                players: pls,
+                deck: dk,
+                discard: di,
+                idx,
+                hatLang: action.hatLang,
+                addLog,
+              });
+              if (!result) return;
+              dk = result.deck;
+              di = result.discard;
               setPlayers(pls); setDeck(dk); setDiscard(di); setExtraPlay(true);
 
             } else if (type === 'pickHatReplace') {
@@ -2559,23 +2493,17 @@ export default function App() {
 
   // â”€â”€ End turn â”€â”€
   function endTurn(pls, deckArr, discardArr, fromIdx) {
-    // Fill hand
-    const p = pls[fromIdx];
-    const needed = p.maxHand - p.hand.length;
-    let newPls = pls, newDeck = deckArr, newDiscard = discardArr;
-    if (needed > 0) {
-      const { drawn, deck: d, discard: di } = drawN(deckArr, discardArr, needed);
-      newPls = clone(pls);
-      newPls[fromIdx].hand.push(...drawn);
-      newDeck = d;
-      newDiscard = di;
-    }
-    if (newPls[fromIdx]?.closetCovered) {
-      if (newPls === pls) newPls = clone(pls);
-      newPls[fromIdx].closetCovered = false;
-    }
-    const w = checkWin(newPls);
-      if (w) {
+    const result = turnEngine.resolveTurnEnd({
+      players: pls,
+      deck: deckArr,
+      discard: discardArr,
+      fromIdx,
+    });
+    const newPls = result.players;
+    const newDeck = result.deck;
+    const newDiscard = result.discard;
+    const w = result.winner;
+    if (w) {
         setPlayers(newPls); setDeck(newDeck); setDiscard(newDiscard);
         // Emit final sync with winner BEFORE changing phase (the useEffect guard
         // blocks sync when phase !== 'playing', so we must emit directly here)
@@ -2588,7 +2516,7 @@ export default function App() {
       setWinner(w); clearRoomSession(); setPhase('gameover');
       return;
     }
-    const nextIdx = (fromIdx + 1) % newPls.length;
+    const nextIdx = result.nextIdx;
     setPlayers(newPls); setDeck(newDeck); setDiscard(newDiscard);
     setSelectedIdx(null); setExtraPlay(false);
     setCp(nextIdx);
