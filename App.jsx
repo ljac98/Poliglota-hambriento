@@ -85,6 +85,7 @@ import { normalizeGameConfig } from './app/services/gameConfigService.js';
 import { createGameServices } from './app/services/gameServiceFactory.js';
 import { createRemoteActionDispatcher } from './app/services/remoteActionDispatcher.js';
 import { createPlayerActionCommands } from './app/services/playerActionCommands.js';
+import { createActionEffectObserver } from './app/services/actionEffectObserver.js';
 
 const INSTALL_PROMPT_COPY = {
   es: {
@@ -2056,6 +2057,26 @@ export default function App() {
     return threat >= 24 && Math.random() < aiConfig.negationChance;
   }
 
+  const forkEventObserver = useCallback((event) => {
+    if (!event) return;
+    setLastForkEvent(event);
+    if (!isOnline || event.targetIdx === HI || event.actingIdx === HI) {
+      lastForkSeenRef.current = event.id;
+      setForkFx(event);
+    }
+  }, [HI, isOnline]);
+
+  const actionEffectObserver = createActionEffectObserver({
+    onComeComodines: triggerComeComodinesEvent,
+    onMilanesa: triggerMilanesaEvent,
+    onEnsalada: triggerEnsaladaEvent,
+    onPizza: triggerPizzaEvent,
+    onParrilla: triggerParrillaEvent,
+    onGloton: triggerGlotonEvent,
+    onHatSteal: triggerHatStealEvent,
+    onFork: forkEventObserver,
+  });
+
   const {
     closetCoverPolicy,
     turnEngine,
@@ -2064,6 +2085,7 @@ export default function App() {
   } = createGameServices({
     getRemainingNeeds,
     getCardKeepScore,
+    effectObserver: actionEffectObserver,
     drawN,
     clonePlayers: clone,
     checkWin,
@@ -2074,8 +2096,6 @@ export default function App() {
     ingKey,
     uid,
     getTableSlotIndexForCurrentBurger,
-    triggerGlotonEvent,
-    triggerHatStealEvent,
     filterTable,
   });
 
@@ -2331,14 +2351,6 @@ export default function App() {
 
     if (!result) return;
 
-    if (result.forkEvent) {
-      setLastForkEvent(result.forkEvent);
-      if (!isOnline || ti === HI || actingIdx === HI) {
-        lastForkSeenRef.current = result.forkEvent.id;
-        setForkFx(result.forkEvent);
-      }
-    }
-
     if (result.kind === 'needs_hat_replace') {
       setPlayers(result.players); setDiscard(result.discard);
       setModal({ type: 'pickHatReplace', newPls: result.players, newDiscard: result.discard, victimIdx: result.victimIdx, fromIdx: result.fromIdx });
@@ -2385,17 +2397,7 @@ export default function App() {
                 if (ci !== -1) fp[idx].hand.splice(ci, 1);
                 const fd = [...discardRef.current, card];
                 const r = applyMass(fp, fd, card.action, idx);
-                if (card.action === 'comecomodines') {
-                  triggerComeComodinesEvent(r, idx, fp[idx]?.name || 'Jugador');
-                } else if (card.action === 'milanesa') {
-                  triggerMilanesaEvent(r);
-                } else if (card.action === 'ensalada') {
-                  triggerEnsaladaEvent(r);
-                } else if (card.action === 'pizza') {
-                  triggerPizzaEvent(r);
-                } else if (card.action === 'parrilla') {
-                  triggerParrillaEvent(r);
-                }
+                actionEffectObserver.publishMassAction(card.action, { result: r, actingIdx: idx, actorName: fp[idx]?.name || 'Jugador' });
                 endTurnFromRemote(r.players, deckRef.current, r.discard, idx);
               });
               return;
@@ -2860,21 +2862,16 @@ export default function App() {
         const mass = ['milanesa', 'ensalada', 'pizza', 'parrilla', 'comecomodines'];
           if (mass.includes(card.action)) {
             const r = applyMass(newPls, newDiscard, card.action, idx);
-            if (card.action === 'comecomodines') {
-              triggerComeComodinesEvent(r, idx, newPls[idx]?.name || 'IA');
-            } else if (card.action === 'milanesa') {
-              triggerMilanesaEvent(r);
-            } else if (card.action === 'ensalada') {
-              triggerEnsaladaEvent(r);
-            } else if (card.action === 'pizza') {
-              triggerPizzaEvent(r);
-            } else if (card.action === 'parrilla') {
-            triggerParrillaEvent(r);
-          }
+            actionEffectObserver.publishMassAction(card.action, { result: r, actingIdx: idx, actorName: newPls[idx]?.name || 'IA' });
           newPls = r.players; newDiscard = r.discard;
         } else if (richest !== null && richest !== undefined) {
             if (card.action === 'gloton') {
-              triggerGlotonEvent(idx, richest, [...newPls[richest].table], newPls[idx]?.name || 'IA');
+              actionEffectObserver.publishGlotonEvent({
+                actingIdx: idx,
+                targetIdx: richest,
+                targetTable: [...newPls[richest].table],
+                actorName: newPls[idx]?.name || 'IA',
+              });
               newPls[richest].table.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `g${Date.now()}${Math.random()}` }));
               newPls[richest].table = [];
               addLog(idx, `vació la mesa de ${pls[richest].name}`, newPls);
@@ -2896,11 +2893,7 @@ export default function App() {
                 sourceIngIdx: si,
                 sourceSlotIdx,
               };
-              setLastForkEvent(forkEvent);
-              if (!isOnline || richest === HI) {
-                lastForkSeenRef.current = forkEvent.id;
-                setForkFx(forkEvent);
-              }
+              actionEffectObserver.publishForkEvent(forkEvent);
               const { player: up2, freed: fr2, done: dn2 } = advanceBurger(newPls[idx]);
               newPls[idx] = up2;
               if (dn2) { fr2.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `t${Date.now()}${Math.random()}` })); }
@@ -2910,7 +2903,12 @@ export default function App() {
             if (newPls[richest].mainHats.length > 0) {
               const stolen = newPls[richest].mainHats.splice(0, 1)[0];
               newPls[idx].mainHats.push(stolen);
-              triggerHatStealEvent(idx, richest, stolen, pls[idx]?.name || 'Jugador');
+              actionEffectObserver.publishHatStealEvent({
+                actingIdx: idx,
+                targetIdx: richest,
+                hatLang: stolen,
+                actorName: pls[idx]?.name || 'Jugador',
+              });
               if (newPls[richest].mainHats.length > 0) {
                 newPls[richest].maxHand = Math.min(6, newPls[richest].maxHand + 1);
               }
@@ -3204,18 +3202,8 @@ export default function App() {
           if (ci !== -1) newPls[HI].hand.splice(ci, 1);
           const newDiscard = [...di, card];
           const massResult = applyMass(newPls, newDiscard, card.action, HI);
-          if (card.action === 'comecomodines') {
-            massResult.sourcePoint = sourcePoint;
-            triggerComeComodinesEvent(massResult, HI, newPls[HI]?.name || 'Jugador');
-          } else if (card.action === 'milanesa') {
-            triggerMilanesaEvent(massResult);
-          } else if (card.action === 'ensalada') {
-            triggerEnsaladaEvent(massResult);
-          } else if (card.action === 'pizza') {
-            triggerPizzaEvent(massResult);
-          } else if (card.action === 'parrilla') {
-            triggerParrillaEvent(massResult);
-          }
+          if (card.action === 'comecomodines') massResult.sourcePoint = sourcePoint;
+          actionEffectObserver.publishMassAction(card.action, { result: massResult, actingIdx: HI, actorName: newPls[HI]?.name || 'Jugador' });
           const { players: ps2, discard: di2 } = massResult;
           if (advanceTutorialAfter('actionCard')) {
             setPlayers(ps2);
@@ -3312,7 +3300,12 @@ export default function App() {
       let newDiscard = [...di, card];
 
       if (action === 'gloton') {
-        triggerGlotonEvent(HI, targetIdx, [...newPls[targetIdx].table], newPls[HI]?.name || 'Jugador');
+        actionEffectObserver.publishGlotonEvent({
+          actingIdx: HI,
+          targetIdx,
+          targetTable: [...newPls[targetIdx].table],
+          actorName: newPls[HI]?.name || 'Jugador',
+        });
         newPls[targetIdx].table.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `g${Date.now()}` }));
         newPls[targetIdx].table = [];
         endTurn(newPls, dk, newDiscard, HI);
@@ -3370,11 +3363,7 @@ export default function App() {
       sourceIngIdx: ingIdx,
       sourceSlotIdx,
     };
-    setLastForkEvent(forkEvent);
-    if (!isOnline || targetIdx === HI) {
-      lastForkSeenRef.current = forkEvent.id;
-      setForkFx(forkEvent);
-    }
+    actionEffectObserver.publishForkEvent(forkEvent);
     const { player: up, freed, done } = advanceBurger(newPls[HI]);
     newPls[HI] = up;
     let fd = newDiscard;
@@ -3438,7 +3427,12 @@ export default function App() {
     const stealIdx = newPls[targetIdx].mainHats.indexOf(hatLang);
     const stolen = newPls[targetIdx].mainHats.splice(stealIdx, 1)[0];
     newPls[HI].mainHats.push(stolen);
-    triggerHatStealEvent(HI, targetIdx, stolen, players[HI]?.name || 'Jugador');
+    actionEffectObserver.publishHatStealEvent({
+      actingIdx: HI,
+      targetIdx,
+      hatLang: stolen,
+      actorName: players[HI]?.name || 'Jugador',
+    });
     if (newPls[targetIdx].mainHats.length > 0) {
       newPls[targetIdx].maxHand = Math.min(6, newPls[targetIdx].maxHand + 1);
     }
