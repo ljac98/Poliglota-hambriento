@@ -305,6 +305,76 @@ export default function App() {
     };
     return copyByUi[uiLang] || copyByUi.en;
   })();
+  const getIngredientCantPlayReason = useCallback((playerLike, card) => {
+    if (!playerLike || !card || card.type !== 'ingredient') return T('cantPlayNow');
+
+    const hasCorrectHat = playerLike.mainHats?.includes(card.language);
+    if (card.ingredient === 'perrito') {
+      if (!hasCorrectHat) {
+        const hatName = T(card.language);
+        const copyByUi = {
+          es: `Necesita sombrero ${hatName} para jugar`,
+          en: `Needs ${hatName} hat to play`,
+          fr: `Il faut le chapeau ${hatName} pour la jouer`,
+          it: `Serve il cappello ${hatName} per giocarla`,
+          de: `Du brauchst den Hut ${hatName}, um sie zu spielen`,
+          pt: `Precisa do chapéu ${hatName} para jogar`,
+        };
+        return copyByUi[uiLang] || copyByUi.en;
+      }
+      return T('cantPlayNow');
+    }
+
+    if (playerLike.currentBurger >= playerLike.totalBurgers) {
+      const copyByUi = {
+        es: 'Tu hamburguesa actual ya está completa',
+        en: 'Your current burger is already complete',
+        fr: 'Ton burger actuel est déjà complet',
+        it: 'Il tuo hamburger attuale è già completo',
+        de: 'Dein aktueller Burger ist bereits fertig',
+        pt: 'O teu hambúrguer atual já está completo',
+      };
+      return copyByUi[uiLang] || copyByUi.en;
+    }
+
+    const target = playerLike.burgers?.[playerLike.currentBurger] || [];
+    const needed = [...target];
+    const tableCopy = (playerLike.table || []).map((t) => (t.startsWith('perrito|') ? t.split('|')[1] : t));
+    for (let i = needed.length - 1; i >= 0; i -= 1) {
+      const idx = tableCopy.indexOf(needed[i]);
+      if (idx !== -1) {
+        needed.splice(i, 1);
+        tableCopy.splice(idx, 1);
+      }
+    }
+
+    if (!needed.includes(card.ingredient)) {
+      const copyByUi = {
+        es: 'No es parte del objetivo actual',
+        en: 'It is not part of the current objective',
+        fr: 'Elle ne fait pas partie de l’objectif actuel',
+        it: 'Non fa parte dell’obiettivo attuale',
+        de: 'Sie ist kein Teil des aktuellen Ziels',
+        pt: 'Não faz parte do objetivo atual',
+      };
+      return copyByUi[uiLang] || copyByUi.en;
+    }
+
+    if (!hasCorrectHat) {
+      const hatName = T(card.language);
+      const copyByUi = {
+        es: `Necesita sombrero ${hatName} para jugar`,
+        en: `Needs ${hatName} hat to play`,
+        fr: `Il faut le chapeau ${hatName} pour la jouer`,
+        it: `Serve il cappello ${hatName} per giocarla`,
+        de: `Du brauchst den Hut ${hatName}, um sie zu spielen`,
+        pt: `Precisa do chapéu ${hatName} para jogar`,
+      };
+      return copyByUi[uiLang] || copyByUi.en;
+    }
+
+    return T('cantPlayNow');
+  }, [T, uiLang]);
   const mapVisibleTutorialStepToScenarioStep = useCallback((step) => {
     if (step <= 0) return 0;
     if (step === 1) return 2;
@@ -4725,7 +4795,7 @@ export default function App() {
                     )}
                     {canPlayCard(human, card)
                       ? <span style={{ color: '#4CAF50', fontSize: 12 }}>{T('canPlay')}</span>
-                      : <span style={{ color: '#FF7043', fontSize: 12 }}>{T('cantPlay')}</span>}
+                      : <span style={{ color: '#FF7043', fontSize: 12 }}>{getIngredientCantPlayReason(human, card)}</span>}
                   </>) : (<>
                     <span style={{ fontWeight: 700, fontSize: 14, color: '#FFD700' }}>{getActionText(card.action)?.name}</span>
                     <span style={{ fontSize: 12, color: noObjectives ? '#FF7043' : '#ccc' }}>{noObjectives ? T('actionNoObjectives') : getActionText(card.action)?.desc}</span>
@@ -4782,7 +4852,7 @@ export default function App() {
       {human.hand[selectedIdx]?.type === 'ingredient' ? (
         canPlayCard(human, human.hand[selectedIdx])
           ? <span style={{ color: '#4CAF50' }}>{T('canPlayThis')}</span>
-          : <span style={{ color: '#FF7043' }}>{T('cantPlayNow')}</span>
+          : <span style={{ color: '#FF7043' }}>{getIngredientCantPlayReason(human, human.hand[selectedIdx])}</span>
       ) : (
         human.hand[selectedIdx]?.type === 'action' && !hasActionObjectives(human.hand[selectedIdx]?.action, players, HI, discard)
           ? <span style={{ color: '#FF7043' }}>{T('actionNoObjectives')}</span>
@@ -5632,7 +5702,7 @@ export default function App() {
                   )}
                   {canPlayCard(human, card)
                     ? <span style={{ color: '#4CAF50', fontSize: 13 }}>{T('canPlay')}</span>
-                    : <span style={{ color: '#FF7043', fontSize: 13 }}>{T('cantPlay')}</span>}
+                    : <span style={{ color: '#FF7043', fontSize: 13 }}>{getIngredientCantPlayReason(human, card)}</span>}
                 </>) : (<>
                   <span style={{ fontWeight: 700, fontSize: 16, color: '#FFD700' }}>{getActionText(card.action)?.name}</span>
                   <span style={{ fontSize: 13, color: noObjectivesMobile ? '#FF7043' : '#ccc' }}>{noObjectivesMobile ? T('actionNoObjectives') : getActionText(card.action)?.desc}</span>
