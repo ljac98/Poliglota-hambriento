@@ -110,6 +110,7 @@ export const BurgerTarget = ({ ingredients, table, isCurrent, onIngredientClick,
           {[...ingredients].reverse().map((ing, i) => {
             const realIdx = ingredients.length - 1 - i;
             const filled = stackFilled[realIdx];
+            const shouldHighlight = highlightedSet.has(ing) && !filled;
             return (
               BURGER_STACK_IMG[ing] && <img
                 key={i}
@@ -118,8 +119,13 @@ export const BurgerTarget = ({ ingredients, table, isCurrent, onIngredientClick,
                 style={{
                   width: 64, height: 'auto', marginTop: -4, marginBottom: -4,
                   opacity: filled ? 1 : 0.25,
-                  transition: 'opacity 0.3s',
-                  filter: filled ? 'none' : 'grayscale(0.5)',
+                  transition: 'opacity 0.3s, transform 0.2s, filter 0.2s',
+                  filter: shouldHighlight
+                    ? 'drop-shadow(0 0 10px rgba(255,215,0,0.75)) brightness(1.08)'
+                    : filled
+                      ? 'none'
+                      : 'grayscale(0.5)',
+                  transform: shouldHighlight ? 'scale(1.06)' : 'none',
                 }}
               />
             );
