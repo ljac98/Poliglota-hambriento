@@ -306,7 +306,8 @@ export default function App() {
     return copyByUi[uiLang] || copyByUi.en;
   })();
   const getIngredientCantPlayReason = useCallback((playerLike, card) => {
-    if (!playerLike || !card || card.type !== 'ingredient') return T('cantPlayNow');
+    const asResult = (text, hatLang = null) => ({ text, hatLang });
+    if (!playerLike || !card || card.type !== 'ingredient') return asResult(T('cantPlayNow'));
 
     const hasCorrectHat = playerLike.mainHats?.includes(card.language);
     if (card.ingredient === 'perrito') {
@@ -320,9 +321,9 @@ export default function App() {
           de: `Du brauchst den Hut ${hatName}, um sie zu spielen`,
           pt: `Precisa do chapéu ${hatName} para jogar`,
         };
-        return copyByUi[uiLang] || copyByUi.en;
+        return asResult(copyByUi[uiLang] || copyByUi.en, card.language);
       }
-      return T('cantPlayNow');
+      return asResult(T('cantPlayNow'));
     }
 
     if (playerLike.currentBurger >= playerLike.totalBurgers) {
@@ -334,7 +335,7 @@ export default function App() {
         de: 'Dein aktueller Burger ist bereits fertig',
         pt: 'O teu hambúrguer atual já está completo',
       };
-      return copyByUi[uiLang] || copyByUi.en;
+      return asResult(copyByUi[uiLang] || copyByUi.en);
     }
 
     const target = playerLike.burgers?.[playerLike.currentBurger] || [];
@@ -357,7 +358,7 @@ export default function App() {
         de: 'Sie ist kein Teil des aktuellen Ziels',
         pt: 'Não faz parte do objetivo atual',
       };
-      return copyByUi[uiLang] || copyByUi.en;
+      return asResult(copyByUi[uiLang] || copyByUi.en);
     }
 
     if (!hasCorrectHat) {
@@ -370,10 +371,10 @@ export default function App() {
         de: `Du brauchst den Hut ${hatName}, um sie zu spielen`,
         pt: `Precisa do chapéu ${hatName} para jogar`,
       };
-      return copyByUi[uiLang] || copyByUi.en;
+      return asResult(copyByUi[uiLang] || copyByUi.en, card.language);
     }
 
-    return T('cantPlayNow');
+    return asResult(T('cantPlayNow'));
   }, [T, uiLang]);
   const mapVisibleTutorialStepToScenarioStep = useCallback((step) => {
     if (step <= 0) return 0;
@@ -4795,7 +4796,15 @@ export default function App() {
                     )}
                     {canPlayCard(human, card)
                       ? <span style={{ color: '#4CAF50', fontSize: 12 }}>{T('canPlay')}</span>
-                      : <span style={{ color: '#FF7043', fontSize: 12 }}>{getIngredientCantPlayReason(human, card)}</span>}
+                      : (() => {
+                          const reason = getIngredientCantPlayReason(human, card);
+                          return (
+                            <span style={{ color: '#FF7043', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 6, justifyContent: 'center', flexWrap: 'wrap' }}>
+                              {reason.hatLang && <HatSVG lang={reason.hatLang} size={18} />}
+                              <span>{reason.text}</span>
+                            </span>
+                          );
+                        })()}
                   </>) : (<>
                     <span style={{ fontWeight: 700, fontSize: 14, color: '#FFD700' }}>{getActionText(card.action)?.name}</span>
                     <span style={{ fontSize: 12, color: noObjectives ? '#FF7043' : '#ccc' }}>{noObjectives ? T('actionNoObjectives') : getActionText(card.action)?.desc}</span>
@@ -4852,7 +4861,15 @@ export default function App() {
       {human.hand[selectedIdx]?.type === 'ingredient' ? (
         canPlayCard(human, human.hand[selectedIdx])
           ? <span style={{ color: '#4CAF50' }}>{T('canPlayThis')}</span>
-          : <span style={{ color: '#FF7043' }}>{getIngredientCantPlayReason(human, human.hand[selectedIdx])}</span>
+          : (() => {
+              const reason = getIngredientCantPlayReason(human, human.hand[selectedIdx]);
+              return (
+                <span style={{ color: '#FF7043', display: 'inline-flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                  {reason.hatLang && <HatSVG lang={reason.hatLang} size={18} />}
+                  <span>{reason.text}</span>
+                </span>
+              );
+            })()
       ) : (
         human.hand[selectedIdx]?.type === 'action' && !hasActionObjectives(human.hand[selectedIdx]?.action, players, HI, discard)
           ? <span style={{ color: '#FF7043' }}>{T('actionNoObjectives')}</span>
@@ -5702,7 +5719,15 @@ export default function App() {
                   )}
                   {canPlayCard(human, card)
                     ? <span style={{ color: '#4CAF50', fontSize: 13 }}>{T('canPlay')}</span>
-                    : <span style={{ color: '#FF7043', fontSize: 13 }}>{getIngredientCantPlayReason(human, card)}</span>}
+                    : (() => {
+                        const reason = getIngredientCantPlayReason(human, card);
+                        return (
+                          <span style={{ color: '#FF7043', fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 6, justifyContent: 'center', flexWrap: 'wrap' }}>
+                            {reason.hatLang && <HatSVG lang={reason.hatLang} size={20} />}
+                            <span>{reason.text}</span>
+                          </span>
+                        );
+                      })()}
                 </>) : (<>
                   <span style={{ fontWeight: 700, fontSize: 16, color: '#FFD700' }}>{getActionText(card.action)?.name}</span>
                   <span style={{ fontSize: 13, color: noObjectivesMobile ? '#FF7043' : '#ccc' }}>{noObjectivesMobile ? T('actionNoObjectives') : getActionText(card.action)?.desc}</span>
