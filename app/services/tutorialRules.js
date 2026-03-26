@@ -1,5 +1,5 @@
-const TUTORIAL_ALLOWED_CARD_SELECTION_STEPS = new Set([2, 3, 6, 7, 8]);
-const TUTORIAL_ALLOWED_PLAY_BUTTON_STEPS = new Set([2, 6, 7, 8]);
+const TUTORIAL_ALLOWED_CARD_SELECTION_STEPS = new Set([1, 2, 5, 6, 7]);
+const TUTORIAL_ALLOWED_PLAY_BUTTON_STEPS = new Set([1, 5, 6, 7]);
 
 export function getTutorialPermissions(tutorialActive, tutorialStep) {
   if (!tutorialActive) {
@@ -15,9 +15,9 @@ export function getTutorialPermissions(tutorialActive, tutorialStep) {
   return {
     canSelectCards: TUTORIAL_ALLOWED_CARD_SELECTION_STEPS.has(tutorialStep),
     canUsePlayButton: TUTORIAL_ALLOWED_PLAY_BUTTON_STEPS.has(tutorialStep),
-    canChangeHat: tutorialStep === 4,
-    canAddHat: tutorialStep === 5,
-    canNegate: tutorialStep === 9,
+    canChangeHat: tutorialStep === 3,
+    canAddHat: tutorialStep === 4,
+    canNegate: tutorialStep === 8,
   };
 }
 
@@ -25,12 +25,12 @@ export function shouldAdvanceTutorialStep(tutorialActive, tutorialStep, actionTy
   if (!tutorialActive) return false;
 
   return (
-    (tutorialStep === 2 && actionType === 'ingredient') ||
-    (tutorialStep === 4 && actionType === 'changeHat') ||
-    (tutorialStep === 5 && actionType === 'addHat') ||
-    (tutorialStep === 6 && actionType === 'discard') ||
-    (tutorialStep === 7 && actionType === 'wildcard') ||
-    (tutorialStep === 8 && actionType === 'actionCard') ||
-    (tutorialStep === 9 && actionType === 'negation')
+    (tutorialStep === 1 && actionType === 'ingredient') ||
+    (tutorialStep === 3 && actionType === 'changeHat') ||
+    (tutorialStep === 4 && actionType === 'addHat') ||
+    (tutorialStep === 5 && actionType === 'discard') ||
+    (tutorialStep === 6 && actionType === 'wildcard') ||
+    (tutorialStep === 7 && actionType === 'actionCard') ||
+    (tutorialStep === 8 && actionType === 'negation')
   );
 }

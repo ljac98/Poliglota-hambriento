@@ -3,7 +3,7 @@ import {
   FRUITS_VEGS,
 } from '../../constants/index.js';
 import { checkBurgerComplete } from '../../game/index.js';
-import { shuffle } from '../../game/utils.js';
+import { shuffle, uid } from '../../game/utils.js';
 import ingPan from '../../imagenes/hamburguesas/objetivos/pan.png';
 import ingLechuga from '../../imagenes/hamburguesas/objetivos/lechuga.png';
 import ingTomate from '../../imagenes/hamburguesas/objetivos/tomate.png';
@@ -120,7 +120,7 @@ export function filterTable(player, discardArr) {
       discardArr.push({
         type: 'ingredient',
         ingredient: item.startsWith('perrito') ? 'perrito' : item,
-        id: `c${Date.now()}${Math.random()}`,
+        id: uid(),
       });
     }
   }
@@ -140,7 +140,7 @@ export function applyMass(players, discard, actionId, playerIdx) {
       let removedCount = 0;
       player.table.forEach(ing => {
         if (ingKey(ing) === 'perrito') {
-          nextDiscard.push({ type: 'ingredient', ingredient: 'perrito', id: `d${Date.now()}${Math.random()}` });
+          nextDiscard.push({ type: 'ingredient', ingredient: 'perrito', id: uid() });
           removedCount += 1;
         } else {
           kept.push(ing);
@@ -167,7 +167,7 @@ export function applyMass(players, discard, actionId, playerIdx) {
     player.table.forEach(ing => {
       if (targets.includes(ingKey(ing)) || targets.includes(ingChosen(ing))) {
         const removedIng = ingKey(ing);
-        nextDiscard.push({ type: 'ingredient', ingredient: removedIng, id: `d${Date.now()}${Math.random()}` });
+        nextDiscard.push({ type: 'ingredient', ingredient: removedIng, id: uid() });
         removedCount += 1;
         removedIngredients.push(removedIng);
       } else {

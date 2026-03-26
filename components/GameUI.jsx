@@ -70,11 +70,16 @@ function resolveTargetSlots(table, target) {
 }
 
 // ═══ BURGER TARGET (horizontal) with stacked burger visual ═══
-export const BurgerTarget = ({ ingredients, table, isCurrent, onIngredientClick, onRegisterSlotRef }) => {
+export const BurgerTarget = ({ ingredients, table, isCurrent, onIngredientClick, onRegisterSlotRef, highlightIngredient = null, highlightIngredients = null }) => {
   const slotState = resolveTargetSlots(table, ingredients);
   const counts = {};
   ingredients.forEach(ing => { counts[ing] = (counts[ing] || 0) + 1; });
   const rendered = {};
+  const highlightedSet = new Set(
+    Array.isArray(highlightIngredients)
+      ? highlightIngredients.filter(Boolean)
+      : (highlightIngredient ? [highlightIngredient] : []),
+  );
 
   // Build filled status per ingredient for the stack
   const stackFilled = slotState.map(s => s.filled);
@@ -135,6 +140,7 @@ export const BurgerTarget = ({ ingredients, table, isCurrent, onIngredientClick,
           const filled = slotState[i].filled;
           const viaWildcard = slotState[i].viaWildcard;
           const isDupe = counts[ing] > 1;
+          const shouldHighlight = highlightedSet.has(ing) && !filled;
 
           return (
             <div
@@ -145,8 +151,14 @@ export const BurgerTarget = ({ ingredients, table, isCurrent, onIngredientClick,
               position: "relative", width: 36, height: 36, borderRadius: 6,
               background: filled ? ING_BG[ing] : "rgba(255,255,255,0.06)",
               display: "flex", alignItems: "center", justifyContent: "center",
-              border: filled ? "none" : `2px dashed ${ING_BG[ing]}44`,
+              border: shouldHighlight
+                ? "2px solid #FFD700"
+                : filled
+                  ? "none"
+                  : `2px dashed ${ING_BG[ing]}44`,
               opacity: filled ? 1 : 0.35, transition: "all 0.3s",
+              boxShadow: shouldHighlight ? "0 0 0 3px rgba(255,215,0,0.14), 0 0 14px rgba(255,215,0,0.28)" : "none",
+              transform: shouldHighlight ? "translateY(-1px) scale(1.04)" : "none",
               cursor: onIngredientClick ? "pointer" : "default",
             }}
             >
