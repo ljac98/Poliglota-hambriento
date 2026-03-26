@@ -3,14 +3,18 @@ export function createTargetedActionService({
   ingKey,
   uid,
   getTableSlotIndexForCurrentBurger,
-  triggerGlotonEvent,
-  triggerHatStealEvent,
+  effectObserver,
   filterTable,
 }) {
   return {
     apply({ card, actingIdx, targetIdx, action, players, discard, humanIdx }) {
       if (card.action === 'gloton') {
-        triggerGlotonEvent(actingIdx, targetIdx, [...players[targetIdx].table], players[actingIdx]?.name || 'Jugador');
+        effectObserver?.publishGlotonEvent({
+          actingIdx,
+          targetIdx,
+          targetTable: [...players[targetIdx].table],
+          actorName: players[actingIdx]?.name || 'Jugador',
+        });
         players[targetIdx].table.forEach((ing) => discard.push({ type: 'ingredient', ingredient: ingKey(ing), id: uid() }));
         players[targetIdx].table = [];
         return { kind: 'resolved', players, discard };
@@ -25,21 +29,17 @@ export function createTargetedActionService({
         if (done) {
           freed.forEach((ing) => discard.push({ type: 'ingredient', ingredient: ingKey(ing), id: uid() }));
         }
-        return {
-          kind: 'resolved',
-          players,
-          discard,
-          forkEvent: {
-            id: `${Date.now()}-${Math.random()}`,
-            actingIdx,
-            targetIdx,
-            actorName: players[actingIdx]?.name || 'Oponente',
-            ingredient: ingKey(stolen),
-            stolenRaw: stolen,
-            sourceIngIdx: action.ingIdx,
-            sourceSlotIdx,
-          },
-        };
+        effectObserver?.publishForkEvent({
+          id: `${Date.now()}-${Math.random()}`,
+          actingIdx,
+          targetIdx,
+          actorName: players[actingIdx]?.name || 'Oponente',
+          ingredient: ingKey(stolen),
+          stolenRaw: stolen,
+          sourceIngIdx: action.ingIdx,
+          sourceSlotIdx,
+        });
+        return { kind: 'resolved', players, discard };
       }
 
       if (card.action === 'ladron') {
@@ -50,7 +50,12 @@ export function createTargetedActionService({
           const stealIdx = players[targetIdx].mainHats.indexOf(stealHat);
           const stolen = players[targetIdx].mainHats.splice(stealIdx, 1)[0];
           players[actingIdx].mainHats.push(stolen);
-          triggerHatStealEvent(actingIdx, targetIdx, stolen, players[actingIdx]?.name || 'Jugador');
+          effectObserver?.publishHatStealEvent({
+            actingIdx,
+            targetIdx,
+            hatLang: stolen,
+            actorName: players[actingIdx]?.name || 'Jugador',
+          });
           if (players[targetIdx].mainHats.length > 0) {
             players[targetIdx].maxHand = Math.min(6, players[targetIdx].maxHand + 1);
           }

@@ -6,6 +6,7 @@ import { createTargetedActionService } from './targetedActionService.js';
 export function createGameServices({
   getRemainingNeeds,
   getCardKeepScore,
+  effectObserver,
   drawN,
   clonePlayers,
   checkWin,
@@ -46,8 +47,7 @@ export function createGameServices({
     ingKey,
     uid,
     getTableSlotIndexForCurrentBurger,
-    triggerGlotonEvent,
-    triggerHatStealEvent,
+    effectObserver,
     filterTable,
   });
 

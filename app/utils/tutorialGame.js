@@ -53,6 +53,7 @@ const COPY = {
     offerYes: 'Sí, jugar tutorial',
     offerNo: 'No, aprenderé sobre la marcha',
     badge: 'Tutorial guiado',
+    ingredientTag: 'Ingrediente',
     stepLabel: 'Paso',
     next: 'Siguiente',
     prev: 'Anterior',
@@ -64,22 +65,21 @@ const COPY = {
     steps: [
       {
         title: 'Objetivo del juego',
-        body: 'Tu meta es armar hamburguesas. Juegas ingredientes de tu mano que coincidan con tu sombrero principal para completar la receta.',
+        body: 'El objetivo del juego es ser el primero en completar su hamburguesa jugando ingredientes de tu mano.',
         bullets: [
-          'Mira tu receta: muestra los ingredientes que necesitas para completar la hamburguesa.',
-          'Solo puedes jugar ingredientes cuyo idioma coincida con tu sombrero principal.',
-          'Cuando completes una hamburguesa, avanzas a la siguiente. ¡Completa todas para ganar!',
+          'La hamburguesa objetivo te muestra lo que necesitas completar.',
+          'La carta seleccionada es una carta de ingrediente que puedes usar para avanzar.',
         ],
-        focus: { hats: true, selectedCard: 0 },
+        focus: { table: true, selectedCard: 0, ingredientLabel: true },
       },
       {
-        title: 'Sombreros principales y perchero',
-        body: 'Tus sombreros principales deciden en qué idiomas puedes jugar ingredientes. El perchero guarda los sombreros extra para cambiar o agregar.',
+        title: 'Jugar un ingrediente',
+        body: 'Para jugar un ingrediente, la carta tiene que ser parte de tu objetivo y el sombrero de la carta debe coincidir con tu sombrero principal.',
         bullets: [
-          'Mira tus sombreros principales a la derecha.',
-          'El perchero muestra los idiomas que todavía puedes mover a tu zona principal.',
+          'No basta con que la carta tenga el ingrediente correcto.',
+          'El sombrero de la carta debe coincidir con tu sombrero principal.',
         ],
-        focus: { hats: true, closet: true },
+        focus: { mainHat: true, selectedCard: 0, ingredientLabel: true },
       },
       {
         title: 'Ingrediente correcto y sombrero correcto',
@@ -181,6 +181,7 @@ const COPY = {
     offerYes: 'Yes, play tutorial',
     offerNo: 'No, I will learn on the go',
     badge: 'Guided tutorial',
+    ingredientTag: 'Ingredient',
     stepLabel: 'Step',
     next: 'Next',
     prev: 'Back',
@@ -192,22 +193,21 @@ const COPY = {
     steps: [
       {
         title: 'Game objective',
-        body: 'Your goal is to build burgers. You play ingredients from your hand that match your main hat to complete the recipe.',
+        body: 'The goal of the game is to be the first player to complete your burger by playing ingredients from your hand.',
         bullets: [
-          'Look at your recipe: it shows the ingredients you need to complete the burger.',
-          'You can only play ingredients whose language matches your main hat.',
-          'When you complete a burger, you advance to the next one. Complete them all to win!',
+          'The target burger shows what you still need to complete.',
+          'The selected card is an ingredient card you can use to move forward.',
         ],
-        focus: { hats: true, selectedCard: 0 },
+        focus: { table: true, selectedCard: 0, ingredientLabel: true },
       },
       {
-        title: 'Main hats and closet',
-        body: 'Your main hats decide which card languages you can play. The closet stores extra hats you can change to or add.',
+        title: 'Play an ingredient',
+        body: 'To play an ingredient, the card must be part of your target and the hat on the card must match your main hat.',
         bullets: [
-          'Check your main hats on the right.',
-          'The closet shows the extra languages you can still move into play.',
+          'It is not enough for the card to have the right ingredient.',
+          'The hat on the card must match your main hat.',
         ],
-        focus: { hats: true, closet: true },
+        focus: { mainHat: true, selectedCard: 0, ingredientLabel: true },
       },
       {
         title: 'Correct ingredient and correct hat',
@@ -309,6 +309,7 @@ const COPY = {
     offerYes: 'Oui, jouer le tutoriel',
     offerNo: 'Non, j apprendrai en jouant',
     badge: 'Tutoriel guide',
+    ingredientTag: 'Ingredient',
     stepLabel: 'Etape',
     next: 'Suivant',
     prev: 'Retour',
@@ -320,22 +321,21 @@ const COPY = {
     steps: [
       {
         title: 'Objectif du jeu',
-        body: 'Ton but est de construire des burgers. Tu joues des ingredients de ta main qui correspondent a ton chapeau principal pour completer la recette.',
+        body: 'Le but du jeu est d etre le premier a completer ton burger en jouant des ingredients de ta main.',
         bullets: [
-          'Regarde ta recette : elle montre les ingredients necessaires pour completer le burger.',
-          'Tu ne peux jouer que des ingredients dont la langue correspond a ton chapeau principal.',
-          'Quand tu completes un burger, tu passes au suivant. Complete-les tous pour gagner !',
+          'Le burger objectif te montre ce qu il te manque pour le completer.',
+          'La carte selectionnee est une carte ingredient que tu peux utiliser pour avancer.',
         ],
-        focus: { hats: true, selectedCard: 0 },
+        focus: { table: true, selectedCard: 0, ingredientLabel: true },
       },
       {
-        title: 'Chapeaux principaux et placard',
-        body: 'Tes chapeaux principaux decident dans quelles langues tu peux jouer tes cartes. Le placard garde les chapeaux supplementaires que tu peux echanger ou ajouter.',
+        title: 'Jouer un ingredient',
+        body: 'Pour jouer un ingredient, la carte doit faire partie de ton objectif et le chapeau de la carte doit correspondre a ton chapeau principal.',
         bullets: [
-          'Regarde tes chapeaux principaux a droite.',
-          'Le placard montre les langues supplementaires que tu peux encore mettre en jeu.',
+          'Il ne suffit pas que la carte ait le bon ingredient.',
+          'Le chapeau de la carte doit correspondre a ton chapeau principal.',
         ],
-        focus: { hats: true, closet: true },
+        focus: { mainHat: true, selectedCard: 0, ingredientLabel: true },
       },
       {
         title: 'Ingredient correct et bon chapeau',
@@ -437,6 +437,7 @@ const COPY = {
     offerYes: 'Si, gioca il tutorial',
     offerNo: 'No, imparero giocando',
     badge: 'Tutorial guidato',
+    ingredientTag: 'Ingrediente',
     stepLabel: 'Passo',
     next: 'Avanti',
     prev: 'Indietro',
@@ -448,22 +449,21 @@ const COPY = {
     steps: [
       {
         title: 'Obiettivo del gioco',
-        body: 'Il tuo obiettivo e costruire hamburger. Giochi ingredienti dalla tua mano che corrispondono al tuo cappello principale per completare la ricetta.',
+        body: 'L obiettivo del gioco e essere il primo a completare il tuo hamburger giocando ingredienti dalla tua mano.',
         bullets: [
-          'Guarda la tua ricetta: mostra gli ingredienti necessari per completare l hamburger.',
-          'Puoi giocare solo ingredienti la cui lingua corrisponde al tuo cappello principale.',
-          'Quando completi un hamburger, passi al successivo. Completali tutti per vincere!',
+          'L hamburger obiettivo mostra cosa ti manca per completarlo.',
+          'La carta selezionata e una carta ingrediente che puoi usare per avanzare.',
         ],
-        focus: { hats: true, selectedCard: 0 },
+        focus: { table: true, selectedCard: 0, ingredientLabel: true },
       },
       {
-        title: 'Cappelli principali e armadio',
-        body: 'I tuoi cappelli principali decidono in quali lingue puoi giocare le carte. L armadio conserva i cappelli extra che puoi cambiare o aggiungere.',
+        title: 'Giocare un ingrediente',
+        body: 'Per giocare un ingrediente, la carta deve far parte del tuo obiettivo e il cappello della carta deve corrispondere al tuo cappello principale.',
         bullets: [
-          'Guarda i tuoi cappelli principali a destra.',
-          'L armadio mostra le lingue extra che puoi ancora portare in gioco.',
+          'Non basta che la carta abbia l ingrediente giusto.',
+          'Il cappello della carta deve corrispondere al tuo cappello principale.',
         ],
-        focus: { hats: true, closet: true },
+        focus: { mainHat: true, selectedCard: 0, ingredientLabel: true },
       },
       {
         title: 'Ingrediente corretto e cappello corretto',
@@ -565,6 +565,7 @@ const COPY = {
     offerYes: 'Ja, Tutorial spielen',
     offerNo: 'Nein, ich lerne unterwegs',
     badge: 'Gefuhrtes Tutorial',
+    ingredientTag: 'Zutat',
     stepLabel: 'Schritt',
     next: 'Weiter',
     prev: 'Zuruck',
@@ -576,22 +577,21 @@ const COPY = {
     steps: [
       {
         title: 'Spielziel',
-        body: 'Dein Ziel ist es, Burger zu bauen. Du spielst Zutaten aus deiner Hand, die zu deinem Haupthut passen, um das Rezept zu vervollstandigen.',
+        body: 'Das Ziel des Spiels ist es, als erster deinen Burger zu vervollstandigen, indem du Zutaten aus deiner Hand spielst.',
         bullets: [
-          'Schau dir dein Rezept an: es zeigt die Zutaten, die du brauchst, um den Burger fertigzustellen.',
-          'Du kannst nur Zutaten spielen, deren Sprache mit deinem Haupthut ubereinstimmt.',
-          'Wenn du einen Burger fertigstellst, gehst du zum nachsten. Stelle alle fertig, um zu gewinnen!',
+          'Der Ziel-Burger zeigt dir, was dir noch zum Fertigstellen fehlt.',
+          'Die ausgewahlte Karte ist eine Zutatenkarte, mit der du vorankommst.',
         ],
-        focus: { hats: true, selectedCard: 0 },
+        focus: { table: true, selectedCard: 0, ingredientLabel: true },
       },
       {
-        title: 'Haupthute und Schrank',
-        body: 'Deine Haupthute entscheiden, in welchen Sprachen du Karten spielen kannst. Der Schrank bewahrt zusatzliche Hute auf, die du wechseln oder hinzufugen kannst.',
+        title: 'Eine Zutat spielen',
+        body: 'Um eine Zutat zu spielen, muss die Karte Teil deines Ziels sein und der Hut auf der Karte muss zu deinem Haupthut passen.',
         bullets: [
-          'Sieh dir rechts deine Haupthute an.',
-          'Der Schrank zeigt die zusatzlichen Sprachen, die du noch ins Spiel bringen kannst.',
+          'Es reicht nicht, dass die Karte nur die richtige Zutat hat.',
+          'Der Hut auf der Karte muss zu deinem Haupthut passen.',
         ],
-        focus: { hats: true, closet: true },
+        focus: { mainHat: true, selectedCard: 0, ingredientLabel: true },
       },
       {
         title: 'Richtige Zutat und richtiger Hut',
@@ -693,6 +693,7 @@ const COPY = {
     offerYes: 'Sim, jogar tutorial',
     offerNo: 'Nao, vou aprender jogando',
     badge: 'Tutorial guiado',
+    ingredientTag: 'Ingrediente',
     stepLabel: 'Passo',
     next: 'Seguinte',
     prev: 'Voltar',
@@ -704,22 +705,21 @@ const COPY = {
     steps: [
       {
         title: 'Objetivo do jogo',
-        body: 'O teu objetivo e montar hamburgueres. Jogas ingredientes da tua mao que correspondam ao teu chapeu principal para completar a receita.',
+        body: 'O objetivo do jogo e ser o primeiro a completar o teu hamburguer jogando ingredientes da tua mao.',
         bullets: [
-          'Ve a tua receita: mostra os ingredientes que precisas para completar o hamburguer.',
-          'So podes jogar ingredientes cuja lingua corresponda ao teu chapeu principal.',
-          'Quando completas um hamburguer, avancas para o seguinte. Completa todos para ganhar!',
+          'O hamburguer objetivo mostra o que ainda precisas para completar.',
+          'A carta selecionada e uma carta de ingrediente que podes usar para avancar.',
         ],
-        focus: { hats: true, selectedCard: 0 },
+        focus: { table: true, selectedCard: 0, ingredientLabel: true },
       },
       {
-        title: 'Chapeus principais e armario',
-        body: 'Os teus chapeus principais decidem em que linguas podes jogar cartas. O armario guarda os chapeus extra que podes trocar ou adicionar.',
+        title: 'Jogar um ingrediente',
+        body: 'Para jogar um ingrediente, a carta tem de fazer parte do teu objetivo e o chapeu da carta tem de coincidir com o teu chapeu principal.',
         bullets: [
-          'Olha para os teus chapeus principais a direita.',
-          'O armario mostra os idiomas extra que ainda podes colocar em jogo.',
+          'Nao basta a carta ter o ingrediente certo.',
+          'O chapeu da carta tem de coincidir com o teu chapeu principal.',
         ],
-        focus: { hats: true, closet: true },
+        focus: { mainHat: true, selectedCard: 0, ingredientLabel: true },
       },
       {
         title: 'Ingrediente correto e chapeu correto',

@@ -85,6 +85,8 @@ import { normalizeGameConfig } from './app/services/gameConfigService.js';
 import { createGameServices } from './app/services/gameServiceFactory.js';
 import { createRemoteActionDispatcher } from './app/services/remoteActionDispatcher.js';
 import { createPlayerActionCommands } from './app/services/playerActionCommands.js';
+import { createActionEffectObserver } from './app/services/actionEffectObserver.js';
+import { advanceTutorialState, createTutorialState, rewindTutorialState } from './app/services/tutorialStateService.js';
 
 const INSTALL_PROMPT_COPY = {
   es: {
@@ -304,16 +306,17 @@ export default function App() {
       position: 'fixed',
       zIndex: 9700,
     };
-    const focusCloset = !!(tutorialFocus.closet || tutorialFocus.hats || tutorialFocus.changeButton || tutorialFocus.addButton);
-    const focusHand = tutorialFocus.selectedCard !== undefined || tutorialFocus.actionCards;
+    const focusCloset = !!(tutorialFocus.closet || tutorialFocus.changeButton || tutorialFocus.addButton);
+    const focusHand = tutorialFocus.selectedCard !== undefined || tutorialFocus.actionCards || tutorialFocus.ingredientLabel;
+    const focusTable = !!tutorialFocus.table;
 
     if (isMobile) {
-      if (tutorialStep === 0 && focusCloset && focusHand) {
+      if (focusTable) {
         return {
           ...base,
           left: 10,
           right: 10,
-          top: 74,
+          top: 86,
           width: 'calc(100vw - 20px)',
           maxWidth: 'calc(100vw - 20px)',
         };
@@ -338,11 +341,11 @@ export default function App() {
       };
     }
 
-    if (tutorialStep === 0 && focusCloset && focusHand) {
+    if (focusTable) {
       return {
         ...base,
-        right: 16,
-        bottom: 112,
+        top: 168,
+        right: 24,
         width: 360,
         maxWidth: 360,
       };
@@ -1586,7 +1589,7 @@ export default function App() {
   function startTutorialGame() {
     setTutorialPrompt(null);
     setTutorialCarryOver(null);
-    setTutorialState({ active: true, step: 0 });
+    setTutorialState(createTutorialState(0));
   }
 
   function advanceTutorialAfter(actionType) {
@@ -1605,12 +1608,14 @@ export default function App() {
 
   function nextTutorialStep() {
     if (!tutorialActive) return;
-    const nextStep = tutorialState.step + 1;
-    if (nextStep >= tutorialCopy.steps.length) {
+    const transition = advanceTutorialState(tutorialState, tutorialCopy.steps.length);
+    if (transition.type === 'practice') {
       startTutorialPracticeGame();
       return;
     }
-    setTutorialState((prev) => ({ ...prev, step: nextStep }));
+    if (transition.type === 'step') {
+      setTutorialState(transition.state);
+    }
   }
 
   function startTutorialPracticeGame() {
@@ -1631,7 +1636,10 @@ export default function App() {
 
   function prevTutorialStep() {
     if (!tutorialActive) return;
-    setTutorialState((prev) => ({ ...prev, step: Math.max(0, prev.step - 1) }));
+    setTutorialState((prev) => {
+      if (!prev?.active) return prev;
+      return rewindTutorialState({ ...prev, step: (prev.step ?? 0) - 1 });
+    });
   }
 
   function openProfile(targetUserId, returnPhase = phase) {
@@ -2056,6 +2064,26 @@ export default function App() {
     return threat >= 24 && Math.random() < aiConfig.negationChance;
   }
 
+  const forkEventObserver = useCallback((event) => {
+    if (!event) return;
+    setLastForkEvent(event);
+    if (!isOnline || event.targetIdx === HI || event.actingIdx === HI) {
+      lastForkSeenRef.current = event.id;
+      setForkFx(event);
+    }
+  }, [HI, isOnline]);
+
+  const actionEffectObserver = createActionEffectObserver({
+    onComeComodines: triggerComeComodinesEvent,
+    onMilanesa: triggerMilanesaEvent,
+    onEnsalada: triggerEnsaladaEvent,
+    onPizza: triggerPizzaEvent,
+    onParrilla: triggerParrillaEvent,
+    onGloton: triggerGlotonEvent,
+    onHatSteal: triggerHatStealEvent,
+    onFork: forkEventObserver,
+  });
+
   const {
     closetCoverPolicy,
     turnEngine,
@@ -2064,6 +2092,7 @@ export default function App() {
   } = createGameServices({
     getRemainingNeeds,
     getCardKeepScore,
+    effectObserver: actionEffectObserver,
     drawN,
     clonePlayers: clone,
     checkWin,
@@ -2074,8 +2103,6 @@ export default function App() {
     ingKey,
     uid,
     getTableSlotIndexForCurrentBurger,
-    triggerGlotonEvent,
-    triggerHatStealEvent,
     filterTable,
   });
 
@@ -2331,14 +2358,6 @@ export default function App() {
 
     if (!result) return;
 
-    if (result.forkEvent) {
-      setLastForkEvent(result.forkEvent);
-      if (!isOnline || ti === HI || actingIdx === HI) {
-        lastForkSeenRef.current = result.forkEvent.id;
-        setForkFx(result.forkEvent);
-      }
-    }
-
     if (result.kind === 'needs_hat_replace') {
       setPlayers(result.players); setDiscard(result.discard);
       setModal({ type: 'pickHatReplace', newPls: result.players, newDiscard: result.discard, victimIdx: result.victimIdx, fromIdx: result.fromIdx });
@@ -2385,17 +2404,7 @@ export default function App() {
                 if (ci !== -1) fp[idx].hand.splice(ci, 1);
                 const fd = [...discardRef.current, card];
                 const r = applyMass(fp, fd, card.action, idx);
-                if (card.action === 'comecomodines') {
-                  triggerComeComodinesEvent(r, idx, fp[idx]?.name || 'Jugador');
-                } else if (card.action === 'milanesa') {
-                  triggerMilanesaEvent(r);
-                } else if (card.action === 'ensalada') {
-                  triggerEnsaladaEvent(r);
-                } else if (card.action === 'pizza') {
-                  triggerPizzaEvent(r);
-                } else if (card.action === 'parrilla') {
-                  triggerParrillaEvent(r);
-                }
+                actionEffectObserver.publishMassAction(card.action, { result: r, actingIdx: idx, actorName: fp[idx]?.name || 'Jugador' });
                 endTurnFromRemote(r.players, deckRef.current, r.discard, idx);
               });
               return;
@@ -2860,21 +2869,16 @@ export default function App() {
         const mass = ['milanesa', 'ensalada', 'pizza', 'parrilla', 'comecomodines'];
           if (mass.includes(card.action)) {
             const r = applyMass(newPls, newDiscard, card.action, idx);
-            if (card.action === 'comecomodines') {
-              triggerComeComodinesEvent(r, idx, newPls[idx]?.name || 'IA');
-            } else if (card.action === 'milanesa') {
-              triggerMilanesaEvent(r);
-            } else if (card.action === 'ensalada') {
-              triggerEnsaladaEvent(r);
-            } else if (card.action === 'pizza') {
-              triggerPizzaEvent(r);
-            } else if (card.action === 'parrilla') {
-            triggerParrillaEvent(r);
-          }
+            actionEffectObserver.publishMassAction(card.action, { result: r, actingIdx: idx, actorName: newPls[idx]?.name || 'IA' });
           newPls = r.players; newDiscard = r.discard;
         } else if (richest !== null && richest !== undefined) {
             if (card.action === 'gloton') {
-              triggerGlotonEvent(idx, richest, [...newPls[richest].table], newPls[idx]?.name || 'IA');
+              actionEffectObserver.publishGlotonEvent({
+                actingIdx: idx,
+                targetIdx: richest,
+                targetTable: [...newPls[richest].table],
+                actorName: newPls[idx]?.name || 'IA',
+              });
               newPls[richest].table.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `g${Date.now()}${Math.random()}` }));
               newPls[richest].table = [];
               addLog(idx, `vació la mesa de ${pls[richest].name}`, newPls);
@@ -2896,11 +2900,7 @@ export default function App() {
                 sourceIngIdx: si,
                 sourceSlotIdx,
               };
-              setLastForkEvent(forkEvent);
-              if (!isOnline || richest === HI) {
-                lastForkSeenRef.current = forkEvent.id;
-                setForkFx(forkEvent);
-              }
+              actionEffectObserver.publishForkEvent(forkEvent);
               const { player: up2, freed: fr2, done: dn2 } = advanceBurger(newPls[idx]);
               newPls[idx] = up2;
               if (dn2) { fr2.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `t${Date.now()}${Math.random()}` })); }
@@ -2910,7 +2910,12 @@ export default function App() {
             if (newPls[richest].mainHats.length > 0) {
               const stolen = newPls[richest].mainHats.splice(0, 1)[0];
               newPls[idx].mainHats.push(stolen);
-              triggerHatStealEvent(idx, richest, stolen, pls[idx]?.name || 'Jugador');
+              actionEffectObserver.publishHatStealEvent({
+                actingIdx: idx,
+                targetIdx: richest,
+                hatLang: stolen,
+                actorName: pls[idx]?.name || 'Jugador',
+              });
               if (newPls[richest].mainHats.length > 0) {
                 newPls[richest].maxHand = Math.min(6, newPls[richest].maxHand + 1);
               }
@@ -3204,18 +3209,8 @@ export default function App() {
           if (ci !== -1) newPls[HI].hand.splice(ci, 1);
           const newDiscard = [...di, card];
           const massResult = applyMass(newPls, newDiscard, card.action, HI);
-          if (card.action === 'comecomodines') {
-            massResult.sourcePoint = sourcePoint;
-            triggerComeComodinesEvent(massResult, HI, newPls[HI]?.name || 'Jugador');
-          } else if (card.action === 'milanesa') {
-            triggerMilanesaEvent(massResult);
-          } else if (card.action === 'ensalada') {
-            triggerEnsaladaEvent(massResult);
-          } else if (card.action === 'pizza') {
-            triggerPizzaEvent(massResult);
-          } else if (card.action === 'parrilla') {
-            triggerParrillaEvent(massResult);
-          }
+          if (card.action === 'comecomodines') massResult.sourcePoint = sourcePoint;
+          actionEffectObserver.publishMassAction(card.action, { result: massResult, actingIdx: HI, actorName: newPls[HI]?.name || 'Jugador' });
           const { players: ps2, discard: di2 } = massResult;
           if (advanceTutorialAfter('actionCard')) {
             setPlayers(ps2);
@@ -3312,7 +3307,12 @@ export default function App() {
       let newDiscard = [...di, card];
 
       if (action === 'gloton') {
-        triggerGlotonEvent(HI, targetIdx, [...newPls[targetIdx].table], newPls[HI]?.name || 'Jugador');
+        actionEffectObserver.publishGlotonEvent({
+          actingIdx: HI,
+          targetIdx,
+          targetTable: [...newPls[targetIdx].table],
+          actorName: newPls[HI]?.name || 'Jugador',
+        });
         newPls[targetIdx].table.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `g${Date.now()}` }));
         newPls[targetIdx].table = [];
         endTurn(newPls, dk, newDiscard, HI);
@@ -3370,11 +3370,7 @@ export default function App() {
       sourceIngIdx: ingIdx,
       sourceSlotIdx,
     };
-    setLastForkEvent(forkEvent);
-    if (!isOnline || targetIdx === HI) {
-      lastForkSeenRef.current = forkEvent.id;
-      setForkFx(forkEvent);
-    }
+    actionEffectObserver.publishForkEvent(forkEvent);
     const { player: up, freed, done } = advanceBurger(newPls[HI]);
     newPls[HI] = up;
     let fd = newDiscard;
@@ -3438,7 +3434,12 @@ export default function App() {
     const stealIdx = newPls[targetIdx].mainHats.indexOf(hatLang);
     const stolen = newPls[targetIdx].mainHats.splice(stealIdx, 1)[0];
     newPls[HI].mainHats.push(stolen);
-    triggerHatStealEvent(HI, targetIdx, stolen, players[HI]?.name || 'Jugador');
+    actionEffectObserver.publishHatStealEvent({
+      actingIdx: HI,
+      targetIdx,
+      hatLang: stolen,
+      actorName: players[HI]?.name || 'Jugador',
+    });
     if (newPls[targetIdx].mainHats.length > 0) {
       newPls[targetIdx].maxHand = Math.min(6, newPls[targetIdx].maxHand + 1);
     }
@@ -4025,13 +4026,16 @@ export default function App() {
                   transition: 'max-height 0.24s ease, opacity 0.18s ease, transform 0.2s ease',
                   pointerEvents: showLanguageMenu ? 'auto' : 'none',
                 }}>
-                  <div
+                <div
                     ref={languageMenuTrayRef}
                     style={{
                     display: 'flex',
                     flexDirection: 'column',
                     gap: 6,
                     overflowX: 'visible',
+                    overflowY: isMobile ? 'visible' : 'auto',
+                    maxHeight: isMobile ? 'none' : 'min(320px, calc(100vh - 180px))',
+                    overscrollBehavior: isMobile ? 'auto' : 'contain',
                     padding: 10,
                     width: 190,
                     borderRadius: 14,
@@ -4328,8 +4332,8 @@ export default function App() {
     <div style={{
       display: 'flex', alignItems: 'center', gap: 10,
       background: 'rgba(255,215,0,.06)', borderRadius: 12, padding: '8px 14px',
-      border: tutorialActive && tutorialFocus.hats ? '2px solid #FFD700' : '2px solid rgba(255,215,0,.2)', flexShrink: 0,
-      boxShadow: tutorialActive && tutorialFocus.hats ? '0 0 0 3px rgba(255,215,0,0.16)' : 'none',
+      border: '2px solid rgba(255,215,0,.2)', flexShrink: 0,
+      boxShadow: 'none',
     }}>
       <UserAvatar
         name={human.name}
@@ -4403,7 +4407,9 @@ export default function App() {
   const burgersSection = (
     <div style={{
       background: 'rgba(255,255,255,.03)', borderRadius: 10, padding: '8px 10px',
-      border: '2px solid #1e2a45', flexShrink: 0,
+      border: tutorialActive && tutorialFocus.table ? '2px solid #FFD700' : '2px solid #1e2a45',
+      boxShadow: tutorialActive && tutorialFocus.table ? '0 0 0 3px rgba(255,215,0,0.14)' : 'none',
+      flexShrink: 0,
     }} ref={humanBurgerAreaRef}>
       <div style={{ fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1, marginBottom: 6 }}>{T('table')}</div>
       <div style={{ display: 'flex', flexDirection: isMobile ? 'row' : 'column', gap: 4, flexWrap: 'wrap' }}>
@@ -4438,7 +4444,13 @@ export default function App() {
       { left: '62%', top: '58%', rotate: 12 },
     ];
     return (
-      <div>
+      <div style={{
+        borderRadius: 12,
+        padding: tutorialActive && tutorialFocus.closet ? 6 : 0,
+        border: tutorialActive && tutorialFocus.closet ? '2px solid #FFD700' : '2px solid transparent',
+        boxShadow: tutorialActive && tutorialFocus.closet ? '0 0 0 3px rgba(255,215,0,0.14)' : 'none',
+        background: tutorialActive && tutorialFocus.closet ? 'rgba(255,215,0,0.05)' : 'transparent',
+      }}>
         <div style={{ fontSize: 9, color: '#555', fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>{T('closet')}</div>
         <div style={{ position: 'relative', width: 130, height: 165 }}>
           <img src={human.closetCovered ? actionPercheroCubierto : percheroImg} alt="Perchero" style={{ width: '100%', height: '100%', objectFit: 'contain', opacity: human.closetCovered ? 0.92 : 1 }} />
@@ -4471,7 +4483,7 @@ export default function App() {
     );
   })();
 
-  const shouldShowTutorialClosetButtons = tutorialActive && (tutorialFocus.closet || tutorialFocus.hats || tutorialFocus.changeButton || tutorialFocus.addButton);
+  const shouldShowTutorialClosetButtons = tutorialActive && (tutorialFocus.changeButton || tutorialFocus.addButton);
   const percheroButtons = isHumanTurn && !extraPlay && human.perchero.length > 0 && !human.closetCovered && (!tutorialActive || shouldShowTutorialClosetButtons) && (
     <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
       <button
@@ -4514,12 +4526,8 @@ export default function App() {
   const hatsSection = (
     <div style={{
       background: 'rgba(255,255,255,.02)', borderRadius: 10, padding: '8px 10px',
-      border: tutorialActive && (tutorialFocus.hats || tutorialFocus.closet || tutorialFocus.changeButton || tutorialFocus.addButton)
-        ? '2px solid #FFD700'
-        : '2px solid #1e2a45',
-      boxShadow: tutorialActive && (tutorialFocus.hats || tutorialFocus.closet || tutorialFocus.changeButton || tutorialFocus.addButton)
-        ? '0 0 0 3px rgba(255,215,0,0.14)'
-        : 'none',
+      border: '2px solid #1e2a45',
+      boxShadow: 'none',
       flexShrink: 0,
     }}>
       <div style={{ display: 'flex', gap: 10, alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -4538,7 +4546,14 @@ export default function App() {
                   if (el) humanMainHatRefs.current[key] = el;
                   else delete humanMainHatRefs.current[key];
                 }}
-                style={{ display: 'inline-flex' }}
+                style={{
+                  display: 'inline-flex',
+                  borderRadius: 12,
+                  padding: tutorialActive && tutorialFocus.mainHat ? 2 : 0,
+                  border: tutorialActive && tutorialFocus.mainHat ? '2px solid #FFD700' : '2px solid transparent',
+                  boxShadow: tutorialActive && tutorialFocus.mainHat ? '0 0 0 3px rgba(255,215,0,0.14)' : 'none',
+                  background: tutorialActive && tutorialFocus.mainHat ? 'rgba(255,215,0,0.06)' : 'transparent',
+                }}
               >
                 <HatBadge lang={h} isMain size="lg" />
               </div>
@@ -4716,6 +4731,25 @@ export default function App() {
       flexShrink: 0, padding: '6px 10px', borderRadius: 8, marginBottom: 4,
       background: 'rgba(255,255,255,.04)', border: '1px solid #2a2a4a', fontSize: 11, color: '#aaa',
     }}>
+      {tutorialActive && tutorialFocus.ingredientLabel && human.hand[selectedIdx]?.type === 'ingredient' && (
+        <div style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 6,
+          padding: '4px 8px',
+          borderRadius: 999,
+          background: 'rgba(255,215,0,0.12)',
+          border: '1px solid rgba(255,215,0,0.3)',
+          color: '#FFD700',
+          fontSize: 10,
+          fontWeight: 900,
+          letterSpacing: 0.5,
+          textTransform: 'uppercase',
+          marginBottom: 6,
+        }}>
+          <span>{tutorialCopy.ingredientTag || T('ingredientTag')}</span>
+        </div>
+      )}
       {human.hand[selectedIdx]?.type === 'ingredient' ? (
         canPlayCard(human, human.hand[selectedIdx])
           ? <span style={{ color: '#4CAF50' }}>{T('canPlayThis')}</span>
