@@ -30,7 +30,7 @@ export function createTargetedActionService({
           freed.forEach((ing) => discard.push({ type: 'ingredient', ingredient: ingKey(ing), id: uid() }));
         }
         effectObserver?.publishForkEvent({
-          id: `${Date.now()}-${Math.random()}`,
+          id: uid(),
           actingIdx,
           targetIdx,
           actorName: players[actingIdx]?.name || 'Oponente',

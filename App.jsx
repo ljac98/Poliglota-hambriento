@@ -229,7 +229,8 @@ export default function App() {
   const tutorialCopy = getTutorialContent(uiLang);
   const tutorialActive = !!tutorialState?.active;
   const tutorialStep = tutorialState?.step ?? -1;
-  const tutorialStepData = tutorialActive ? tutorialCopy.steps[tutorialState.step] : null;
+  const tutorialSteps = tutorialCopy.steps.filter((_, idx) => idx !== 2);
+  const tutorialStepData = tutorialActive ? tutorialSteps[tutorialState.step] : null;
   const tutorialFocus = tutorialStepData?.focus || {};
   const isMobile = typeof window !== 'undefined' && window.innerWidth <= 640;
   const tutorialPractice = !!tutorialState?.practiceMode;
@@ -238,7 +239,7 @@ export default function App() {
     : getTutorialPermissions(tutorialActive, tutorialStep);
   const tutorialAllowsCardSelection = tutorialPermissions.canSelectCards;
   const tutorialAllowsPlayButton = tutorialPermissions.canUsePlayButton;
-  const tutorialAllowsDiscard = !tutorialActive || tutorialPractice || tutorialStep === 6;
+  const tutorialAllowsDiscard = !tutorialActive || tutorialPractice || tutorialStep === 5;
   const tutorialAllowsChangeHat = tutorialPermissions.canChangeHat;
   const tutorialAllowsAddHat = tutorialPermissions.canAddHat;
   const tutorialAllowsNegation = tutorialPermissions.canNegate;
@@ -247,30 +248,33 @@ export default function App() {
     try {
       const freshProfile = await getProfile(user.id);
       if (!freshProfile) return;
-      const nextUser = {
-        ...user,
-        displayName: freshProfile.displayName || user.displayName,
-        username: freshProfile.username || user.username,
-        avatarUrl: freshProfile.avatarUrl ?? null,
-      };
-      const changed =
-        nextUser.displayName !== user.displayName ||
-        nextUser.username !== user.username ||
-        nextUser.avatarUrl !== user.avatarUrl;
-      if (!changed) return;
-      saveUserLocally(nextUser);
-      setUser(nextUser);
+      setUser((prevUser) => {
+        if (!prevUser) return prevUser;
+        const nextUser = {
+          ...prevUser,
+          displayName: freshProfile.displayName || prevUser.displayName,
+          username: freshProfile.username || prevUser.username,
+          avatarUrl: freshProfile.avatarUrl ?? null,
+        };
+        const changed =
+          nextUser.displayName !== prevUser.displayName ||
+          nextUser.username !== prevUser.username ||
+          nextUser.avatarUrl !== prevUser.avatarUrl;
+        if (!changed) return prevUser;
+        saveUserLocally(nextUser);
+        return nextUser;
+      });
     } catch {
       // Keep local session usable even if the profile refresh fails.
     }
-  }, [user]);
+  }, [user?.id]);
 
   useEffect(() => {
     if (!user?.id) return;
     refreshCurrentUserProfile();
   }, [user?.id, refreshCurrentUserProfile]);
   const tutorialRecommendedHatLang = (() => {
-    if (!tutorialActive || ![4, 5].includes(tutorialStep)) return null;
+    if (!tutorialActive || ![3, 4].includes(tutorialStep)) return null;
     const focusedIdx = tutorialFocus.selectedCard;
     if (!Number.isInteger(focusedIdx)) return null;
     const focusedCard = players?.[HI]?.hand?.[focusedIdx];
@@ -280,27 +284,32 @@ export default function App() {
     if (!tutorialRecommendedHatLang) return null;
     const langLabel = T(tutorialRecommendedHatLang);
     const copyByUi = {
-      es: tutorialStep === 4
+      es: tutorialStep === 3
         ? `Tutorial: cambia a ${langLabel} para poder jugar la carta seleccionada.`
         : `Tutorial: agrega ${langLabel} para conservar tu sombrero actual y abrir también la carta seleccionada.`,
-      en: tutorialStep === 4
+      en: tutorialStep === 3
         ? `Tutorial: switch to ${langLabel} so you can play the selected card.`
         : `Tutorial: add ${langLabel} so you keep your current hat and also unlock the selected card.`,
-      fr: tutorialStep === 4
+      fr: tutorialStep === 3
         ? `Tutoriel : passe a ${langLabel} pour pouvoir jouer la carte selectionnee.`
         : `Tutoriel : ajoute ${langLabel} pour garder ton chapeau actuel et debloquer aussi la carte selectionnee.`,
-      it: tutorialStep === 4
+      it: tutorialStep === 3
         ? `Tutorial: passa a ${langLabel} per poter giocare la carta selezionata.`
         : `Tutorial: aggiungi ${langLabel} per mantenere il cappello attuale e sbloccare anche la carta selezionata.`,
-      de: tutorialStep === 4
+      de: tutorialStep === 3
         ? `Tutorial: wechsle zu ${langLabel}, damit du die ausgewahlte Karte spielen kannst.`
         : `Tutorial: fage ${langLabel} hinzu, damit dein aktueller Hut bleibt und die ausgewahlte Karte auch spielbar wird.`,
-      pt: tutorialStep === 4
+      pt: tutorialStep === 3
         ? `Tutorial: troca para ${langLabel} para poderes jogar a carta selecionada.`
         : `Tutorial: adiciona ${langLabel} para manter o teu chapeu atual e desbloquear tambem a carta selecionada.`,
     };
     return copyByUi[uiLang] || copyByUi.en;
   })();
+  const mapVisibleTutorialStepToScenarioStep = useCallback((step) => {
+    if (step <= 0) return 0;
+    if (step === 1) return 2;
+    return step + 1;
+  }, []);
   const tutorialPopupStyle = (() => {
     const base = {
       position: 'fixed',
@@ -1048,7 +1057,7 @@ export default function App() {
   const triggerComeComodinesEvent = useCallback((result, actingIdx, actorName) => {
     if (!result?.affectedTargets?.length) return;
     const event = {
-      id: `${Date.now()}-${Math.random()}`,
+      id: uid(),
       actingIdx,
       actorName: actorName || 'Jugador',
       targets: result.affectedTargets,
@@ -1069,7 +1078,7 @@ export default function App() {
     const actorEl = actingIdx === HI ? humanBurgerAreaRef.current : playerAreaRefs.current[actingIdx];
     const targetEl = targetIdx === HI ? humanBurgerAreaRef.current : playerAreaRefs.current[targetIdx];
     const event = {
-      id: `${Date.now()}-${Math.random()}`,
+      id: uid(),
       actingIdx,
       targetIdx,
       actorName: actorName || 'Jugador',
@@ -1087,7 +1096,7 @@ export default function App() {
   const triggerMilanesaEvent = useCallback((result) => {
     if (!result?.affectedTargets?.length) return;
     const event = {
-      id: `${Date.now()}-${Math.random()}`,
+      id: uid(),
       targets: result.affectedTargets,
     };
     setLastMilanesaEvent(event);
@@ -1098,7 +1107,7 @@ export default function App() {
   const triggerEnsaladaEvent = useCallback((result) => {
     if (!result?.affectedTargets?.length) return;
     const event = {
-      id: `${Date.now()}-${Math.random()}`,
+      id: uid(),
       targets: result.affectedTargets,
     };
     setLastEnsaladaEvent(event);
@@ -1109,7 +1118,7 @@ export default function App() {
   const triggerPizzaEvent = useCallback((result) => {
     if (!result?.affectedTargets?.length) return;
     const event = {
-      id: `${Date.now()}-${Math.random()}`,
+      id: uid(),
       targets: result.affectedTargets,
     };
     setLastPizzaEvent(event);
@@ -1120,7 +1129,7 @@ export default function App() {
   const triggerParrillaEvent = useCallback((result) => {
     if (!result?.affectedTargets?.length) return;
     const event = {
-      id: `${Date.now()}-${Math.random()}`,
+      id: uid(),
       targets: result.affectedTargets,
     };
     setLastParrillaEvent(event);
@@ -1131,7 +1140,7 @@ export default function App() {
   const triggerHatStealEvent = useCallback((actingIdx, targetIdx, hatLang, actorName) => {
     if (!hatLang && hatLang !== '') return;
     const event = {
-      id: `${Date.now()}-${Math.random()}`,
+      id: uid(),
       actingIdx,
       targetIdx,
       hatLang,
@@ -1278,8 +1287,8 @@ export default function App() {
   useEffect(() => {
     if (!tutorialActive) return;
     if (tutorialState?.practiceMode) return;
-    applyTutorialScenario(tutorialState.step);
-  }, [tutorialActive, tutorialState?.step, user?.displayName, user?.id, user?.username, user?.avatarUrl]);
+    applyTutorialScenario(mapVisibleTutorialStepToScenarioStep(tutorialState.step));
+  }, [tutorialActive, tutorialState?.step, user?.displayName, user?.id, user?.username, user?.avatarUrl, mapVisibleTutorialStepToScenarioStep]);
 
   const handleInstallApp = useCallback(async () => {
     if (!deferredInstallPrompt) return;
@@ -1608,7 +1617,7 @@ export default function App() {
 
   function nextTutorialStep() {
     if (!tutorialActive) return;
-    const transition = advanceTutorialState(tutorialState, tutorialCopy.steps.length);
+    const transition = advanceTutorialState(tutorialState, tutorialSteps.length);
     if (transition.type === 'practice') {
       startTutorialPracticeGame();
       return;
@@ -1819,7 +1828,7 @@ export default function App() {
     });
     socket.on('playerRemovedFromGame', ({ playerIdx, playerName, activeCount, winner: leaveWinner }) => {
       setChatMessages(prev => [...prev, { playerName: 'Sistema', text: `${playerName} ha abandonado la partida`, timestamp: Date.now() }]);
-      setLeaveNotice({ playerName, id: `${playerName}-${Date.now()}` });
+      setLeaveNotice({ playerName, id: uid() });
       // Remove player from game state (host removes, non-host gets via stateUpdate)
       setPlayers(prev => {
         const updated = prev.filter((_, i) => i !== playerIdx);
@@ -2126,6 +2135,7 @@ export default function App() {
     getActionInfo,
     ingEmoji: ING_EMOJI,
     ingKey,
+    uid,
     addLog,
     endTurn,
     advanceTutorialAfter,
@@ -2244,7 +2254,7 @@ export default function App() {
     const negCard = nIdx !== -1 ? newPls[negatorIdx].hand.splice(nIdx, 1)[0] : null;
     const newDiscard = [...discardRef.current, card, ...(negCard ? [negCard] : [])];
     const negEvent = {
-      id: `${Date.now()}-${Math.random()}`,
+      id: uid(),
       actingIdx,
       negatorIdx,
       negatorName: newPls[negatorIdx]?.name || 'Oponente',
@@ -2840,7 +2850,7 @@ export default function App() {
       newPls[idx] = up;
       let newDiscard = [...baseDiscard, card];
       if (done) {
-        freed.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `f${Date.now()}${Math.random()}` }));
+        freed.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: uid() }));
         addLog(idx, '¡completó una hamburguesa! 🎉', newPls);
       }
       setTimeout(() => { releaseAITurnLock(); endTurn(newPls, baseDeck, newDiscard, idx); }, 900);
@@ -2879,7 +2889,7 @@ export default function App() {
                 targetTable: [...newPls[richest].table],
                 actorName: newPls[idx]?.name || 'IA',
               });
-              newPls[richest].table.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `g${Date.now()}${Math.random()}` }));
+              newPls[richest].table.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: uid() }));
               newPls[richest].table = [];
               addLog(idx, `vació la mesa de ${pls[richest].name}`, newPls);
           } else if (card.action === 'tenedor') {
@@ -2891,7 +2901,7 @@ export default function App() {
               const stolen = newPls[richest].table.splice(si, 1)[0];
               newPls[idx].table.push(stolen);
               const forkEvent = {
-                id: `${Date.now()}-${Math.random()}`,
+                id: uid(),
                 actingIdx: idx,
                 targetIdx: richest,
                 actorName: newPls[idx]?.name || 'IA',
@@ -2903,7 +2913,7 @@ export default function App() {
               actionEffectObserver.publishForkEvent(forkEvent);
               const { player: up2, freed: fr2, done: dn2 } = advanceBurger(newPls[idx]);
               newPls[idx] = up2;
-              if (dn2) { fr2.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `t${Date.now()}${Math.random()}` })); }
+              if (dn2) { fr2.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: uid() })); }
               addLog(idx, `robó ${ING_EMOJI[ingKey(stolen)]} de ${pls[richest].name}`, newPls);
             }
           } else if (card.action === 'ladron') {
@@ -3313,7 +3323,7 @@ export default function App() {
           targetTable: [...newPls[targetIdx].table],
           actorName: newPls[HI]?.name || 'Jugador',
         });
-        newPls[targetIdx].table.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `g${Date.now()}` }));
+        newPls[targetIdx].table.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: uid() }));
         newPls[targetIdx].table = [];
         endTurn(newPls, dk, newDiscard, HI);
 
@@ -3361,7 +3371,7 @@ export default function App() {
     const stolen = newPls[targetIdx].table.splice(ingIdx, 1)[0];
     newPls[HI].table.push(stolen);
     const forkEvent = {
-      id: `${Date.now()}-${Math.random()}`,
+      id: uid(),
       actingIdx: HI,
       targetIdx,
       actorName: newPls[HI]?.name || 'Jugador',
@@ -3374,7 +3384,7 @@ export default function App() {
     const { player: up, freed, done } = advanceBurger(newPls[HI]);
     newPls[HI] = up;
     let fd = newDiscard;
-    if (done) { freed.forEach(ing => fd = [...fd, { type: 'ingredient', ingredient: ingKey(ing), id: `t${Date.now()}` }]); addLog(HI, 'Â¡completÃ³ una hamburguesa! ðŸŽ‰', newPls); }
+    if (done) { freed.forEach(ing => fd = [...fd, { type: 'ingredient', ingredient: ingKey(ing), id: uid() }]); addLog(HI, 'Â¡completÃ³ una hamburguesa! ðŸŽ‰', newPls); }
     if (advanceTutorialAfter('actionCard')) {
       setPlayers(newPls);
       setDiscard(fd);
@@ -4017,13 +4027,13 @@ export default function App() {
                   right: 'auto',
                   top: isMobile ? 0 : 'calc(100% + 8px)',
                   zIndex: 40,
-                  maxHeight: showLanguageMenu ? 360 : 0,
                   opacity: showLanguageMenu ? 1 : 0,
                   transform: showLanguageMenu
                     ? 'translate(0, 0)'
                     : (isMobile ? 'translateX(8px)' : 'translateY(-6px)'),
-                  overflow: 'hidden',
-                  transition: 'max-height 0.24s ease, opacity 0.18s ease, transform 0.2s ease',
+                  visibility: showLanguageMenu ? 'visible' : 'hidden',
+                  overflow: isMobile ? 'hidden' : 'visible',
+                  transition: 'opacity 0.18s ease, transform 0.2s ease, visibility 0.18s ease',
                   pointerEvents: showLanguageMenu ? 'auto' : 'none',
                 }}>
                 <div
@@ -4404,6 +4414,24 @@ export default function App() {
     </div>
   );
 
+  const highlightedBurgerIngredients = (() => {
+    const selectedCard = human?.hand?.[selectedIdx];
+    const targetBurger = human?.burgers?.[human?.currentBurger] || [];
+    if (!selectedCard || selectedCard.type !== 'ingredient' || !targetBurger.length) return [];
+
+    if (selectedCard.ingredient === 'perrito') {
+      const needed = [...targetBurger];
+      (human.table || []).forEach((item) => {
+        const ingredient = item === 'perrito' ? needed[0] : (ingChosen(item) || ingKey(item));
+        const idx = needed.indexOf(ingredient);
+        if (idx !== -1) needed.splice(idx, 1);
+      });
+      return needed;
+    }
+
+    return [selectedCard.ingredient];
+  })();
+
   const burgersSection = (
     <div style={{
       background: 'rgba(255,255,255,.03)', borderRadius: 10, padding: '8px 10px',
@@ -4422,6 +4450,7 @@ export default function App() {
               ingredients={b}
               table={i === human.currentBurger ? human.table : i < human.currentBurger ? b : []}
               isCurrent={i === human.currentBurger}
+              highlightIngredients={i === human.currentBurger ? highlightedBurgerIngredients : []}
               onRegisterSlotRef={i === human.currentBurger ? ((slotIdx, el) => {
                 if (el) humanBurgerSlotRefs.current[slotIdx] = el;
                 else delete humanBurgerSlotRefs.current[slotIdx];
@@ -4911,7 +4940,7 @@ export default function App() {
               </div>
               {!tutorialPractice && (
                 <div style={{ color: '#9ea4be', fontSize: 11, fontWeight: 700 }}>
-                  {tutorialCopy.stepLabel} {tutorialState.step + 1}/{tutorialCopy.steps.length}
+                  {tutorialCopy.stepLabel} {tutorialState.step + 1}/{tutorialSteps.length}
                 </div>
               )}
             </div>
@@ -4960,7 +4989,7 @@ export default function App() {
                   </Btn>
                 )}
                 <Btn
-                  onClick={tutorialState.step === tutorialCopy.steps.length - 1 ? nextTutorialStep : nextTutorialStep}
+                  onClick={tutorialState.step === tutorialSteps.length - 1 ? nextTutorialStep : nextTutorialStep}
                   color="#FFD700"
                   style={{ color: '#111' }}
                 >
@@ -5635,7 +5664,7 @@ export default function App() {
           <p style={{ color: '#888', fontSize: 12, marginBottom: 12 }}>
             {typeof T('changeHatStep1Desc') === 'function' ? T('changeHatStep1Desc')(Math.ceil(human.hand.length / 2)) : T('changeHatStep1Desc')}
           </p>
-          {tutorialActive && tutorialStep === 4 && tutorialHatHintText ? (
+          {tutorialActive && tutorialStep === 3 && tutorialHatHintText ? (
             <div style={{
               marginBottom: 12,
               padding: '10px 12px',
@@ -5688,7 +5717,7 @@ export default function App() {
           <p style={{ color: '#888', fontSize: 12, marginBottom: 12 }}>
             {`Elige qué sombrero principal quieres reemplazar por ${T(modal.hatLang)}.`}
           </p>
-          {tutorialActive && tutorialStep === 4 && tutorialHatHintText ? (
+          {tutorialActive && tutorialStep === 3 && tutorialHatHintText ? (
             <div style={{
               marginBottom: 12,
               padding: '10px 12px',
@@ -5847,7 +5876,7 @@ export default function App() {
           <p style={{ color: '#888', fontSize: 12, marginBottom: 12 }}>
             {typeof T('addHatDesc') === 'function' ? T('addHatDesc')(Math.max(1, human.maxHand - 1)) : T('addHatDesc')}
           </p>
-          {tutorialActive && tutorialStep === 4 && tutorialHatHintText ? (
+          {tutorialActive && tutorialStep === 3 && tutorialHatHintText ? (
             <div style={{
               marginBottom: 12,
               padding: '10px 12px',
