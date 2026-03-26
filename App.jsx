@@ -84,6 +84,7 @@ import { actionCanBeNegated, isClosetActionBlocked } from './app/services/negati
 import { normalizeGameConfig } from './app/services/gameConfigService.js';
 import { createGameServices } from './app/services/gameServiceFactory.js';
 import { createRemoteActionDispatcher } from './app/services/remoteActionDispatcher.js';
+import { createPlayerActionCommands } from './app/services/playerActionCommands.js';
 
 const INSTALL_PROMPT_COPY = {
   es: {
@@ -2059,6 +2060,22 @@ export default function App() {
     setDiscard,
     setExtraPlay,
   });
+  const playerActionCommands = createPlayerActionCommands({
+    isOnline,
+    isHost,
+    roomCode,
+    socket,
+    clonePlayers: clone,
+    canPlayCard,
+    advanceBurger,
+    getIngName,
+    getActionInfo,
+    ingEmoji: ING_EMOJI,
+    ingKey,
+    addLog,
+    endTurn,
+    advanceTutorialAfter,
+  });
 
   function finishClosetCoverAction(basePlayers, baseDeck, baseDiscard, actingIdx, targetIdx, blocked) {
     const nextPlayers = clone(basePlayers);
@@ -3076,49 +3093,26 @@ export default function App() {
     const human = players[HI];
     const card = human.hand[selectedIdx];
 
-    // Non-host: send action via socket
-    if (isOnline && !isHost) {
-      if (card.type === 'ingredient') {
-        if (!canPlayCard(human, card)) return;
-        if (card.ingredient === 'perrito') {
-          setModal({ type: 'wildcard', cardIdx: selectedIdx });
-          return;
-        }
-        socket.emit('playerAction', { code: roomCode, action: { type: 'playIngredient', cardIdx: selectedIdx } });
-        setSelectedIdx(null);
-      } else if (card.type === 'action') {
-        humanPlayActionRemote(card, selectedIdx);
-      }
-      return;
-    }
-
     if (card.type === 'ingredient') {
-      if (!canPlayCard(human, card)) return;
-      if (card.ingredient === 'perrito') {
-        setModal({ type: 'wildcard', cardIdx: selectedIdx });
-        return;
-      }
-      addLog(HI, `jugÃ³ ${getIngName(card.ingredient, card.language)} ${ING_EMOJI[card.ingredient]}`, players);
-      const newPls = clone(players);
-      newPls[HI].hand.splice(selectedIdx, 1);
-      newPls[HI].table.push(card.ingredient);
-      const { player: up, freed, done } = advanceBurger(newPls[HI]);
-      newPls[HI] = up;
-      let newDiscard = [...discard, card];
-      if (done) {
-        freed.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `f${Date.now()}${Math.random()}` }));
-        addLog(HI, 'Â¡completÃ³ una hamburguesa! ðŸŽ‰', newPls);
-      }
-      setSelectedIdx(null);
-      setExtraPlay(false);
-      if (advanceTutorialAfter('ingredient')) {
-        setPlayers(newPls);
-        setDiscard(newDiscard);
-        return;
-      }
-      endTurn(newPls, deck, newDiscard, HI);
-
+      playerActionCommands.playIngredient({
+        human,
+        card,
+        selectedIdx,
+        players,
+        discard,
+        deck,
+        hi: HI,
+        setModal,
+        setSelectedIdx,
+        setPlayers,
+        setDiscard,
+        setExtraPlay,
+      });
     } else if (card.type === 'action') {
+      if (isOnline && !isHost) {
+        humanPlayActionRemote(card, selectedIdx);
+        return;
+      }
       humanPlayAction(card, selectedIdx);
     }
   }
@@ -3220,51 +3214,33 @@ export default function App() {
   function humanDiscard() {
     if (tutorialActive && !tutorialPractice && tutorialStep !== 6) return;
     if (selectedIdx === null) return;
-    if (isOnline && !isHost) {
-      socket.emit('playerAction', { code: roomCode, action: { type: 'discard', cardIdx: selectedIdx } });
-      setSelectedIdx(null);
-      return;
-    }
-    const card = players[HI].hand[selectedIdx];
-    addLog(HI, `descartÃ³ ${card.type === 'ingredient' ? getIngName(card.ingredient, card.language) : getActionInfo(card.action).name}`, players);
-    const newPls = clone(players);
-    const discarded = newPls[HI].hand.splice(selectedIdx, 1)[0];
-    setSelectedIdx(null);
-    if (advanceTutorialAfter('discard')) {
-      setPlayers(newPls);
-      setDiscard([...discard, discarded]);
-      return;
-    }
-    endTurn(newPls, deck, [...discard, discarded], HI);
+    playerActionCommands.discardSelected({
+      selectedIdx,
+      players,
+      discard,
+      deck,
+      hi: HI,
+      setSelectedIdx,
+      setPlayers,
+      setDiscard,
+    });
   }
 
   function confirmWildcard(chosenIng) {
     if (tutorialActive && !tutorialPractice && tutorialStep !== 7) return;
-    const { cardIdx } = modal;
-    setModal(null); setSelectedIdx(null);
-    if (isOnline && !isHost) {
-      socket.emit('playerAction', { code: roomCode, action: { type: 'playWildcard', cardIdx, ingredient: chosenIng } });
-      return;
-    }
-    const card = players[HI].hand[cardIdx];
-    addLog(HI, 'jugÃ³ ðŸŒ­ ComodÃ­n', players);
-    const newPls = clone(players);
-    newPls[HI].hand.splice(cardIdx, 1);
-    newPls[HI].table.push('perrito|' + chosenIng);
-    const { player: up, freed, done } = advanceBurger(newPls[HI]);
-    newPls[HI] = up;
-    let newDiscard = [...discard, card];
-    if (done) {
-      freed.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: `f${Date.now()}${Math.random()}` }));
-      addLog(HI, 'Â¡completÃ³ una hamburguesa! ðŸŽ‰', newPls);
-    }
-    if (advanceTutorialAfter('wildcard')) {
-      setPlayers(newPls);
-      setDiscard(newDiscard);
-      return;
-    }
-    setExtraPlay(false);
-    endTurn(newPls, deck, newDiscard, HI);
+    playerActionCommands.confirmWildcard({
+      modal,
+      chosenIng,
+      players,
+      discard,
+      deck,
+      hi: HI,
+      setModal,
+      setSelectedIdx,
+      setPlayers,
+      setDiscard,
+      setExtraPlay,
+    });
   }
 
   // â”€â”€ Modal resolvers â”€â”€
@@ -4734,11 +4710,13 @@ export default function App() {
       gap: 8,
     }}>
       <Btn onClick={() => {
-        if (isOnline && !isHost) {
-          socket.emit('playerAction', { code: roomCode, action: { type: 'passTurn' } });
-        } else {
-          setExtraPlay(false); endTurn(players, deck, discard, HI);
-        }
+        playerActionCommands.passTurn({
+          players,
+          deck,
+          discard,
+          hi: HI,
+          setExtraPlay,
+        });
       }} color="#888" style={{ boxShadow: '0 10px 24px rgba(0,0,0,.35)' }}>
         {T('skipTurn')}
       </Btn>
