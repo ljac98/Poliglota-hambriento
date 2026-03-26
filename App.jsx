@@ -1,6 +1,6 @@
 ﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
 import socket from './src/socket.js';
-import { clearAuth, getSavedUser } from './src/api.js';
+import { clearAuth, getProfile, getSavedUser, saveUserLocally } from './src/api.js';
 import {
   LANGUAGES, LANG_BORDER, LANG_BG, LANG_TEXT,
   ING_EMOJI, ING_BG, AI_NAMES, getIngName, getActionInfo,
@@ -240,6 +240,33 @@ export default function App() {
   const tutorialAllowsChangeHat = tutorialPermissions.canChangeHat;
   const tutorialAllowsAddHat = tutorialPermissions.canAddHat;
   const tutorialAllowsNegation = tutorialPermissions.canNegate;
+  const refreshCurrentUserProfile = useCallback(async () => {
+    if (!user?.id) return;
+    try {
+      const freshProfile = await getProfile(user.id);
+      if (!freshProfile) return;
+      const nextUser = {
+        ...user,
+        displayName: freshProfile.displayName || user.displayName,
+        username: freshProfile.username || user.username,
+        avatarUrl: freshProfile.avatarUrl ?? null,
+      };
+      const changed =
+        nextUser.displayName !== user.displayName ||
+        nextUser.username !== user.username ||
+        nextUser.avatarUrl !== user.avatarUrl;
+      if (!changed) return;
+      saveUserLocally(nextUser);
+      setUser(nextUser);
+    } catch {
+      // Keep local session usable even if the profile refresh fails.
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    refreshCurrentUserProfile();
+  }, [user?.id, refreshCurrentUserProfile]);
   const tutorialRecommendedHatLang = (() => {
     if (!tutorialActive || ![4, 5].includes(tutorialStep)) return null;
     const focusedIdx = tutorialFocus.selectedCard;
@@ -3668,6 +3695,7 @@ export default function App() {
           onClick={() => {
             const latestUser = getSavedUser();
             if (latestUser) setUser(latestUser);
+            refreshCurrentUserProfile();
             setShowQuickMenu(v => {
               const next = !v;
               if (!next) setShowNotificationsPanel(false);
