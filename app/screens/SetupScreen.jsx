@@ -12,6 +12,7 @@ import { HatBadge, PercheroSVG } from '../../components/HatComponents.jsx';
 import HatSVG from '../../components/HatSVG.jsx';
 import hamImg from '../../imagenes/hamburguesas/ham.png';
 import onlineImg from '../../imagenes/online.png';
+import vsiaImg from '../../imagenes/vsia.png';
 import modoclon from '../../imagenes/modos/clones.png';
 import modoescalera from '../../imagenes/modos/escalera.png';
 import modocaotico from '../../imagenes/modos/caotico.png';
