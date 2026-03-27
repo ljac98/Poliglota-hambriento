@@ -1698,7 +1698,7 @@ export default function App() {
       user,
     });
     // Apply carryOver from previous tutorial steps (hat changes, add hat, basurero card)
-    if (tutorialCarryOver && step >= 5) {
+    if (tutorialCarryOver && step >= 4) {
       const p = scenario.players[0];
       if (tutorialCarryOver.mainHats) p.mainHats = [...tutorialCarryOver.mainHats];
       if (tutorialCarryOver.perchero) p.perchero = [...tutorialCarryOver.perchero];

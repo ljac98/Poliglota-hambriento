@@ -111,10 +111,11 @@ const COPY = {
       },
       {
         title: 'Usar Agregar sombrero',
-        body: 'Agregar te deja conservar tu sombrero actual y sumar otro principal. A cambio, descartas tu mano y tu máximo de cartas baja.',
+        body: 'Agregar te deja conservar tu sombrero actual y sumar otro principal. A cambio, descartas tu mano, la reciclas en una nueva y tu máximo de cartas baja.',
         bullets: [
           'Sirve cuando quieres mantener dos idiomas listos.',
           'Es más caro, pero te da más flexibilidad en turnos futuros.',
+          'También es una forma de reciclar tu mano bajo un costo.',
           'Al agregar, se descarta toda tu mano y tu máximo de cartas baja en 1. Ese es el costo.',
           'Si tras agregar o cambiar sombrero no puedes jugar nada, usa el botón Pasar turno.',
         ],
@@ -1001,7 +1002,7 @@ export function buildTutorialScenario(step, { playerName = 'Jugador', user = nul
           ...playerMeta,
           hand: [
             ingredientCard('queso', 'ingles'),
-            ingredientCard('pan', 'frances'),
+            ingredientCard('palta', 'frances'),
             ingredientCard('tomate', 'espanol'),
             actionCard('tenedor'),
           ],
@@ -1026,15 +1027,15 @@ export function buildTutorialScenario(step, { playerName = 'Jugador', user = nul
         createPlayer({
           ...playerMeta,
           hand: [
-            ingredientCard('tomate', 'espanol'),
             ingredientCard('queso', 'ingles'),
-            ingredientCard('pollo', 'ingles'),
+            ingredientCard('pan', 'frances'),
+            ingredientCard('tomate', 'espanol'),
             actionCard('tenedor'),
           ],
           mainHats: ['espanol'],
           perchero: ['ingles', 'frances', 'italiano', 'aleman', 'portugues'],
-          table: ['pan'],
-          burgers: [['pan', 'tomate', 'queso']],
+          table: ['pan', 'lechuga'],
+          burgers: [['pan', 'lechuga', 'queso']],
           maxHand: 5,
         }),
         createPlayer({
@@ -1054,14 +1055,14 @@ export function buildTutorialScenario(step, { playerName = 'Jugador', user = nul
         createPlayer({
           ...playerMeta,
           hand: [
-            ingredientCard('pan', 'frances'),
+            ingredientCard('palta', 'frances'),
             ingredientCard('carne', 'ingles'),
             ingredientCard('pollo', 'frances'),
           ],
           mainHats: ['espanol'],
           perchero: ['ingles', 'frances', 'italiano', 'aleman', 'portugues'],
-          table: ['pan'],
-          burgers: [['pan', 'tomate', 'queso']],
+          table: ['pan', 'lechuga'],
+          burgers: [['pan', 'lechuga', 'queso']],
           maxHand: 5,
         }),
         createPlayer({
