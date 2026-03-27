@@ -1001,7 +1001,7 @@ export function buildTutorialScenario(step, { playerName = 'Jugador', user = nul
           ...playerMeta,
           hand: [
             ingredientCard('queso', 'ingles'),
-            ingredientCard('pan', 'espanol'),
+            ingredientCard('pan', 'frances'),
             ingredientCard('tomate', 'espanol'),
             actionCard('tenedor'),
           ],
@@ -1054,7 +1054,7 @@ export function buildTutorialScenario(step, { playerName = 'Jugador', user = nul
         createPlayer({
           ...playerMeta,
           hand: [
-            ingredientCard('pan', 'espanol'),
+            ingredientCard('pan', 'frances'),
             ingredientCard('carne', 'ingles'),
             ingredientCard('pollo', 'frances'),
           ],
