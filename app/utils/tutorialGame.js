@@ -111,14 +111,25 @@ const COPY = {
       },
       {
         title: 'Usar Agregar sombrero',
-        body: 'Agregar te deja conservar tu sombrero actual y sumar otro principal. A cambio, descartas tu mano y tu máximo de cartas baja.',
+        body: 'Agregar te deja conservar tu sombrero actual y sumar otro principal. A cambio, descartas tu mano, la reciclas en una nueva y tu máximo de cartas baja.',
         bullets: [
           'Sirve cuando quieres mantener dos idiomas listos.',
           'Es más caro, pero te da más flexibilidad en turnos futuros.',
+          'También es una forma de reciclar tu mano bajo un costo.',
           'Al agregar, se descarta toda tu mano y tu máximo de cartas baja en 1. Ese es el costo.',
           'Si tras agregar o cambiar sombrero no puedes jugar nada, usa el botón Pasar turno.',
         ],
         focus: { closet: true, addButton: true, selectedCard: 1 },
+      },
+      {
+        title: 'Pasar turno',
+        body: 'Despues de agregar sombrero, la mano nueva no siempre te ayuda. Aqui veras que tu mano anterior se descarto, tu maximo bajo en 1 y no tienes cartas utiles para este objetivo.',
+        bullets: [
+          'Agregar descarta toda tu mano anterior.',
+          'Tu maximo de mano baja en 1 y ese cambio se mantiene.',
+          'Si no puedes jugar nada despues de cambiar o agregar, usa Pasar turno.',
+        ],
+        focus: { selectedCard: 0 },
       },
       {
         title: 'Descartar',
@@ -249,6 +260,16 @@ const COPY = {
         focus: { closet: true, addButton: true, selectedCard: 1 },
       },
       {
+        title: 'Skip turn',
+        body: 'After adding a hat, your new hand will not always help. Here you can see that your previous hand was discarded, your max hand was reduced by 1, and none of these cards help this burger.',
+        bullets: [
+          'Add discards your entire previous hand.',
+          'Your max hand goes down by 1 and stays that way.',
+          'If you cannot play anything after changing or adding a hat, use Skip Turn.',
+        ],
+        focus: { selectedCard: 0 },
+      },
+      {
         title: 'Discard',
         body: 'Besides playing a card, another option on your turn is to discard it. Select a card and use the Discard button.',
         bullets: [
@@ -375,6 +396,16 @@ const COPY = {
           'Si tu ne peux rien jouer apres avoir ajoute ou change de chapeau, utilise le bouton Passer le tour.',
         ],
         focus: { closet: true, addButton: true, selectedCard: 1 },
+      },
+      {
+        title: 'Passer le tour',
+        body: 'Apres avoir ajoute un chapeau, ta nouvelle main ne t aide pas toujours. Ici tu vois que ton ancienne main a ete defaussee, que ton maximum a baisse de 1 et qu aucune de ces cartes ne sert a cet objectif.',
+        bullets: [
+          'Ajouter defausse toute ta main precedente.',
+          'Ton maximum de main baisse de 1 et cela reste ainsi.',
+          'Si tu ne peux rien jouer apres avoir ajoute ou change de chapeau, utilise Passer le tour.',
+        ],
+        focus: { selectedCard: 0 },
       },
       {
         title: 'Defausser',
@@ -505,6 +536,16 @@ const COPY = {
         focus: { closet: true, addButton: true, selectedCard: 1 },
       },
       {
+        title: 'Passa turno',
+        body: 'Dopo aver aggiunto un cappello, la nuova mano non sempre aiuta. Qui vedi che la mano precedente e stata scartata, il massimo e sceso di 1 e nessuna di queste carte aiuta questo obiettivo.',
+        bullets: [
+          'Aggiungi scarta tutta la mano precedente.',
+          'Il tuo massimo di mano scende di 1 e resta cosi.',
+          'Se non puoi giocare nulla dopo aver aggiunto o cambiato cappello, usa Passa turno.',
+        ],
+        focus: { selectedCard: 0 },
+      },
+      {
         title: 'Scartare',
         body: 'Oltre a giocare una carta, un altra opzione nel tuo turno e scartarla. Seleziona una carta e usa il pulsante Scarta.',
         bullets: [
@@ -633,6 +674,16 @@ const COPY = {
         focus: { closet: true, addButton: true, selectedCard: 1 },
       },
       {
+        title: 'Zug passen',
+        body: 'Nach dem Hinzufugen eines Hutes hilft dir die neue Hand nicht immer. Hier siehst du, dass deine vorherige Hand abgeworfen wurde, dein Handlimit um 1 gesunken ist und keine dieser Karten diesem Ziel hilft.',
+        bullets: [
+          'Hinzufugen wirft deine gesamte vorherige Hand ab.',
+          'Dein Handlimit sinkt um 1 und bleibt so.',
+          'Wenn du nach dem Hinzufugen oder Wechseln nichts spielen kannst, nutze Zug passen.',
+        ],
+        focus: { selectedCard: 0 },
+      },
+      {
         title: 'Abwerfen',
         body: 'Neben dem Spielen einer Karte ist eine weitere Option in deinem Zug, sie abzuwerfen. Wahle eine Karte und benutze den Abwerfen-Button.',
         bullets: [
@@ -759,6 +810,16 @@ const COPY = {
           'Se nao puderes jogar nada apos adicionar ou trocar chapeu, usa o botao Passar vez.',
         ],
         focus: { closet: true, addButton: true, selectedCard: 1 },
+      },
+      {
+        title: 'Passar turno',
+        body: 'Depois de adicionar um chapeu, a nova mao nem sempre ajuda. Aqui ves que a tua mao anterior foi descartada, o teu maximo baixou em 1 e nenhuma destas cartas ajuda neste objetivo.',
+        bullets: [
+          'Adicionar descarta toda a tua mao anterior.',
+          'O teu maximo de mao baixa em 1 e fica assim.',
+          'Se nao podes jogar nada depois de adicionar ou trocar chapeu, usa Passar turno.',
+        ],
+        focus: { selectedCard: 0 },
       },
       {
         title: 'Descartar',
@@ -940,8 +1001,8 @@ export function buildTutorialScenario(step, { playerName = 'Jugador', user = nul
         createPlayer({
           ...playerMeta,
           hand: [
+            ingredientCard('palta', 'espanol'),
             ingredientCard('queso', 'ingles'),
-            ingredientCard('pan', 'espanol'),
             ingredientCard('tomate', 'espanol'),
             actionCard('tenedor'),
           ],
@@ -959,22 +1020,22 @@ export function buildTutorialScenario(step, { playerName = 'Jugador', user = nul
           burgers: [['pan', 'tomate', 'queso']],
         }),
       ],
-      selectedIdx: 0,
+      selectedIdx: 1,
     }),
     () => ({
       players: [
         createPlayer({
           ...playerMeta,
           hand: [
-            ingredientCard('tomate', 'espanol'),
-            ingredientCard('queso', 'ingles'),
-            ingredientCard('pollo', 'ingles'),
+            ingredientCard('palta', 'frances'),
+            ingredientCard('carne', 'ingles'),
+            ingredientCard('pollo', 'frances'),
             actionCard('tenedor'),
           ],
           mainHats: ['espanol'],
           perchero: ['ingles', 'frances', 'italiano', 'aleman', 'portugues'],
-          table: ['pan'],
-          burgers: [['pan', 'tomate', 'queso']],
+          table: ['lechuga'],
+          burgers: [['pan', 'lechuga', 'queso']],
           maxHand: 5,
         }),
         createPlayer({
@@ -986,9 +1047,37 @@ export function buildTutorialScenario(step, { playerName = 'Jugador', user = nul
           burgers: [['pan', 'carne', 'queso']],
         }),
       ],
-      selectedIdx: 1,
+      selectedIdx: 0,
     }),
-    // Step 6: Discard
+    // Step 6: Skip turn after adding a hat
+    () => ({
+      players: [
+        createPlayer({
+          ...playerMeta,
+          hand: [
+            ingredientCard('palta', 'frances'),
+            ingredientCard('carne', 'ingles'),
+            ingredientCard('pollo', 'frances'),
+          ],
+          mainHats: ['espanol'],
+          perchero: ['ingles', 'frances', 'italiano', 'aleman', 'portugues'],
+          table: ['lechuga'],
+          burgers: [['pan', 'lechuga', 'queso']],
+          maxHand: 5,
+        }),
+        createPlayer({
+          ...opponentMeta,
+          hand: [],
+          mainHats: ['frances'],
+          perchero: ['espanol', 'ingles', 'italiano', 'aleman', 'portugues'],
+          table: ['carne'],
+          burgers: [['pan', 'carne', 'queso']],
+        }),
+      ],
+      selectedIdx: 0,
+      extraPlay: true,
+    }),
+    // Step 7: Discard
     () => ({
       players: [
         createPlayer({
@@ -1012,9 +1101,9 @@ export function buildTutorialScenario(step, { playerName = 'Jugador', user = nul
           burgers: [['pan', 'tomate', 'queso']],
         }),
       ],
-      selectedIdx: 0,
+      selectedIdx: 1,
     }),
-    // Step 7: Wildcards
+    // Step 8: Wildcards
     () => ({
       players: [
         createPlayer({
@@ -1040,6 +1129,7 @@ export function buildTutorialScenario(step, { playerName = 'Jugador', user = nul
       ],
       selectedIdx: 0,
     }),
+    // Step 9: Action cards
     () => ({
       players: [
         createPlayer({
@@ -1078,6 +1168,7 @@ export function buildTutorialScenario(step, { playerName = 'Jugador', user = nul
       discard: [ingredientCard('lechuga', 'aleman'), ingredientCard('pollo', 'frances')],
       selectedIdx: null,
     }),
+    // Step 10: Negation
     () => {
       const opponentFork = actionCard('tenedor');
       return {
@@ -1087,11 +1178,11 @@ export function buildTutorialScenario(step, { playerName = 'Jugador', user = nul
             hand: [
               actionCard('negacion'),
               actionCard('tenedor'),
-              ingredientCard('queso', 'espanol'),
+              ingredientCard('tomate', 'espanol'),
             ],
             mainHats: ['espanol'],
             perchero: ['ingles', 'frances', 'italiano', 'aleman', 'portugues'],
-            table: ['pan'],
+            table: ['pan', 'queso'],
             burgers: [['pan', 'queso', 'tomate']],
           }),
           createPlayer({
@@ -1110,9 +1201,16 @@ export function buildTutorialScenario(step, { playerName = 'Jugador', user = nul
           eligibleIdxs: [0],
           responses: {},
         },
+        tutorialPendingResolution: {
+          type: 'fork',
+          actingIdx: 1,
+          targetIdx: 0,
+          ingIdx: 1,
+        },
         selectedIdx: 0,
       };
     },
+    // Step 11: Practice
     () => ({
       players: [
         createPlayer({
@@ -1150,7 +1248,7 @@ export function buildTutorialScenario(step, { playerName = 'Jugador', user = nul
     discard: built.discard || [],
     pendingNeg: built.pendingNeg || null,
     cp: 0,
-    extraPlay: false,
+    extraPlay: !!built.extraPlay,
     selectedIdx: built.selectedIdx ?? null,
     gameConfig: {
       mode: 'clon',

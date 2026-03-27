@@ -14,6 +14,7 @@ export function createPlayerActionCommands({
   addLog,
   endTurn,
   advanceTutorialAfter,
+  setTutorialCarryOver,
 }) {
   function emitRemote(type, action = {}) {
     socket.emit('playerAction', { code: roomCode, action: { type, ...action } });
@@ -61,6 +62,12 @@ export function createPlayerActionCommands({
       setSelectedIdx(null);
       setExtraPlay(false);
       if (advanceTutorialAfter('ingredient')) {
+        if (setTutorialCarryOver) {
+          setTutorialCarryOver((prev) => ({
+            ...prev,
+            table: [...nextPlayers[hi].table],
+          }));
+        }
         setPlayers(nextPlayers);
         setDiscard(nextDiscard);
         return true;
@@ -149,6 +156,7 @@ export function createPlayerActionCommands({
         return true;
       }
       setExtraPlay(false);
+      if (advanceTutorialAfter('passTurn')) return true;
       endTurn(players, deck, discard, hi);
       return true;
     },

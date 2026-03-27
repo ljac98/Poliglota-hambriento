@@ -152,6 +152,9 @@ export function ProfileScreen({ profileUserId, user, onUserUpdate, onOpenProfile
   const historyItems = useMemo(() => history.slice(0, 10), [history]);
 
   const isOwnProfile = !!profile && !!user && profile.id === user.id;
+  const effectiveAvatarUrl = isOwnProfile
+    ? (profile?.avatarUrl ?? user?.avatarUrl ?? null)
+    : (profile?.avatarUrl ?? null);
 
   function resizeImageToBlob(file) {
     return new Promise((resolve, reject) => {
@@ -367,7 +370,7 @@ export function ProfileScreen({ profileUserId, user, onUserUpdate, onOpenProfile
                 padding: 20,
               }}>
                 <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 18 }}>
-                  <UserAvatar name={profile.displayName} username={profile.username} avatarUrl={profile.avatarUrl} size={86} />
+                  <UserAvatar name={profile.displayName} username={profile.username} avatarUrl={effectiveAvatarUrl} size={86} />
                   <div>
                     <div style={{ color: '#fff3bf', fontSize: 26, fontWeight: 900, lineHeight: 1 }}>{profile.displayName}</div>
                     <div style={{ color: '#9aa0ba', fontSize: 15, fontWeight: 700, marginTop: 4 }}>@{profile.username}</div>
@@ -389,7 +392,7 @@ export function ProfileScreen({ profileUserId, user, onUserUpdate, onOpenProfile
                     <Btn onClick={() => fileInputRef.current?.click()} color="#7ad8ff" disabled={savingAvatar} style={{ color: '#102033', fontSize: 13 }}>
                       {savingAvatar ? '...' : text.changePhoto}
                     </Btn>
-                    {profile.avatarUrl && (
+                    {effectiveAvatarUrl && (
                       <Btn onClick={handleRemoveAvatar} color="#ff8a80" disabled={savingAvatar} style={{ color: '#201313', fontSize: 13 }}>
                         {text.removePhoto}
                       </Btn>

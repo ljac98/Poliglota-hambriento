@@ -239,7 +239,7 @@ export default function App() {
     : getTutorialPermissions(tutorialActive, tutorialStep);
   const tutorialAllowsCardSelection = tutorialPermissions.canSelectCards;
   const tutorialAllowsPlayButton = tutorialPermissions.canUsePlayButton;
-  const tutorialAllowsDiscard = !tutorialActive || tutorialPractice || tutorialStep === 5;
+  const tutorialAllowsDiscard = !tutorialActive || tutorialPractice || tutorialStep === 6;
   const tutorialAllowsChangeHat = tutorialPermissions.canChangeHat;
   const tutorialAllowsAddHat = tutorialPermissions.canAddHat;
   const tutorialAllowsNegation = tutorialPermissions.canNegate;
@@ -305,6 +305,87 @@ export default function App() {
     };
     return copyByUi[uiLang] || copyByUi.en;
   })();
+  const getIngredientCantPlayReason = useCallback((playerLike, card) => {
+    const asResult = (text, hatLang = null) => ({ text, hatLang });
+    if (!playerLike || !card || card.type !== 'ingredient') return asResult(T('cantPlayNow'));
+
+    const hasCorrectHat = playerLike.mainHats?.includes(card.language);
+    if (card.ingredient === 'perrito') {
+      if (!hasCorrectHat) {
+        const copyByUi = {
+          es: 'Necesitas este sombrero para poder jugarlo',
+          en: 'You need this hat to play it',
+          fr: 'Tu as besoin de ce chapeau pour la jouer',
+          it: 'Ti serve questo cappello per giocarla',
+          de: 'Du brauchst diesen Hut, um sie zu spielen',
+          pt: 'Precisas deste chapéu para a jogar',
+        };
+        return asResult(copyByUi[uiLang] || copyByUi.en, card.language);
+      }
+      return asResult(T('cantPlayNow'));
+    }
+
+    if (playerLike.currentBurger >= playerLike.totalBurgers) {
+      const copyByUi = {
+        es: 'Tu hamburguesa actual ya está completa',
+        en: 'Your current burger is already complete',
+        fr: 'Ton burger actuel est déjà complet',
+        it: 'Il tuo hamburger attuale è già completo',
+        de: 'Dein aktueller Burger ist bereits fertig',
+        pt: 'O teu hambúrguer atual já está completo',
+      };
+      return asResult(copyByUi[uiLang] || copyByUi.en);
+    }
+
+    const target = playerLike.burgers?.[playerLike.currentBurger] || [];
+    const needed = [...target];
+    const tableCopy = (playerLike.table || []).map((t) => (t.startsWith('perrito|') ? t.split('|')[1] : t));
+    for (let i = needed.length - 1; i >= 0; i -= 1) {
+      const idx = tableCopy.indexOf(needed[i]);
+      if (idx !== -1) {
+        needed.splice(i, 1);
+        tableCopy.splice(idx, 1);
+      }
+    }
+
+    if (!needed.includes(card.ingredient)) {
+      const copyByUi = {
+        es: 'No es parte del objetivo actual',
+        en: 'It is not part of the current objective',
+        fr: 'Elle ne fait pas partie de l’objectif actuel',
+        it: 'Non fa parte dell’obiettivo attuale',
+        de: 'Sie ist kein Teil des aktuellen Ziels',
+        pt: 'Não faz parte do objetivo atual',
+      };
+      return asResult(copyByUi[uiLang] || copyByUi.en);
+    }
+
+    if (!hasCorrectHat) {
+      const copyByUi = {
+        es: 'Necesitas este sombrero para poder jugarlo',
+        en: 'You need this hat to play it',
+        fr: 'Tu as besoin de ce chapeau pour la jouer',
+        it: 'Ti serve questo cappello per giocarla',
+        de: 'Du brauchst diesen Hut, um sie zu spielen',
+        pt: 'Precisas deste chapéu para a jogar',
+      };
+      return asResult(copyByUi[uiLang] || copyByUi.en, card.language);
+    }
+
+    return asResult(T('cantPlayNow'));
+  }, [T, uiLang]);
+  const doesHatOpenUsefulIngredient = useCallback((playerLike, hatLang) => {
+    if (!playerLike || !hatLang) return false;
+    const simulatedPlayer = {
+      ...playerLike,
+      mainHats: Array.from(new Set([...(playerLike.mainHats || []), hatLang])),
+    };
+    return (playerLike.hand || []).some((card) => (
+      card?.type === 'ingredient'
+      && card.language === hatLang
+      && canPlayCard(simulatedPlayer, card)
+    ));
+  }, []);
   const mapVisibleTutorialStepToScenarioStep = useCallback((step) => {
     if (step <= 0) return 0;
     if (step === 1) return 2;
@@ -436,6 +517,20 @@ export default function App() {
   const lastNegationSeenRef = useRef(null);
   const lastForkSeenRef = useRef(null);
   const lastComeComodinesSeenRef = useRef(null);
+  const tutorialNegationOutcomeText = (() => {
+    if (!tutorialActive || tutorialStep !== 9) return null;
+    if (!lastForkEvent || lastForkEvent.targetIdx !== HI) return null;
+    const ingName = getIngName(lastForkEvent.ingredient, uiGameLang) || lastForkEvent.ingredient;
+    const copyByUi = {
+      es: `Como no has negado la accion, te han robado ${ingName}.`,
+      en: `Because you did not negate the action, ${ingName} was stolen from you.`,
+      fr: `Comme tu n as pas nie l action, on t a vole ${ingName}.`,
+      it: `Dato che non hai negato l azione, ti hanno rubato ${ingName}.`,
+      de: `Weil du die Aktion nicht negiert hast, wurde dir ${ingName} gestohlen.`,
+      pt: `Como nao negaste a acao, roubaram-te ${ingName}.`,
+    };
+    return copyByUi[uiLang] || copyByUi.es;
+  })();
   const lastGlotonSeenRef = useRef(null);
   const lastMilanesaSeenRef = useRef(null);
   const lastEnsaladaSeenRef = useRef(null);
@@ -509,7 +604,10 @@ export default function App() {
   }, [negationFx]);
 
   useEffect(() => {
-    if (!forkFx) return undefined;
+    if (!forkFx) {
+      setForkAnim(null);
+      return undefined;
+    }
     const timer = setTimeout(() => setForkFx(null), 1500);
     return () => clearTimeout(timer);
   }, [forkFx]);
@@ -968,6 +1066,7 @@ export default function App() {
     return () => {
       clearTimeout(moveTimer);
       clearTimeout(clearTimer);
+      setForkAnim(null);
     };
   }, [forkFx]);
 
@@ -1558,17 +1657,56 @@ export default function App() {
     }
   }
 
+  function resolveTutorialPendingAction(resolution) {
+    if (!resolution) return;
+    if (resolution.type === 'fork') {
+      const nextPlayers = clone(playersRef.current);
+      const nextDiscard = [...discardRef.current];
+      const actingIdx = resolution.actingIdx;
+      const targetIdx = resolution.targetIdx;
+      const stolenPreview = nextPlayers[targetIdx]?.table?.[resolution.ingIdx] || null;
+      const cardIdx = nextPlayers[actingIdx]?.hand?.findIndex((c) => c.action === 'tenedor') ?? -1;
+      const card = cardIdx !== -1
+        ? nextPlayers[actingIdx].hand.splice(cardIdx, 1)[0]
+        : { type: 'action', action: 'tenedor', id: uid() };
+      nextDiscard.push(card);
+      const result = targetedActionService.apply({
+        card,
+        actingIdx,
+        targetIdx,
+        action: { ingIdx: resolution.ingIdx },
+        players: nextPlayers,
+        discard: nextDiscard,
+        humanIdx: HI,
+      });
+      if (!result) return;
+      if (stolenPreview) {
+        addLog(
+          actingIdx,
+          `robó ${ING_EMOJI[ingKey(stolenPreview)]} de ${playersRef.current[targetIdx]?.name || 'Jugador'}`,
+          result.players,
+        );
+      }
+      setPlayers(result.players);
+      setDiscard(result.discard);
+    }
+  }
+
   function applyTutorialScenario(step) {
     const scenario = buildTutorialScenario(step, {
       playerName: user?.displayName || 'Jugador',
       user,
     });
-    // Apply carryOver from previous tutorial steps (hat changes, basurero card)
-    if (tutorialCarryOver && step >= 7) {
+    // Apply carryOver from previous tutorial steps (hat changes, add hat, basurero card)
+    if (tutorialCarryOver && step >= 4) {
       const p = scenario.players[0];
       if (tutorialCarryOver.mainHats) p.mainHats = [...tutorialCarryOver.mainHats];
       if (tutorialCarryOver.perchero) p.perchero = [...tutorialCarryOver.perchero];
       if (tutorialCarryOver.maxHand != null) p.maxHand = tutorialCarryOver.maxHand;
+      if (tutorialCarryOver.table) p.table = [...tutorialCarryOver.table];
+      if (step === 4 && tutorialCarryOver.table?.includes('queso')) {
+        scenario.selectedIdx = 2;
+      }
     }
     if (tutorialCarryOver?.basureroCard && step >= 9) {
       scenario.players[0].hand.push(tutorialCarryOver.basureroCard);
@@ -1581,10 +1719,14 @@ export default function App() {
     setSelectedIdx(scenario.selectedIdx ?? null);
     setModal(null);
     setPendingNeg(scenario.pendingNeg || null);
+    setLastForkEvent(null);
+    setForkFx(null);
     pendingNegRef.current = scenario.pendingNeg
       ? {
           ...scenario.pendingNeg,
-          resolveCallback: () => {},
+          resolveCallback: scenario.tutorialPendingResolution
+            ? () => resolveTutorialPendingAction(scenario.tutorialPendingResolution)
+            : () => {},
         }
       : null;
     setWinner(null);
@@ -2139,6 +2281,7 @@ export default function App() {
     addLog,
     endTurn,
     advanceTutorialAfter,
+    setTutorialCarryOver,
   });
 
   function finishClosetCoverAction(basePlayers, baseDeck, baseDiscard, actingIdx, targetIdx, blocked) {
@@ -4725,7 +4868,15 @@ export default function App() {
                     )}
                     {canPlayCard(human, card)
                       ? <span style={{ color: '#4CAF50', fontSize: 12 }}>{T('canPlay')}</span>
-                      : <span style={{ color: '#FF7043', fontSize: 12 }}>{T('cantPlay')}</span>}
+                      : (() => {
+                          const reason = getIngredientCantPlayReason(human, card);
+                          return (
+                            <span style={{ color: '#FF7043', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 6, justifyContent: 'center', flexWrap: 'wrap' }}>
+                              {reason.hatLang && <HatSVG lang={reason.hatLang} size={18} />}
+                              <span>{reason.text}</span>
+                            </span>
+                          );
+                        })()}
                   </>) : (<>
                     <span style={{ fontWeight: 700, fontSize: 14, color: '#FFD700' }}>{getActionText(card.action)?.name}</span>
                     <span style={{ fontSize: 12, color: noObjectives ? '#FF7043' : '#ccc' }}>{noObjectives ? T('actionNoObjectives') : getActionText(card.action)?.desc}</span>
@@ -4782,7 +4933,15 @@ export default function App() {
       {human.hand[selectedIdx]?.type === 'ingredient' ? (
         canPlayCard(human, human.hand[selectedIdx])
           ? <span style={{ color: '#4CAF50' }}>{T('canPlayThis')}</span>
-          : <span style={{ color: '#FF7043' }}>{T('cantPlayNow')}</span>
+          : (() => {
+              const reason = getIngredientCantPlayReason(human, human.hand[selectedIdx]);
+              return (
+                <span style={{ color: '#FF7043', display: 'inline-flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                  {reason.hatLang && <HatSVG lang={reason.hatLang} size={18} />}
+                  <span>{reason.text}</span>
+                </span>
+              );
+            })()
       ) : (
         human.hand[selectedIdx]?.type === 'action' && !hasActionObjectives(human.hand[selectedIdx]?.action, players, HI, discard)
           ? <span style={{ color: '#FF7043' }}>{T('actionNoObjectives')}</span>
@@ -4969,6 +5128,21 @@ export default function App() {
                   lineHeight: 1.4,
                 }}>
                   {tutorialHatHintText}
+                </div>
+              ) : null}
+              {tutorialNegationOutcomeText ? (
+                <div style={{
+                  marginTop: 2,
+                  padding: '8px 10px',
+                  borderRadius: 12,
+                  border: '1px solid rgba(255,120,120,0.4)',
+                  background: 'rgba(255,80,80,0.08)',
+                  color: '#ffd1d1',
+                  fontSize: 12,
+                  fontWeight: 800,
+                  lineHeight: 1.4,
+                }}>
+                  {tutorialNegationOutcomeText}
                 </div>
               ) : null}
             </div>
@@ -5632,7 +5806,15 @@ export default function App() {
                   )}
                   {canPlayCard(human, card)
                     ? <span style={{ color: '#4CAF50', fontSize: 13 }}>{T('canPlay')}</span>
-                    : <span style={{ color: '#FF7043', fontSize: 13 }}>{T('cantPlay')}</span>}
+                    : (() => {
+                        const reason = getIngredientCantPlayReason(human, card);
+                        return (
+                          <span style={{ color: '#FF7043', fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 6, justifyContent: 'center', flexWrap: 'wrap' }}>
+                            {reason.hatLang && <HatSVG lang={reason.hatLang} size={20} />}
+                            <span>{reason.text}</span>
+                          </span>
+                        );
+                      })()}
                 </>) : (<>
                   <span style={{ fontWeight: 700, fontSize: 16, color: '#FFD700' }}>{getActionText(card.action)?.name}</span>
                   <span style={{ fontSize: 13, color: noObjectivesMobile ? '#FF7043' : '#ccc' }}>{noObjectivesMobile ? T('actionNoObjectives') : getActionText(card.action)?.desc}</span>
@@ -5664,10 +5846,10 @@ export default function App() {
           <p style={{ color: '#888', fontSize: 12, marginBottom: 12 }}>
             {typeof T('changeHatStep1Desc') === 'function' ? T('changeHatStep1Desc')(Math.ceil(human.hand.length / 2)) : T('changeHatStep1Desc')}
           </p>
-          {tutorialActive && tutorialStep === 3 && tutorialHatHintText ? (
-            <div style={{
-              marginBottom: 12,
-              padding: '10px 12px',
+           {tutorialActive && tutorialStep === 4 && tutorialHatHintText ? (
+             <div style={{
+               marginBottom: 12,
+               padding: '10px 12px',
               borderRadius: 12,
               border: tutorialRecommendedHatLang ? `1px solid ${LANG_BORDER[tutorialRecommendedHatLang]}88` : '1px solid rgba(255,215,0,0.25)',
               background: 'rgba(255,215,0,0.08)',
@@ -5679,12 +5861,49 @@ export default function App() {
               {tutorialHatHintText}
             </div>
           ) : null}
+          {modal?.warningHatLang ? (
+            <div style={{
+              marginBottom: 12,
+              padding: '10px 12px',
+              borderRadius: 12,
+              border: `1px solid ${LANG_BORDER[modal.warningHatLang]}88`,
+              background: 'rgba(255,107,107,0.12)',
+              color: '#ffd8d8',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 8,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 800, lineHeight: 1.35 }}>
+                <HatSVG lang={modal.warningHatLang} size={28} />
+                <span>No tiene cartas que le sirva para este sombrero</span>
+              </div>
+              <div>
+                <Btn
+                  onClick={() => {
+                    if ((human.mainHats?.length || 0) > 1) {
+                      setModal({ type: 'manual_cambiar_target', hatLang: modal.warningHatLang });
+                    } else {
+                      setModal({ type: 'manual_cambiar_discard', hatLang: modal.warningHatLang, replaceIdx: 0, selected: [] });
+                    }
+                  }}
+                  color="#FF7043"
+                  style={{ fontSize: 12, padding: '8px 12px' }}
+                >
+                  Cambiar de todas formas
+                </Btn>
+              </div>
+            </div>
+          ) : null}
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
             {human.perchero.map(h => (
               <button
                 key={h}
                 type="button"
                 onClick={() => {
+                  if (!doesHatOpenUsefulIngredient(human, h)) {
+                    setModal({ type: 'manual_cambiar', warningHatLang: h });
+                    return;
+                  }
                   if ((human.mainHats?.length || 0) > 1) {
                     setModal({ type: 'manual_cambiar_target', hatLang: h });
                   } else {
@@ -5693,13 +5912,13 @@ export default function App() {
                 }}
                 style={{
                   padding: 10, borderRadius: 10, cursor: 'pointer',
-                  border: `2px solid ${LANG_BORDER[h]}88`,
-                  background: 'rgba(255,255,255,.04)', transition: 'all .15s',
+                  border: `2px solid ${(modal?.warningHatLang === h ? LANG_BORDER[h] : `${LANG_BORDER[h]}88`)}`,
+                  background: modal?.warningHatLang === h ? 'rgba(255,107,107,.12)' : 'rgba(255,255,255,.04)', transition: 'all .15s',
                   display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
                   WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation',
                 }}
-                onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,.1)'}
-                onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,.04)'}
+                onMouseOver={e => e.currentTarget.style.background = modal?.warningHatLang === h ? 'rgba(255,107,107,.18)' : 'rgba(255,255,255,.1)'}
+                onMouseOut={e => e.currentTarget.style.background = modal?.warningHatLang === h ? 'rgba(255,107,107,.12)' : 'rgba(255,255,255,.04)'}
               >
                 <HatSVG lang={h} size={36} />
                 <span style={{ fontSize: 11, fontWeight: 700, color: LANG_TEXT[h] }}>
@@ -5717,10 +5936,10 @@ export default function App() {
           <p style={{ color: '#888', fontSize: 12, marginBottom: 12 }}>
             {`Elige qué sombrero principal quieres reemplazar por ${T(modal.hatLang)}.`}
           </p>
-          {tutorialActive && tutorialStep === 3 && tutorialHatHintText ? (
-            <div style={{
-              marginBottom: 12,
-              padding: '10px 12px',
+           {tutorialActive && tutorialStep === 4 && tutorialHatHintText ? (
+              <div style={{
+                marginBottom: 12,
+                padding: '10px 12px',
               borderRadius: 12,
               border: tutorialRecommendedHatLang ? `1px solid ${LANG_BORDER[tutorialRecommendedHatLang]}88` : '1px solid rgba(255,215,0,0.25)',
               background: 'rgba(255,215,0,0.08)',
