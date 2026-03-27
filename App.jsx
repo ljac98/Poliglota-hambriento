@@ -312,14 +312,13 @@ export default function App() {
     const hasCorrectHat = playerLike.mainHats?.includes(card.language);
     if (card.ingredient === 'perrito') {
       if (!hasCorrectHat) {
-        const hatName = T(card.language);
         const copyByUi = {
-          es: `Necesita sombrero ${hatName} para jugar`,
-          en: `Needs ${hatName} hat to play`,
-          fr: `Il faut le chapeau ${hatName} pour la jouer`,
-          it: `Serve il cappello ${hatName} per giocarla`,
-          de: `Du brauchst den Hut ${hatName}, um sie zu spielen`,
-          pt: `Precisa do chapéu ${hatName} para jogar`,
+          es: 'Necesitas este sombrero para poder jugarlo',
+          en: 'You need this hat to play it',
+          fr: 'Tu as besoin de ce chapeau pour la jouer',
+          it: 'Ti serve questo cappello per giocarla',
+          de: 'Du brauchst diesen Hut, um sie zu spielen',
+          pt: 'Precisas deste chapéu para a jogar',
         };
         return asResult(copyByUi[uiLang] || copyByUi.en, card.language);
       }
@@ -362,14 +361,13 @@ export default function App() {
     }
 
     if (!hasCorrectHat) {
-      const hatName = T(card.language);
       const copyByUi = {
-        es: `Necesita sombrero ${hatName} para jugar`,
-        en: `Needs ${hatName} hat to play`,
-        fr: `Il faut le chapeau ${hatName} pour la jouer`,
-        it: `Serve il cappello ${hatName} per giocarla`,
-        de: `Du brauchst den Hut ${hatName}, um sie zu spielen`,
-        pt: `Precisa do chapéu ${hatName} para jogar`,
+        es: 'Necesitas este sombrero para poder jugarlo',
+        en: 'You need this hat to play it',
+        fr: 'Tu as besoin de ce chapeau pour la jouer',
+        it: 'Ti serve questo cappello per giocarla',
+        de: 'Du brauchst diesen Hut, um sie zu spielen',
+        pt: 'Precisas deste chapéu para a jogar',
       };
       return asResult(copyByUi[uiLang] || copyByUi.en, card.language);
     }
