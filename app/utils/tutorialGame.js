@@ -1020,21 +1020,21 @@ export function buildTutorialScenario(step, { playerName = 'Jugador', user = nul
           burgers: [['pan', 'tomate', 'queso']],
         }),
       ],
-      selectedIdx: 0,
+      selectedIdx: 1,
     }),
     () => ({
       players: [
         createPlayer({
           ...playerMeta,
           hand: [
-            ingredientCard('queso', 'ingles'),
-            ingredientCard('pan', 'frances'),
-            ingredientCard('tomate', 'espanol'),
+            ingredientCard('palta', 'frances'),
+            ingredientCard('carne', 'ingles'),
+            ingredientCard('pollo', 'frances'),
             actionCard('tenedor'),
           ],
           mainHats: ['espanol'],
           perchero: ['ingles', 'frances', 'italiano', 'aleman', 'portugues'],
-          table: ['pan', 'lechuga'],
+          table: ['lechuga'],
           burgers: [['pan', 'lechuga', 'queso']],
           maxHand: 5,
         }),
@@ -1047,7 +1047,7 @@ export function buildTutorialScenario(step, { playerName = 'Jugador', user = nul
           burgers: [['pan', 'carne', 'queso']],
         }),
       ],
-      selectedIdx: 1,
+      selectedIdx: 0,
     }),
     // Step 6: Skip turn after adding a hat
     () => ({
@@ -1061,7 +1061,7 @@ export function buildTutorialScenario(step, { playerName = 'Jugador', user = nul
           ],
           mainHats: ['espanol'],
           perchero: ['ingles', 'frances', 'italiano', 'aleman', 'portugues'],
-          table: ['pan', 'lechuga'],
+          table: ['lechuga'],
           burgers: [['pan', 'lechuga', 'queso']],
           maxHand: 5,
         }),

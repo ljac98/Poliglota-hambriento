@@ -5841,10 +5841,10 @@ export default function App() {
           <p style={{ color: '#888', fontSize: 12, marginBottom: 12 }}>
             {typeof T('changeHatStep1Desc') === 'function' ? T('changeHatStep1Desc')(Math.ceil(human.hand.length / 2)) : T('changeHatStep1Desc')}
           </p>
-          {tutorialActive && tutorialStep === 3 && tutorialHatHintText ? (
-            <div style={{
-              marginBottom: 12,
-              padding: '10px 12px',
+          {tutorialActive && tutorialStep === 4 && tutorialHatHintText ? (
+              <div style={{
+                marginBottom: 12,
+                padding: '10px 12px',
               borderRadius: 12,
               border: tutorialRecommendedHatLang ? `1px solid ${LANG_BORDER[tutorialRecommendedHatLang]}88` : '1px solid rgba(255,215,0,0.25)',
               background: 'rgba(255,215,0,0.08)',
