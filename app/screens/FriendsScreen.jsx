@@ -149,7 +149,12 @@ export function FriendsScreen({ user, onBack, T, onOpenProfile }) {
     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
       <UserAvatar name={person.displayName} username={person.username} avatarUrl={person.avatarUrl} size={40} />
       <div>
-        <button type="button" onClick={() => onOpenProfile?.(fallbackId)} style={nameButtonStyle}>
+        <button type="button" onClick={() => onOpenProfile?.({
+          id: fallbackId,
+          username: person.username,
+          displayName: person.displayName,
+          avatarUrl: person.avatarUrl || null,
+        })} style={nameButtonStyle}>
           {person.displayName}
         </button>
         <div style={{ color: '#666', fontSize: 11 }}>@{person.username}</div>

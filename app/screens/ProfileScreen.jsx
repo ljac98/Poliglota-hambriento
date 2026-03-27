@@ -98,10 +98,12 @@ function formatDate(dateValue) {
   }
 }
 
-export function ProfileScreen({ profileUserId, user, onUserUpdate, onOpenProfile, onBack, onOpenFriends, onOpenHistory, T }) {
+export function ProfileScreen({ profileUserId, initialProfilePreview = null, user, onUserUpdate, onOpenProfile, onBack, onOpenFriends, onOpenHistory, T }) {
   const uiKey = getUILang();
   const text = getCopy();
-  const [profile, setProfile] = useState(null);
+  const [profile, setProfile] = useState(() => (
+    initialProfilePreview && initialProfilePreview.id === profileUserId ? initialProfilePreview : null
+  ));
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -129,13 +131,25 @@ export function ProfileScreen({ profileUserId, user, onUserUpdate, onOpenProfile
 
   useEffect(() => {
     let cancelled = false;
+    if (initialProfilePreview && initialProfilePreview.id === profileUserId) {
+      setProfile((prev) => ({ ...(prev || {}), ...initialProfilePreview }));
+    } else {
+      setProfile(null);
+    }
     (async () => {
       setLoading(true);
       setStatusMessage('');
       try {
         const [profileData, historyData] = await Promise.all([getProfile(profileUserId), getHistory(profileUserId)]);
         if (cancelled) return;
-        setProfile(profileData);
+        setProfile((prev) => {
+          if (!prev) return profileData;
+          return {
+            ...prev,
+            ...profileData,
+            avatarUrl: profileData?.avatarUrl ?? prev.avatarUrl ?? null,
+          };
+        });
         setHistory(Array.isArray(historyData) ? historyData : []);
       } catch (err) {
         if (cancelled) return;
@@ -147,7 +161,7 @@ export function ProfileScreen({ profileUserId, user, onUserUpdate, onOpenProfile
     return () => {
       cancelled = true;
     };
-  }, [profileUserId]);
+  }, [initialProfilePreview, profileUserId]);
 
   const historyItems = useMemo(() => history.slice(0, 10), [history]);
 
@@ -546,7 +560,12 @@ export function ProfileScreen({ profileUserId, user, onUserUpdate, onOpenProfile
                 type="button"
                 onClick={() => {
                   setShowFriendsModal(false);
-                  onOpenProfile?.(friend.id);
+                  onOpenProfile?.({
+                    id: friend.id,
+                    username: friend.username,
+                    displayName: friend.displayName,
+                    avatarUrl: friend.avatarUrl || null,
+                  });
                 }}
                 style={{
                   display: 'flex',
