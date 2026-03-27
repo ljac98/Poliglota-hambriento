@@ -1012,7 +1012,12 @@ export function OnlineLobby({ roomCode, myName, isHost, players, onStart, onBack
                 {p.userId ? (
                   <button
                     type="button"
-                    onClick={() => onOpenProfile?.(p.userId)}
+                    onClick={() => onOpenProfile?.({
+                      id: p.userId,
+                      username: p.username || null,
+                      displayName: p.name,
+                      avatarUrl: p.isAI ? null : (p.avatarUrl || null),
+                    })}
                     style={{
                       background: 'none',
                       border: 'none',

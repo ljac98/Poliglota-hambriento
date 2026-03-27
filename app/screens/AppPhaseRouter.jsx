@@ -29,6 +29,7 @@ export function AppPhaseRouter({
   downloadReturnPhase,
   setDownloadReturnPhase,
   profileUserId,
+  profilePreview,
   profileReturnPhase,
   historyInitialFilter,
   historyReturnPhase,
@@ -132,6 +133,7 @@ export function AppPhaseRouter({
         {friendReqToast}
         <ProfileScreen
           profileUserId={profileUserId}
+          initialProfilePreview={profilePreview}
           user={user}
           T={T}
           onUserUpdate={setUser}
