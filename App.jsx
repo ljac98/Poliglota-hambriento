@@ -239,7 +239,7 @@ export default function App() {
     : getTutorialPermissions(tutorialActive, tutorialStep);
   const tutorialAllowsCardSelection = tutorialPermissions.canSelectCards;
   const tutorialAllowsPlayButton = tutorialPermissions.canUsePlayButton;
-  const tutorialAllowsDiscard = !tutorialActive || tutorialPractice || tutorialStep === 5;
+  const tutorialAllowsDiscard = !tutorialActive || tutorialPractice || tutorialStep === 6;
   const tutorialAllowsChangeHat = tutorialPermissions.canChangeHat;
   const tutorialAllowsAddHat = tutorialPermissions.canAddHat;
   const tutorialAllowsNegation = tutorialPermissions.canNegate;
@@ -1651,7 +1651,7 @@ export default function App() {
       if (tutorialCarryOver.perchero) p.perchero = [...tutorialCarryOver.perchero];
       if (tutorialCarryOver.maxHand != null) p.maxHand = tutorialCarryOver.maxHand;
     }
-    if (tutorialCarryOver?.basureroCard && step >= 8) {
+    if (tutorialCarryOver?.basureroCard && step >= 9) {
       scenario.players[0].hand.push(tutorialCarryOver.basureroCard);
     }
     setPlayers(scenario.players);

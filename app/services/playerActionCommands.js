@@ -149,6 +149,7 @@ export function createPlayerActionCommands({
         return true;
       }
       setExtraPlay(false);
+      if (advanceTutorialAfter('passTurn')) return true;
       endTurn(players, deck, discard, hi);
       return true;
     },
