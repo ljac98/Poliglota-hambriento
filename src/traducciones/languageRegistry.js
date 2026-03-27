@@ -1,9 +1,9 @@
-import es from './languages/es.js';
-import en from './languages/en.js';
-import fr from './languages/fr.js';
-import it from './languages/it.js';
-import de from './languages/de.js';
-import pt from './languages/pt.js';
+import es from './lenguajes/espanol.js';
+import en from './lenguajes/ingles.js';
+import fr from './lenguajes/frances.js';
+import it from './lenguajes/italiano.js';
+import de from './lenguajes/aleman.js';
+import pt from './lenguajes/portugues.js';
 
 const defaultLanguagePacks = Object.freeze({ es, en, fr, it, de, pt });
 

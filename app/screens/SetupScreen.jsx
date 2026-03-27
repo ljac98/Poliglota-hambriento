@@ -4,6 +4,7 @@ import { randInt, uid } from '../../game/utils.js';
 import { Btn } from '../components/Btn.jsx';
 import { Modal } from '../components/Modal.jsx';
 import { InstallFloatingCard } from '../components/InstallFloatingCard.jsx';
+import { VsAiModePickerModal } from '../components/VsAiModePickerModal.jsx';
 import { getUILang, KEY_TO_LANG } from '../../src/translations.js';
 import { ING_IMG } from '../utils/gameHelpers.js';
 import { genBurger } from '../../game/deck.js';
@@ -14,7 +15,6 @@ import onlineImg from '../../imagenes/online.png';
 import modoclon from '../../imagenes/modos/clones.png';
 import modoescalera from '../../imagenes/modos/escalera.png';
 import modocaotico from '../../imagenes/modos/caotico.png';
-import vsiaImg from '../../imagenes/vsia.png';
 import actionEnsaladaImg from '../../imagenes/acciones/ensalada3.png';
 import actionPizzaImg from '../../imagenes/acciones/pizza.png';
 import actionParrillaImg from '../../imagenes/acciones/parrilla2.png';
@@ -32,70 +32,6 @@ import burgerPalta from '../../imagenes/hamburguesas/ingredientes/palta.png';
 
 export function SetupScreen({ onStart, onStartTutorial, onOnline, onDownload, user, onLogout, onHistory, onFriends, T, installEntryVisible, installEntryTitle, installEntryDesc, installEntryButton, onOpenInstallPrompt }) {
   const uiGameLang = KEY_TO_LANG[getUILang()] || 'espanol';
-  const modalCopy = {
-    es: {
-      title: 'Elige tu partida vs IA',
-      desc: 'Puedes empezar una partida normal o aprender primero con el tutorial.',
-      normalLabel: 'Partida simple',
-      normalNeedHat: 'Configura tu modo y elige tu sombrero para poder jugar.',
-      normalReady: 'Enfrentate a las IAs en este modo.',
-      tutorialLabel: 'Tutorial',
-      tutorialDesc: 'Aprende las bases del juego aqui.',
-    },
-    en: {
-      title: 'Choose your vs AI match',
-      desc: 'You can start a normal match or learn first with the tutorial.',
-      normalLabel: 'Simple match',
-      normalNeedHat: 'Set your mode and choose your hat to start playing.',
-      normalReady: 'Face the AIs in this mode.',
-      tutorialLabel: 'Tutorial',
-      tutorialDesc: 'Learn the basics of the game here.',
-    },
-    fr: {
-      title: 'Choisis ta partie contre IA',
-      desc: 'Tu peux commencer une partie normale ou apprendre d abord avec le tutoriel.',
-      normalLabel: 'Partie simple',
-      normalNeedHat: 'Configure ton mode et choisis ton chapeau pour pouvoir jouer.',
-      normalReady: 'Affronte les IA dans ce mode.',
-      tutorialLabel: 'Tutoriel',
-      tutorialDesc: 'Apprends les bases du jeu ici.',
-    },
-    it: {
-      title: 'Scegli la tua partita contro IA',
-      desc: 'Puoi iniziare una partita normale oppure imparare prima con il tutorial.',
-      normalLabel: 'Partita semplice',
-      normalNeedHat: 'Configura la modalita e scegli il tuo cappello per poter giocare.',
-      normalReady: 'Affronta le IA in questa modalita.',
-      tutorialLabel: 'Tutorial',
-      tutorialDesc: 'Impara qui le basi del gioco.',
-    },
-    de: {
-      title: 'Wahle dein Spiel gegen die KI',
-      desc: 'Du kannst ein normales Spiel starten oder zuerst mit dem Tutorial lernen.',
-      normalLabel: 'Einfaches Spiel',
-      normalNeedHat: 'Stelle deinen Modus ein und wahle deinen Hut, um spielen zu konnen.',
-      normalReady: 'Tritt in diesem Modus gegen die KIs an.',
-      tutorialLabel: 'Tutorial',
-      tutorialDesc: 'Lerne hier die Grundlagen des Spiels.',
-    },
-    pt: {
-      title: 'Escolhe a tua partida contra a IA',
-      desc: 'Podes comecar uma partida normal ou aprender primeiro com o tutorial.',
-      normalLabel: 'Partida simples',
-      normalNeedHat: 'Configura o modo e escolhe o teu chapeu para poderes jogar.',
-      normalReady: 'Enfrenta as IAs neste modo.',
-      tutorialLabel: 'Tutorial',
-      tutorialDesc: 'Aprende aqui as bases do jogo.',
-    },
-  }[getUILang()] || {
-    title: 'Elige tu partida vs IA',
-    desc: 'Puedes empezar una partida normal o aprender primero con el tutorial.',
-    normalLabel: 'Partida simple',
-    normalNeedHat: 'Configura tu modo y elige tu sombrero para poder jugar.',
-    normalReady: 'Enfrentate a las IAs en este modo.',
-    tutorialLabel: 'Tutorial',
-    tutorialDesc: 'Aprende las bases del juego aqui.',
-  };
   const cloneIngredients = INGREDIENTS.filter((ing) => ing !== 'pan');
   const [name, setName] = useState(user?.displayName || '');
   const [hat, setHat] = useState(null);
@@ -472,7 +408,7 @@ export function SetupScreen({ onStart, onStartTutorial, onOnline, onDownload, us
           {user && (
             <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, flexWrap: 'wrap' }}>
               <span style={{ color: '#4ecdc4', fontSize: 13, fontWeight: 700 }}>
-                {user.displayName} â€” {user.wins}W / {user.gamesPlayed}G
+                {user.displayName} - {user.wins}W / {user.gamesPlayed}G
               </span>
               <button onClick={onHistory} style={{
                 background: 'none', border: '1px solid #4ecdc4', borderRadius: 8,
@@ -493,7 +429,7 @@ export function SetupScreen({ onStart, onStartTutorial, onOnline, onDownload, us
           )}
         </div>
 
-        {/* Name â€“ only show input if not logged in */}
+        {/* Name - only show input if not logged in */}
         {!user && (
           <div style={{ marginBottom: 20 }}>
             <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 6 }}>{T('yourName')}</label>
@@ -589,7 +525,7 @@ export function SetupScreen({ onStart, onStartTutorial, onOnline, onDownload, us
           >
             <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
               <img src={vsiaImg} alt={T('vsAI')} style={{ width: 24, height: 24, objectFit: 'contain' }} />
-              <span>{String(T('vsAI')).replace('ðŸŽ® ', '')}</span>
+              <span>{String(T('vsAI')).replace('🎮 ', '')}</span>
             </span>
           </Btn>
           <Btn
@@ -599,7 +535,7 @@ export function SetupScreen({ onStart, onStartTutorial, onOnline, onDownload, us
           >
             <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
               <img src={onlineImg} alt={T('online')} style={{ width: 24, height: 24, objectFit: 'contain' }} />
-              <span>{String(T('online')).replace('ðŸŒ ', '')}</span>
+              <span>{String(T('online')).replace('🌐 ', '')}</span>
             </span>
           </Btn>
         </div>
@@ -709,8 +645,8 @@ export function SetupScreen({ onStart, onStartTutorial, onOnline, onDownload, us
                 style={{ width: '100%', accentColor: '#FF7043' }}
               />
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 6 }}>
-                <span style={markerStyle}>Menos caÃ³tico</span>
-                <span style={markerStyle}>MÃ¡s caÃ³tico</span>
+                <span style={markerStyle}>Menos caotico</span>
+                <span style={markerStyle}>Mas caotico</span>
               </div>
             </div>
           )}
@@ -883,76 +819,18 @@ export function SetupScreen({ onStart, onStartTutorial, onOnline, onDownload, us
           <Btn onClick={() => setShowModeConfig(false)} color="#333" style={{ color: '#aaa' }}>{T('close')}</Btn>
         </Modal>
       )}
-      {showVsAiModal && (
-        <Modal title={modalCopy.title}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <div style={{ color: '#d8ddf3', fontSize: 14, lineHeight: 1.45 }}>
-              {modalCopy.desc}
-            </div>
-            <div style={{ display: 'grid', gap: 12 }}>
-              <button
-                type="button"
-                onClick={startNormalVsAi}
-                disabled={normalStartDisabled}
-                style={{
-                  width: '100%',
-                  borderRadius: 16,
-                  padding: '14px 16px',
-                  border: normalStartDisabled ? '1px solid rgba(255,255,255,0.08)' : '2px solid rgba(255,215,0,0.35)',
-                  background: normalStartDisabled ? 'rgba(255,255,255,0.04)' : 'linear-gradient(180deg, rgba(255,215,0,0.14), rgba(255,255,255,0.04))',
-                  color: normalStartDisabled ? '#7f859f' : '#fff4b3',
-                  textAlign: 'left',
-                  cursor: normalStartDisabled ? 'not-allowed' : 'pointer',
-                  fontFamily: "'Fredoka',sans-serif",
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
-                }}
-              >
-                <img src={vsiaImg} alt={modalCopy.normalLabel} style={{ width: 38, height: 38, objectFit: 'contain', opacity: normalStartDisabled ? 0.55 : 1 }} />
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <span style={{ fontSize: 16, fontWeight: 900 }}>{modalCopy.normalLabel}</span>
-                  <span style={{ fontSize: 12, color: normalStartDisabled ? '#7f859f' : '#c8cde4' }}>
-                    {!hat ? modalCopy.normalNeedHat : modalCopy.normalReady}
-                  </span>
-                </div>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowVsAiModal(false);
-                  if (onStartTutorial) onStartTutorial();
-                }}
-                style={{
-                  width: '100%',
-                  borderRadius: 16,
-                  padding: '14px 16px',
-                  border: '2px solid rgba(78,205,196,0.3)',
-                  background: 'linear-gradient(180deg, rgba(78,205,196,0.16), rgba(255,255,255,0.04))',
-                  color: '#d7fffb',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  fontFamily: "'Fredoka',sans-serif",
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
-                }}
-              >
-                <img src={vsiaImg} alt={modalCopy.tutorialLabel} style={{ width: 38, height: 38, objectFit: 'contain' }} />
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <span style={{ fontSize: 16, fontWeight: 900 }}>{modalCopy.tutorialLabel}</span>
-                  <span style={{ fontSize: 12, color: '#b9dad8' }}>{modalCopy.tutorialDesc}</span>
-                </div>
-              </button>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <Btn onClick={() => setShowVsAiModal(false)} color="#2a2a4a" style={{ color: '#fff' }}>
-                {T('close')}
-              </Btn>
-            </div>
-          </div>
-        </Modal>
-      )}
+      <VsAiModePickerModal
+        open={showVsAiModal}
+        hasHat={!!hat}
+        normalStartDisabled={normalStartDisabled}
+        onClose={() => setShowVsAiModal(false)}
+        onStartNormal={startNormalVsAi}
+        onStartTutorial={() => {
+          setShowVsAiModal(false);
+          if (onStartTutorial) onStartTutorial();
+        }}
+        T={T}
+      />
     </div>
   );
 }
