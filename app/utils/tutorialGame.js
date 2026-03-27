@@ -1002,7 +1002,7 @@ export function buildTutorialScenario(step, { playerName = 'Jugador', user = nul
           ...playerMeta,
           hand: [
             ingredientCard('palta', 'espanol'),
-            ingredientCard('queso', 'ingles'),
+            ingredientCard('queso', 'frances'),
             ingredientCard('tomate', 'espanol'),
             actionCard('tenedor'),
           ],
@@ -1101,7 +1101,7 @@ export function buildTutorialScenario(step, { playerName = 'Jugador', user = nul
           burgers: [['pan', 'tomate', 'queso']],
         }),
       ],
-      selectedIdx: 0,
+      selectedIdx: 1,
     }),
     // Step 8: Wildcards
     () => ({

@@ -1703,6 +1703,7 @@ export default function App() {
       if (tutorialCarryOver.mainHats) p.mainHats = [...tutorialCarryOver.mainHats];
       if (tutorialCarryOver.perchero) p.perchero = [...tutorialCarryOver.perchero];
       if (tutorialCarryOver.maxHand != null) p.maxHand = tutorialCarryOver.maxHand;
+      if (tutorialCarryOver.table) p.table = [...tutorialCarryOver.table];
     }
     if (tutorialCarryOver?.basureroCard && step >= 9) {
       scenario.players[0].hand.push(tutorialCarryOver.basureroCard);
@@ -2277,6 +2278,7 @@ export default function App() {
     addLog,
     endTurn,
     advanceTutorialAfter,
+    setTutorialCarryOver,
   });
 
   function finishClosetCoverAction(basePlayers, baseDeck, baseDiscard, actingIdx, targetIdx, blocked) {
@@ -5841,7 +5843,7 @@ export default function App() {
           <p style={{ color: '#888', fontSize: 12, marginBottom: 12 }}>
             {typeof T('changeHatStep1Desc') === 'function' ? T('changeHatStep1Desc')(Math.ceil(human.hand.length / 2)) : T('changeHatStep1Desc')}
           </p>
-          {tutorialActive && tutorialStep === 4 && tutorialHatHintText ? (
+          {tutorialActive && tutorialStep === 3 && tutorialHatHintText ? (
               <div style={{
                 marginBottom: 12,
                 padding: '10px 12px',
@@ -5931,10 +5933,10 @@ export default function App() {
           <p style={{ color: '#888', fontSize: 12, marginBottom: 12 }}>
             {`Elige qué sombrero principal quieres reemplazar por ${T(modal.hatLang)}.`}
           </p>
-          {tutorialActive && tutorialStep === 3 && tutorialHatHintText ? (
-            <div style={{
-              marginBottom: 12,
-              padding: '10px 12px',
+           {tutorialActive && tutorialStep === 4 && tutorialHatHintText ? (
+              <div style={{
+                marginBottom: 12,
+                padding: '10px 12px',
               borderRadius: 12,
               border: tutorialRecommendedHatLang ? `1px solid ${LANG_BORDER[tutorialRecommendedHatLang]}88` : '1px solid rgba(255,215,0,0.25)',
               background: 'rgba(255,215,0,0.08)',
