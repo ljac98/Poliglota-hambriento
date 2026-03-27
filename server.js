@@ -3,7 +3,7 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { fileURLToPath } from 'url';
 import { dirname, extname, join } from 'path';
-import { existsSync, mkdirSync, statSync, unlinkSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, readdirSync, statSync, unlinkSync, writeFileSync } from 'fs';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import multer from 'multer';
@@ -54,6 +54,19 @@ function deleteStoredAvatar(avatarUrl) {
     const relativeParts = avatarUrl.replace(/^\/+/, '').split('/').filter(Boolean);
     const localPath = join(__dirname, ...relativeParts);
     if (existsSync(localPath)) unlinkSync(localPath);
+  } catch {}
+}
+
+function cleanupProfileAvatarFiles(username, keepFilename = null) {
+  const safeBaseName = sanitizeProfileFileBase(username);
+  try {
+    const files = readdirSync(avatarUploadPath);
+    for (const file of files) {
+      if (!file.startsWith(`${safeBaseName}.`)) continue;
+      if (keepFilename && file === keepFilename) continue;
+      const filePath = join(avatarUploadPath, file);
+      if (existsSync(filePath)) unlinkSync(filePath);
+    }
   } catch {}
 }
 
@@ -546,6 +559,7 @@ app.post('/api/profile/avatar', requireDB, requireAuth, uploadAvatar.single('ava
     const nextFilename = `${safeBaseName}${safeExt}`;
     const nextLocalPath = join(avatarUploadPath, nextFilename);
     const avatarUrl = `/uploads/perfiles/${nextFilename}`;
+    cleanupProfileAvatarFiles(username, nextFilename);
     writeFileSync(nextLocalPath, req.file.buffer);
     const previousAvatarUrl = previous.rows[0]?.avatar_url;
     if (previousAvatarUrl && previousAvatarUrl !== avatarUrl) {
@@ -578,12 +592,15 @@ app.patch('/api/profile/avatar', requireDB, requireAuth, async (req, res) => {
   try {
     const { avatarUrl } = req.body || {};
     const nextAvatar = avatarUrl || null;
-    const previous = await pool.query('SELECT avatar_url FROM users WHERE id = $1', [req.userId]);
+    const previous = await pool.query('SELECT username, avatar_url FROM users WHERE id = $1', [req.userId]);
     const result = await pool.query(
       'UPDATE users SET avatar_url = $1 WHERE id = $2 RETURNING id, username, display_name, avatar_url, wins, games_played',
       [nextAvatar, req.userId]
     );
-    if (!nextAvatar) deleteStoredAvatar(previous.rows[0]?.avatar_url);
+    if (!nextAvatar) {
+      deleteStoredAvatar(previous.rows[0]?.avatar_url);
+      cleanupProfileAvatarFiles(previous.rows[0]?.username);
+    }
     const updated = result.rows[0];
     res.json({
       user: {
