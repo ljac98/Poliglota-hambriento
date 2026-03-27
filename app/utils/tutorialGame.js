@@ -1177,11 +1177,11 @@ export function buildTutorialScenario(step, { playerName = 'Jugador', user = nul
             hand: [
               actionCard('negacion'),
               actionCard('tenedor'),
-              ingredientCard('queso', 'espanol'),
+              ingredientCard('tomate', 'espanol'),
             ],
             mainHats: ['espanol'],
             perchero: ['ingles', 'frances', 'italiano', 'aleman', 'portugues'],
-            table: ['pan'],
+            table: ['pan', 'queso'],
             burgers: [['pan', 'queso', 'tomate']],
           }),
           createPlayer({
@@ -1199,6 +1199,12 @@ export function buildTutorialScenario(step, { playerName = 'Jugador', user = nul
           cardInfo: { emoji: '🍴', name: 'The Fork' },
           eligibleIdxs: [0],
           responses: {},
+        },
+        tutorialPendingResolution: {
+          type: 'fork',
+          actingIdx: 1,
+          targetIdx: 0,
+          ingIdx: 1,
         },
         selectedIdx: 0,
       };

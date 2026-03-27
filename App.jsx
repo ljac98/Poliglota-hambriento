@@ -517,6 +517,20 @@ export default function App() {
   const lastNegationSeenRef = useRef(null);
   const lastForkSeenRef = useRef(null);
   const lastComeComodinesSeenRef = useRef(null);
+  const tutorialNegationOutcomeText = (() => {
+    if (!tutorialActive || tutorialStep !== 9) return null;
+    if (!lastForkEvent || lastForkEvent.targetIdx !== HI) return null;
+    const ingName = getIngName(lastForkEvent.ingredient, uiGameLang) || lastForkEvent.ingredient;
+    const copyByUi = {
+      es: `Como no has negado la accion, te han robado ${ingName}.`,
+      en: `Because you did not negate the action, ${ingName} was stolen from you.`,
+      fr: `Comme tu n as pas nie l action, on t a vole ${ingName}.`,
+      it: `Dato che non hai negato l azione, ti hanno rubato ${ingName}.`,
+      de: `Weil du die Aktion nicht negiert hast, wurde dir ${ingName} gestohlen.`,
+      pt: `Como nao negaste a acao, roubaram-te ${ingName}.`,
+    };
+    return copyByUi[uiLang] || copyByUi.es;
+  })();
   const lastGlotonSeenRef = useRef(null);
   const lastMilanesaSeenRef = useRef(null);
   const lastEnsaladaSeenRef = useRef(null);
@@ -1639,6 +1653,41 @@ export default function App() {
     }
   }
 
+  function resolveTutorialPendingAction(resolution) {
+    if (!resolution) return;
+    if (resolution.type === 'fork') {
+      const nextPlayers = clone(playersRef.current);
+      const nextDiscard = [...discardRef.current];
+      const actingIdx = resolution.actingIdx;
+      const targetIdx = resolution.targetIdx;
+      const stolenPreview = nextPlayers[targetIdx]?.table?.[resolution.ingIdx] || null;
+      const cardIdx = nextPlayers[actingIdx]?.hand?.findIndex((c) => c.action === 'tenedor') ?? -1;
+      const card = cardIdx !== -1
+        ? nextPlayers[actingIdx].hand.splice(cardIdx, 1)[0]
+        : { type: 'action', action: 'tenedor', id: uid() };
+      nextDiscard.push(card);
+      const result = targetedActionService.apply({
+        card,
+        actingIdx,
+        targetIdx,
+        action: { ingIdx: resolution.ingIdx },
+        players: nextPlayers,
+        discard: nextDiscard,
+        humanIdx: HI,
+      });
+      if (!result) return;
+      if (stolenPreview) {
+        addLog(
+          actingIdx,
+          `robó ${ING_EMOJI[ingKey(stolenPreview)]} de ${playersRef.current[targetIdx]?.name || 'Jugador'}`,
+          result.players,
+        );
+      }
+      setPlayers(result.players);
+      setDiscard(result.discard);
+    }
+  }
+
   function applyTutorialScenario(step) {
     const scenario = buildTutorialScenario(step, {
       playerName: user?.displayName || 'Jugador',
@@ -1662,10 +1711,14 @@ export default function App() {
     setSelectedIdx(scenario.selectedIdx ?? null);
     setModal(null);
     setPendingNeg(scenario.pendingNeg || null);
+    setLastForkEvent(null);
+    setForkFx(null);
     pendingNegRef.current = scenario.pendingNeg
       ? {
           ...scenario.pendingNeg,
-          resolveCallback: () => {},
+          resolveCallback: scenario.tutorialPendingResolution
+            ? () => resolveTutorialPendingAction(scenario.tutorialPendingResolution)
+            : () => {},
         }
       : null;
     setWinner(null);
@@ -5066,6 +5119,21 @@ export default function App() {
                   lineHeight: 1.4,
                 }}>
                   {tutorialHatHintText}
+                </div>
+              ) : null}
+              {tutorialNegationOutcomeText ? (
+                <div style={{
+                  marginTop: 2,
+                  padding: '8px 10px',
+                  borderRadius: 12,
+                  border: '1px solid rgba(255,120,120,0.4)',
+                  background: 'rgba(255,80,80,0.08)',
+                  color: '#ffd1d1',
+                  fontSize: 12,
+                  fontWeight: 800,
+                  lineHeight: 1.4,
+                }}>
+                  {tutorialNegationOutcomeText}
                 </div>
               ) : null}
             </div>
