@@ -1,5 +1,5 @@
-const TUTORIAL_ALLOWED_CARD_SELECTION_STEPS = new Set([1, 2, 6, 7, 8]);
-const TUTORIAL_ALLOWED_PLAY_BUTTON_STEPS = new Set([1, 7, 8]);
+const TUTORIAL_ALLOWED_CARD_SELECTION_STEPS = new Set([1, 2, 3, 6, 7, 8]);
+const TUTORIAL_ALLOWED_PLAY_BUTTON_STEPS = new Set([1, 3, 7, 8]);
 
 export function getTutorialPermissions(tutorialActive, tutorialStep) {
   if (!tutorialActive) {
@@ -26,7 +26,7 @@ export function shouldAdvanceTutorialStep(tutorialActive, tutorialStep, actionTy
 
   return (
     (tutorialStep === 1 && actionType === 'ingredient') ||
-    (tutorialStep === 3 && actionType === 'changeHat') ||
+    (tutorialStep === 3 && actionType === 'ingredient') ||
     (tutorialStep === 4 && actionType === 'addHat') ||
     (tutorialStep === 5 && actionType === 'passTurn') ||
     (tutorialStep === 6 && actionType === 'discard') ||
