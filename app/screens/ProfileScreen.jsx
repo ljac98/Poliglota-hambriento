@@ -3,7 +3,7 @@ import { getProfile, getHistory, getProfileFriends, removeFriend, saveUserLocall
 import { getUILang } from '../../src/translations.js';
 import { Btn } from '../components/Btn.jsx';
 import { Modal } from '../components/Modal.jsx';
-import { UserAvatar } from '../components/UserAvatar.jsx';
+import { UserAvatar, resolveAvatarUrl } from '../components/UserAvatar.jsx';
 
 const COPY = {
   es: {
@@ -35,6 +35,7 @@ const COPY = {
     removingFriend: 'Quitando amistad...',
     removeFriendConfirm: '¿Seguro que quieres dejar de ser amigos?',
     removedFriend: 'Ya no son amigos',
+    viewPhoto: 'Ver foto',
   },
   en: {
     title: 'Profile',
@@ -65,6 +66,7 @@ const COPY = {
     removingFriend: 'Removing friend...',
     removeFriendConfirm: 'Are you sure you want to remove this friend?',
     removedFriend: 'You are no longer friends',
+    viewPhoto: 'View photo',
   },
 };
 
@@ -113,6 +115,7 @@ export function ProfileScreen({ profileUserId, initialProfilePreview = null, use
   const [friendsLoading, setFriendsLoading] = useState(false);
   const [profileFriends, setProfileFriends] = useState([]);
   const [statusMessage, setStatusMessage] = useState('');
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
   const fileInputRef = useRef(null);
 
   async function loadProfileData(targetUserId, { keepStatus = false } = {}) {
@@ -169,6 +172,7 @@ export function ProfileScreen({ profileUserId, initialProfilePreview = null, use
   const effectiveAvatarUrl = isOwnProfile
     ? (profile?.avatarUrl ?? user?.avatarUrl ?? null)
     : (profile?.avatarUrl ?? null);
+  const resolvedAvatarUrl = useMemo(() => resolveAvatarUrl(effectiveAvatarUrl), [effectiveAvatarUrl]);
 
   function resizeImageToBlob(file) {
     return new Promise((resolve, reject) => {
@@ -384,7 +388,21 @@ export function ProfileScreen({ profileUserId, initialProfilePreview = null, use
                 padding: 20,
               }}>
                 <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 18 }}>
-                  <UserAvatar name={profile.displayName} username={profile.username} avatarUrl={effectiveAvatarUrl} size={86} />
+                  <button
+                    type="button"
+                    onClick={() => effectiveAvatarUrl && setShowAvatarModal(true)}
+                    disabled={!effectiveAvatarUrl}
+                    aria-label={text.viewPhoto}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      padding: 0,
+                      margin: 0,
+                      cursor: effectiveAvatarUrl ? 'zoom-in' : 'default',
+                    }}
+                  >
+                    <UserAvatar name={profile.displayName} username={profile.username} avatarUrl={effectiveAvatarUrl} size={86} />
+                  </button>
                   <div>
                     <div style={{ color: '#fff3bf', fontSize: 26, fontWeight: 900, lineHeight: 1 }}>{profile.displayName}</div>
                     <div style={{ color: '#9aa0ba', fontSize: 15, fontWeight: 700, marginTop: 4 }}>@{profile.username}</div>
@@ -591,6 +609,29 @@ export function ProfileScreen({ profileUserId, initialProfilePreview = null, use
             ))}
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
               <Btn onClick={() => setShowFriendsModal(false)} color="#2a2a4a" style={{ color: '#fff' }}>
+                {T('close')}
+              </Btn>
+            </div>
+          </div>
+        </Modal>
+      )}
+      {showAvatarModal && resolvedAvatarUrl && (
+        <Modal title={profile?.displayName || text.title} maxWidth={860} width="min(92vw, 860px)">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, alignItems: 'center' }}>
+            <img
+              src={resolvedAvatarUrl}
+              alt={profile?.displayName || profile?.username || 'avatar'}
+              style={{
+                width: '100%',
+                maxHeight: '70vh',
+                objectFit: 'contain',
+                borderRadius: 18,
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.1)',
+              }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', width: '100%' }}>
+              <Btn onClick={() => setShowAvatarModal(false)} color="#2a2a4a" style={{ color: '#fff' }}>
                 {T('close')}
               </Btn>
             </div>
