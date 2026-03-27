@@ -1644,14 +1644,14 @@ export default function App() {
       playerName: user?.displayName || 'Jugador',
       user,
     });
-    // Apply carryOver from previous tutorial steps (hat changes, basurero card)
-    if (tutorialCarryOver && step >= 7) {
+    // Apply carryOver from previous tutorial steps (hat changes, add hat, basurero card)
+    if (tutorialCarryOver && step >= 5) {
       const p = scenario.players[0];
       if (tutorialCarryOver.mainHats) p.mainHats = [...tutorialCarryOver.mainHats];
       if (tutorialCarryOver.perchero) p.perchero = [...tutorialCarryOver.perchero];
       if (tutorialCarryOver.maxHand != null) p.maxHand = tutorialCarryOver.maxHand;
     }
-    if (tutorialCarryOver?.basureroCard && step >= 9) {
+    if (tutorialCarryOver?.basureroCard && step >= 8) {
       scenario.players[0].hand.push(tutorialCarryOver.basureroCard);
     }
     setPlayers(scenario.players);
