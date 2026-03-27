@@ -3,7 +3,7 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { fileURLToPath } from 'url';
 import { dirname, extname, join } from 'path';
-import { existsSync, mkdirSync, unlinkSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, statSync, unlinkSync, writeFileSync } from 'fs';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import multer from 'multer';
@@ -77,6 +77,20 @@ function resolveAvatarExtension(file) {
   return '.jpg';
 }
 
+function versionAvatarUrl(avatarUrl) {
+  if (!avatarUrl || typeof avatarUrl !== 'string' || !avatarUrl.startsWith('/uploads/')) return avatarUrl || null;
+  try {
+    const relativeParts = avatarUrl.replace(/^\/+/, '').split('/').filter(Boolean);
+    const localPath = join(__dirname, ...relativeParts);
+    if (!existsSync(localPath)) return avatarUrl;
+    const version = Math.floor(statSync(localPath).mtimeMs);
+    const separator = avatarUrl.includes('?') ? '&' : '?';
+    return `${avatarUrl}${separator}v=${version}`;
+  } catch {
+    return avatarUrl;
+  }
+}
+
 // â”€â”€ REST API â”€â”€
 
 const dbAvailable = !!process.env.DATABASE_URL;
@@ -100,7 +114,7 @@ app.post('/api/register', requireDB, async (req, res) => {
     );
     const user = result.rows[0];
     const token = signToken(user);
-    res.json({ token, user: { id: user.id, username: user.username, displayName: user.display_name, avatarUrl: user.avatar_url, wins: user.wins, gamesPlayed: user.games_played } });
+    res.json({ token, user: { id: user.id, username: user.username, displayName: user.display_name, avatarUrl: versionAvatarUrl(user.avatar_url), wins: user.wins, gamesPlayed: user.games_played } });
   } catch (err) {
     if (err.code === '23505') return res.status(400).json({ error: 'Ese nombre de usuario ya existe' });
     console.error('Register error:', err.message);
@@ -121,7 +135,7 @@ app.post('/api/login', requireDB, async (req, res) => {
     if (!valid) return res.status(401).json({ error: 'Usuario o contraseÃ±a incorrectos' });
 
     const token = signToken(user);
-    res.json({ token, user: { id: user.id, username: user.username, displayName: user.display_name, avatarUrl: user.avatar_url, wins: user.wins, gamesPlayed: user.games_played } });
+    res.json({ token, user: { id: user.id, username: user.username, displayName: user.display_name, avatarUrl: versionAvatarUrl(user.avatar_url), wins: user.wins, gamesPlayed: user.games_played } });
   } catch {
     res.status(500).json({ error: 'Error del servidor' });
   }
@@ -211,7 +225,7 @@ app.get('/api/profile/:id', requireDB, async (req, res) => {
       id: u.id,
       username: u.username,
       displayName: u.display_name,
-      avatarUrl: u.avatar_url,
+      avatarUrl: versionAvatarUrl(u.avatar_url),
       wins: u.wins,
       gamesPlayed: u.games_played,
       losses: Math.max(0, Number(u.games_played || 0) - Number(u.wins || 0)),
@@ -264,7 +278,7 @@ app.get('/api/users/search', requireDB, requireAuth, async (req, res) => {
        WHERE username LIKE $1 AND id != $2 LIMIT 10`,
       [`%${q}%`, req.userId]
     );
-    res.json(result.rows.map(u => ({ id: u.id, username: u.username, displayName: u.display_name, avatarUrl: u.avatar_url })));
+    res.json(result.rows.map(u => ({ id: u.id, username: u.username, displayName: u.display_name, avatarUrl: versionAvatarUrl(u.avatar_url) })));
   } catch {
     res.status(500).json({ error: 'Error del servidor' });
   }
@@ -281,7 +295,7 @@ app.get('/api/friends', requireDB, requireAuth, async (req, res) => {
     );
     res.json(result.rows.map(u => ({
       id: u.id, username: u.username, displayName: u.display_name,
-      avatarUrl: u.avatar_url,
+      avatarUrl: versionAvatarUrl(u.avatar_url),
       wins: u.wins, gamesPlayed: u.games_played,
       online: onlineUsers.has(u.id),
     })));
@@ -305,7 +319,7 @@ app.get('/api/profile/:id/friends', requireDB, async (req, res) => {
       id: u.id,
       username: u.username,
       displayName: u.display_name,
-      avatarUrl: u.avatar_url,
+      avatarUrl: versionAvatarUrl(u.avatar_url),
       wins: u.wins,
       gamesPlayed: u.games_played,
       online: onlineUsers.has(u.id),
@@ -403,7 +417,7 @@ app.get('/api/friends/requests', requireDB, requireAuth, async (req, res) => {
     );
     res.json(result.rows.map(r => ({
       id: r.id, fromUserId: r.from_user_id, username: r.username,
-      displayName: r.display_name, avatarUrl: r.avatar_url, createdAt: r.created_at,
+      displayName: r.display_name, avatarUrl: versionAvatarUrl(r.avatar_url), createdAt: r.created_at,
     })));
   } catch {
     res.status(500).json({ error: 'Error del servidor' });
@@ -515,7 +529,7 @@ app.get('/api/users/blocked', requireDB, requireAuth, async (req, res) => {
        WHERE b.user_id = $1 ORDER BY u.display_name`,
       [req.userId]
     );
-    res.json(result.rows.map(u => ({ id: u.id, username: u.username, displayName: u.display_name, avatarUrl: u.avatar_url })));
+    res.json(result.rows.map(u => ({ id: u.id, username: u.username, displayName: u.display_name, avatarUrl: versionAvatarUrl(u.avatar_url) })));
   } catch {
     res.status(500).json({ error: 'Error del servidor' });
   }
@@ -547,7 +561,7 @@ app.post('/api/profile/avatar', requireDB, requireAuth, uploadAvatar.single('ava
         id: updated.id,
         username: updated.username,
         displayName: updated.display_name,
-        avatarUrl: updated.avatar_url,
+        avatarUrl: versionAvatarUrl(updated.avatar_url),
         wins: updated.wins,
         gamesPlayed: updated.games_played,
       },
@@ -576,7 +590,7 @@ app.patch('/api/profile/avatar', requireDB, requireAuth, async (req, res) => {
         id: updated.id,
         username: updated.username,
         displayName: updated.display_name,
-        avatarUrl: updated.avatar_url,
+        avatarUrl: versionAvatarUrl(updated.avatar_url),
         wins: updated.wins,
         gamesPlayed: updated.games_played,
       },
