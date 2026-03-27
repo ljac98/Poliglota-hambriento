@@ -1,9 +1,9 @@
-import express from 'express';
+﻿import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { fileURLToPath } from 'url';
 import { dirname, extname, join } from 'path';
-import { existsSync, mkdirSync, unlinkSync } from 'fs';
+import { existsSync, mkdirSync, unlinkSync, writeFileSync } from 'fs';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import multer from 'multer';
@@ -19,28 +19,20 @@ app.use(express.json());
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const distPath = join(__dirname, 'dist');
 const uploadsPath = join(__dirname, 'uploads');
-const avatarUploadPath = join(uploadsPath, 'avatars');
+const avatarUploadPath = join(uploadsPath, 'perfiles');
 
 mkdirSync(avatarUploadPath, { recursive: true });
 
-const avatarStorage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, avatarUploadPath),
-  filename: (req, file, cb) => {
-    const safeExt = extname(file.originalname || '').toLowerCase() || '.jpg';
-    cb(null, `avatar-${req.userId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}${safeExt}`);
-  },
-});
-
 const uploadAvatar = multer({
-  storage: avatarStorage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    if (!file.mimetype?.startsWith('image/')) return cb(new Error('Solo se permiten imágenes'));
+    if (!file.mimetype?.startsWith('image/')) return cb(new Error('Solo se permiten imÃ¡genes'));
     cb(null, true);
   },
 });
 
-// ── Auth helpers ──
+// â”€â”€ Auth helpers â”€â”€
 function signToken(user) {
   return jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: '30d' });
 }
@@ -65,7 +57,27 @@ function deleteStoredAvatar(avatarUrl) {
   } catch {}
 }
 
-// ── REST API ──
+function sanitizeProfileFileBase(username) {
+  return String(username || 'usuario')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '') || 'usuario';
+}
+
+function resolveAvatarExtension(file) {
+  const extFromName = extname(file?.originalname || '').toLowerCase();
+  if (['.jpg', '.jpeg', '.png', '.webp', '.gif'].includes(extFromName)) return extFromName;
+  const mime = (file?.mimetype || '').toLowerCase();
+  if (mime === 'image/png') return '.png';
+  if (mime === 'image/webp') return '.webp';
+  if (mime === 'image/gif') return '.gif';
+  return '.jpg';
+}
+
+// â”€â”€ REST API â”€â”€
 
 const dbAvailable = !!process.env.DATABASE_URL;
 
@@ -78,8 +90,8 @@ app.post('/api/register', requireDB, async (req, res) => {
   try {
     const { username, password, displayName } = req.body;
     if (!username || !password || !displayName) return res.status(400).json({ error: 'Faltan campos' });
-    if (username.length > 20 || displayName.length > 20) return res.status(400).json({ error: 'Máximo 20 caracteres' });
-    if (password.length < 4) return res.status(400).json({ error: 'La contraseña debe tener al menos 4 caracteres' });
+    if (username.length > 20 || displayName.length > 20) return res.status(400).json({ error: 'MÃ¡ximo 20 caracteres' });
+    if (password.length < 4) return res.status(400).json({ error: 'La contraseÃ±a debe tener al menos 4 caracteres' });
 
     const hash = await bcrypt.hash(password, 10);
     const result = await pool.query(
@@ -103,10 +115,10 @@ app.post('/api/login', requireDB, async (req, res) => {
 
     const result = await pool.query('SELECT * FROM users WHERE username = $1', [username.toLowerCase()]);
     const user = result.rows[0];
-    if (!user) return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
+    if (!user) return res.status(401).json({ error: 'Usuario o contraseÃ±a incorrectos' });
 
     const valid = await bcrypt.compare(password, user.password_hash);
-    if (!valid) return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
+    if (!valid) return res.status(401).json({ error: 'Usuario o contraseÃ±a incorrectos' });
 
     const token = signToken(user);
     res.json({ token, user: { id: user.id, username: user.username, displayName: user.display_name, avatarUrl: user.avatar_url, wins: user.wins, gamesPlayed: user.games_played } });
@@ -118,7 +130,7 @@ app.post('/api/login', requireDB, async (req, res) => {
 app.get('/api/profile/:id', requireDB, async (req, res) => {
   try {
     const targetUserId = parseInt(req.params.id, 10);
-    if (!Number.isFinite(targetUserId)) return res.status(400).json({ error: 'Usuario invÃ¡lido' });
+    if (!Number.isFinite(targetUserId)) return res.status(400).json({ error: 'Usuario invÃƒÂ¡lido' });
 
     const viewerUserId = getRequestUserId(req);
     const result = await pool.query(
@@ -231,10 +243,10 @@ app.get('/api/history/:userId', requireDB, async (req, res) => {
   }
 });
 
-// ── Online user tracking (userId → socketId) ──
+// â”€â”€ Online user tracking (userId â†’ socketId) â”€â”€
 const onlineUsers = new Map();
 
-// ── Auth middleware for protected routes ──
+// â”€â”€ Auth middleware for protected routes â”€â”€
 function requireAuth(req, res, next) {
   const payload = verifyToken(req.headers.authorization?.split(' ')[1]);
   if (!payload) return res.status(401).json({ error: 'No autorizado' });
@@ -242,7 +254,7 @@ function requireAuth(req, res, next) {
   next();
 }
 
-// ── Search users by username ──
+// â”€â”€ Search users by username â”€â”€
 app.get('/api/users/search', requireDB, requireAuth, async (req, res) => {
   try {
     const q = (req.query.q || '').toLowerCase().trim();
@@ -258,7 +270,7 @@ app.get('/api/users/search', requireDB, requireAuth, async (req, res) => {
   }
 });
 
-// ── Friends list ──
+// â”€â”€ Friends list â”€â”€
 app.get('/api/friends', requireDB, requireAuth, async (req, res) => {
   try {
     const result = await pool.query(
@@ -278,7 +290,7 @@ app.get('/api/friends', requireDB, requireAuth, async (req, res) => {
   }
 });
 
-// ── Send friend request ──
+// â”€â”€ Send friend request â”€â”€
 app.get('/api/profile/:id/friends', requireDB, async (req, res) => {
   try {
     const targetUserId = parseInt(req.params.id, 10);
@@ -352,7 +364,7 @@ app.post('/api/friends/request', requireDB, requireAuth, async (req, res) => {
             displayName: fromUser.rows[0]?.display_name || 'Jugador',
           });
         }
-        return res.json({ status: 'accepted', message: 'Solicitud aceptada automáticamente' });
+        return res.json({ status: 'accepted', message: 'Solicitud aceptada automÃ¡ticamente' });
       }
       return res.status(400).json({ error: 'Solicitud ya enviada' });
     }
@@ -380,7 +392,7 @@ app.post('/api/friends/request', requireDB, requireAuth, async (req, res) => {
   }
 });
 
-// ── Get pending friend requests ──
+// â”€â”€ Get pending friend requests â”€â”€
 app.get('/api/friends/requests', requireDB, requireAuth, async (req, res) => {
   try {
     const result = await pool.query(
@@ -398,7 +410,7 @@ app.get('/api/friends/requests', requireDB, requireAuth, async (req, res) => {
   }
 });
 
-// ── Accept friend request ──
+// â”€â”€ Accept friend request â”€â”€
 app.post('/api/friends/accept/:requestId', requireDB, requireAuth, async (req, res) => {
   try {
     const result = await pool.query(
@@ -427,7 +439,7 @@ app.post('/api/friends/accept/:requestId', requireDB, requireAuth, async (req, r
   }
 });
 
-// ── Decline friend request ──
+// â”€â”€ Decline friend request â”€â”€
 app.post('/api/friends/decline/:requestId', requireDB, requireAuth, async (req, res) => {
   try {
     await pool.query('DELETE FROM friend_requests WHERE id=$1 AND to_user_id=$2', [req.params.requestId, req.userId]);
@@ -437,7 +449,7 @@ app.post('/api/friends/decline/:requestId', requireDB, requireAuth, async (req, 
   }
 });
 
-// ── Remove friend ──
+// â”€â”€ Remove friend â”€â”€
 app.delete('/api/friends/:friendId', requireDB, requireAuth, async (req, res) => {
   try {
     const friendId = parseInt(req.params.friendId, 10);
@@ -459,11 +471,11 @@ app.delete('/api/friends/:friendId', requireDB, requireAuth, async (req, res) =>
   }
 });
 
-// ── Block user ──
+// â”€â”€ Block user â”€â”€
 app.post('/api/users/block', requireDB, requireAuth, async (req, res) => {
   try {
     const { userId: blockedId } = req.body;
-    if (!blockedId || blockedId === req.userId) return res.status(400).json({ error: 'ID inválido' });
+    if (!blockedId || blockedId === req.userId) return res.status(400).json({ error: 'ID invÃ¡lido' });
     // Remove friendship if exists
     await pool.query(
       'DELETE FROM friendships WHERE (user_id=$1 AND friend_id=$2) OR (user_id=$2 AND friend_id=$1)',
@@ -484,7 +496,7 @@ app.post('/api/users/block', requireDB, requireAuth, async (req, res) => {
   }
 });
 
-// ── Unblock user ──
+// â”€â”€ Unblock user â”€â”€
 app.delete('/api/users/unblock/:userId', requireDB, requireAuth, async (req, res) => {
   try {
     await pool.query('DELETE FROM blocked_users WHERE user_id=$1 AND blocked_id=$2', [req.userId, parseInt(req.params.userId)]);
@@ -494,7 +506,7 @@ app.delete('/api/users/unblock/:userId', requireDB, requireAuth, async (req, res
   }
 });
 
-// ── Get blocked users ──
+// â”€â”€ Get blocked users â”€â”€
 app.get('/api/users/blocked', requireDB, requireAuth, async (req, res) => {
   try {
     const result = await pool.query(
@@ -512,13 +524,23 @@ app.get('/api/users/blocked', requireDB, requireAuth, async (req, res) => {
 app.post('/api/profile/avatar', requireDB, requireAuth, uploadAvatar.single('avatar'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'Falta imagen' });
-    const previous = await pool.query('SELECT avatar_url FROM users WHERE id = $1', [req.userId]);
-    const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+    const previous = await pool.query('SELECT username, avatar_url FROM users WHERE id = $1', [req.userId]);
+    const username = previous.rows[0]?.username;
+    if (!username) return res.status(404).json({ error: 'Usuario no encontrado' });
+    const safeBaseName = sanitizeProfileFileBase(username);
+    const safeExt = resolveAvatarExtension(req.file);
+    const nextFilename = `${safeBaseName}${safeExt}`;
+    const nextLocalPath = join(avatarUploadPath, nextFilename);
+    const avatarUrl = `/uploads/perfiles/${nextFilename}`;
+    writeFileSync(nextLocalPath, req.file.buffer);
+    const previousAvatarUrl = previous.rows[0]?.avatar_url;
+    if (previousAvatarUrl && previousAvatarUrl !== avatarUrl) {
+      deleteStoredAvatar(previousAvatarUrl);
+    }
     const result = await pool.query(
       'UPDATE users SET avatar_url = $1 WHERE id = $2 RETURNING id, username, display_name, avatar_url, wins, games_played',
       [avatarUrl, req.userId]
     );
-    deleteStoredAvatar(previous.rows[0]?.avatar_url);
     const updated = result.rows[0];
     res.json({
       user: {
@@ -531,10 +553,7 @@ app.post('/api/profile/avatar', requireDB, requireAuth, uploadAvatar.single('ava
       },
     });
   } catch (err) {
-    if (req.file?.path) {
-      try { unlinkSync(req.file.path); } catch {}
-    }
-    if (err?.message === 'Solo se permiten imágenes') {
+    if (err?.message === 'Solo se permiten imÃ¡genes') {
       return res.status(400).json({ error: err.message });
     }
     res.status(500).json({ error: 'Error del servidor' });
@@ -567,10 +586,10 @@ app.patch('/api/profile/avatar', requireDB, requireAuth, async (req, res) => {
   }
 });
 
-// ── Health check ──
+// â”€â”€ Health check â”€â”€
 app.get('/api/health', (req, res) => res.json({ status: 'ok', time: Date.now() }));
 
-// ── Socket.io (BEFORE static files to avoid catch-all interference) ──
+// â”€â”€ Socket.io (BEFORE static files to avoid catch-all interference) â”€â”€
 const io = new Server(httpServer, {
   cors: { origin: '*', methods: ['GET', 'POST'] },
   transports: ['polling', 'websocket'],
@@ -579,15 +598,15 @@ const io = new Server(httpServer, {
 });
 
 io.engine.on('connection_error', (err) => {
-  console.error('⚠️ Engine connection error:', err.req?.url, err.code, err.message);
+  console.error('âš ï¸ Engine connection error:', err.req?.url, err.code, err.message);
 });
 
 io.engine.on('connection', (rawSocket) => {
-  console.log('🔧 Engine.IO raw connection:', rawSocket.id);
+  console.log('ðŸ”§ Engine.IO raw connection:', rawSocket.id);
 });
 
 io.use((socket, next) => {
-  console.log('🔑 Socket middleware running for:', socket.id);
+  console.log('ðŸ”‘ Socket middleware running for:', socket.id);
   try {
     const token = socket.handshake.auth?.token;
     if (token) {
@@ -600,12 +619,12 @@ io.use((socket, next) => {
     socket.data.reconnectId = socket.handshake.auth?.reconnectId || null;
     next();
   } catch (err) {
-    console.error('⚠️ Socket middleware error:', err);
+    console.error('âš ï¸ Socket middleware error:', err);
     next(err);
   }
 });
 
-// ── Static files ──
+// â”€â”€ Static files â”€â”€
 app.use('/uploads', express.static(uploadsPath));
 if (existsSync(distPath)) {
   app.use(express.static(distPath));
@@ -621,7 +640,7 @@ const MAX_ROOM_PLAYERS = 6;
 // Track which rooms already saved history (prevent duplicates)
 const savedGames = new Set();
 
-// Grace period timers for disconnected players (reconnectId → timeoutId)
+// Grace period timers for disconnected players (reconnectId â†’ timeoutId)
 const disconnectTimers = new Map();
 const GRACE_PERIOD_MS = 30000;
 
@@ -677,7 +696,7 @@ function getNextRoomAiHat(room) {
   return free || ROOM_AI_HATS[Math.floor(Math.random() * ROOM_AI_HATS.length)];
 }
 
-// ── Helper: get public rooms list for lobby browser ──
+// â”€â”€ Helper: get public rooms list for lobby browser â”€â”€
 function getPublicRoomsList() {
   const list = [];
   for (const [code, room] of rooms) {
@@ -699,7 +718,7 @@ function broadcastLobbyList() {
   io.to('lobby-browser').emit('lobbyListUpdate', getPublicRoomsList());
 }
 
-// ── Notify friends when a user goes online/offline ──
+// â”€â”€ Notify friends when a user goes online/offline â”€â”€
 async function notifyFriendsStatus(userId, isOnline) {
   if (!dbAvailable) return;
   try {
@@ -714,25 +733,25 @@ async function notifyFriendsStatus(userId, isOnline) {
 }
 
 io.on('connection', socket => {
-  console.log(`🔌 Socket connected: ${socket.id} (userId: ${socket.data.userId || 'guest'})`);
+  console.log(`ðŸ”Œ Socket connected: ${socket.id} (userId: ${socket.data.userId || 'guest'})`);
 
-  // ── Track online users & notify friends ──
+  // â”€â”€ Track online users & notify friends â”€â”€
   if (socket.data.userId) {
     onlineUsers.set(socket.data.userId, socket.id);
     notifyFriendsStatus(socket.data.userId, true);
   }
 
   socket.on('disconnect', reason => {
-    console.log(`❌ Socket disconnected: ${socket.id} reason: ${reason}`);
+    console.log(`âŒ Socket disconnected: ${socket.id} reason: ${reason}`);
     if (socket.data.userId && onlineUsers.get(socket.data.userId) === socket.id) {
       onlineUsers.delete(socket.data.userId);
       notifyFriendsStatus(socket.data.userId, false);
     }
   });
 
-  // ── Create room ──
+  // â”€â”€ Create room â”€â”€
   socket.on('createRoom', ({ playerName, isPublic, roomName, avatarUrl }) => {
-    console.log(`📦 createRoom from ${socket.id}: playerName=${playerName}, isPublic=${isPublic}, roomName=${roomName}`);
+    console.log(`ðŸ“¦ createRoom from ${socket.id}: playerName=${playerName}, isPublic=${isPublic}, roomName=${roomName}`);
     const code = genCode();
     rooms.set(code, {
       hostId: socket.id,
@@ -751,12 +770,12 @@ io.on('connection', socket => {
     if (isPublic) broadcastLobbyList();
   });
 
-  // ── Join room ──
+  // â”€â”€ Join room â”€â”€
   socket.on('joinRoom', ({ code, playerName, avatarUrl }) => {
     const room = rooms.get(code);
     if (!room) return socket.emit('joinError', 'Sala no encontrada');
-    if (room.started) return socket.emit('joinError', 'El juego ya comenzó');
-    if (room.players.length >= MAX_ROOM_PLAYERS) return socket.emit('joinError', 'Sala llena (máximo 6 jugadores)');
+    if (room.started) return socket.emit('joinError', 'El juego ya comenzÃ³');
+    if (room.players.length >= MAX_ROOM_PLAYERS) return socket.emit('joinError', 'Sala llena (mÃ¡ximo 6 jugadores)');
     const firstAiIdx = room.players.findIndex(p => p.isAI);
     const idx = firstAiIdx === -1 ? room.players.length : firstAiIdx;
     room.players.splice(idx, 0, { id: socket.id, name: playerName, idx, userId: socket.data.userId || null, username: socket.data.username || null, avatarUrl: avatarUrl || null, reconnectId: socket.data.reconnectId, isAI: false, hat: null });
@@ -802,11 +821,11 @@ io.on('connection', socket => {
     if (room.isPublic) broadcastLobbyList();
   });
 
-  // ── Rejoin room after refresh ──
+  // â”€â”€ Rejoin room after refresh â”€â”€
   socket.on('rejoinRoom', ({ reconnectId, roomCode: code }) => {
     const room = rooms.get(code);
     if (!room) return socket.emit('rejoinError', 'Sala no encontrada');
-    // Find player by reconnectId — may or may not be marked disconnected yet
+    // Find player by reconnectId â€” may or may not be marked disconnected yet
     // (polling transport can delay disconnect detection by several seconds)
     const player = room.players.find(p => p.reconnectId === reconnectId);
     if (!player) return socket.emit('rejoinError', 'No se puede reconectar');
@@ -861,16 +880,16 @@ io.on('connection', socket => {
     });
   });
 
-  // ── List public rooms (lobby browser) ──
+  // â”€â”€ List public rooms (lobby browser) â”€â”€
   socket.on('listRooms', (callback) => {
     if (typeof callback === 'function') callback(getPublicRoomsList());
   });
 
-  // ── Join/leave lobby browser channel ──
+  // â”€â”€ Join/leave lobby browser channel â”€â”€
   socket.on('joinLobbyBrowser', () => socket.join('lobby-browser'));
   socket.on('leaveLobbyBrowser', () => socket.leave('lobby-browser'));
 
-  // ── Room invite: invite a friend to your current room ──
+  // â”€â”€ Room invite: invite a friend to your current room â”€â”€
   socket.on('roomInvite', async ({ friendUserId }) => {
     if (!socket.data.userId || !socket.data.roomCode) return;
     const room = rooms.get(socket.data.roomCode);
@@ -889,7 +908,7 @@ io.on('connection', socket => {
     } catch {}
   });
 
-  // ── Relay hat pick in lobby ──
+  // â”€â”€ Relay hat pick in lobby â”€â”€
   socket.on('lobbyHatPick', ({ code, playerName, hat }) => {
     const room = rooms.get(code);
     if (room) {
@@ -900,7 +919,7 @@ io.on('connection', socket => {
     io.to(code).emit('lobbyHatPick', { playerName, hat });
   });
 
-  // ── Host starts the game ──
+  // â”€â”€ Host starts the game â”€â”€
   socket.on('startGame', ({ code, hatPicks, gameConfig }) => {
     const room = rooms.get(code);
     if (!room || room.hostId !== socket.id) return;
@@ -914,7 +933,7 @@ io.on('connection', socket => {
     if (room.isPublic) broadcastLobbyList();
   });
 
-  // ── Host syncs full game state to all clients ──
+  // â”€â”€ Host syncs full game state to all clients â”€â”€
   socket.on('syncState', ({ code, state }) => {
     const room = rooms.get(code);
     if (!room || room.hostId !== socket.id) return;
@@ -932,7 +951,7 @@ io.on('connection', socket => {
     }
   });
 
-  // ── Non-host sends action → relay to host with player index ──
+  // â”€â”€ Non-host sends action â†’ relay to host with player index â”€â”€
   socket.on('playerAction', ({ code, action }) => {
     const room = rooms.get(code);
     if (!room) return;
@@ -941,19 +960,19 @@ io.on('connection', socket => {
     io.to(room.hostId).emit('remoteAction', { fromId: socket.id, playerIdx: player.idx, action });
   });
 
-  // ── Chat message relay ──
+  // â”€â”€ Chat message relay â”€â”€
   socket.on('chatMessage', ({ code, playerName, text }) => {
     const room = rooms.get(code);
     if (!room) return;
     io.to(code).emit('chatMessage', { playerName, text, timestamp: Date.now() });
   });
 
-  // ── Intentional leave (skip grace period) ──
+  // â”€â”€ Intentional leave (skip grace period) â”€â”€
   socket.on('leaveRoom', () => {
     socket.data.intentionalLeave = true;
   });
 
-  // ── Permanent leave: player chose to leave for good (from leftRoom screen) ──
+  // â”€â”€ Permanent leave: player chose to leave for good (from leftRoom screen) â”€â”€
   socket.on('permanentLeave', ({ code, reconnectId }) => {
     const room = rooms.get(code);
     if (!room) return;
@@ -1001,7 +1020,7 @@ io.on('connection', socket => {
     if (wasPublic) broadcastLobbyList();
   });
 
-  // ── Voluntary leave during game (player wants to leave but may rejoin) ──
+  // â”€â”€ Voluntary leave during game (player wants to leave but may rejoin) â”€â”€
   socket.on('voluntaryLeave', ({ code }) => {
     const room = rooms.get(code);
     if (!room) return;
@@ -1097,7 +1116,7 @@ io.on('connection', socket => {
     socket.leave(code);
     socket.data.roomCode = null;
 
-    // Start grace period (longer for voluntary leave — 120 seconds)
+    // Start grace period (longer for voluntary leave â€” 120 seconds)
     const timer = setTimeout(() => {
       disconnectTimers.delete(timerKey);
       const currentRoom = rooms.get(code);
@@ -1119,7 +1138,7 @@ io.on('connection', socket => {
     disconnectTimers.set(timerKey, timer);
   });
 
-  // ── Disconnect cleanup with grace period for reconnection ──
+  // â”€â”€ Disconnect cleanup with grace period for reconnection â”€â”€
   socket.on('disconnect', () => {
     const code = socket.data?.roomCode;
     if (!code) return;
@@ -1175,7 +1194,7 @@ io.on('connection', socket => {
       return;
     }
 
-    // No reconnectId — remove immediately (legacy behavior)
+    // No reconnectId â€” remove immediately (legacy behavior)
     const pi = room.players.findIndex(p => p.id === socket.id);
     if (pi === -1) return;
     room.players.splice(pi, 1);
@@ -1199,7 +1218,7 @@ io.on('connection', socket => {
   });
 });
 
-// ── Save game history to PostgreSQL ──
+// â”€â”€ Save game history to PostgreSQL â”€â”€
 async function saveGameHistory(code, winner, room, playersData) {
   try {
     const winnerPlayer = room.players.find(p => p.name === winner.name);
@@ -1225,18 +1244,19 @@ async function saveGameHistory(code, winner, room, playersData) {
   }
 }
 
-// ── Start server ──
+// â”€â”€ Start server â”€â”€
 const PORT = process.env.PORT || 3001;
 
 async function start() {
   if (process.env.DATABASE_URL) {
     await initDB();
   } else {
-    console.log('⚠️  DATABASE_URL no configurada — PostgreSQL deshabilitado (modo invitado solamente)');
+    console.log('âš ï¸  DATABASE_URL no configurada â€” PostgreSQL deshabilitado (modo invitado solamente)');
   }
   httpServer.listen(PORT, () => {
-    console.log(`🎮 Servidor HUNGRY POLY en puerto ${PORT}`);
+    console.log(`ðŸŽ® Servidor HUNGRY POLY en puerto ${PORT}`);
   });
 }
 
 start();
+
