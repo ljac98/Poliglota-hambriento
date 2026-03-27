@@ -604,7 +604,10 @@ export default function App() {
   }, [negationFx]);
 
   useEffect(() => {
-    if (!forkFx) return undefined;
+    if (!forkFx) {
+      setForkAnim(null);
+      return undefined;
+    }
     const timer = setTimeout(() => setForkFx(null), 1500);
     return () => clearTimeout(timer);
   }, [forkFx]);
@@ -1063,6 +1066,7 @@ export default function App() {
     return () => {
       clearTimeout(moveTimer);
       clearTimeout(clearTimer);
+      setForkAnim(null);
     };
   }, [forkFx]);
 
