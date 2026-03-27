@@ -617,7 +617,33 @@ export function ProfileScreen({ profileUserId, initialProfilePreview = null, use
       )}
       {showAvatarModal && resolvedAvatarUrl && (
         <Modal title={profile?.displayName || text.title} maxWidth={860} width="min(92vw, 860px)">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, alignItems: 'center' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, alignItems: 'center', position: 'relative' }}>
+            <button
+              type="button"
+              aria-label={T('close')}
+              onClick={() => setShowAvatarModal(false)}
+              style={{
+                position: 'absolute',
+                top: -8,
+                right: -4,
+                width: 36,
+                height: 36,
+                borderRadius: '50%',
+                border: '1px solid rgba(255,255,255,0.14)',
+                background: 'rgba(16,21,34,0.92)',
+                color: '#fff3bf',
+                fontSize: 22,
+                fontWeight: 900,
+                lineHeight: 1,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 10px 24px rgba(0,0,0,0.28)',
+              }}
+            >
+              ×
+            </button>
             <img
               src={resolvedAvatarUrl}
               alt={profile?.displayName || profile?.username || 'avatar'}
@@ -630,11 +656,6 @@ export function ProfileScreen({ profileUserId, initialProfilePreview = null, use
                 border: '1px solid rgba(255,255,255,0.1)',
               }}
             />
-            <div style={{ display: 'flex', justifyContent: 'flex-end', width: '100%' }}>
-              <Btn onClick={() => setShowAvatarModal(false)} color="#2a2a4a" style={{ color: '#fff' }}>
-                {T('close')}
-              </Btn>
-            </div>
           </div>
         </Modal>
       )}
