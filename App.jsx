@@ -374,6 +374,18 @@ export default function App() {
 
     return asResult(T('cantPlayNow'));
   }, [T, uiLang]);
+  const doesHatOpenUsefulIngredient = useCallback((playerLike, hatLang) => {
+    if (!playerLike || !hatLang) return false;
+    const simulatedPlayer = {
+      ...playerLike,
+      mainHats: Array.from(new Set([...(playerLike.mainHats || []), hatLang])),
+    };
+    return (playerLike.hand || []).some((card) => (
+      card?.type === 'ingredient'
+      && card.language === hatLang
+      && canPlayCard(simulatedPlayer, card)
+    ));
+  }, []);
   const mapVisibleTutorialStepToScenarioStep = useCallback((step) => {
     if (step <= 0) return 0;
     if (step === 1) return 2;
@@ -5772,12 +5784,49 @@ export default function App() {
               {tutorialHatHintText}
             </div>
           ) : null}
+          {modal?.warningHatLang ? (
+            <div style={{
+              marginBottom: 12,
+              padding: '10px 12px',
+              borderRadius: 12,
+              border: `1px solid ${LANG_BORDER[modal.warningHatLang]}88`,
+              background: 'rgba(255,107,107,0.12)',
+              color: '#ffd8d8',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 8,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 800, lineHeight: 1.35 }}>
+                <HatSVG lang={modal.warningHatLang} size={28} />
+                <span>No tiene cartas que le sirva para este sombrero</span>
+              </div>
+              <div>
+                <Btn
+                  onClick={() => {
+                    if ((human.mainHats?.length || 0) > 1) {
+                      setModal({ type: 'manual_cambiar_target', hatLang: modal.warningHatLang });
+                    } else {
+                      setModal({ type: 'manual_cambiar_discard', hatLang: modal.warningHatLang, replaceIdx: 0, selected: [] });
+                    }
+                  }}
+                  color="#FF7043"
+                  style={{ fontSize: 12, padding: '8px 12px' }}
+                >
+                  Cambiar de todas formas
+                </Btn>
+              </div>
+            </div>
+          ) : null}
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
             {human.perchero.map(h => (
               <button
                 key={h}
                 type="button"
                 onClick={() => {
+                  if (!doesHatOpenUsefulIngredient(human, h)) {
+                    setModal({ type: 'manual_cambiar', warningHatLang: h });
+                    return;
+                  }
                   if ((human.mainHats?.length || 0) > 1) {
                     setModal({ type: 'manual_cambiar_target', hatLang: h });
                   } else {
@@ -5786,13 +5835,13 @@ export default function App() {
                 }}
                 style={{
                   padding: 10, borderRadius: 10, cursor: 'pointer',
-                  border: `2px solid ${LANG_BORDER[h]}88`,
-                  background: 'rgba(255,255,255,.04)', transition: 'all .15s',
+                  border: `2px solid ${(modal?.warningHatLang === h ? LANG_BORDER[h] : `${LANG_BORDER[h]}88`)}`,
+                  background: modal?.warningHatLang === h ? 'rgba(255,107,107,.12)' : 'rgba(255,255,255,.04)', transition: 'all .15s',
                   display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
                   WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation',
                 }}
-                onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,.1)'}
-                onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,.04)'}
+                onMouseOver={e => e.currentTarget.style.background = modal?.warningHatLang === h ? 'rgba(255,107,107,.18)' : 'rgba(255,255,255,.1)'}
+                onMouseOut={e => e.currentTarget.style.background = modal?.warningHatLang === h ? 'rgba(255,107,107,.12)' : 'rgba(255,255,255,.04)'}
               >
                 <HatSVG lang={h} size={36} />
                 <span style={{ fontSize: 11, fontWeight: 700, color: LANG_TEXT[h] }}>
