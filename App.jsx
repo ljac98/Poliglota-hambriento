@@ -5799,6 +5799,40 @@ export default function App() {
             de: 'Betroffene Zutaten',
             pt: 'Ingredientes afetados',
           })[uiLang] || 'Affected ingredients';
+          const targetSlotStateMobile = (() => {
+            const normal = {};
+            const wildcardChosen = {};
+            let wildcardBare = 0;
+            (human?.table || []).forEach((t) => {
+              if (t === 'perrito') {
+                wildcardBare += 1;
+              } else if (typeof t === 'string' && t.startsWith('perrito|')) {
+                const chosen = t.split('|')[1];
+                wildcardChosen[chosen] = (wildcardChosen[chosen] || 0) + 1;
+              } else {
+                const key = ingKey(t);
+                normal[key] = (normal[key] || 0) + 1;
+              }
+            });
+            return currentTargetBurger.map((ing) => {
+              if ((normal[ing] || 0) > 0) {
+                normal[ing] -= 1;
+                return { filled: true, viaWildcard: false };
+              }
+              if ((wildcardChosen[ing] || 0) > 0) {
+                wildcardChosen[ing] -= 1;
+                return { filled: true, viaWildcard: true };
+              }
+              if (wildcardBare > 0) {
+                wildcardBare -= 1;
+                return { filled: true, viaWildcard: true };
+              }
+              return { filled: false, viaWildcard: false };
+            });
+          })();
+          const selectedIngredientKey = card.type === 'ingredient'
+            ? (card.ingredient === 'perrito' ? null : (ingChosen(card.ingredient) || card.ingredient))
+            : null;
           const actionTypeIcon = (() => {
             if (card.type !== 'action') return null;
             if (['tenedor', 'ladron', 'intercambio_sombreros', 'intercambio_hamburguesa', 'gloton', 'perchero_cubierto'].includes(card.action)) return eqRightSingle;
@@ -5843,13 +5877,64 @@ export default function App() {
                     }}>
                       {T('sharedGoals')}
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'center' }}>
-                      <BurgerTarget
-                        ingredients={currentTargetBurger}
-                        table={human.table}
-                        isCurrent={true}
-                        highlightIngredient={card.ingredient === 'perrito' ? null : ingChosen(card.ingredient) || card.ingredient}
-                      />
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'center',
+                      gap: 6,
+                      flexWrap: 'wrap',
+                    }}>
+                      {currentTargetBurger.map((ing, idx) => {
+                        const slot = targetSlotStateMobile[idx] || { filled: false, viaWildcard: false };
+                        const shouldHighlight = !slot.filled && (
+                          card.ingredient === 'perrito'
+                            ? true
+                            : selectedIngredientKey === ing
+                        );
+                        return (
+                          <div
+                            key={`mobile-target-${idx}-${ing}`}
+                            style={{
+                              width: 40,
+                              height: 40,
+                              borderRadius: 8,
+                              background: slot.filled ? `${ING_BG[ing]}22` : 'rgba(255,255,255,0.06)',
+                              border: shouldHighlight
+                                ? '2px solid #FFD700'
+                                : slot.filled
+                                  ? `1px solid ${ING_BG[ing]}66`
+                                  : `2px dashed ${ING_BG[ing]}44`,
+                              opacity: slot.filled ? 1 : 0.55,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              position: 'relative',
+                              boxShadow: shouldHighlight ? '0 0 0 3px rgba(255,215,0,0.14), 0 0 14px rgba(255,215,0,0.28)' : 'none',
+                              transform: shouldHighlight ? 'translateY(-1px) scale(1.04)' : 'none',
+                              transition: 'all 0.2s',
+                            }}
+                          >
+                            {ING_IMG[ing]
+                              ? <img src={ING_IMG[ing]} alt={ing} style={{ width: 32, height: 32, objectFit: 'contain' }} />
+                              : <span style={{ fontSize: 22 }}>{ING_EMOJI[ing]}</span>}
+                            {slot.viaWildcard && (
+                              <div style={{
+                                position: 'absolute',
+                                left: -3,
+                                bottom: -4,
+                                background: 'rgba(10,16,30,0.9)',
+                                color: '#fff',
+                                border: '1px solid rgba(255,255,255,0.35)',
+                                borderRadius: 8,
+                                padding: '0 3px',
+                                lineHeight: '12px',
+                                fontSize: 9,
+                              }}>
+                                {ING_EMOJI.perrito}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
