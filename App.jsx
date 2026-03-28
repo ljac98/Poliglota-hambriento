@@ -5774,21 +5774,36 @@ export default function App() {
       )}
 
       {/* Mobile: Card detail modal */}
-      {isMobile && isHumanTurn && selectedIdx !== null && human.hand[selectedIdx] && (() => {
-        const card = human.hand[selectedIdx];
-        const actionHasObjectivesMobile = card.type === 'action'
-          ? hasActionObjectives(card.action, players, HI, discard)
-          : true;
-        const playable = card.type === 'ingredient'
-          ? canPlayCard(human, card)
+        {isMobile && isHumanTurn && selectedIdx !== null && human.hand[selectedIdx] && (() => {
+          const card = human.hand[selectedIdx];
+          const currentTargetBurger = human?.burgers?.[human?.currentBurger] || [];
+          const actionHasObjectivesMobile = card.type === 'action'
+            ? hasActionObjectives(card.action, players, HI, discard)
+            : true;
+          const playable = card.type === 'ingredient'
+            ? canPlayCard(human, card)
           : (extraPlay ? false : (isClosetActionBlocked(human, card.action) ? false : (actionHasObjectivesMobile ? null : false)));
         const noObjectivesMobile = card.type === 'action' && !extraPlay && !isClosetActionBlocked(human, card.action) && !actionHasObjectivesMobile;
-        const cleanTitle = (txt) => String(txt).replace('?? ', '').replace('??', '').replace('? ', '').replace('?', '');
-        const actionTypeIcon = (() => {
-          if (card.type !== 'action') return null;
-          if (['tenedor', 'ladron', 'intercambio_sombreros', 'intercambio_hamburguesa', 'gloton', 'perchero_cubierto'].includes(card.action)) return eqRightSingle;
-          if (['milanesa', 'ensalada', 'pizza', 'parrilla', 'comecomodines'].includes(card.action)) return eqRightGlobal;
-          if (card.action === 'basurero') return eqRightDiscard;
+          const cleanTitle = (txt) => String(txt).replace('?? ', '').replace('??', '').replace('? ', '').replace('?', '');
+          const actionAffectedIngredients = card.type === 'action'
+            ? Object.keys(ING_AFFECTED_BY).filter(ing => ING_AFFECTED_BY[ing].includes(card.action))
+            : [];
+          const actionPlayableIngredients = actionAffectedIngredients.filter(ing =>
+            players.some((p, idx) => idx !== HI && (p.table || []).some(tableIng => ingKey(tableIng) === ing || ingChosen(tableIng) === ing))
+          );
+          const actionIngredientSectionTitle = ({
+            es: 'Ingredientes afectados',
+            en: 'Affected ingredients',
+            fr: 'Ingrédients affectés',
+            it: 'Ingredienti colpiti',
+            de: 'Betroffene Zutaten',
+            pt: 'Ingredientes afetados',
+          })[uiLang] || 'Affected ingredients';
+          const actionTypeIcon = (() => {
+            if (card.type !== 'action') return null;
+            if (['tenedor', 'ladron', 'intercambio_sombreros', 'intercambio_hamburguesa', 'gloton', 'perchero_cubierto'].includes(card.action)) return eqRightSingle;
+            if (['milanesa', 'ensalada', 'pizza', 'parrilla', 'comecomodines'].includes(card.action)) return eqRightGlobal;
+            if (card.action === 'basurero') return eqRightDiscard;
           if (card.action === 'negacion') return eqRightNegation;
           return eqRightSingle;
         })();
@@ -5805,15 +5820,95 @@ export default function App() {
               <span>{cleanTitle(T('actionCard'))}</span>
             </span>
           );
-        return (
-          <Modal title={mobileTitle}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-              <GameCard card={card} selected playable={playable} large noObjectives={noObjectivesMobile} />
-              <div style={{
-                fontSize: 14, textAlign: 'center', padding: '8px 14px', borderRadius: 8,
-                background: 'rgba(0,0,0,0.5)', color: '#ddd',
-                display: 'flex', flexDirection: 'column', gap: 4, width: '100%',
-              }}>
+          return (
+            <Modal title={mobileTitle}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+                <GameCard card={card} selected playable={playable} large noObjectives={noObjectivesMobile} />
+                {card.type === 'ingredient' && currentTargetBurger.length > 0 && (
+                  <div style={{
+                    width: '100%',
+                    padding: '8px 10px',
+                    borderRadius: 12,
+                    background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                  }}>
+                    <div style={{
+                      fontSize: 11,
+                      fontWeight: 900,
+                      letterSpacing: 0.4,
+                      color: '#FFD700',
+                      marginBottom: 8,
+                      textTransform: 'uppercase',
+                      textAlign: 'center',
+                    }}>
+                      {T('sharedGoals')}
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'center' }}>
+                      <BurgerTarget
+                        ingredients={currentTargetBurger}
+                        table={human.table}
+                        isCurrent={true}
+                        highlightIngredient={card.ingredient === 'perrito' ? null : ingChosen(card.ingredient) || card.ingredient}
+                      />
+                    </div>
+                  </div>
+                )}
+                {card.type === 'action' && !noObjectivesMobile && actionPlayableIngredients.length > 0 && (
+                  <div style={{
+                    width: '100%',
+                    padding: '8px 10px',
+                    borderRadius: 12,
+                    background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                  }}>
+                    <div style={{
+                      fontSize: 11,
+                      fontWeight: 900,
+                      letterSpacing: 0.4,
+                      color: '#FFD700',
+                      marginBottom: 8,
+                      textTransform: 'uppercase',
+                      textAlign: 'center',
+                    }}>
+                      {actionIngredientSectionTitle}
+                    </div>
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'center',
+                      gap: 8,
+                      flexWrap: 'wrap',
+                    }}>
+                      {actionPlayableIngredients.map(ing => (
+                        <div
+                          key={`${card.id}-${ing}`}
+                          style={{
+                            minWidth: 56,
+                            padding: '6px 8px',
+                            borderRadius: 10,
+                            background: `${ING_BG[ing]}22`,
+                            border: `1px solid ${ING_BG[ing]}66`,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: 4,
+                          }}
+                        >
+                          {ING_IMG[ing]
+                            ? <img src={ING_IMG[ing]} alt={ing} style={{ width: 28, height: 28, objectFit: 'contain' }} />
+                            : <span style={{ fontSize: 24 }}>{ING_EMOJI[ing]}</span>}
+                          <span style={{ fontSize: 10, fontWeight: 800, color: '#fff' }}>
+                            {getIngName(ing, uiGameLang)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div style={{
+                  fontSize: 14, textAlign: 'center', padding: '8px 14px', borderRadius: 8,
+                  background: 'rgba(0,0,0,0.5)', color: '#ddd',
+                  display: 'flex', flexDirection: 'column', gap: 4, width: '100%',
+                }}>
                 {card.type === 'ingredient' ? (<>
                   <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 2 }}>
                     {ING_IMG[card.ingredient]
