@@ -173,6 +173,12 @@ export default function App() {
   const [showNotificationsPanel, setShowNotificationsPanel] = useState(false);
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   const [profileUserId, setProfileUserId] = useState(Number.isFinite(initialProfileId) ? initialProfileId : (savedUserOnLoad?.id || null));
+  const [profilePreview, setProfilePreview] = useState(savedUserOnLoad ? {
+    id: savedUserOnLoad.id,
+    username: savedUserOnLoad.username || null,
+    displayName: savedUserOnLoad.displayName || savedUserOnLoad.username || '',
+    avatarUrl: savedUserOnLoad.avatarUrl || null,
+  } : null);
   const [profileReturnPhase, setProfileReturnPhase] = useState('setup');
   const [profileBackStack, setProfileBackStack] = useState([]);
   const [historyInitialFilter, setHistoryInitialFilter] = useState('all');
@@ -1793,9 +1799,20 @@ export default function App() {
     });
   }
 
-  function openProfile(targetUserId, returnPhase = phase) {
+  function openProfile(targetUser, returnPhase = phase) {
+    const targetUserId = typeof targetUser === 'object' && targetUser !== null ? targetUser.id : targetUser;
     if (!targetUserId) return;
     const normalizedReturnPhase = returnPhase || (user ? 'setup' : 'auth');
+    if (typeof targetUser === 'object' && targetUser !== null) {
+      setProfilePreview({
+        id: targetUserId,
+        username: targetUser.username || null,
+        displayName: targetUser.displayName || targetUser.name || targetUser.username || '',
+        avatarUrl: targetUser.avatarUrl || null,
+      });
+    } else {
+      setProfilePreview(null);
+    }
     if (phase === 'profile' && profileUserId && profileUserId !== targetUserId) {
       setProfileBackStack((prev) => [...prev, profileUserId]);
     } else if (normalizedReturnPhase !== 'profile') {
@@ -1814,11 +1831,13 @@ export default function App() {
     if (profileBackStack.length > 0) {
       const prevProfileId = profileBackStack[profileBackStack.length - 1];
       setProfileBackStack((prev) => prev.slice(0, -1));
+      setProfilePreview(null);
       setProfileUserId(prevProfileId);
       setShowQuickMenu(false);
       setPhase('profile');
       return;
     }
+    setProfilePreview(null);
     setShowQuickMenu(false);
     setPhase(profileReturnPhase || (user ? 'setup' : 'auth'));
   }
@@ -4296,6 +4315,7 @@ export default function App() {
           downloadReturnPhase={downloadReturnPhase}
           setDownloadReturnPhase={setDownloadReturnPhase}
           profileUserId={profileUserId}
+          profilePreview={profilePreview}
           profileReturnPhase={profileReturnPhase}
           historyInitialFilter={historyInitialFilter}
           historyReturnPhase={historyReturnPhase}

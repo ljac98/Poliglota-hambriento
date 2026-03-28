@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import { LANGUAGES, LANG_BORDER, LANG_BG, LANG_TEXT, INGREDIENTS, ING_BG, getIngName } from '../../constants/index.js';
 import { randInt, uid } from '../../game/utils.js';
 import { Btn } from '../components/Btn.jsx';
 import { Modal } from '../components/Modal.jsx';
 import { InstallFloatingCard } from '../components/InstallFloatingCard.jsx';
+import { VsAiModePickerModal } from '../components/VsAiModePickerModal.jsx';
 import { getUILang, KEY_TO_LANG } from '../../src/translations.js';
 import { ING_IMG } from '../utils/gameHelpers.js';
 import { genBurger } from '../../game/deck.js';
@@ -11,10 +12,10 @@ import { HatBadge, PercheroSVG } from '../../components/HatComponents.jsx';
 import HatSVG from '../../components/HatSVG.jsx';
 import hamImg from '../../imagenes/hamburguesas/ham.png';
 import onlineImg from '../../imagenes/online.png';
+import vsiaImg from '../../imagenes/vsia.png';
 import modoclon from '../../imagenes/modos/clones.png';
 import modoescalera from '../../imagenes/modos/escalera.png';
 import modocaotico from '../../imagenes/modos/caotico.png';
-import vsiaImg from '../../imagenes/vsia.png';
 import actionEnsaladaImg from '../../imagenes/acciones/ensalada3.png';
 import actionPizzaImg from '../../imagenes/acciones/pizza.png';
 import actionParrillaImg from '../../imagenes/acciones/parrilla2.png';
@@ -32,15 +33,6 @@ import burgerPalta from '../../imagenes/hamburguesas/ingredientes/palta.png';
 
 export function SetupScreen({ onStart, onStartTutorial, onOnline, onDownload, user, onLogout, onHistory, onFriends, T, installEntryVisible, installEntryTitle, installEntryDesc, installEntryButton, onOpenInstallPrompt }) {
   const uiGameLang = KEY_TO_LANG[getUILang()] || 'espanol';
-  const normalModeHint =
-    ({
-      es: 'Escoge el modo',
-      en: 'Choose the mode',
-      fr: 'Choisis le mode',
-      it: 'Scegli la modalita',
-      de: 'Wahle den Modus',
-      pt: 'Escolha o modo',
-    })[getUILang()] || 'Escoge el modo';
   const cloneIngredients = INGREDIENTS.filter((ing) => ing !== 'pan');
   const [name, setName] = useState(user?.displayName || '');
   const [hat, setHat] = useState(null);
@@ -417,7 +409,7 @@ export function SetupScreen({ onStart, onStartTutorial, onOnline, onDownload, us
           {user && (
             <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, flexWrap: 'wrap' }}>
               <span style={{ color: '#4ecdc4', fontSize: 13, fontWeight: 700 }}>
-                {user.displayName} — {user.wins}W / {user.gamesPlayed}G
+                {user.displayName} - {user.wins}W / {user.gamesPlayed}G
               </span>
               <button onClick={onHistory} style={{
                 background: 'none', border: '1px solid #4ecdc4', borderRadius: 8,
@@ -438,7 +430,7 @@ export function SetupScreen({ onStart, onStartTutorial, onOnline, onDownload, us
           )}
         </div>
 
-        {/* Name – only show input if not logged in */}
+        {/* Name - only show input if not logged in */}
         {!user && (
           <div style={{ marginBottom: 20 }}>
             <label style={{ color: '#aaa', fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 6 }}>{T('yourName')}</label>
@@ -654,8 +646,8 @@ export function SetupScreen({ onStart, onStartTutorial, onOnline, onDownload, us
                 style={{ width: '100%', accentColor: '#FF7043' }}
               />
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 6 }}>
-                <span style={markerStyle}>Menos caótico</span>
-                <span style={markerStyle}>Más caótico</span>
+                <span style={markerStyle}>Menos caotico</span>
+                <span style={markerStyle}>Mas caotico</span>
               </div>
             </div>
           )}
@@ -828,77 +820,20 @@ export function SetupScreen({ onStart, onStartTutorial, onOnline, onDownload, us
           <Btn onClick={() => setShowModeConfig(false)} color="#333" style={{ color: '#aaa' }}>{T('close')}</Btn>
         </Modal>
       )}
-      {showVsAiModal && (
-        <Modal title={T('vsAIModePickerTitle')}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <div style={{ color: '#d8ddf3', fontSize: 14, lineHeight: 1.45 }}>
-              {T('vsAIModePickerDesc')}
-            </div>
-            <div style={{ display: 'grid', gap: 12 }}>
-              <button
-                type="button"
-                onClick={startNormalVsAi}
-                disabled={normalStartDisabled}
-                style={{
-                  width: '100%',
-                  borderRadius: 16,
-                  padding: '14px 16px',
-                  border: normalStartDisabled ? '1px solid rgba(255,255,255,0.08)' : '2px solid rgba(255,215,0,0.35)',
-                  background: normalStartDisabled ? 'rgba(255,255,255,0.04)' : 'linear-gradient(180deg, rgba(255,215,0,0.14), rgba(255,255,255,0.04))',
-                  color: normalStartDisabled ? '#7f859f' : '#fff4b3',
-                  textAlign: 'left',
-                  cursor: normalStartDisabled ? 'not-allowed' : 'pointer',
-                  fontFamily: "'Fredoka',sans-serif",
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
-                }}
-              >
-                <img src={vsiaImg} alt={T('normalMatch')} style={{ width: 38, height: 38, objectFit: 'contain', opacity: normalStartDisabled ? 0.55 : 1 }} />
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <span style={{ fontSize: 16, fontWeight: 900 }}>{T('normalMatch')}</span>
-                  <span style={{ fontSize: 12, color: normalStartDisabled ? '#7f859f' : '#c8cde4' }}>
-                    {normalStartDisabled ? normalModeHint : T('vsAIModePickerNormalDesc')}
-                  </span>
-                </div>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowVsAiModal(false);
-                  if (onStartTutorial) onStartTutorial();
-                }}
-                style={{
-                  width: '100%',
-                  borderRadius: 16,
-                  padding: '14px 16px',
-                  border: '2px solid rgba(78,205,196,0.3)',
-                  background: 'linear-gradient(180deg, rgba(78,205,196,0.16), rgba(255,255,255,0.04))',
-                  color: '#d7fffb',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  fontFamily: "'Fredoka',sans-serif",
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
-                }}
-              >
-                <img src={vsiaImg} alt={T('tutorialMatch')} style={{ width: 38, height: 38, objectFit: 'contain' }} />
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <span style={{ fontSize: 16, fontWeight: 900 }}>{T('tutorialMatch')}</span>
-                  <span style={{ fontSize: 12, color: '#b9dad8' }}>{T('vsAIModePickerTutorialDesc')}</span>
-                </div>
-              </button>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <Btn onClick={() => setShowVsAiModal(false)} color="#2a2a4a" style={{ color: '#fff' }}>
-                {T('close')}
-              </Btn>
-            </div>
-          </div>
-        </Modal>
-      )}
+      <VsAiModePickerModal
+        open={showVsAiModal}
+        hasHat={!!hat}
+        normalStartDisabled={normalStartDisabled}
+        onClose={() => setShowVsAiModal(false)}
+        onStartNormal={startNormalVsAi}
+        onStartTutorial={() => {
+          setShowVsAiModal(false);
+          if (onStartTutorial) onStartTutorial();
+        }}
+        T={T}
+      />
     </div>
   );
 }
+
 

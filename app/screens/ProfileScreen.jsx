@@ -3,7 +3,7 @@ import { getProfile, getHistory, getProfileFriends, removeFriend, saveUserLocall
 import { getUILang } from '../../src/translations.js';
 import { Btn } from '../components/Btn.jsx';
 import { Modal } from '../components/Modal.jsx';
-import { UserAvatar } from '../components/UserAvatar.jsx';
+import { UserAvatar, resolveAvatarUrl } from '../components/UserAvatar.jsx';
 
 const COPY = {
   es: {
@@ -35,6 +35,7 @@ const COPY = {
     removingFriend: 'Quitando amistad...',
     removeFriendConfirm: '¿Seguro que quieres dejar de ser amigos?',
     removedFriend: 'Ya no son amigos',
+    viewPhoto: 'Ver foto',
   },
   en: {
     title: 'Profile',
@@ -65,6 +66,7 @@ const COPY = {
     removingFriend: 'Removing friend...',
     removeFriendConfirm: 'Are you sure you want to remove this friend?',
     removedFriend: 'You are no longer friends',
+    viewPhoto: 'View photo',
   },
 };
 
@@ -98,10 +100,12 @@ function formatDate(dateValue) {
   }
 }
 
-export function ProfileScreen({ profileUserId, user, onUserUpdate, onOpenProfile, onBack, onOpenFriends, onOpenHistory, T }) {
+export function ProfileScreen({ profileUserId, initialProfilePreview = null, user, onUserUpdate, onOpenProfile, onBack, onOpenFriends, onOpenHistory, T }) {
   const uiKey = getUILang();
   const text = getCopy();
-  const [profile, setProfile] = useState(null);
+  const [profile, setProfile] = useState(() => (
+    initialProfilePreview && initialProfilePreview.id === profileUserId ? initialProfilePreview : null
+  ));
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -111,6 +115,7 @@ export function ProfileScreen({ profileUserId, user, onUserUpdate, onOpenProfile
   const [friendsLoading, setFriendsLoading] = useState(false);
   const [profileFriends, setProfileFriends] = useState([]);
   const [statusMessage, setStatusMessage] = useState('');
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
   const fileInputRef = useRef(null);
 
   async function loadProfileData(targetUserId, { keepStatus = false } = {}) {
@@ -129,13 +134,25 @@ export function ProfileScreen({ profileUserId, user, onUserUpdate, onOpenProfile
 
   useEffect(() => {
     let cancelled = false;
+    if (initialProfilePreview && initialProfilePreview.id === profileUserId) {
+      setProfile((prev) => ({ ...(prev || {}), ...initialProfilePreview }));
+    } else {
+      setProfile(null);
+    }
     (async () => {
       setLoading(true);
       setStatusMessage('');
       try {
         const [profileData, historyData] = await Promise.all([getProfile(profileUserId), getHistory(profileUserId)]);
         if (cancelled) return;
-        setProfile(profileData);
+        setProfile((prev) => {
+          if (!prev) return profileData;
+          return {
+            ...prev,
+            ...profileData,
+            avatarUrl: profileData?.avatarUrl ?? prev.avatarUrl ?? null,
+          };
+        });
         setHistory(Array.isArray(historyData) ? historyData : []);
       } catch (err) {
         if (cancelled) return;
@@ -147,7 +164,7 @@ export function ProfileScreen({ profileUserId, user, onUserUpdate, onOpenProfile
     return () => {
       cancelled = true;
     };
-  }, [profileUserId]);
+  }, [initialProfilePreview, profileUserId]);
 
   const historyItems = useMemo(() => history.slice(0, 10), [history]);
 
@@ -155,6 +172,7 @@ export function ProfileScreen({ profileUserId, user, onUserUpdate, onOpenProfile
   const effectiveAvatarUrl = isOwnProfile
     ? (profile?.avatarUrl ?? user?.avatarUrl ?? null)
     : (profile?.avatarUrl ?? null);
+  const resolvedAvatarUrl = useMemo(() => resolveAvatarUrl(effectiveAvatarUrl), [effectiveAvatarUrl]);
 
   function resizeImageToBlob(file) {
     return new Promise((resolve, reject) => {
@@ -370,7 +388,21 @@ export function ProfileScreen({ profileUserId, user, onUserUpdate, onOpenProfile
                 padding: 20,
               }}>
                 <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 18 }}>
-                  <UserAvatar name={profile.displayName} username={profile.username} avatarUrl={effectiveAvatarUrl} size={86} />
+                  <button
+                    type="button"
+                    onClick={() => effectiveAvatarUrl && setShowAvatarModal(true)}
+                    disabled={!effectiveAvatarUrl}
+                    aria-label={text.viewPhoto}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      padding: 0,
+                      margin: 0,
+                      cursor: effectiveAvatarUrl ? 'zoom-in' : 'default',
+                    }}
+                  >
+                    <UserAvatar name={profile.displayName} username={profile.username} avatarUrl={effectiveAvatarUrl} size={86} />
+                  </button>
                   <div>
                     <div style={{ color: '#fff3bf', fontSize: 26, fontWeight: 900, lineHeight: 1 }}>{profile.displayName}</div>
                     <div style={{ color: '#9aa0ba', fontSize: 15, fontWeight: 700, marginTop: 4 }}>@{profile.username}</div>
@@ -546,7 +578,12 @@ export function ProfileScreen({ profileUserId, user, onUserUpdate, onOpenProfile
                 type="button"
                 onClick={() => {
                   setShowFriendsModal(false);
-                  onOpenProfile?.(friend.id);
+                  onOpenProfile?.({
+                    id: friend.id,
+                    username: friend.username,
+                    displayName: friend.displayName,
+                    avatarUrl: friend.avatarUrl || null,
+                  });
                 }}
                 style={{
                   display: 'flex',
@@ -575,6 +612,50 @@ export function ProfileScreen({ profileUserId, user, onUserUpdate, onOpenProfile
                 {T('close')}
               </Btn>
             </div>
+          </div>
+        </Modal>
+      )}
+      {showAvatarModal && resolvedAvatarUrl && (
+        <Modal title={profile?.displayName || text.title} maxWidth={860} width="min(92vw, 860px)">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, alignItems: 'center', position: 'relative' }}>
+            <button
+              type="button"
+              aria-label={T('close')}
+              onClick={() => setShowAvatarModal(false)}
+              style={{
+                position: 'absolute',
+                top: -8,
+                right: -4,
+                width: 36,
+                height: 36,
+                borderRadius: '50%',
+                border: '1px solid rgba(255,255,255,0.14)',
+                background: 'rgba(16,21,34,0.92)',
+                color: '#fff3bf',
+                fontSize: 22,
+                fontWeight: 900,
+                lineHeight: 1,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 10px 24px rgba(0,0,0,0.28)',
+              }}
+            >
+              ×
+            </button>
+            <img
+              src={resolvedAvatarUrl}
+              alt={profile?.displayName || profile?.username || 'avatar'}
+              style={{
+                width: '100%',
+                maxHeight: '70vh',
+                objectFit: 'contain',
+                borderRadius: 18,
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.1)',
+              }}
+            />
           </div>
         </Modal>
       )}
