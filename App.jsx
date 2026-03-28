@@ -5904,37 +5904,58 @@ export default function App() {
                     </div>
                   </div>
                 )}
-                <div style={{
-                  fontSize: 14, textAlign: 'center', padding: '8px 14px', borderRadius: 8,
-                  background: 'rgba(0,0,0,0.5)', color: '#ddd',
-                  display: 'flex', flexDirection: 'column', gap: 4, width: '100%',
-                }}>
-                {card.type === 'ingredient' ? (<>
-                  <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 2 }}>
-                    {ING_IMG[card.ingredient]
-                      ? <img src={ING_IMG[card.ingredient]} alt={card.ingredient} style={{ width: 32, height: 32, objectFit: 'contain' }} />
-                      : <span style={{ fontSize: 26 }}>{ING_EMOJI[card.ingredient]}</span>}
+                {card.type === 'ingredient' && !canPlayCard(human, card) && (
+                  <div style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: 10,
+                    background: 'rgba(0,0,0,0.45)',
+                    color: '#FF7043',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 6,
+                    flexWrap: 'wrap',
+                    fontSize: 13,
+                    textAlign: 'center',
+                  }}>
+                    {(() => {
+                      const reason = getIngredientCantPlayReason(human, card);
+                      return (
+                        <>
+                          {reason.hatLang && <HatSVG lang={reason.hatLang} size={20} />}
+                          <span>{reason.text}</span>
+                        </>
+                      );
+                    })()}
                   </div>
-                  <span style={{ fontWeight: 700, fontSize: 16 }}>{getIngName(card.ingredient, card.language)}</span>
-                  {card.ingredient === 'perrito' && (
-                    <span style={{ fontSize: 13, color: '#ccc' }}>{T('wildcardChoose')}</span>
-                  )}
-                  {canPlayCard(human, card)
-                    ? <span style={{ color: '#4CAF50', fontSize: 13 }}>{T('canPlay')}</span>
-                    : (() => {
-                        const reason = getIngredientCantPlayReason(human, card);
-                        return (
-                          <span style={{ color: '#FF7043', fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 6, justifyContent: 'center', flexWrap: 'wrap' }}>
-                            {reason.hatLang && <HatSVG lang={reason.hatLang} size={20} />}
-                            <span>{reason.text}</span>
-                          </span>
-                        );
-                      })()}
-                </>) : (<>
-                  <span style={{ fontWeight: 700, fontSize: 16, color: '#FFD700' }}>{getActionText(card.action)?.name}</span>
-                  <span style={{ fontSize: 13, color: noObjectivesMobile ? '#FF7043' : '#ccc' }}>{noObjectivesMobile ? T('actionNoObjectives') : getActionText(card.action)?.desc}</span>
-                </>)}
-              </div>
+                )}
+                {card.type === 'ingredient' && card.ingredient === 'perrito' && (
+                  <div style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: 10,
+                    background: 'rgba(0,0,0,0.45)',
+                    color: '#ddd',
+                    fontSize: 13,
+                    textAlign: 'center',
+                  }}>
+                    {T('wildcardChoose')}
+                  </div>
+                )}
+                {card.type === 'action' && noObjectivesMobile && (
+                  <div style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: 10,
+                    background: 'rgba(0,0,0,0.45)',
+                    color: '#FF7043',
+                    fontSize: 13,
+                    textAlign: 'center',
+                  }}>
+                    {T('actionNoObjectives')}
+                  </div>
+                )}
               <div style={{ display: 'flex', gap: 8, width: '100%' }}>
                 <Btn onClick={() => { humanPlay(); }} disabled={!tutorialAllowsPlayButton || (extraPlay && card.type !== 'ingredient') || (card.type === 'action' && isClosetActionBlocked(human, card.action)) || noObjectivesMobile} color="#4CAF50" style={{ flex: 1, fontSize: 14, padding: '10px 16px' }}>
                   {T('play')}
