@@ -4731,7 +4731,27 @@ export default function App() {
       }}>
         <div style={{ fontSize: 9, color: '#555', fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>{T('closet')}</div>
         <div style={{ position: 'relative', width: 130, height: 165 }}>
-          <img src={human.closetCovered ? actionPercheroCubierto : percheroImg} alt="Perchero" style={{ width: '100%', height: '100%', objectFit: 'contain', opacity: human.closetCovered ? 0.92 : 1 }} />
+          <img
+            src={percheroImg}
+            alt="Perchero"
+            style={{ width: '100%', height: '100%', objectFit: 'contain', opacity: human.closetCovered ? 0.32 : 1 }}
+          />
+          {human.closetCovered && (
+            <img
+              src={actionPercheroCubierto}
+              alt={T('closetCoveredStatus') || 'Perchero cubierto'}
+              style={{
+                position: 'absolute',
+                inset: 0,
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain',
+                objectPosition: 'center 54%',
+                opacity: 0.98,
+                pointerEvents: 'none',
+              }}
+            />
+          )}
           {!human.closetCovered && human.perchero.map((h, i) => {
             if (i >= branchPositions.length) return null;
             const pos = branchPositions[i];
