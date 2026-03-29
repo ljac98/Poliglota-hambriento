@@ -1710,8 +1710,10 @@ export default function App() {
       if (tutorialCarryOver.perchero) p.perchero = [...tutorialCarryOver.perchero];
       if (tutorialCarryOver.maxHand != null) p.maxHand = tutorialCarryOver.maxHand;
       if (tutorialCarryOver.table) p.table = [...tutorialCarryOver.table];
+      if (tutorialCarryOver.hand) p.hand = tutorialCarryOver.hand.map((card) => ({ ...card }));
       if (step === 4 && tutorialCarryOver.table?.includes('queso')) {
-        scenario.selectedIdx = 2;
+        const nextIngredientIdx = p.hand.findIndex((card) => card?.type === 'ingredient');
+        scenario.selectedIdx = nextIngredientIdx >= 0 ? nextIngredientIdx : null;
       }
     }
     if (tutorialCarryOver?.basureroCard && step >= 9) {
@@ -3660,6 +3662,7 @@ export default function App() {
         ...prev,
         mainHats: [...p.mainHats],
         perchero: [...p.perchero],
+        hand: p.hand.map((nextCard) => ({ ...nextCard })),
       }));
     }
     if (advanceTutorialAfter('changeHat')) return;
@@ -3694,6 +3697,7 @@ export default function App() {
         mainHats: [...p.mainHats],
         perchero: [...p.perchero],
         maxHand: p.maxHand,
+        hand: p.hand.map((nextCard) => ({ ...nextCard })),
       }));
     }
     if (advanceTutorialAfter('addHat')) return;

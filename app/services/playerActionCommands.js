@@ -66,6 +66,7 @@ export function createPlayerActionCommands({
           setTutorialCarryOver((prev) => ({
             ...prev,
             table: [...nextPlayers[hi].table],
+            hand: nextPlayers[hi].hand.map((nextCard) => ({ ...nextCard })),
           }));
         }
         setPlayers(nextPlayers);
