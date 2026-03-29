@@ -2846,6 +2846,43 @@ export default function App() {
     return remaining;
   }
 
+  function getCurrentBurgerSlotState(playerLike) {
+    if (!playerLike || playerLike.currentBurger >= playerLike.totalBurgers) return { burger: [], slots: [] };
+    const burger = playerLike.burgers?.[playerLike.currentBurger] || [];
+    const normal = {};
+    const wildcardChosen = {};
+    let wildcardBare = 0;
+
+    (playerLike.table || []).forEach((item) => {
+      if (item === 'perrito') {
+        wildcardBare += 1;
+      } else if (String(item).startsWith('perrito|')) {
+        const chosen = String(item).split('|')[1];
+        wildcardChosen[chosen] = (wildcardChosen[chosen] || 0) + 1;
+      } else {
+        normal[item] = (normal[item] || 0) + 1;
+      }
+    });
+
+    const slots = burger.map((ing) => {
+      if ((normal[ing] || 0) > 0) {
+        normal[ing] -= 1;
+        return { filled: true, viaWildcard: false };
+      }
+      if ((wildcardChosen[ing] || 0) > 0) {
+        wildcardChosen[ing] -= 1;
+        return { filled: true, viaWildcard: true };
+      }
+      if (wildcardBare > 0) {
+        wildcardBare -= 1;
+        return { filled: true, viaWildcard: true };
+      }
+      return { filled: false, viaWildcard: false };
+    });
+
+    return { burger, slots };
+  }
+
   function getTableSlotIndexForCurrentBurger(playerLike, tableIndex) {
     if (!playerLike || tableIndex == null || tableIndex < 0) return null;
     const targetBurger = playerLike.burgers?.[playerLike.currentBurger] || [];
@@ -5684,12 +5721,15 @@ export default function App() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {players.map((p, i) => {
               if (i === HI) return null;
+              const showBurgerProgress = ['gloton', 'tenedor'].includes(modal.action);
+              const showAllHats = ['ladron', 'intercambio_sombreros'].includes(modal.action);
+              const currentBurgerInfo = getCurrentBurgerSlotState(p);
               return (
                 <div
                   key={i}
                   onClick={() => resolvePickTarget(i)}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
+                    display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 14px',
                     borderRadius: 10, background: 'rgba(255,255,255,.04)',
                     border: `2px solid ${PLAYER_COLORS[i % PLAYER_COLORS.length]}44`,
                     cursor: 'pointer', transition: 'all .15s',
@@ -5698,12 +5738,88 @@ export default function App() {
                   onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,.04)'}
                 >
                   <HatSVG lang={p.mainHats[0] || LANGUAGES[0]} size={28} />
-                  <div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 800, color: PLAYER_COLORS[i % PLAYER_COLORS.length] }}>{p.name}</div>
                     <div style={{ fontSize: 11, color: '#777' }}>
                       {T('tableLabel')}: {p.table.map(ing => ING_EMOJI[ingKey(ing)]).join(' ') || T('empty')} â€¢
                       {T('burgersLabel')}: {p.currentBurger}/{p.totalBurgers}
                     </div>
+                    {showBurgerProgress && currentBurgerInfo.burger.length > 0 && (
+                      <div style={{ marginTop: 8 }}>
+                        <div style={{ fontSize: 10, fontWeight: 800, color: '#8a8fa8', marginBottom: 4 }}>
+                          INGREDIENTES PUESTOS
+                        </div>
+                        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                          {currentBurgerInfo.burger.map((ing, slotIdx) => ({ ing, slot: currentBurgerInfo.slots[slotIdx], slotIdx }))
+                            .filter(({ slot }) => slot?.filled)
+                            .map(({ ing, slot, slotIdx }) => (
+                              <div
+                                key={`${ing}-${slotIdx}`}
+                                style={{
+                                  position: 'relative',
+                                  width: 32,
+                                  height: 32,
+                                  borderRadius: 8,
+                                  background: ING_BG[ing],
+                                  border: '1px solid rgba(255,255,255,0.12)',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                }}
+                              >
+                                {ING_IMG[ing]
+                                  ? <img src={ING_IMG[ing]} alt={ing} style={{ width: 28, height: 28, objectFit: 'contain' }} />
+                                  : ING_EMOJI[ing]}
+                                {slot?.viaWildcard && (
+                                  <div style={{
+                                    position: 'absolute',
+                                    left: -3,
+                                    bottom: -4,
+                                    background: 'rgba(10,16,30,0.92)',
+                                    color: '#fff',
+                                    border: '1px solid rgba(255,255,255,0.28)',
+                                    borderRadius: 8,
+                                    padding: '0 3px',
+                                    lineHeight: '11px',
+                                    fontSize: 8,
+                                  }}>
+                                    {ING_EMOJI.perrito}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          {currentBurgerInfo.slots.every((slot) => !slot?.filled) && (
+                            <div style={{ fontSize: 11, color: '#777' }}>{T('empty')}</div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    {showAllHats && (
+                      <div style={{ marginTop: 8 }}>
+                        <div style={{ fontSize: 10, fontWeight: 800, color: '#8a8fa8', marginBottom: 4 }}>
+                          SOMBREROS ({p.mainHats.length})
+                        </div>
+                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                          {p.mainHats.map((hat, hatIdx) => (
+                            <div
+                              key={`${hat}-${hatIdx}`}
+                              style={{
+                                padding: '4px 6px',
+                                borderRadius: 10,
+                                background: 'rgba(255,255,255,.04)',
+                                border: `1px solid ${LANG_BORDER[hat]}55`,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 4,
+                              }}
+                            >
+                              <HatSVG lang={hat} size={22} />
+                              <span style={{ fontSize: 10, fontWeight: 800, color: LANG_TEXT[hat] }}>{T(hat)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
