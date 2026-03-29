@@ -6743,25 +6743,91 @@ export default function App() {
       )}
 
       {/* Basurero */}
-      {modal?.type === 'basurero' && (
-        <Modal title={T('trashBin')}>
-          <p style={{ color: '#888', fontSize: 12, marginBottom: 12 }}>
-            {T('trashBinDesc')}
-          </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12, maxHeight: 280, overflowY: 'auto' }}>
-            {modal.cards.map(card => (
-              <div
-                key={card.id}
-                onClick={() => resolveBasurero(card.id)}
-                style={{ cursor: 'pointer' }}
-              >
-                <GameCard card={card} small={false} />
+      {modal?.type === 'basurero' && (() => {
+        const needed = getRemainingNeeds(human);
+        const selectedCard = modal.cards.find((card) => card.id === modal.previewCardId) || null;
+        const selectedCardLang = selectedCard?.language || 'espanol';
+        const selectedHasCorrectHat = selectedCard
+          ? human.mainHats.some((hatLang) => languageMatches(hatLang, selectedCardLang))
+          : false;
+        const selectedIsUseful = selectedCard
+          ? needed.includes(selectedCard.ingredient)
+          : false;
+        const selectedNeedsHatName = selectedCard ? T(selectedCardLang) : '';
+        const selectionMessage = selectedCard
+          ? !selectedIsUseful && !selectedHasCorrectHat
+            ? `No le sirve a tu hamburguesa actual y necesitas el sombrero ${selectedNeedsHatName} para jugarla.`
+            : !selectedIsUseful
+              ? 'No le sirve a tu hamburguesa actual.'
+              : !selectedHasCorrectHat
+                ? `Necesitas el sombrero ${selectedNeedsHatName} para jugarla.`
+                : ''
+          : '';
+
+        return (
+          <Modal title={T('trashBin')}>
+            <p style={{ color: '#888', fontSize: 12, marginBottom: 12 }}>
+              {T('trashBinDesc')}
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 12, maxHeight: 420, overflowY: 'auto' }}>
+              {modal.cards.map(card => {
+                const cardLang = card.language || 'espanol';
+                const hasCorrectHat = human.mainHats.some((hatLang) => languageMatches(hatLang, cardLang));
+                const isUseful = needed.includes(card.ingredient);
+                const isIdeal = isUseful && hasCorrectHat;
+                const isSelected = modal.previewCardId === card.id;
+
+                return (
+                  <div
+                    key={card.id}
+                    onClick={() => {
+                      if (isIdeal) {
+                        resolveBasurero(card.id);
+                        return;
+                      }
+                      setModal((prev) => prev?.type === 'basurero' ? { ...prev, previewCardId: card.id } : prev);
+                    }}
+                    style={{
+                      cursor: 'pointer',
+                      opacity: isIdeal ? 1 : 0.58,
+                      transform: isSelected ? 'translateY(-4px) scale(1.03)' : 'scale(1)',
+                      transition: 'all .18s ease',
+                      filter: 'none',
+                    }}
+                  >
+                    <div style={{
+                      borderRadius: 14,
+                      padding: 2,
+                      boxShadow: isIdeal
+                        ? '0 0 0 3px rgba(255,215,0,0.14), 0 10px 22px rgba(0,0,0,0.28)'
+                        : (isSelected ? '0 0 0 3px rgba(255,255,255,0.08)' : 'none'),
+                    }}>
+                      <GameCard card={card} large playable={undefined} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {selectedCard && selectionMessage && (
+              <div style={{
+                marginBottom: 12,
+                padding: '12px 14px',
+                borderRadius: 12,
+                background: 'rgba(255,255,255,.05)',
+                border: '1px solid rgba(255,255,255,.08)',
+              }}>
+                <div style={{ fontSize: 12, color: '#ffb38a', fontWeight: 800, marginBottom: 8 }}>
+                  {selectionMessage}
+                </div>
+                <Btn onClick={() => resolveBasurero(selectedCard.id)} color="#FFD700" style={{ color: '#111', width: '100%' }}>
+                  Agarrar de todas formas
+                </Btn>
               </div>
-            ))}
-          </div>
-          <Btn onClick={() => setModal(null)} color="#333" style={{ color: '#aaa' }}>{T('cancel')}</Btn>
-        </Modal>
-      )}
+            )}
+            <Btn onClick={() => setModal(null)} color="#333" style={{ color: '#aaa' }}>{T('cancel')}</Btn>
+          </Modal>
+        );
+      })()}
 
       {/* Wildcard (ComodÃ­n) modal */}
       {modal?.type === 'wildcard' && (() => {
