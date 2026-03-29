@@ -104,8 +104,8 @@ export const BurgerTarget = ({ ingredients, table, isCurrent, onIngredientClick,
         }}>
           <img src={burgerPanArriba} alt="pan" style={{
             width: 70, height: 'auto', marginBottom: -4,
-            opacity: panFilled ? 1 : 0.25, transition: 'opacity 0.3s',
-            filter: panFilled ? 'none' : 'grayscale(0.5)',
+            opacity: panFilled ? 1 : 0.7, transition: 'opacity 0.3s',
+            filter: 'none',
           }} />
           {[...ingredients].reverse().map((ing, i) => {
             const realIdx = ingredients.length - 1 - i;
@@ -118,13 +118,11 @@ export const BurgerTarget = ({ ingredients, table, isCurrent, onIngredientClick,
                 alt={ing}
                 style={{
                   width: 64, height: 'auto', marginTop: -4, marginBottom: -4,
-                  opacity: filled ? 1 : 0.25,
+                  opacity: filled ? 1 : 0.72,
                   transition: 'opacity 0.3s, transform 0.2s, filter 0.2s',
                   filter: shouldHighlight
                     ? 'drop-shadow(0 0 10px rgba(255,215,0,0.75)) brightness(1.08)'
-                    : filled
-                      ? 'none'
-                      : 'grayscale(0.5)',
+                    : 'none',
                   transform: shouldHighlight ? 'scale(1.06)' : 'none',
                 }}
               />
@@ -132,8 +130,8 @@ export const BurgerTarget = ({ ingredients, table, isCurrent, onIngredientClick,
           })}
           <img src={burgerPanAbajo} alt="pan" style={{
             width: 70, height: 'auto', marginTop: -4,
-            opacity: panFilled ? 1 : 0.25, transition: 'opacity 0.3s',
-            filter: panFilled ? 'none' : 'grayscale(0.5)',
+            opacity: panFilled ? 1 : 0.7, transition: 'opacity 0.3s',
+            filter: 'none',
           }} />
         </div>
       )}
@@ -162,7 +160,7 @@ export const BurgerTarget = ({ ingredients, table, isCurrent, onIngredientClick,
                 : filled
                   ? "none"
                   : `2px dashed ${ING_BG[ing]}44`,
-              opacity: filled ? 1 : 0.35, transition: "all 0.3s",
+              opacity: filled ? 1 : 0.92, transition: "all 0.3s",
               boxShadow: shouldHighlight ? "0 0 0 3px rgba(255,215,0,0.14), 0 0 14px rgba(255,215,0,0.28)" : "none",
               transform: shouldHighlight ? "translateY(-1px) scale(1.04)" : "none",
               cursor: onIngredientClick ? "pointer" : "default",
