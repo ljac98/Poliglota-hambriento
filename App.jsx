@@ -4606,11 +4606,11 @@ export default function App() {
       />
       <div style={{ flex: 1 }}>
         <div style={{ fontWeight: 900, fontSize: 16, color: humanColor }}>{human.name}</div>
-        <div style={{ fontSize: 11, color: '#777', display: 'inline-flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
-          <img src={ingredientCardIcon} alt="hamburguesa" style={{ width: 14, height: 14, objectFit: 'contain' }} />
-          <span>{human.currentBurger}/{human.totalBurgers} {String(T('burgersLabel')).toLowerCase()}</span>
-          {extraPlay && <span style={{ color: '#FFD700', marginLeft: 4 }}>{T('extraPlayLabel')}</span>}
-        </div>
+        {extraPlay && (
+          <div style={{ fontSize: 11, color: '#FFD700', marginTop: 2 }}>
+            {T('extraPlayLabel')}
+          </div>
+        )}
         {hasSharedGoals && (
           <div style={{
             marginTop: 6,
@@ -4709,7 +4709,7 @@ export default function App() {
         fontWeight: 700,
       }}>
         <span style={{ color: '#FFD700' }}>✔</span>
-        <span>Hamburguesas completadas: {human.currentBurger}</span>
+        <span>Hamburguesas completadas: {human.currentBurger}/{human.totalBurgers}</span>
       </div>
       {human.currentBurger < human.totalBurgers && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
