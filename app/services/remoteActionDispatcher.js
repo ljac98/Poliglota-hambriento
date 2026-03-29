@@ -9,6 +9,8 @@ export function createRemoteActionDispatcher({
   setDeck,
   setDiscard,
   setExtraPlay,
+  setPendingHatLimitSelection,
+  maxMainHats = 6,
 }) {
   const handlers = {
     playIngredient({ idx, action, players, deck, discard, addLog }) {
@@ -95,7 +97,12 @@ export function createRemoteActionDispatcher({
       setPlayers(players);
       setDeck(result.deck);
       setDiscard(result.discard);
-      setExtraPlay(true);
+      if ((players[idx]?.mainHats?.length || 0) > maxMainHats) {
+        setPendingHatLimitSelection({ playerIdx: idx, source: 'manualAgregar' });
+        setExtraPlay(false);
+      } else {
+        setExtraPlay(true);
+      }
       return true;
     },
 

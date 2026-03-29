@@ -133,6 +133,8 @@ const INSTALL_PROMPT_COPY = {
   },
 };
 
+const MAX_MAIN_HATS = 6;
+
 export default function App() {
   const initialParams = new URLSearchParams(window.location.search);
   const initialSalaCode = initialParams.get('sala') || '';
@@ -158,6 +160,7 @@ export default function App() {
   const [selectedIdx, setSelectedIdx] = useState(null);
   const [log, setLog] = useState([]);
   const [modal, setModal] = useState(null);
+  const [pendingHatLimitSelection, setPendingHatLimitSelection] = useState(null);
   const [winner, setWinner] = useState(null);
   const [extraPlay, setExtraPlay] = useState(false);
   const [showLog, setShowLog] = useState(false);
@@ -1958,9 +1961,10 @@ export default function App() {
           setDeck(gameState.deck);
           setDiscard(gameState.discard);
           setCp(gameState.cp);
-          setLog(gameState.log || []);
-          setExtraPlay(gameState.extraPlay || false);
-          setCurrentGameConfig(gameState.gameConfig || null);
+            setLog(gameState.log || []);
+            setExtraPlay(gameState.extraPlay || false);
+            setCurrentGameConfig(gameState.gameConfig || null);
+            setPendingHatLimitSelection(gameState.pendingHatLimitSelection || null);
             setModal(null);
             setPendingNeg(gameState.pendingNeg || null);
             setLastNegationEvent(gameState.lastNegationEvent || null);
@@ -2138,6 +2142,7 @@ export default function App() {
       setLog(state.log);
       setExtraPlay(state.extraPlay || false);
       setCurrentGameConfig(state.gameConfig || null);
+      setPendingHatLimitSelection(state.pendingHatLimitSelection || null);
       setModal(currentModal => {
         const privateModals = ['manual_cambiar', 'manual_cambiar_target', 'manual_cambiar_discard', 'manual_agregar', 'wildcard', 'basurero', 'pickHatReplace', 'pickHatExchange', 'pickHatSteal', 'ingredientInfo', 'pickTarget', 'pickIngredient', 'pickIngredientRemote'];
         if (state.modal) return state.modal;
@@ -2224,11 +2229,11 @@ export default function App() {
       const syncModal = modal && privateModals.includes(modal.type) ? null : modal;
       socket.emit('syncState', {
         code: roomCode,
-        state: { players, deck, discard, cp, log, extraPlay, modal: syncModal, pendingNeg, lastNegationEvent, lastForkEvent, lastComeComodinesEvent, lastGlotonEvent, lastMilanesaEvent, lastEnsaladaEvent, lastPizzaEvent, lastParrillaEvent, lastClosetCoverEvent, lastHatStealEvent, winner, gameConfig: currentGameConfig, phase: 'playing' },
+        state: { players, deck, discard, cp, log, extraPlay, modal: syncModal, pendingHatLimitSelection, pendingNeg, lastNegationEvent, lastForkEvent, lastComeComodinesEvent, lastGlotonEvent, lastMilanesaEvent, lastEnsaladaEvent, lastPizzaEvent, lastParrillaEvent, lastClosetCoverEvent, lastHatStealEvent, winner, gameConfig: currentGameConfig, phase: 'playing' },
       });
     }, 80);
     return () => clearTimeout(syncRef.current);
-  }, [players, deck, discard, cp, log, extraPlay, modal, pendingNeg, lastNegationEvent, lastForkEvent, lastComeComodinesEvent, lastGlotonEvent, lastMilanesaEvent, lastEnsaladaEvent, lastPizzaEvent, lastParrillaEvent, lastClosetCoverEvent, lastHatStealEvent, winner, currentGameConfig, phase, isOnline, isHost]);
+  }, [players, deck, discard, cp, log, extraPlay, modal, pendingHatLimitSelection, pendingNeg, lastNegationEvent, lastForkEvent, lastComeComodinesEvent, lastGlotonEvent, lastMilanesaEvent, lastEnsaladaEvent, lastPizzaEvent, lastParrillaEvent, lastClosetCoverEvent, lastHatStealEvent, winner, currentGameConfig, phase, isOnline, isHost]);
 
   // â”€â”€ Socket: host processes remote player actions â”€â”€
   // We store the latest state in refs so the socket handler always has fresh values
@@ -2236,10 +2241,12 @@ export default function App() {
   const deckRef = useRef(deck);
   const discardRef = useRef(discard);
   const modalRef = useRef(modal);
+  const pendingHatLimitSelectionRef = useRef(pendingHatLimitSelection);
   useEffect(() => { playersRef.current = players; }, [players]);
   useEffect(() => { deckRef.current = deck; }, [deck]);
   useEffect(() => { discardRef.current = discard; }, [discard]);
   useEffect(() => { modalRef.current = modal; }, [modal]);
+  useEffect(() => { pendingHatLimitSelectionRef.current = pendingHatLimitSelection; }, [pendingHatLimitSelection]);
   useEffect(() => {
     if (!showLanguageMenu) return undefined;
     const handleOutsideLanguageMenu = (event) => {
@@ -2362,6 +2369,8 @@ export default function App() {
     setDeck,
     setDiscard,
     setExtraPlay,
+    setPendingHatLimitSelection,
+    maxMainHats: MAX_MAIN_HATS,
   });
   const playerActionCommands = createPlayerActionCommands({
     isOnline,
@@ -2553,6 +2562,22 @@ export default function App() {
     }
   }
 
+  function syncPlayerHatState(player) {
+    if (!player) return player;
+    const hats = Array.isArray(player.mainHats) ? player.mainHats.filter(Boolean) : [];
+    player.mainHats = hats;
+    player.manuallyAddedHats = hats.slice(1);
+    player.maxHand = Math.min(6, Math.max(1, 7 - hats.length));
+    return player;
+  }
+
+  function finishPendingStealIfReady(nextPlayers, nextDiscard, actingIdx, nextDeck = deckRef.current) {
+    const stillWaitingForOverflow = pendingHatLimitSelectionRef.current?.source === 'steal';
+    const stillWaitingForReplacement = modalRef.current?.type === 'pickHatReplace';
+    if (stillWaitingForOverflow || stillWaitingForReplacement) return;
+    endTurn(nextPlayers, nextDeck, nextDiscard, actingIdx);
+  }
+
   // -- Start game (local / vs AI) --
   function startGame(name, hat, gameConfig, aiCount) {
     const normalizedConfig = normalizeGameConfig(gameConfig);
@@ -2575,7 +2600,7 @@ export default function App() {
       }));
     }
     setPlayers(ps); setDeck(deckArr); setDiscard([]);
-    setCp(0); setLog([]); setSelectedIdx(null); setModal(null);
+    setCp(0); setLog([]); setSelectedIdx(null); setModal(null); setPendingHatLimitSelection(null);
     setWinner(null); setExtraPlay(false); setCurrentGameConfig(normalizedConfig);
     releaseAITurnLock();
     setPhase('playing');
@@ -2594,7 +2619,7 @@ export default function App() {
     // Mark non-host players as remote
     ps.forEach((p, i) => { if (i !== 0 && !p.isAI) p.isRemote = true; });
     setPlayers(ps); setDeck(deckArr); setDiscard([]);
-    setCp(0); setLog([]); setSelectedIdx(null); setModal(null);
+    setCp(0); setLog([]); setSelectedIdx(null); setModal(null); setPendingHatLimitSelection(null);
     setWinner(null); setExtraPlay(false); setCurrentGameConfig(normalizedConfig);
     releaseAITurnLock();
     // Update session to reflect game started
@@ -2617,14 +2642,29 @@ export default function App() {
 
     if (!result) return;
 
+    syncPlayerHatState(result.players[actingIdx]);
+    syncPlayerHatState(result.players[ti]);
+
+    const actingOverflow = (result.players[actingIdx]?.mainHats?.length || 0) > MAX_MAIN_HATS;
+
     if (result.kind === 'needs_hat_replace') {
       setPlayers(result.players); setDiscard(result.discard);
+      if (actingOverflow) {
+        setPendingHatLimitSelection({ playerIdx: actingIdx, source: 'steal', actingIdx, discard: result.discard });
+      }
       setModal({ type: 'pickHatReplace', newPls: result.players, newDiscard: result.discard, victimIdx: result.victimIdx, fromIdx: result.fromIdx });
       return;
     }
 
     if (result.kind === 'closet_cover') {
       promptClosetCoverResponse(actingIdx, ti, result.players, dk, result.discard);
+      return;
+    }
+
+    if (actingOverflow) {
+      setPlayers(result.players);
+      setDiscard(result.discard);
+      setPendingHatLimitSelection({ playerIdx: actingIdx, source: 'steal', actingIdx, discard: result.discard });
       return;
     }
 
@@ -2697,10 +2737,30 @@ export default function App() {
                 if (hi !== -1) {
                   newPls[victimIdx].perchero.splice(hi, 1);
                   newPls[victimIdx].mainHats.push(action.hatLang);
+                  syncPlayerHatState(newPls[victimIdx]);
                 }
                 setModal(null);
-                setTimeout(() => endTurnFromRemote(newPls, dk, newDiscard, fromIdx ?? idx), 0);
+                setTimeout(() => finishPendingStealIfReady(newPls, newDiscard, fromIdx ?? idx, dk), 0);
               }
+
+            } else if (type === 'returnOverflowHat') {
+              const pending = pendingHatLimitSelectionRef.current;
+              if (!pending || pending.playerIdx !== idx) return;
+              const nextPlayers = clone(playersRef.current);
+              const player = nextPlayers[idx];
+              const hatIdx = player?.mainHats?.indexOf(action.hatLang);
+              if (hatIdx === -1) return;
+              const [returnedHat] = player.mainHats.splice(hatIdx, 1);
+              player.perchero.push(returnedHat);
+              syncPlayerHatState(player);
+              setPlayers(nextPlayers);
+              setPendingHatLimitSelection(null);
+              if (pending.source === 'manualAgregar') {
+                setExtraPlay(true);
+              } else if (pending.source === 'steal') {
+                setTimeout(() => finishPendingStealIfReady(nextPlayers, pending.discard || discardRef.current, pending.actingIdx ?? idx, deckRef.current), 0);
+              }
+              return;
 
             } else if (type === 'negationResponse') {
               // Remote player responded to negation window
@@ -3257,7 +3317,7 @@ export default function App() {
       }
     }
 
-    if (!p.closetCovered && p.perchero.length > 0 && p.hand.length > 0 && p.maxHand > 1 && p.mainHats.length < 3 && !extraPlay && Math.random() <= aiConfig.addChance) {
+    if (!p.closetCovered && p.perchero.length > 0 && p.hand.length > 0 && p.maxHand > 1 && p.mainHats.length < MAX_MAIN_HATS && !extraPlay && Math.random() <= aiConfig.addChance) {
       const needs = getRemainingNeeds(p);
       let bestAdd = null;
       for (const hatLang of p.perchero) {
@@ -3654,7 +3714,8 @@ export default function App() {
     const hi = newPls[victimIdx].perchero.indexOf(hatLang);
     newPls[victimIdx].perchero.splice(hi, 1);
     newPls[victimIdx].mainHats.push(hatLang);
-    endTurn(newPls, deck, newDiscard, fromIdx ?? HI);
+    syncPlayerHatState(newPls[victimIdx]);
+    setTimeout(() => finishPendingStealIfReady(newPls, newDiscard, fromIdx ?? HI, deck), 0);
   }
 
   function resolveHatExchange(myHat, theirHat) {
@@ -3675,6 +3736,8 @@ export default function App() {
       newPls[HI].mainHats.push(theirHat);
       newPls[targetIdx].mainHats.push(myHat);
     }
+    syncPlayerHatState(newPls[HI]);
+    syncPlayerHatState(newPls[targetIdx]);
     endTurn(newPls, dk || deck, newDiscard || discard, HI);
   }
 
@@ -3693,21 +3756,27 @@ export default function App() {
     const stealIdx = newPls[targetIdx].mainHats.indexOf(hatLang);
     const stolen = newPls[targetIdx].mainHats.splice(stealIdx, 1)[0];
     newPls[HI].mainHats.push(stolen);
+    syncPlayerHatState(newPls[HI]);
+    syncPlayerHatState(newPls[targetIdx]);
     actionEffectObserver.publishHatStealEvent({
       actingIdx: HI,
       targetIdx,
       hatLang: stolen,
       actorName: players[HI]?.name || 'Jugador',
     });
-    if (newPls[targetIdx].mainHats.length > 0) {
-      newPls[targetIdx].maxHand = Math.min(6, newPls[targetIdx].maxHand + 1);
-    }
     addLog(HI, `robó el sombrero ${stolen}`, newPls);
+    if ((newPls[HI].mainHats?.length || 0) > MAX_MAIN_HATS) {
+      setPlayers(newPls);
+      setDiscard(newDiscard || discard);
+      setPendingHatLimitSelection({ playerIdx: HI, source: 'steal', actingIdx: HI, discard: newDiscard || discard });
+    }
     if (newPls[targetIdx].mainHats.length === 0 && newPls[targetIdx].perchero.length > 0) {
       if (newPls[targetIdx].isAI) {
         const nh = newPls[targetIdx].perchero.shift();
         newPls[targetIdx].mainHats.push(nh);
-        endTurn(newPls, dk || deck, newDiscard || discard, HI);
+        syncPlayerHatState(newPls[targetIdx]);
+        if ((newPls[HI].mainHats?.length || 0) > MAX_MAIN_HATS) return;
+        finishPendingStealIfReady(newPls, newDiscard || discard, HI, dk || deck);
       } else if (newPls[targetIdx].isRemote) {
         setModal({ type: 'pickHatReplace', newPls, newDiscard, victimIdx: targetIdx, fromIdx: HI });
         setPlayers(newPls); setDiscard(newDiscard);
@@ -3716,6 +3785,7 @@ export default function App() {
       }
       return;
     }
+    if ((newPls[HI].mainHats?.length || 0) > MAX_MAIN_HATS) return;
     endTurn(newPls, dk || deck, newDiscard || discard, HI);
   }
 
@@ -3736,6 +3806,7 @@ export default function App() {
     const oldMain = p.mainHats[safeReplaceIdx];
     p.mainHats[safeReplaceIdx] = hatLang;
     p.perchero.push(oldMain);
+    syncPlayerHatState(p);
     const sorted = [...cardIndices].sort((a, b) => b - a);
     const discarded = sorted.map(i => p.hand.splice(i, 1)[0]);
     let newDiscard = [...discard, ...discarded];
@@ -3768,14 +3839,15 @@ export default function App() {
     const hi = p.perchero.indexOf(hatLang);
     p.perchero.splice(hi, 1);
     p.mainHats.push(hatLang);
-    p.manuallyAddedHats = [...(p.manuallyAddedHats || []), hatLang];
+    syncPlayerHatState(p);
     let newDiscard = [...discard, ...p.hand];
     p.hand = [];
-    p.maxHand = Math.max(1, p.maxHand - 1);
     const { drawn, deck: newDeck, discard: di2 } = drawN(deck, newDiscard, p.maxHand);
     p.hand = drawn;
     addLog(HI, `agregÃ³ sombrero ${hatLang} â€” mano mÃ¡x reducida a ${p.maxHand}`, newPls);
-    setPlayers(newPls); setDeck(newDeck); setDiscard(di2); setExtraPlay(true);
+    setPlayers(newPls); setDeck(newDeck); setDiscard(di2);
+    if (p.mainHats.length > MAX_MAIN_HATS) setPendingHatLimitSelection({ playerIdx: HI, source: 'manualAgregar' });
+    else setExtraPlay(true);
     if (tutorialActive) {
       setTutorialCarryOver(prev => ({
         ...prev,
@@ -3786,7 +3858,32 @@ export default function App() {
       }));
     }
     if (advanceTutorialAfter('addHat')) return;
-    setPhase('transition');
+    if (p.mainHats.length <= MAX_MAIN_HATS) setPhase('transition');
+  }
+
+  function resolveOverflowHatReturn(hatLang) {
+    const pending = pendingHatLimitSelectionRef.current;
+    if (!pending) return;
+    if (isOnline && !isHost) {
+      socket.emit('playerAction', { code: roomCode, action: { type: 'returnOverflowHat', hatLang } });
+      setPendingHatLimitSelection(null);
+      return;
+    }
+    const nextPlayers = clone(players);
+    const player = nextPlayers[pending.playerIdx];
+    const hatIdx = player?.mainHats?.indexOf(hatLang);
+    if (hatIdx === -1) return;
+    const [returnedHat] = player.mainHats.splice(hatIdx, 1);
+    player.perchero.push(returnedHat);
+    syncPlayerHatState(player);
+    setPlayers(nextPlayers);
+    setPendingHatLimitSelection(null);
+    if (pending.source === 'manualAgregar') {
+      setExtraPlay(true);
+      if (pending.playerIdx === HI) setPhase('transition');
+      return;
+    }
+    setTimeout(() => finishPendingStealIfReady(nextPlayers, pending.discard || discard, pending.actingIdx ?? HI, deck), 0);
   }
 
   function resolveBasurero(cardId) {
@@ -4856,10 +4953,12 @@ export default function App() {
       <div style={{ display: 'flex', gap: 10, alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }}>
         {/* Sombrero(s) principal(es) */}
         <div>
-          <div style={{ fontSize: 9, color: '#555', fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>{T('mainHat')}</div>
+          <div style={{ fontSize: 9, color: '#555', fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>
+            {T('mainHat')} ({human.mainHats.length}/{MAX_MAIN_HATS})
+          </div>
           <div style={isMobile
             ? { display: 'flex', gap: 4, flexWrap: 'wrap' }
-            : { display: 'grid', gridTemplateRows: 'repeat(3, auto)', gridAutoFlow: 'column', gap: 4 }
+            : { display: 'grid', gridTemplateRows: 'repeat(2, auto)', gridAutoFlow: 'column', gap: 4 }
           }>
             {human.mainHats.map((h, hatIdx) => (
               <div
@@ -5541,6 +5640,43 @@ export default function App() {
       )}
 
       {/* â”€â”€ Modals â”€â”€ */}
+
+      {pendingHatLimitSelection?.playerIdx === HI && (
+        <Modal title="🎩 Máximo de sombreros alcanzado">
+          <p style={{ color: '#ddd', fontSize: 13, marginBottom: 8 }}>
+            Has alcanzado el máximo de sombreros ({human.mainHats.length}/{MAX_MAIN_HATS}).
+          </p>
+          <p style={{ color: '#8a8fa8', fontSize: 12, marginBottom: 12 }}>
+            Tienes que escoger uno de tus sombreros y devolverlo al perchero.
+          </p>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+            {human.mainHats.map((h, idx) => (
+              <button
+                key={`${h}-${idx}`}
+                type="button"
+                onClick={() => resolveOverflowHatReturn(h)}
+                style={{
+                  padding: 10,
+                  borderRadius: 10,
+                  cursor: 'pointer',
+                  border: `2px solid ${LANG_BORDER[h]}88`,
+                  background: 'rgba(255,255,255,.04)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 4,
+                  fontFamily: 'inherit',
+                }}
+              >
+                <HatSVG lang={h} size={36} />
+                <span style={{ fontSize: 11, fontWeight: 700, color: LANG_TEXT[h] }}>
+                  {T(h)}
+                </span>
+              </button>
+            ))}
+          </div>
+        </Modal>
+      )}
 
       {/* Pick Target */}
       {modal?.type === 'pickTarget' && (
