@@ -67,6 +67,7 @@ export function AppPhaseRouter({
   clearRoomSession,
   players,
   HI,
+  cp,
   extraPlay,
   winner,
   isOnline,
@@ -258,7 +259,15 @@ export function AppPhaseRouter({
   }
 
   if (phase === 'transition') {
-    return <TransitionScreen player={players[HI]} onContinue={() => setPhase('playing')} isExtraPlay={extraPlay} T={T} />;
+    return (
+      <TransitionScreen
+        player={players[cp] || players[HI]}
+        onContinue={() => setPhase('playing')}
+        isExtraPlay={extraPlay}
+        isCurrentUserTurn={cp === HI}
+        T={T}
+      />
+    );
   }
 
   if (phase === 'gameover') {

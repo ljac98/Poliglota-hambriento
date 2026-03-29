@@ -115,6 +115,7 @@ const fr = {
   leaveRoom: "← Quitter le salon",
   extraPlayMsg: "Tu peux jouer un ingrédient !",
   yourTurn: "Ton tour",
+  turnOfPlayer: (name) => `Tour de ${name}`,
   tapContinue: "Touche pour continuer...",
   playerWon: (name) => `${name} a gagné !`,
   wonByAbandon: "Victoire par abandon !",

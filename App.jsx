@@ -4,7 +4,7 @@ import { clearAuth, getProfile, getSavedUser, saveUserLocally } from './src/api.
 import {
   LANGUAGES, LANG_BORDER, LANG_BG, LANG_TEXT,
   ING_EMOJI, ING_BG, AI_NAMES, getIngName, getActionInfo,
-  ING_NAMES, ACTION_CARDS,
+  ING_NAMES, ACTION_CARDS, languageMatches, normalizeGameLanguage, getRandomGameLanguage,
 } from './constants';
 import { generateDeck, initPlayer, canPlayCard } from './game';
 import { shuffle, randInt, uid } from './game/utils';
@@ -314,8 +314,9 @@ export default function App() {
   const getIngredientCantPlayReason = useCallback((playerLike, card) => {
     const asResult = (text, hatLang = null) => ({ text, hatLang });
     if (!playerLike || !card || card.type !== 'ingredient') return asResult(T('cantPlayNow'));
+    const cardLanguage = normalizeGameLanguage(card.language) || 'espanol';
 
-    const hasCorrectHat = playerLike.mainHats?.includes(card.language);
+    const hasCorrectHat = (playerLike.mainHats || []).some((hatLang) => languageMatches(hatLang, cardLanguage));
     if (card.ingredient === 'perrito') {
       if (!hasCorrectHat) {
         const copyByUi = {
@@ -326,7 +327,7 @@ export default function App() {
           de: 'Du brauchst diesen Hut, um sie zu spielen',
           pt: 'Precisas deste chapéu para a jogar',
         };
-        return asResult(copyByUi[uiLang] || copyByUi.en, card.language);
+        return asResult(copyByUi[uiLang] || copyByUi.en, cardLanguage);
       }
       return asResult(T('cantPlayNow'));
     }
@@ -375,7 +376,7 @@ export default function App() {
         de: 'Du brauchst diesen Hut, um sie zu spielen',
         pt: 'Precisas deste chapéu para a jogar',
       };
-      return asResult(copyByUi[uiLang] || copyByUi.en, card.language);
+      return asResult(copyByUi[uiLang] || copyByUi.en, cardLanguage);
     }
 
     return asResult(T('cantPlayNow'));
@@ -388,7 +389,7 @@ export default function App() {
     };
     return (playerLike.hand || []).some((card) => (
       card?.type === 'ingredient'
-      && card.language === hatLang
+      && languageMatches(card.language, hatLang)
       && canPlayCard(simulatedPlayer, card)
     ));
   }, []);
@@ -2349,6 +2350,7 @@ export default function App() {
     ingEmoji: ING_EMOJI,
     ingKey,
     uid,
+    getRandomGameLanguage,
     getTableSlotIndexForCurrentBurger,
     filterTable,
   });
@@ -2374,6 +2376,7 @@ export default function App() {
     ingEmoji: ING_EMOJI,
     ingKey,
     uid,
+    getRandomGameLanguage,
     addLog,
     endTurn,
     advanceTutorialAfter,
@@ -2835,7 +2838,7 @@ export default function App() {
 
   function getCardKeepScore(card, nextHats, needs) {
     if (card.type === 'ingredient') {
-      const matchesHat = nextHats.includes(card.language);
+      const matchesHat = nextHats.some((hatLang) => languageMatches(hatLang, card.language));
       const ingredientScore = card.ingredient === 'perrito'
         ? (needs.length > 0 ? 120 : 20)
         : (needs.includes(card.ingredient) ? 160 + needs.filter(n => n === card.ingredient).length * 8 : (matchesHat ? 20 : 0));
@@ -3010,12 +3013,12 @@ export default function App() {
     if (action === 'gloton') score = target.table.length * 28;
     if (action === 'tenedor') score = target.table.length ? (neededOnTable * 35) + (target.table.length * 8) : -10;
     if (action === 'ladron') {
-      const usefulHat = target.mainHats.some(h => self.hand.some(card => card.type === 'ingredient' && card.language === h));
+      const usefulHat = target.mainHats.some(h => self.hand.some(card => card.type === 'ingredient' && languageMatches(card.language, h)));
       score = target.mainHats.length ? (usefulHat ? 55 : 25) : -20;
     }
     if (action === 'intercambio_sombreros') {
       const theirHat = target.mainHats[0];
-      const helpsMe = theirHat && self.hand.some(card => card.type === 'ingredient' && card.language === theirHat);
+      const helpsMe = theirHat && self.hand.some(card => card.type === 'ingredient' && languageMatches(card.language, theirHat));
       score = helpsMe ? 52 : (target.mainHats.length ? 18 : -20);
     }
     if (action === 'intercambio_hamburguesa') {
@@ -3096,7 +3099,7 @@ export default function App() {
       newPls[idx] = up;
       let newDiscard = [...baseDiscard, card];
       if (done) {
-        freed.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: uid() }));
+        freed.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), language: getRandomGameLanguage(), id: uid() }));
         addLog(idx, '¡completó una hamburguesa! 🎉', newPls);
       }
       setTimeout(() => { releaseAITurnLock(); endTurn(newPls, baseDeck, newDiscard, idx); }, 900);
@@ -3135,7 +3138,7 @@ export default function App() {
                 targetTable: [...newPls[richest].table],
                 actorName: newPls[idx]?.name || 'IA',
               });
-              newPls[richest].table.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: uid() }));
+              newPls[richest].table.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), language: getRandomGameLanguage(), id: uid() }));
               newPls[richest].table = [];
               addLog(idx, `vació la mesa de ${pls[richest].name}`, newPls);
           } else if (card.action === 'tenedor') {
@@ -3159,7 +3162,7 @@ export default function App() {
               actionEffectObserver.publishForkEvent(forkEvent);
               const { player: up2, freed: fr2, done: dn2 } = advanceBurger(newPls[idx]);
               newPls[idx] = up2;
-              if (dn2) { fr2.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: uid() })); }
+              if (dn2) { fr2.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), language: getRandomGameLanguage(), id: uid() })); }
               addLog(idx, `robó ${ING_EMOJI[ingKey(stolen)]} de ${pls[richest].name}`, newPls);
             }
           } else if (card.action === 'ladron') {
@@ -3569,7 +3572,7 @@ export default function App() {
           targetTable: [...newPls[targetIdx].table],
           actorName: newPls[HI]?.name || 'Jugador',
         });
-        newPls[targetIdx].table.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), id: uid() }));
+        newPls[targetIdx].table.forEach(ing => newDiscard.push({ type: 'ingredient', ingredient: ingKey(ing), language: getRandomGameLanguage(), id: uid() }));
         newPls[targetIdx].table = [];
         endTurn(newPls, dk, newDiscard, HI);
 
@@ -3630,7 +3633,7 @@ export default function App() {
     const { player: up, freed, done } = advanceBurger(newPls[HI]);
     newPls[HI] = up;
     let fd = newDiscard;
-    if (done) { freed.forEach(ing => fd = [...fd, { type: 'ingredient', ingredient: ingKey(ing), id: uid() }]); addLog(HI, 'Â¡completÃ³ una hamburguesa! ðŸŽ‰', newPls); }
+    if (done) { freed.forEach(ing => fd = [...fd, { type: 'ingredient', ingredient: ingKey(ing), language: getRandomGameLanguage(), id: uid() }]); addLog(HI, 'Â¡completÃ³ una hamburguesa! ðŸŽ‰', newPls); }
     if (advanceTutorialAfter('actionCard')) {
       setPlayers(newPls);
       setDiscard(fd);
@@ -4439,6 +4442,7 @@ export default function App() {
           clearRoomSession={clearRoomSession}
           players={players}
           HI={HI}
+          cp={cp}
           extraPlay={extraPlay}
           winner={winner}
           isOnline={isOnline}
@@ -4686,29 +4690,50 @@ export default function App() {
       background: 'rgba(255,255,255,.03)', borderRadius: 10, padding: '8px 10px',
       border: tutorialActive && tutorialFocus.table ? '2px solid #FFD700' : '2px solid #1e2a45',
       boxShadow: tutorialActive && tutorialFocus.table ? '0 0 0 3px rgba(255,215,0,0.14)' : 'none',
+      backdropFilter: 'none',
+      filter: 'none',
       flexShrink: 0,
     }} ref={humanBurgerAreaRef}>
       <div style={{ fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1, marginBottom: 6 }}>{T('table')}</div>
-      <div style={{ display: 'flex', flexDirection: isMobile ? 'row' : 'column', gap: 4, flexWrap: 'wrap' }}>
-        {human.burgers.slice(0, human.currentBurger + 1).map((b, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 11, color: i === human.currentBurger ? '#FFD700' : '#555', width: 14, fontWeight: 700 }}>
-              {i < human.currentBurger ? '\u2714' : i === human.currentBurger ? '\u25B6' : '\u25CB'}
-            </span>
-            <BurgerTarget
-              ingredients={b}
-              table={i === human.currentBurger ? human.table : i < human.currentBurger ? b : []}
-              isCurrent={i === human.currentBurger}
-              highlightIngredients={i === human.currentBurger ? highlightedBurgerIngredients : []}
-              onRegisterSlotRef={i === human.currentBurger ? ((slotIdx, el) => {
-                if (el) humanBurgerSlotRefs.current[slotIdx] = el;
-                else delete humanBurgerSlotRefs.current[slotIdx];
-              }) : undefined}
-              onIngredientClick={(ing) => setModal({ type: 'ingredientInfo', ingredient: ing })}
-            />
-          </div>
-        ))}
+      <div style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 8,
+        marginBottom: 8,
+        padding: '6px 10px',
+        borderRadius: 999,
+        background: 'rgba(255,255,255,0.04)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        color: '#ddd',
+        fontSize: 12,
+        fontWeight: 700,
+      }}>
+        <span style={{ color: '#FFD700' }}>✔</span>
+        <span>Hamburguesas completadas: {human.currentBurger}</span>
       </div>
+      {human.currentBurger < human.totalBurgers && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: 11, color: '#FFD700', width: 14, fontWeight: 700 }}>
+            {'\u25B6'}
+          </span>
+          <BurgerTarget
+            ingredients={human.burgers[human.currentBurger]}
+            table={human.table}
+            isCurrent
+            highlightIngredients={highlightedBurgerIngredients}
+            onRegisterSlotRef={(slotIdx, el) => {
+              if (el) humanBurgerSlotRefs.current[slotIdx] = el;
+              else delete humanBurgerSlotRefs.current[slotIdx];
+            }}
+            onIngredientClick={(ing) => setModal({ type: 'ingredientInfo', ingredient: ing })}
+          />
+        </div>
+      )}
+      {human.currentBurger >= human.totalBurgers && (
+        <div style={{ fontSize: 12, color: '#7be495', fontWeight: 700 }}>
+          Todas las hamburguesas completadas
+        </div>
+      )}
     </div>
   );
 

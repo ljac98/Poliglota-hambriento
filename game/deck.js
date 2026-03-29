@@ -1,4 +1,4 @@
-import { INGREDIENTS, LANGUAGES, ACTION_CARDS } from '../constants';
+import { INGREDIENTS, LANGUAGES, ACTION_CARDS, languageMatches, normalizeGameLanguage } from '../constants';
 import { shuffle, uid, randInt } from './utils';
 
 // ═══ DECK GENERATION ═══
@@ -168,7 +168,8 @@ export function initPlayer(name, deck, chosenHat, gameConfig, isAI = false, meta
 
 // ═══ GAME CHECKS ═══
 export function canPlayCard(player, card) {
-  if (!player.mainHats.includes(card.language)) return false;
+  const cardLanguage = normalizeGameLanguage(card?.language) || 'espanol';
+  if (!(player.mainHats || []).some((hatLang) => languageMatches(hatLang, cardLanguage))) return false;
   if (card.ingredient === "perrito") return true;
   if (player.currentBurger >= player.totalBurgers) return false;
   

@@ -8,7 +8,13 @@ import burgerIcon from '../../imagenes/hamburguesas/ham.png';
 import { UserAvatar } from '../components/UserAvatar.jsx';
 
 export function GameOverScreen({ winner, players, onRestart, user, onHistory, T, isTutorial, tutorialWinText }) {
-  const didWin = !!user && (winner?.id === user?.id || winner?.name === user?.displayName);
+  const didWin = !!user && (
+    winner?.userId === user?.id
+    || winner?.id === user?.id
+    || (winner?.username && winner.username === user?.username)
+    || winner?.name === user?.displayName
+    || winner?.name === user?.username
+  );
   const wonByAbandon = winner?.reason === 'abandon';
   const headerImage = didWin ? ganador : perdedor;
   const titleText = isTutorial && didWin

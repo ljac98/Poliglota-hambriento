@@ -6,9 +6,10 @@ export function createRemoteActionService({
   ingEmoji,
   ingKey,
   uid,
+  getRandomGameLanguage,
 }) {
   function appendCompletedBurgerRewards(discard, freed) {
-    freed.forEach((ing) => discard.push({ type: 'ingredient', ingredient: ingKey(ing), id: uid() }));
+    freed.forEach((ing) => discard.push({ type: 'ingredient', ingredient: ingKey(ing), language: getRandomGameLanguage(), id: uid() }));
   }
 
   return {

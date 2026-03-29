@@ -2,6 +2,7 @@ export function createTargetedActionService({
   advanceBurger,
   ingKey,
   uid,
+  getRandomGameLanguage,
   getTableSlotIndexForCurrentBurger,
   effectObserver,
   filterTable,
@@ -15,7 +16,7 @@ export function createTargetedActionService({
           targetTable: [...players[targetIdx].table],
           actorName: players[actingIdx]?.name || 'Jugador',
         });
-        players[targetIdx].table.forEach((ing) => discard.push({ type: 'ingredient', ingredient: ingKey(ing), id: uid() }));
+        players[targetIdx].table.forEach((ing) => discard.push({ type: 'ingredient', ingredient: ingKey(ing), language: getRandomGameLanguage(), id: uid() }));
         players[targetIdx].table = [];
         return { kind: 'resolved', players, discard };
       }
@@ -27,7 +28,7 @@ export function createTargetedActionService({
         const { player: updatedPlayer, freed, done } = advanceBurger(players[actingIdx]);
         players[actingIdx] = updatedPlayer;
         if (done) {
-          freed.forEach((ing) => discard.push({ type: 'ingredient', ingredient: ingKey(ing), id: uid() }));
+          freed.forEach((ing) => discard.push({ type: 'ingredient', ingredient: ingKey(ing), language: getRandomGameLanguage(), id: uid() }));
         }
         effectObserver?.publishForkEvent({
           id: uid(),

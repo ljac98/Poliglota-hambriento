@@ -11,6 +11,7 @@ export function createPlayerActionCommands({
   ingEmoji,
   ingKey,
   uid,
+  getRandomGameLanguage,
   addLog,
   endTurn,
   advanceTutorialAfter,
@@ -56,7 +57,7 @@ export function createPlayerActionCommands({
       nextPlayers[hi] = updatedPlayer;
       const nextDiscard = [...discard, card];
       if (done) {
-        freed.forEach((ingredient) => nextDiscard.push({ type: 'ingredient', ingredient: ingKey(ingredient), id: uid() }));
+        freed.forEach((ingredient) => nextDiscard.push({ type: 'ingredient', ingredient: ingKey(ingredient), language: getRandomGameLanguage(), id: uid() }));
         addLog(hi, '¡completó una hamburguesa! 🎉', nextPlayers);
       }
       setSelectedIdx(null);
@@ -138,7 +139,7 @@ export function createPlayerActionCommands({
       nextPlayers[hi] = updatedPlayer;
       const nextDiscard = [...discard, card];
       if (done) {
-        freed.forEach((ingredient) => nextDiscard.push({ type: 'ingredient', ingredient: ingKey(ingredient), id: uid() }));
+        freed.forEach((ingredient) => nextDiscard.push({ type: 'ingredient', ingredient: ingKey(ingredient), language: getRandomGameLanguage(), id: uid() }));
         addLog(hi, '¡completó una hamburguesa! 🎉', nextPlayers);
       }
       if (advanceTutorialAfter('wildcard')) {

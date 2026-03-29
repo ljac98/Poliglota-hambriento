@@ -115,6 +115,7 @@ const de = {
   leaveRoom: "← Raum verlassen",
   extraPlayMsg: "Du kannst eine Zutat spielen!",
   yourTurn: "Dein Zug",
+  turnOfPlayer: (name) => `${name} ist dran`,
   tapContinue: "Tippe zum Fortfahren...",
   playerWon: (name) => `${name} hat gewonnen!`,
   wonByAbandon: "Sieg durch Aufgabe!",

@@ -139,7 +139,7 @@ export const BurgerTarget = ({ ingredients, table, isCurrent, onIngredientClick,
       )}
 
       {/* Ingredient icons row */}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 3, alignItems: "center" }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 5, alignItems: "center" }}>
         {isCurrent ? ingredients.map((ing, i) => {
           rendered[ing] = (rendered[ing] || 0) + 1;
           const thisOccurrence = rendered[ing];
@@ -154,7 +154,7 @@ export const BurgerTarget = ({ ingredients, table, isCurrent, onIngredientClick,
               ref={(el) => onRegisterSlotRef?.(i, el)}
               onClick={() => onIngredientClick && onIngredientClick(viaWildcard ? `perrito|${ing}` : ing)}
               style={{
-              position: "relative", width: 36, height: 36, borderRadius: 6,
+              position: "relative", width: 44, height: 44, borderRadius: 8,
               background: filled ? ING_BG[ing] : "rgba(255,255,255,0.06)",
               display: "flex", alignItems: "center", justifyContent: "center",
               border: shouldHighlight
@@ -169,7 +169,7 @@ export const BurgerTarget = ({ ingredients, table, isCurrent, onIngredientClick,
             }}
             >
               {ING_IMG[ing]
-                ? <img src={ING_IMG[ing]} alt={ing} style={{ width: 35, height: 35, objectFit: 'contain' }} />
+                ? <img src={ING_IMG[ing]} alt={ing} style={{ width: 42, height: 42, objectFit: 'contain' }} />
                 : ING_EMOJI[ing]}
               {viaWildcard && (
                 <div style={{

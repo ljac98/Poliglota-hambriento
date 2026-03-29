@@ -16,6 +16,7 @@ export function createGameServices({
   ingEmoji,
   ingKey,
   uid,
+  getRandomGameLanguage,
   getTableSlotIndexForCurrentBurger,
   triggerGlotonEvent,
   triggerHatStealEvent,
@@ -40,12 +41,14 @@ export function createGameServices({
     ingEmoji,
     ingKey,
     uid,
+    getRandomGameLanguage,
   });
 
   const targetedActionService = createTargetedActionService({
     advanceBurger,
     ingKey,
     uid,
+    getRandomGameLanguage,
     getTableSlotIndexForCurrentBurger,
     effectObserver,
     filterTable,

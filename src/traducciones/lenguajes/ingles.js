@@ -115,6 +115,7 @@ const en = {
   leaveRoom: "← Leave room",
   extraPlayMsg: "You can play an ingredient!",
   yourTurn: "Your turn",
+  turnOfPlayer: (name) => `${name}'s turn`,
   tapContinue: "Tap to continue...",
   playerWon: (name) => `${name} won!`,
   wonByAbandon: "You win by abandonment!",

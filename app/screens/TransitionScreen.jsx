@@ -4,7 +4,13 @@ import { BurgerTarget } from '../../components/GameUI.jsx';
 import { Btn } from '../components/Btn.jsx';
 import imgGlotonHead from '../../imagenes/acciones/comer.png';
 
-export function TransitionScreen({ player, onContinue, isExtraPlay, T }) {
+export function TransitionScreen({ player, onContinue, isExtraPlay, isCurrentUserTurn, T }) {
+  const title = isExtraPlay
+    ? T('extraPlayMsg')
+    : (isCurrentUserTurn
+      ? T('yourTurn')
+      : (typeof T('turnOfPlayer') === 'function' ? T('turnOfPlayer')(player?.name || 'Jugador') : `Turno de ${player?.name || 'Jugador'}`));
+
   return (
     <div
       onClick={onContinue}
@@ -30,7 +36,7 @@ export function TransitionScreen({ player, onContinue, isExtraPlay, T }) {
         <img src={imgGlotonHead} alt="El Glotón" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
       </div>
       <h2 style={{ fontSize: 28, fontWeight: 900, color: '#FFD700', marginBottom: 8 }}>
-        {isExtraPlay ? T('extraPlayMsg') : T('yourTurn')}
+        {title}
       </h2>
       <div style={{ fontSize: 22, color: '#eee', marginBottom: 6 }}>
         {player?.name}

@@ -115,6 +115,7 @@ const pt = {
   leaveRoom: "← Sair da sala",
   extraPlayMsg: "Você pode jogar um ingrediente!",
   yourTurn: "Sua vez",
+  turnOfPlayer: (name) => `Turno de ${name}`,
   tapContinue: "Toque para continuar...",
   playerWon: (name) => `${name} venceu!`,
   wonByAbandon: "Venceste por abandono!",

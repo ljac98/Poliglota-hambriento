@@ -17,6 +17,53 @@ export const FRUITS_VEGS = ["lechuga","tomate","cebolla","palta"];
 // ═══ LANGUAGES ═══
 export const LANGUAGES = ["espanol","ingles","frances","italiano","aleman","portugues"];
 
+const LANGUAGE_ALIASES = {
+  es: "espanol",
+  esp: "espanol",
+  spa: "espanol",
+  english: "ingles",
+  en: "ingles",
+  ing: "ingles",
+  eng: "ingles",
+  fr: "frances",
+  fra: "frances",
+  fre: "frances",
+  french: "frances",
+  it: "italiano",
+  ita: "italiano",
+  italian: "italiano",
+  de: "aleman",
+  ale: "aleman",
+  ger: "aleman",
+  deu: "aleman",
+  german: "aleman",
+  pt: "portugues",
+  por: "portugues",
+  portuguese: "portugues",
+};
+
+export function normalizeGameLanguage(language) {
+  const raw = String(language || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+  if (!raw) return "";
+  if (LANGUAGES.includes(raw)) return raw;
+  return LANGUAGE_ALIASES[raw] || raw;
+}
+
+export function getRandomGameLanguage() {
+  return LANGUAGES[Math.floor(Math.random() * LANGUAGES.length)];
+}
+
+export function languageMatches(left, right) {
+  const normalizedLeft = normalizeGameLanguage(left);
+  const normalizedRight = normalizeGameLanguage(right);
+  return !!normalizedLeft && normalizedLeft === normalizedRight;
+}
+
 export const LANG_SHORT = {
   espanol:"ESP", ingles:"ING", frances:"FRA",
   italiano:"ITA", aleman:"ALE", portugues:"POR"

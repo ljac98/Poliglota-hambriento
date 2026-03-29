@@ -1,6 +1,7 @@
 import {
   LANGUAGES,
   FRUITS_VEGS,
+  getRandomGameLanguage,
 } from '../../constants/index.js';
 import { checkBurgerComplete } from '../../game/index.js';
 import { shuffle, uid } from '../../game/utils.js';
@@ -140,7 +141,7 @@ export function applyMass(players, discard, actionId, playerIdx) {
       let removedCount = 0;
       player.table.forEach(ing => {
         if (ingKey(ing) === 'perrito') {
-          nextDiscard.push({ type: 'ingredient', ingredient: 'perrito', id: uid() });
+          nextDiscard.push({ type: 'ingredient', ingredient: 'perrito', language: getRandomGameLanguage(), id: uid() });
           removedCount += 1;
         } else {
           kept.push(ing);
@@ -167,7 +168,7 @@ export function applyMass(players, discard, actionId, playerIdx) {
     player.table.forEach(ing => {
       if (targets.includes(ingKey(ing)) || targets.includes(ingChosen(ing))) {
         const removedIng = ingKey(ing);
-        nextDiscard.push({ type: 'ingredient', ingredient: removedIng, id: uid() });
+        nextDiscard.push({ type: 'ingredient', ingredient: removedIng, language: getRandomGameLanguage(), id: uid() });
         removedCount += 1;
         removedIngredients.push(removedIng);
       } else {
