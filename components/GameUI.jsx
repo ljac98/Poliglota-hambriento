@@ -104,7 +104,7 @@ export const BurgerTarget = ({ ingredients, table, isCurrent, onIngredientClick,
         }}>
           <img src={burgerPanArriba} alt="pan" style={{
             width: 70, height: 'auto', marginBottom: -4,
-            opacity: panFilled ? 1 : 0.7, transition: 'opacity 0.3s',
+            opacity: panFilled ? 1 : 0.42, transition: 'opacity 0.3s',
             filter: 'none',
           }} />
           {[...ingredients].reverse().map((ing, i) => {
@@ -118,7 +118,7 @@ export const BurgerTarget = ({ ingredients, table, isCurrent, onIngredientClick,
                 alt={ing}
                 style={{
                   width: 64, height: 'auto', marginTop: -4, marginBottom: -4,
-                  opacity: filled ? 1 : 0.72,
+                  opacity: filled ? 1 : 0.4,
                   transition: 'opacity 0.3s, transform 0.2s, filter 0.2s',
                   filter: shouldHighlight
                     ? 'drop-shadow(0 0 10px rgba(255,215,0,0.75)) brightness(1.08)'
@@ -130,7 +130,7 @@ export const BurgerTarget = ({ ingredients, table, isCurrent, onIngredientClick,
           })}
           <img src={burgerPanAbajo} alt="pan" style={{
             width: 70, height: 'auto', marginTop: -4,
-            opacity: panFilled ? 1 : 0.7, transition: 'opacity 0.3s',
+            opacity: panFilled ? 1 : 0.42, transition: 'opacity 0.3s',
             filter: 'none',
           }} />
         </div>
