@@ -6776,6 +6776,7 @@ export default function App() {
                 const isUseful = needed.includes(card.ingredient);
                 const isIdeal = isUseful && hasCorrectHat;
                 const isSelected = modal.previewCardId === card.id;
+                const showOverlay = isSelected && !isIdeal;
 
                 return (
                   <div
@@ -6793,6 +6794,7 @@ export default function App() {
                       transform: isSelected ? 'translateY(-4px) scale(1.03)' : 'scale(1)',
                       transition: 'all .18s ease',
                       filter: 'none',
+                      position: 'relative',
                     }}
                   >
                     <div style={{
@@ -6804,26 +6806,51 @@ export default function App() {
                     }}>
                       <GameCard card={card} large playable={undefined} />
                     </div>
+                    {showOverlay && (
+                      <div style={{
+                        position: 'absolute',
+                        inset: 0,
+                        borderRadius: 14,
+                        background: 'rgba(9,12,20,0.92)',
+                        border: '2px solid rgba(255,179,138,0.55)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                        gap: 10,
+                        padding: '12px 10px',
+                        textAlign: 'center',
+                        boxShadow: '0 10px 24px rgba(0,0,0,0.35)',
+                      }}>
+                        <div style={{ fontSize: 12, color: '#ffb38a', fontWeight: 800, lineHeight: 1.35 }}>
+                          {selectionMessage}
+                        </div>
+                        {!selectedHasCorrectHat && (
+                          <div style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 6,
+                            alignSelf: 'center',
+                            padding: '4px 8px',
+                            borderRadius: 999,
+                            background: 'rgba(255,255,255,0.06)',
+                            border: `1px solid ${LANG_BORDER[selectedCardLang]}66`,
+                          }}>
+                            <HatSVG lang={selectedCardLang} size={22} />
+                            <span style={{ fontSize: 11, fontWeight: 800, color: LANG_TEXT[selectedCardLang] }}>
+                              {selectedNeedsHatName}
+                            </span>
+                          </div>
+                        )}
+                        <Btn onClick={(e) => { e.stopPropagation(); resolveBasurero(selectedCard.id); }} color="#FFD700" style={{ color: '#111', width: '100%' }}>
+                          Agarrar de todas formas
+                        </Btn>
+                      </div>
+                    )}
                   </div>
                 );
               })}
             </div>
-            {selectedCard && selectionMessage && (
-              <div style={{
-                marginBottom: 12,
-                padding: '12px 14px',
-                borderRadius: 12,
-                background: 'rgba(255,255,255,.05)',
-                border: '1px solid rgba(255,255,255,.08)',
-              }}>
-                <div style={{ fontSize: 12, color: '#ffb38a', fontWeight: 800, marginBottom: 8 }}>
-                  {selectionMessage}
-                </div>
-                <Btn onClick={() => resolveBasurero(selectedCard.id)} color="#FFD700" style={{ color: '#111', width: '100%' }}>
-                  Agarrar de todas formas
-                </Btn>
-              </div>
-            )}
             <Btn onClick={() => setModal(null)} color="#333" style={{ color: '#aaa' }}>{T('cancel')}</Btn>
           </Modal>
         );
