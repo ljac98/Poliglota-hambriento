@@ -54,6 +54,7 @@ export function GameAnimations({
   milanesaAnim,
   pizzaAnim,
   parrillaAnim,
+  closetCoverAnim,
   hatStealAnim,
   ensaladaAnim,
   isMobile,
@@ -419,6 +420,7 @@ export function GameAnimations({
       )}
 
       {renderActionCardAnimation('ensalada', { anim: ensaladaAnim, isMobile, actionStackImg: ACTION_STACK_IMG })}
+      {renderActionCardAnimation('perchero_cubierto', { anim: closetCoverAnim, isMobile })}
 
       <style>{`
         @keyframes gloton-bite-flash {

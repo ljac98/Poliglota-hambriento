@@ -11,9 +11,20 @@ import actionParrilla1 from '../../imagenes/acciones/parrilla2.png';
 import actionParrilla2 from '../../imagenes/acciones/parrilla3.png';
 import actionParrilla3 from '../../imagenes/acciones/parrilla4.png';
 import actionTridente from '../../imagenes/acciones/tridente.png';
+import actionPercheroCubierto1 from '../../imagenes/acciones/perchero cubierto1.png';
+import actionPercheroCubierto2 from '../../imagenes/acciones/perchero cubierto2.png';
+import actionPercheroCubierto3 from '../../imagenes/acciones/perchero cubierto3.png';
+import actionPercheroCubierto4 from '../../imagenes/acciones/perchero cubierto4.png';
+import actionPercheroCubiertoFinal from '../../imagenes/acciones/perchero cubierto.png';
 import burgerQueso from '../../imagenes/hamburguesas/ingredientes/queso.png';
 
 const PARRILLA_FRAMES = [actionParrilla1, actionParrilla2, actionParrilla3];
+const PERCHERO_CUBIERTO_FRAMES = [
+  actionPercheroCubierto1,
+  actionPercheroCubierto2,
+  actionPercheroCubierto3,
+  actionPercheroCubierto4,
+];
 
 export function renderActionCardAnimation(type, context) {
   const strategy = ACTION_ANIMATION_STRATEGIES[type];
@@ -316,6 +327,41 @@ const ACTION_ANIMATION_STRATEGIES = {
             </div>
           </>
         )}
+      </div>
+    );
+  },
+
+  perchero_cubierto: ({ anim, isMobile }) => {
+    if (!anim?.visible) return null;
+    const frameSrc = anim.finished
+      ? actionPercheroCubiertoFinal
+      : (PERCHERO_CUBIERTO_FRAMES[anim.frameIdx] || actionPercheroCubierto1);
+    return (
+      <div style={{ position: 'fixed', inset: 0, zIndex: 9487, pointerEvents: 'none', overflow: 'hidden' }}>
+        <div
+          style={{
+            position: 'fixed',
+            left: anim.x,
+            top: anim.y,
+            transform: `translate(-50%, -50%) scale(${anim.finished ? 1.04 : 0.98})`,
+            transition: 'transform 0.22s ease, opacity 0.22s ease',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 10,
+            filter: 'drop-shadow(0 16px 30px rgba(0,0,0,.4))',
+          }}
+        >
+          <img
+            src={frameSrc}
+            alt="Perchero cubierto"
+            style={{
+              width: isMobile ? 138 : 196,
+              height: isMobile ? 138 : 196,
+              objectFit: 'contain',
+            }}
+          />
+        </div>
       </div>
     );
   },

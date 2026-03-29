@@ -7,6 +7,7 @@ export function createActionEffectObserver({
   onGloton,
   onHatSteal,
   onFork,
+  onClosetCover,
 }) {
   const massActionHandlers = {
     comecomodines: ({ result, actingIdx, actorName }) => onComeComodines?.(result, actingIdx, actorName),
@@ -31,6 +32,10 @@ export function createActionEffectObserver({
 
     publishForkEvent(payload) {
       onFork?.(payload);
+    },
+
+    publishClosetCoverEvent(payload) {
+      onClosetCover?.(payload);
     },
   };
 }

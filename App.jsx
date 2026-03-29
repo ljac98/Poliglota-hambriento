@@ -500,6 +500,7 @@ export default function App() {
   const [lastEnsaladaEvent, setLastEnsaladaEvent] = useState(null);
   const [lastPizzaEvent, setLastPizzaEvent] = useState(null);
   const [lastParrillaEvent, setLastParrillaEvent] = useState(null);
+  const [lastClosetCoverEvent, setLastClosetCoverEvent] = useState(null);
   const [lastHatStealEvent, setLastHatStealEvent] = useState(null);
   const [negationFx, setNegationFx] = useState(null);
   const [forkFx, setForkFx] = useState(null);
@@ -509,6 +510,7 @@ export default function App() {
   const [ensaladaFx, setEnsaladaFx] = useState(null);
   const [pizzaFx, setPizzaFx] = useState(null);
   const [parrillaFx, setParrillaFx] = useState(null);
+  const [closetCoverFx, setClosetCoverFx] = useState(null);
   const [hatStealFx, setHatStealFx] = useState(null);
   const [forkAnim, setForkAnim] = useState(null);
   const [comeComodinesAnim, setComeComodinesAnim] = useState(null);
@@ -517,6 +519,7 @@ export default function App() {
   const [ensaladaAnim, setEnsaladaAnim] = useState(null);
   const [pizzaAnim, setPizzaAnim] = useState(null);
   const [parrillaAnim, setParrillaAnim] = useState(null);
+  const [closetCoverAnim, setClosetCoverAnim] = useState(null);
   const [hatStealAnim, setHatStealAnim] = useState(null);
   // Host-only ref that stores the resolve callback (not serializable over socket)
   const pendingNegRef = useRef(null);
@@ -542,6 +545,7 @@ export default function App() {
   const lastEnsaladaSeenRef = useRef(null);
   const lastPizzaSeenRef = useRef(null);
   const lastParrillaSeenRef = useRef(null);
+  const lastClosetCoverSeenRef = useRef(null);
   const lastHatStealSeenRef = useRef(null);
   const playerAreaRefs = useRef({});
   const playerIngredientRefs = useRef({});
@@ -1242,6 +1246,21 @@ export default function App() {
     setParrillaFx(event);
   }, []);
 
+  const triggerClosetCoverEvent = useCallback((actingIdx, targetIdx, actorName, targetName) => {
+    const event = {
+      id: uid(),
+      actingIdx,
+      targetIdx,
+      actorName: actorName || 'Jugador',
+      targetName: targetName || 'Jugador',
+    };
+    setLastClosetCoverEvent(event);
+    if (!isOnline || actingIdx === HI || targetIdx === HI) {
+      lastClosetCoverSeenRef.current = event.id;
+      setClosetCoverFx(event);
+    }
+  }, [HI, isOnline]);
+
   const triggerHatStealEvent = useCallback((actingIdx, targetIdx, hatLang, actorName) => {
     if (!hatLang && hatLang !== '') return;
     const event = {
@@ -1346,6 +1365,43 @@ export default function App() {
   }, [hatStealFx, HI]);
 
   useEffect(() => {
+    if (!closetCoverFx || typeof window === 'undefined') return undefined;
+    const eventId = closetCoverFx.id || uid();
+    const centerX = window.innerWidth / 2;
+    const centerY = window.innerHeight * (isMobile ? 0.42 : 0.4);
+    setClosetCoverAnim({
+      id: eventId,
+      visible: true,
+      x: centerX,
+      y: centerY,
+      frameIdx: 0,
+      finished: false,
+    });
+    const timers = [];
+    timers.push(setTimeout(() => {
+      setClosetCoverAnim((prev) => (prev?.id === eventId ? { ...prev, frameIdx: 1 } : prev));
+    }, 220));
+    timers.push(setTimeout(() => {
+      setClosetCoverAnim((prev) => (prev?.id === eventId ? { ...prev, frameIdx: 2 } : prev));
+    }, 460));
+    timers.push(setTimeout(() => {
+      setClosetCoverAnim((prev) => (prev?.id === eventId ? { ...prev, frameIdx: 3 } : prev));
+    }, 720));
+    timers.push(setTimeout(() => {
+      setClosetCoverAnim((prev) => (prev?.id === eventId ? { ...prev, finished: true } : prev));
+    }, 980));
+    timers.push(setTimeout(() => {
+      setClosetCoverAnim((prev) => (prev?.id === eventId ? null : prev));
+      setClosetCoverFx((prev) => (prev?.id === eventId ? null : prev));
+    }, 1800));
+
+    return () => {
+      timers.forEach(clearTimeout);
+      setClosetCoverAnim(null);
+    };
+  }, [closetCoverFx, isMobile]);
+
+  useEffect(() => {
     if (typeof window === 'undefined') return undefined;
     if (shouldLogoutOnLoad) {
       clearAuth();
@@ -1443,6 +1499,7 @@ export default function App() {
     setLastEnsaladaEvent(null);
     setLastPizzaEvent(null);
     setLastParrillaEvent(null);
+    setLastClosetCoverEvent(null);
     setLastHatStealEvent(null);
     setLastHatStealEvent(null);
     setNegationFx(null);
@@ -1453,6 +1510,7 @@ export default function App() {
     setEnsaladaFx(null);
     setPizzaFx(null);
     setParrillaFx(null);
+    setClosetCoverFx(null);
     setHatStealFx(null);
     setHatStealFx(null);
     setForkAnim(null);
@@ -1462,6 +1520,7 @@ export default function App() {
     setEnsaladaAnim(null);
     setPizzaAnim(null);
     setParrillaAnim(null);
+    setClosetCoverAnim(null);
     setHatStealAnim(null);
     setHatStealAnim(null);
     pendingNegRef.current = null;
@@ -1473,6 +1532,7 @@ export default function App() {
     lastEnsaladaSeenRef.current = null;
     lastPizzaSeenRef.current = null;
     lastParrillaSeenRef.current = null;
+    lastClosetCoverSeenRef.current = null;
     lastHatStealSeenRef.current = null;
     setGamePaused(false);
     setPausedMessage('');
@@ -1517,6 +1577,7 @@ export default function App() {
     setLastEnsaladaEvent(null);
     setLastPizzaEvent(null);
     setLastParrillaEvent(null);
+    setLastClosetCoverEvent(null);
     setNegationFx(null);
     setForkFx(null);
     setComeComodinesFx(null);
@@ -1525,6 +1586,7 @@ export default function App() {
     setEnsaladaFx(null);
     setPizzaFx(null);
     setParrillaFx(null);
+    setClosetCoverFx(null);
     setForkAnim(null);
     setComeComodinesAnim(null);
     setGlotonAnim(null);
@@ -1532,6 +1594,7 @@ export default function App() {
     setEnsaladaAnim(null);
     setPizzaAnim(null);
     setParrillaAnim(null);
+    setClosetCoverAnim(null);
     lastNegationSeenRef.current = null;
     lastForkSeenRef.current = null;
     lastComeComodinesSeenRef.current = null;
@@ -1540,6 +1603,7 @@ export default function App() {
     lastEnsaladaSeenRef.current = null;
     lastPizzaSeenRef.current = null;
     lastParrillaSeenRef.current = null;
+    lastClosetCoverSeenRef.current = null;
     clearRoomSession();
     setGamePaused(false);
     setPausedMessage('');
@@ -1906,6 +1970,7 @@ export default function App() {
             setLastEnsaladaEvent(gameState.lastEnsaladaEvent || null);
             setLastPizzaEvent(gameState.lastPizzaEvent || null);
             setLastParrillaEvent(gameState.lastParrillaEvent || null);
+            setLastClosetCoverEvent(gameState.lastClosetCoverEvent || null);
             setLastHatStealEvent(gameState.lastHatStealEvent || null);
             if (gameState.winner) { setWinner(gameState.winner); clearRoomSession(); setPhase('gameover'); }
           else setPhase('playing');
@@ -2087,6 +2152,7 @@ export default function App() {
       setLastEnsaladaEvent(state.lastEnsaladaEvent || null);
       setLastPizzaEvent(state.lastPizzaEvent || null);
       setLastParrillaEvent(state.lastParrillaEvent || null);
+      setLastClosetCoverEvent(state.lastClosetCoverEvent || null);
       setLastHatStealEvent(state.lastHatStealEvent || null);
       if (state.lastNegationEvent?.id && state.lastNegationEvent.id !== lastNegationSeenRef.current && state.lastNegationEvent.actingIdx === myPlayerIdx) {
         lastNegationSeenRef.current = state.lastNegationEvent.id;
@@ -2120,6 +2186,14 @@ export default function App() {
         lastParrillaSeenRef.current = state.lastParrillaEvent.id;
         setParrillaFx(state.lastParrillaEvent);
       }
+      if (
+        state.lastClosetCoverEvent?.id &&
+        state.lastClosetCoverEvent.id !== lastClosetCoverSeenRef.current &&
+        (state.lastClosetCoverEvent.targetIdx === myPlayerIdx || state.lastClosetCoverEvent.actingIdx === myPlayerIdx)
+      ) {
+        lastClosetCoverSeenRef.current = state.lastClosetCoverEvent.id;
+        setClosetCoverFx(state.lastClosetCoverEvent);
+      }
       if (state.lastHatStealEvent?.id && state.lastHatStealEvent.id !== lastHatStealSeenRef.current) {
         lastHatStealSeenRef.current = state.lastHatStealEvent.id;
         setHatStealFx(state.lastHatStealEvent);
@@ -2149,11 +2223,11 @@ export default function App() {
       const syncModal = modal && privateModals.includes(modal.type) ? null : modal;
       socket.emit('syncState', {
         code: roomCode,
-        state: { players, deck, discard, cp, log, extraPlay, modal: syncModal, pendingNeg, lastNegationEvent, lastForkEvent, lastComeComodinesEvent, lastGlotonEvent, lastMilanesaEvent, lastEnsaladaEvent, lastPizzaEvent, lastParrillaEvent, lastHatStealEvent, winner, gameConfig: currentGameConfig, phase: 'playing' },
+        state: { players, deck, discard, cp, log, extraPlay, modal: syncModal, pendingNeg, lastNegationEvent, lastForkEvent, lastComeComodinesEvent, lastGlotonEvent, lastMilanesaEvent, lastEnsaladaEvent, lastPizzaEvent, lastParrillaEvent, lastClosetCoverEvent, lastHatStealEvent, winner, gameConfig: currentGameConfig, phase: 'playing' },
       });
     }, 80);
     return () => clearTimeout(syncRef.current);
-  }, [players, deck, discard, cp, log, extraPlay, modal, pendingNeg, lastNegationEvent, lastForkEvent, lastComeComodinesEvent, lastGlotonEvent, lastMilanesaEvent, lastEnsaladaEvent, lastPizzaEvent, lastParrillaEvent, lastHatStealEvent, winner, currentGameConfig, phase, isOnline, isHost]);
+  }, [players, deck, discard, cp, log, extraPlay, modal, pendingNeg, lastNegationEvent, lastForkEvent, lastComeComodinesEvent, lastGlotonEvent, lastMilanesaEvent, lastEnsaladaEvent, lastPizzaEvent, lastParrillaEvent, lastClosetCoverEvent, lastHatStealEvent, winner, currentGameConfig, phase, isOnline, isHost]);
 
   // â”€â”€ Socket: host processes remote player actions â”€â”€
   // We store the latest state in refs so the socket handler always has fresh values
@@ -2251,6 +2325,7 @@ export default function App() {
     onEnsalada: triggerEnsaladaEvent,
     onPizza: triggerPizzaEvent,
     onParrilla: triggerParrillaEvent,
+    onClosetCover: triggerClosetCoverEvent,
     onGloton: triggerGlotonEvent,
     onHatSteal: triggerHatStealEvent,
     onFork: forkEventObserver,
@@ -2309,6 +2384,13 @@ export default function App() {
     const nextPlayers = clone(basePlayers);
     if (blocked) {
       nextPlayers[targetIdx].closetCovered = true;
+      actionEffectObserver.publishClosetCoverEvent({
+        id: uid(),
+        actingIdx,
+        targetIdx,
+        actorName: nextPlayers[actingIdx]?.name || 'Jugador',
+        targetName: nextPlayers[targetIdx]?.name || 'Jugador',
+      });
       addLog(actingIdx, `cubrió el perchero de ${nextPlayers[targetIdx].name}`, nextPlayers);
     } else {
       addLog(targetIdx, `evitó el perchero cubierto descartando 2 cartas`, nextPlayers);
@@ -5335,6 +5417,7 @@ export default function App() {
         milanesaAnim={milanesaAnim}
         pizzaAnim={pizzaAnim}
         parrillaAnim={parrillaAnim}
+        closetCoverAnim={closetCoverAnim}
         hatStealAnim={hatStealAnim}
         ensaladaAnim={ensaladaAnim}
         isMobile={isMobile}
