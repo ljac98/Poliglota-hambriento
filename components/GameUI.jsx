@@ -93,7 +93,7 @@ export const BurgerTarget = ({ ingredients, table, isCurrent, onIngredientClick,
     <div style={{
       display: "flex", flexDirection: "row", alignItems: "center", gap: 8,
       padding: "6px 10px", borderRadius: 10,
-      background: isCurrent ? "rgba(255,215,0,0.1)" : "rgba(255,255,255,0.03)",
+      background: isCurrent ? "rgba(20,26,34,0.92)" : "rgba(255,255,255,0.03)",
       border: isCurrent ? "2px solid #FFD700" : "2px solid transparent",
     }}>
       {/* Stacked burger visual — only for the current target */}

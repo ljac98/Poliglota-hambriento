@@ -4755,7 +4755,7 @@ export default function App() {
         background: tutorialActive && tutorialFocus.closet ? 'rgba(255,215,0,0.05)' : 'transparent',
       }}>
         <div style={{ fontSize: 9, color: '#555', fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>{T('closet')}</div>
-        <div style={{ position: 'relative', width: 130, height: 165 }}>
+        <div style={{ position: 'relative', width: 165, height: 210 }}>
           <img
             src={percheroImg}
             alt="Perchero"
