@@ -2892,6 +2892,38 @@ export default function App() {
     return { burger, slots };
   }
 
+  function getUsefulTableMarkers(table, neededIngredients) {
+    const remaining = [...(neededIngredients || [])];
+    return (table || []).map((item) => {
+      const raw = String(item);
+      const chosenWildcardIng = raw.startsWith('perrito|') ? raw.split('|')[1] : null;
+      const isWildcard = raw.startsWith('perrito');
+      const displayIng = chosenWildcardIng || ingKey(item);
+      let useful = false;
+
+      if (chosenWildcardIng) {
+        const idx = remaining.indexOf(chosenWildcardIng);
+        if (idx !== -1) {
+          remaining.splice(idx, 1);
+          useful = true;
+        }
+      } else if (raw === 'perrito') {
+        if (remaining.length > 0) {
+          remaining.shift();
+          useful = true;
+        }
+      } else {
+        const idx = remaining.indexOf(displayIng);
+        if (idx !== -1) {
+          remaining.splice(idx, 1);
+          useful = true;
+        }
+      }
+
+      return { raw, displayIng, isWildcard, useful };
+    });
+  }
+
   function getTableSlotIndexForCurrentBurger(playerLike, tableIndex) {
     if (!playerLike || tableIndex == null || tableIndex < 0) return null;
     const targetBurger = playerLike.burgers?.[playerLike.currentBurger] || [];
@@ -5726,16 +5758,44 @@ export default function App() {
       )}
 
       {/* Pick Target */}
-      {modal?.type === 'pickTarget' && (
-        <Modal title={`${getActionInfo(modal.action)?.emoji} ${getActionInfo(modal.action)?.name} - ${T('chooseOpponent')}`}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {players.map((p, i) => {
-              if (i === HI) return null;
-              const showBurgerProgress = ['gloton', 'tenedor'].includes(modal.action);
-              const showAllHats = ['ladron', 'intercambio_sombreros'].includes(modal.action);
-              const hatsOnlyView = ['intercambio_sombreros', 'ladron'].includes(modal.action);
-              const currentBurgerInfo = getCurrentBurgerSlotState(p);
-              return (
+      {modal?.type === 'pickTarget' && (() => {
+        const neededForHuman = getRemainingNeeds(human);
+        const humanUsefulCount = getUsefulTableMarkers(human.table, neededForHuman).filter((entry) => entry.useful).length;
+        const humanHatSet = new Set((human.mainHats || []).filter(Boolean));
+        const targetPlayers = players
+          .map((p, i) => {
+            if (i === HI) return null;
+            const showBurgerProgress = ['gloton', 'tenedor'].includes(modal.action);
+            const showAllHats = ['ladron', 'intercambio_sombreros'].includes(modal.action);
+            const hatsOnlyView = ['intercambio_sombreros', 'ladron'].includes(modal.action);
+            const currentBurgerInfo = getCurrentBurgerSlotState(p);
+            const usefulMarkers = getUsefulTableMarkers(p.table, neededForHuman);
+            const usefulCount = usefulMarkers.filter((entry) => entry.useful).length;
+            const hasAnyIngredients = (p.table?.length || 0) > 0;
+
+            let isEligible = true;
+            if (modal.action === 'tenedor') isEligible = usefulCount > 0;
+            if (modal.action === 'gloton') isEligible = hasAnyIngredients;
+            if (modal.action === 'intercambio_hamburguesa') isEligible = usefulCount > humanUsefulCount;
+            if (['ladron', 'intercambio_sombreros'].includes(modal.action)) {
+              isEligible = (p.mainHats || []).some((hatLang) => !humanHatSet.has(hatLang));
+            }
+
+            if (!isEligible) return null;
+
+            return { p, i, showBurgerProgress, showAllHats, hatsOnlyView, currentBurgerInfo, usefulMarkers };
+          })
+          .filter(Boolean);
+
+        return (
+          <Modal title={`${getActionInfo(modal.action)?.emoji} ${getActionInfo(modal.action)?.name} - ${T('chooseOpponent')}`}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {targetPlayers.length === 0 && (
+                <div style={{ color: '#888', fontSize: 12, textAlign: 'center', padding: '8px 0' }}>
+                  No hay oponentes v&aacute;lidos para esta carta.
+                </div>
+              )}
+              {targetPlayers.map(({ p, i, showBurgerProgress, showAllHats, hatsOnlyView, currentBurgerInfo, usefulMarkers }) => (
                 <div
                   key={i}
                   onClick={() => resolvePickTarget(i)}
@@ -5755,12 +5815,10 @@ export default function App() {
                       <div style={{ fontSize: 11, color: '#777', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
                         <span>{T('tableLabel')}:</span>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                          {p.table.length > 0 ? p.table.map((ing, tableIdx) => {
-                            const displayIng = ingKey(ing);
-                            const isWildcard = String(ing).startsWith('perrito');
+                          {p.table.length > 0 ? usefulMarkers.map(({ raw, displayIng, isWildcard, useful }, tableIdx) => {
                             return (
                               <span
-                                key={`${ing}-${tableIdx}`}
+                                key={`${raw}-${tableIdx}`}
                                 style={{
                                   position: 'relative',
                                   width: 42,
@@ -5770,6 +5828,8 @@ export default function App() {
                                   display: 'inline-flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',
+                                  boxShadow: useful ? '0 0 0 2px rgba(255,215,0,0.22), 0 0 14px rgba(255,215,0,0.18)' : 'none',
+                                  border: useful ? '2px solid rgba(255,215,0,0.7)' : '2px solid transparent',
                                 }}
                               >
                                 {ING_IMG[displayIng]
@@ -5876,14 +5936,14 @@ export default function App() {
                     )}
                   </div>
                 </div>
-              );
-            })}
+              ))}
             <Btn onClick={() => setModal(null)} color="#333" style={{ color: '#aaa', marginTop: 8 }}>
               {T('cancel')}
             </Btn>
           </div>
         </Modal>
-      )}
+        );
+      })()}
 
       {modal?.type === 'closetCoverResponse' && modal.targetIdx === HI && (() => {
         const selected = modal.selected || [];
