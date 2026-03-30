@@ -5765,7 +5765,7 @@ export default function App() {
         const targetPlayers = players
           .map((p, i) => {
             if (i === HI) return null;
-            const showBurgerProgress = ['gloton', 'tenedor'].includes(modal.action);
+            const showBurgerProgress = modal.action === 'tenedor';
             const showAllHats = ['ladron', 'intercambio_sombreros'].includes(modal.action);
             const hatsOnlyView = ['intercambio_sombreros', 'ladron'].includes(modal.action);
             const currentBurgerInfo = getCurrentBurgerSlotState(p);
@@ -5787,8 +5787,22 @@ export default function App() {
           })
           .filter(Boolean);
 
+        const actionInfo = getActionInfo(modal.action) || {};
+        const modalTitle = modal.action === 'gloton'
+          ? (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+              <img
+                src={eqGloton}
+                alt={actionInfo.name || 'Gloton'}
+                style={{ width: 28, height: 28, objectFit: 'contain', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.35))' }}
+              />
+              <span>{`${actionInfo.name || 'El Gloton'} - ${T('chooseOpponent')}`}</span>
+            </span>
+          )
+          : `${actionInfo.emoji} ${actionInfo.name} - ${T('chooseOpponent')}`;
+
         return (
-          <Modal title={`${getActionInfo(modal.action)?.emoji} ${getActionInfo(modal.action)?.name} - ${T('chooseOpponent')}`}>
+          <Modal title={modalTitle}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {targetPlayers.length === 0 && (
                 <div style={{ color: '#888', fontSize: 12, textAlign: 'center', padding: '8px 0' }}>
@@ -6751,8 +6765,24 @@ export default function App() {
         const cost = Math.ceil(human.hand.length / 2);
         const sel = modal.selected;
         const remaining = cost - sel.length;
+        const replacingHat = human.mainHats?.[modal.replaceIdx ?? 0] || null;
+        const changeHatDiscardTitle = (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <HatSVG lang={modal.hatLang} size={24} />
+              <span style={{ color: '#FFD700' }}>{T('changeHat') || 'Cambiar sombrero'}</span>
+              {replacingHat && (
+                <>
+                  <span style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 900 }}>{'->'}</span>
+                  <HatSVG lang={replacingHat} size={24} />
+                </>
+              )}
+            </span>
+            <span>{`${T('to')} ${T(modal.hatLang)} - paso 3: elegir cartas`}</span>
+          </span>
+        );
         return (
-          <Modal title={`🎩 ${T('changeHat') || 'Cambiar sombrero'} a ${T(modal.hatLang)} — paso 3: elegir cartas`}>
+          <Modal title={changeHatDiscardTitle}>
             <p style={{ color: '#888', fontSize: 12, marginBottom: 8 }}>
               <strong style={{ color: remaining > 0 ? '#FFD700' : '#4CAF50' }}>
                 {remaining > 0 ? (typeof T('moreCards') === 'function' ? T('moreCards')(remaining) : T('moreCards')) : T('ready')}
