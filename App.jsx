@@ -5733,7 +5733,7 @@ export default function App() {
               if (i === HI) return null;
               const showBurgerProgress = ['gloton', 'tenedor'].includes(modal.action);
               const showAllHats = ['ladron', 'intercambio_sombreros'].includes(modal.action);
-              const hatsOnlyView = modal.action === 'intercambio_sombreros';
+              const hatsOnlyView = ['intercambio_sombreros', 'ladron'].includes(modal.action);
               const currentBurgerInfo = getCurrentBurgerSlotState(p);
               return (
                 <div
