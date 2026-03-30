@@ -5761,8 +5761,8 @@ export default function App() {
                               key={`${ing}-${tableIdx}`}
                               style={{
                                 position: 'relative',
-                                width: 20,
-                                height: 20,
+                                width: 26,
+                                height: 26,
                                 borderRadius: 6,
                                 background: ING_BG[displayIng] || 'rgba(255,255,255,.06)',
                                 display: 'inline-flex',
@@ -5771,14 +5771,14 @@ export default function App() {
                               }}
                             >
                               {ING_IMG[displayIng]
-                                ? <img src={ING_IMG[displayIng]} alt={displayIng} style={{ width: 18, height: 18, objectFit: 'contain' }} />
+                                ? <img src={ING_IMG[displayIng]} alt={displayIng} style={{ width: 22, height: 22, objectFit: 'contain' }} />
                                 : ING_EMOJI[displayIng]}
                               {isWildcard && (
                                 <span style={{
                                   position: 'absolute',
                                   right: -3,
                                   bottom: -4,
-                                  fontSize: 8,
+                                  fontSize: 10,
                                   lineHeight: 1,
                                 }}>
                                   {ING_EMOJI.perrito}
