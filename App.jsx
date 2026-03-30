@@ -5727,7 +5727,7 @@ export default function App() {
 
       {/* Pick Target */}
       {modal?.type === 'pickTarget' && (
-        <Modal title={`${getActionInfo(modal.action)?.emoji} ${getActionInfo(modal.action)?.name} â€” ${T('chooseOpponent')}`}>
+        <Modal title={`${getActionInfo(modal.action)?.emoji} ${getActionInfo(modal.action)?.name} - ${T('chooseOpponent')}`}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {players.map((p, i) => {
               if (i === HI) return null;
@@ -5750,9 +5750,46 @@ export default function App() {
                   <HatSVG lang={p.mainHats[0] || LANGUAGES[0]} size={28} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 800, color: PLAYER_COLORS[i % PLAYER_COLORS.length] }}>{p.name}</div>
-                    <div style={{ fontSize: 11, color: '#777' }}>
-                      {T('tableLabel')}: {p.table.map(ing => ING_EMOJI[ingKey(ing)]).join(' ') || T('empty')} â€¢
-                      {T('burgersLabel')}: {p.currentBurger}/{p.totalBurgers}
+                    <div style={{ fontSize: 11, color: '#777', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
+                      <span>{T('tableLabel')}:</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
+                        {p.table.length > 0 ? p.table.map((ing, tableIdx) => {
+                          const displayIng = ingKey(ing);
+                          const isWildcard = String(ing).startsWith('perrito');
+                          return (
+                            <span
+                              key={`${ing}-${tableIdx}`}
+                              style={{
+                                position: 'relative',
+                                width: 20,
+                                height: 20,
+                                borderRadius: 6,
+                                background: ING_BG[displayIng] || 'rgba(255,255,255,.06)',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                            >
+                              {ING_IMG[displayIng]
+                                ? <img src={ING_IMG[displayIng]} alt={displayIng} style={{ width: 18, height: 18, objectFit: 'contain' }} />
+                                : ING_EMOJI[displayIng]}
+                              {isWildcard && (
+                                <span style={{
+                                  position: 'absolute',
+                                  right: -3,
+                                  bottom: -4,
+                                  fontSize: 8,
+                                  lineHeight: 1,
+                                }}>
+                                  {ING_EMOJI.perrito}
+                                </span>
+                              )}
+                            </span>
+                          );
+                        }) : <span>{T('empty')}</span>}
+                      </span>
+                      <span>|</span>
+                      <span>{T('burgersLabel')}: {p.currentBurger}/{p.totalBurgers}</span>
                     </div>
                     {showBurgerProgress && currentBurgerInfo.burger.length > 0 && (
                       <div style={{ marginTop: 8 }}>
