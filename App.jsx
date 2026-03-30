@@ -6751,17 +6751,15 @@ export default function App() {
           ? human.mainHats.some((hatLang) => languageMatches(hatLang, selectedCardLang))
           : false;
         const selectedIsUseful = selectedCard
-          ? needed.includes(selectedCard.ingredient)
+          ? selectedCard.ingredient === 'perrito' || needed.includes(selectedCard.ingredient)
           : false;
         const selectedNeedsHatName = selectedCard ? T(selectedCardLang) : '';
         const selectionMessage = selectedCard
-          ? !selectedIsUseful && !selectedHasCorrectHat
-            ? `No le sirve a tu hamburguesa actual y necesitas el sombrero ${selectedNeedsHatName} para jugarla.`
+          ? !selectedHasCorrectHat
+            ? `Necesitas el sombrero ${selectedNeedsHatName} para jugarla.`
             : !selectedIsUseful
-              ? 'No le sirve a tu hamburguesa actual.'
-              : !selectedHasCorrectHat
-                ? `Necesitas el sombrero ${selectedNeedsHatName} para jugarla.`
-                : ''
+              ? 'No sirve para tu hamburguesa.'
+              : ''
           : '';
 
         return (
@@ -6773,7 +6771,7 @@ export default function App() {
               {modal.cards.map(card => {
                 const cardLang = card.language || 'espanol';
                 const hasCorrectHat = human.mainHats.some((hatLang) => languageMatches(hatLang, cardLang));
-                const isUseful = needed.includes(card.ingredient);
+                const isUseful = card.ingredient === 'perrito' || needed.includes(card.ingredient);
                 const isIdeal = isUseful && hasCorrectHat;
                 const isSelected = modal.previewCardId === card.id;
                 const showOverlay = isSelected && !isIdeal;
