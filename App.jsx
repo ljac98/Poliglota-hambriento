@@ -5750,9 +5750,9 @@ export default function App() {
                   <HatSVG lang={p.mainHats[0] || LANGUAGES[0]} size={28} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 800, color: PLAYER_COLORS[i % PLAYER_COLORS.length] }}>{p.name}</div>
-                    <div style={{ fontSize: 11, color: '#777', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
+                    <div style={{ fontSize: 11, color: '#777', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
                       <span>{T('tableLabel')}:</span>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                         {p.table.length > 0 ? p.table.map((ing, tableIdx) => {
                           const displayIng = ingKey(ing);
                           const isWildcard = String(ing).startsWith('perrito');
@@ -5761,9 +5761,9 @@ export default function App() {
                               key={`${ing}-${tableIdx}`}
                               style={{
                                 position: 'relative',
-                                width: 26,
-                                height: 26,
-                                borderRadius: 6,
+                                width: 34,
+                                height: 34,
+                                borderRadius: 9,
                                 background: ING_BG[displayIng] || 'rgba(255,255,255,.06)',
                                 display: 'inline-flex',
                                 alignItems: 'center',
@@ -5771,14 +5771,14 @@ export default function App() {
                               }}
                             >
                               {ING_IMG[displayIng]
-                                ? <img src={ING_IMG[displayIng]} alt={displayIng} style={{ width: 22, height: 22, objectFit: 'contain' }} />
+                                ? <img src={ING_IMG[displayIng]} alt={displayIng} style={{ width: 28, height: 28, objectFit: 'contain' }} />
                                 : ING_EMOJI[displayIng]}
                               {isWildcard && (
                                 <span style={{
                                   position: 'absolute',
-                                  right: -3,
-                                  bottom: -4,
-                                  fontSize: 10,
+                                  right: -4,
+                                  bottom: -5,
+                                  fontSize: 12,
                                   lineHeight: 1,
                                 }}>
                                   {ING_EMOJI.perrito}
