@@ -2566,8 +2566,17 @@ export default function App() {
     if (!player) return player;
     const hats = Array.isArray(player.mainHats) ? player.mainHats.filter(Boolean) : [];
     player.mainHats = hats;
-    player.manuallyAddedHats = hats.slice(1);
-    player.maxHand = Math.min(6, Math.max(1, 7 - hats.length));
+    const currentAdded = Array.isArray(player.manuallyAddedHats) ? [...player.manuallyAddedHats] : [];
+    const availableCounts = hats.reduce((acc, hatLang) => {
+      acc[hatLang] = (acc[hatLang] || 0) + 1;
+      return acc;
+    }, {});
+    player.manuallyAddedHats = currentAdded.filter((hatLang) => {
+      if (!availableCounts[hatLang]) return false;
+      availableCounts[hatLang] -= 1;
+      return true;
+    });
+    player.maxHand = Math.max(1, 6 - player.manuallyAddedHats.length);
     return player;
   }
 
@@ -3876,6 +3885,7 @@ export default function App() {
     const hi = p.perchero.indexOf(hatLang);
     p.perchero.splice(hi, 1);
     p.mainHats.push(hatLang);
+    p.manuallyAddedHats = [...(p.manuallyAddedHats || []), hatLang];
     syncPlayerHatState(p);
     let newDiscard = [...discard, ...p.hand];
     p.hand = [];
