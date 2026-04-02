@@ -6608,7 +6608,7 @@ export default function App() {
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 800, lineHeight: 1.35 }}>
                 <HatSVG lang={modal.warningHatLang} size={28} />
-                <span>No tiene cartas que le sirva para este sombrero</span>
+                <span>{T('changeHatNoUsefulCards')}</span>
               </div>
               <div>
                 <Btn
@@ -6622,7 +6622,7 @@ export default function App() {
                   color="#FF7043"
                   style={{ fontSize: 12, padding: '8px 12px' }}
                 >
-                  Cambiar de todas formas
+                  {T('changeHatProceedAnyway')}
                 </Btn>
               </div>
             </div>
@@ -6665,9 +6665,13 @@ export default function App() {
       )}
 
       {modal?.type === 'manual_cambiar_target' && (
-        <Modal title={`🎩 ${T('changeHat') || 'Cambiar sombrero'} — paso 2: elegir principal`}>
+        <Modal title={typeof T('changeHatStep2SelectMain') === 'function'
+          ? T('changeHatStep2SelectMain')(getLocalizedLangName(modal.hatLang, uiLang))
+          : T('changeHatStep2SelectMain')}>
           <p style={{ color: '#888', fontSize: 12, marginBottom: 12 }}>
-            {`Elige qué sombrero principal quieres reemplazar por ${T(modal.hatLang)}.`}
+            {typeof T('changeHatStep2Desc') === 'function'
+              ? T('changeHatStep2Desc')(getLocalizedLangName(modal.hatLang, uiLang))
+              : T('changeHatStep2Desc')}
           </p>
            {tutorialActive && tutorialStep === 4 && tutorialHatHintText ? (
               <div style={{
@@ -6715,7 +6719,7 @@ export default function App() {
                 {T('chooseHat')}
               </div>
               <div style={{ color: '#cfd8ff', fontSize: 11, marginTop: 4 }}>
-                Este es el sombrero nuevo que vas a poner en tu principal.
+                {T('changeHatNewPrimaryHint')}
               </div>
             </div>
           </div>
@@ -6777,7 +6781,11 @@ export default function App() {
               <span style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 900 }}>{'->'}</span>
               <HatSVG lang={modal.hatLang} size={24} />
             </span>
-            <span>{`a ${T(modal.hatLang)} - paso 3: elegir cartas`}</span>
+            <span>
+              {typeof T('changeHatStep3ChooseCards') === 'function'
+                ? T('changeHatStep3ChooseCards')(getLocalizedLangName(modal.hatLang, uiLang))
+                : T('changeHatStep3ChooseCards')}
+            </span>
           </span>
         );
         return (
