@@ -4401,7 +4401,7 @@ export default function App() {
               background: 'rgba(255,255,255,0.04)',
             }}>
               <div style={{ color: '#f8f4cf', fontSize: 13, fontWeight: 900, letterSpacing: 0.3 }}>
-                {T('gameLanguageMenu')}
+                {T('gameLanguageMenu') === 'gameLanguageMenu' ? 'Idioma del juego' : T('gameLanguageMenu')}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, position: 'relative' }}>
                 {(() => {
@@ -6769,16 +6769,12 @@ export default function App() {
         const changeHatDiscardTitle = (
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <HatSVG lang={modal.hatLang} size={24} />
               <span style={{ color: '#FFD700' }}>{T('changeHat') || 'Cambiar sombrero'}</span>
-              {replacingHat && (
-                <>
-                  <span style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 900 }}>{'->'}</span>
-                  <HatSVG lang={replacingHat} size={24} />
-                </>
-              )}
+              {replacingHat && <HatSVG lang={replacingHat} size={24} />}
+              <span style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 900 }}>{'->'}</span>
+              <HatSVG lang={modal.hatLang} size={24} />
             </span>
-            <span>{`${T('to')} ${T(modal.hatLang)} - paso 3: elegir cartas`}</span>
+            <span>{`a ${T(modal.hatLang)} - paso 3: elegir cartas`}</span>
           </span>
         );
         return (
@@ -7015,8 +7011,18 @@ export default function App() {
           return remaining;
         })();
         const choices = needed.length > 0 ? [...new Set(needed)] : Object.keys(ING_EMOJI).filter(i => i !== 'perrito');
+        const wildcardTitle = (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+            <img
+              src={ING_IMG.perrito}
+              alt={T('wildcard')}
+              style={{ width: 28, height: 28, objectFit: 'contain', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.35))' }}
+            />
+            <span>{`${T('wildcard')} - Elige ingrediente`}</span>
+          </span>
+        );
         return (
-          <Modal title={T('wildcard')}>
+          <Modal title={wildcardTitle}>
             <p style={{ color: '#888', fontSize: 12, marginBottom: 12 }}>
               {needed.length > 0 ? T('wildcardNeeded') : T('wildcardAny')}
             </p>
