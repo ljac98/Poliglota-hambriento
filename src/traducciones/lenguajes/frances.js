@@ -340,7 +340,8 @@ const fr = {
   profileMenu: "Profil",
   leaveLocal: "Quitter la partie",
   leaveLocalConfirm: "Quitter la partie contre l’IA et revenir au setup ?",
-  homeMenu: "Accueil"
+  homeMenu: "Accueil",
+  gameLanguageMenu: "Langue du jeu"
 };
 
 export default fr;

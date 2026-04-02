@@ -340,7 +340,8 @@ const en = {
   profileMenu: "Profile",
   leaveLocal: "Exit match",
   leaveLocalConfirm: "Exit the AI match and return to setup?",
-  homeMenu: "Home"
+  homeMenu: "Home",
+  gameLanguageMenu: "Game language"
 };
 
 export default en;

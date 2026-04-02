@@ -335,7 +335,8 @@ const es = {
   profileMenu: "Perfil",
   leaveLocal: "Salir partida",
   leaveLocalConfirm: "¿Salir de la partida contra la IA y volver al setup?",
-  homeMenu: "Inicio"
+  homeMenu: "Inicio",
+  gameLanguageMenu: "Idioma del juego"
 };
 
 export default es;

@@ -340,7 +340,8 @@ const de = {
   profileMenu: "Profil",
   leaveLocal: "Partie verlassen",
   leaveLocalConfirm: "Das KI-Spiel verlassen und zum Setup zuruckkehren?",
-  homeMenu: "Start"
+  homeMenu: "Start",
+  gameLanguageMenu: "Spielsprache"
 };
 
 export default de;

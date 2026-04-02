@@ -4386,10 +4386,10 @@ export default function App() {
               </>
             )}
             <Btn onClick={goToHome} color="#4ecdc4" style={{ color: '#0f1117', width: '100%', justifyContent: 'center' }}>
-              {t('homeMenu', 'es')}
+              {T('homeMenu')}
             </Btn>
             <Btn onClick={goToFriends} color="#7ad8ff" style={{ color: '#102033', width: '100%', justifyContent: 'center' }}>
-              {t('friends', 'es')}
+              {T('friends')}
             </Btn>
             <div style={{
               display: 'flex',
@@ -4439,7 +4439,7 @@ export default function App() {
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 3, minWidth: 0, flex: 1 }}>
                         <span style={{ fontSize: 12, fontWeight: 800, color: '#f8f4cf', lineHeight: 1.05 }}>
-                          {getLocalizedLangName(selectedGameLang, 'es')}
+                          {getLocalizedLangName(selectedGameLang, uiLang)}
                         </span>
                       </div>
                       <span style={{ color: '#FFD700', fontSize: 18, fontWeight: 900, lineHeight: 1 }}>
@@ -4526,7 +4526,7 @@ export default function App() {
                             color: active ? '#f8f4cf' : '#d7def8',
                             lineHeight: 1.05,
                           }}>
-                            {getLocalizedLangName(gameLang, 'es')}
+                            {getLocalizedLangName(gameLang, uiLang)}
                           </span>
                         </button>
                       );
@@ -4537,21 +4537,21 @@ export default function App() {
             </div>
             {phase === 'playing' && (
               <Btn onClick={handleQuickLeaveGame} color="#ff4444" style={{ color: '#fff', width: '100%', justifyContent: 'center' }}>
-                {t('leaveLocal', 'es')}
+                {T('leaveLocal')}
               </Btn>
             )}
             <Btn onClick={() => goToOnlineHub('create')} color="#FFD700" style={{ color: '#111', width: '100%', justifyContent: 'center' }}>
-              {t('createRoom', 'es').replace(/^➕\s*/, '')}
+              {T('createRoom')}
             </Btn>
             <Btn onClick={() => goToOnlineHub('join')} color="#00BCD4" style={{ color: '#0f1117', width: '100%', justifyContent: 'center' }}>
-              {t('joinBtn', 'es').replace(/^[^\p{L}\p{N}]+\s*/u, '')}
+              {T('joinBtn')}
             </Btn>
             <Btn onClick={() => goToOnlineHub('lobby')} color="#2a2a4a" style={{ color: '#fff', width: '100%', justifyContent: 'center' }}>
-              {t('lobby', 'es').replace(/^[^\p{L}\p{N}]+\s*/u, '')}
+              {T('lobby')}
             </Btn>
             {user && (
               <Btn onClick={handleMenuLogout} color="#ff8a80" style={{ color: '#2b1111', width: '100%', justifyContent: 'center' }}>
-                {t('logout', 'es')}
+                {T('logout')}
               </Btn>
             )}
           </div>
@@ -6766,11 +6766,14 @@ export default function App() {
         const sel = modal.selected;
         const remaining = cost - sel.length;
         const replacingHat = human.mainHats?.[modal.replaceIdx ?? 0] || null;
+        const cleanChangeHatLabel = String(T('changeHat') || 'Cambiar')
+          .replace(/^[^\p{L}\p{N}]+\s*/u, '')
+          .trim();
         const changeHatDiscardTitle = (
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
               {replacingHat && <HatSVG lang={replacingHat} size={24} />}
-              <span style={{ color: '#FFD700' }}>{T('changeHat') || 'Cambiar sombrero'}</span>
+              <span style={{ color: '#FFD700' }}>{cleanChangeHatLabel || 'Cambiar'}</span>
               <span style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 900 }}>{'->'}</span>
               <HatSVG lang={modal.hatLang} size={24} />
             </span>
