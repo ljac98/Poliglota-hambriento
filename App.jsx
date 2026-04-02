@@ -4386,10 +4386,10 @@ export default function App() {
               </>
             )}
             <Btn onClick={goToHome} color="#4ecdc4" style={{ color: '#0f1117', width: '100%', justifyContent: 'center' }}>
-              {T('homeMenu')}
+              {t('homeMenu', 'es')}
             </Btn>
             <Btn onClick={goToFriends} color="#7ad8ff" style={{ color: '#102033', width: '100%', justifyContent: 'center' }}>
-              {T('friends')}
+              {t('friends', 'es')}
             </Btn>
             <div style={{
               display: 'flex',
@@ -4439,7 +4439,7 @@ export default function App() {
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 3, minWidth: 0, flex: 1 }}>
                         <span style={{ fontSize: 12, fontWeight: 800, color: '#f8f4cf', lineHeight: 1.05 }}>
-                          {getLocalizedLangName(selectedGameLang, uiLang)}
+                          {getLocalizedLangName(selectedGameLang, 'es')}
                         </span>
                       </div>
                       <span style={{ color: '#FFD700', fontSize: 18, fontWeight: 900, lineHeight: 1 }}>
@@ -4526,7 +4526,7 @@ export default function App() {
                             color: active ? '#f8f4cf' : '#d7def8',
                             lineHeight: 1.05,
                           }}>
-                            {getLocalizedLangName(gameLang, uiLang)}
+                            {getLocalizedLangName(gameLang, 'es')}
                           </span>
                         </button>
                       );
@@ -4537,21 +4537,21 @@ export default function App() {
             </div>
             {phase === 'playing' && (
               <Btn onClick={handleQuickLeaveGame} color="#ff4444" style={{ color: '#fff', width: '100%', justifyContent: 'center' }}>
-                {T('leaveLocal')}
+                {t('leaveLocal', 'es')}
               </Btn>
             )}
             <Btn onClick={() => goToOnlineHub('create')} color="#FFD700" style={{ color: '#111', width: '100%', justifyContent: 'center' }}>
-              {T('createRoom')}
+              {t('createRoom', 'es').replace(/^➕\s*/, '')}
             </Btn>
             <Btn onClick={() => goToOnlineHub('join')} color="#00BCD4" style={{ color: '#0f1117', width: '100%', justifyContent: 'center' }}>
-              {T('joinBtn')}
+              {t('joinBtn', 'es').replace(/^[^\p{L}\p{N}]+\s*/u, '')}
             </Btn>
             <Btn onClick={() => goToOnlineHub('lobby')} color="#2a2a4a" style={{ color: '#fff', width: '100%', justifyContent: 'center' }}>
-              {T('lobby')}
+              {t('lobby', 'es').replace(/^[^\p{L}\p{N}]+\s*/u, '')}
             </Btn>
             {user && (
               <Btn onClick={handleMenuLogout} color="#ff8a80" style={{ color: '#2b1111', width: '100%', justifyContent: 'center' }}>
-                {T('logout')}
+                {t('logout', 'es')}
               </Btn>
             )}
           </div>
@@ -6769,8 +6769,8 @@ export default function App() {
         const changeHatDiscardTitle = (
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ color: '#FFD700' }}>{T('changeHat') || 'Cambiar sombrero'}</span>
               {replacingHat && <HatSVG lang={replacingHat} size={24} />}
+              <span style={{ color: '#FFD700' }}>{T('changeHat') || 'Cambiar sombrero'}</span>
               <span style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 900 }}>{'->'}</span>
               <HatSVG lang={modal.hatLang} size={24} />
             </span>
