@@ -755,6 +755,58 @@ function broadcastLobbyList() {
   io.to('lobby-browser').emit('lobbyListUpdate', getPublicRoomsList());
 }
 
+function findActiveRoomForUser(userId) {
+  if (!userId) return null;
+  for (const [code, room] of rooms) {
+    const player = room.players.find((p) => !p.isAI && p.userId === userId);
+    if (!player) continue;
+    return { code, room, player };
+  }
+  return null;
+}
+
+function attachSocketToRoomPlayer({ socket, room, code, player }) {
+  const oldSocketId = player.id;
+  if (oldSocketId && oldSocketId !== socket.id) {
+    const oldSocket = io.sockets.sockets.get(oldSocketId);
+    if (oldSocket) {
+      oldSocket.data.roomCode = null;
+      oldSocket.disconnect(true);
+    }
+  }
+
+  if (player.reconnectId) {
+    const timerKey = `${code}:${player.reconnectId}`;
+    if (disconnectTimers.has(timerKey)) {
+      clearTimeout(disconnectTimers.get(timerKey));
+      disconnectTimers.delete(timerKey);
+    }
+  }
+
+  player.id = socket.id;
+  player.disconnected = false;
+  socket.join(code);
+  socket.data.roomCode = code;
+
+  if (player.wasHost) {
+    room.hostId = socket.id;
+    player.wasHost = false;
+  }
+  if (room.hostId === oldSocketId) {
+    room.hostId = socket.id;
+  }
+
+  return {
+    myIdx: player.idx,
+    isHost: room.hostId === socket.id,
+    phase: room.started ? 'playing' : 'onlineLobby',
+    players: serializeRoomPlayers(room),
+    roomIsPublic: room.isPublic,
+    roomDisplayName: room.roomName,
+    gameState: (room.hostId === socket.id && room.started && room.lastGameState) ? room.lastGameState : null,
+  };
+}
+
 // â”€â”€ Broadcast avatar change to all devices of the user + active lobby â”€â”€
 function syncAvatarUpdate(userId, versionedAvatarUrl, rawAvatarUrl) {
   io.to(`user:${userId}`).emit('avatarUpdated', { avatarUrl: versionedAvatarUrl });
@@ -881,45 +933,8 @@ io.on('connection', socket => {
     // (polling transport can delay disconnect detection by several seconds)
     const player = room.players.find(p => p.reconnectId === reconnectId);
     if (!player) return socket.emit('rejoinError', 'No se puede reconectar');
-    // Cancel grace period timer if any
-    const timerKey = `${code}:${reconnectId}`;
-    if (disconnectTimers.has(timerKey)) {
-      clearTimeout(disconnectTimers.get(timerKey));
-      disconnectTimers.delete(timerKey);
-    }
-    // Disconnect the old socket if it's still lingering
-    const oldSocketId = player.id;
-    if (oldSocketId !== socket.id) {
-      const oldSocket = io.sockets.sockets.get(oldSocketId);
-      if (oldSocket) {
-        oldSocket.data.roomCode = null; // prevent disconnect handler cleanup
-        oldSocket.disconnect(true);
-      }
-    }
-    // Restore player connection
-    player.id = socket.id;
-    player.disconnected = false;
-    socket.join(code);
-    socket.data.roomCode = code;
-    // Restore host if this player was originally the host
-    if (player.wasHost) {
-      room.hostId = socket.id;
-      player.wasHost = false;
-    }
-    // Also restore host if the old socket was still the hostId
-    if (room.hostId === oldSocketId) {
-      room.hostId = socket.id;
-    }
-    const isHost = room.hostId === socket.id;
-    socket.emit('rejoinSuccess', {
-      myIdx: player.idx,
-      isHost,
-      phase: room.started ? 'playing' : 'onlineLobby',
-      players: serializeRoomPlayers(room),
-      roomIsPublic: room.isPublic,
-      roomDisplayName: room.roomName,
-      gameState: (isHost && room.started && room.lastGameState) ? room.lastGameState : null,
-    });
+    const payload = attachSocketToRoomPlayer({ socket, room, code, player });
+    socket.emit('rejoinSuccess', payload);
     // Notify others that player reconnected
     const activePlayers = getActiveRoomPlayers(room);
     io.to(code).emit('lobbyUpdate', {
@@ -928,6 +943,23 @@ io.on('connection', socket => {
     io.to(code).emit('playerRejoined', {
       playerName: player.name,
       playerIdx: player.idx,
+      activeCount: activePlayers.length,
+    });
+  });
+
+  socket.on('findMyActiveRoom', () => {
+    if (!socket.data.userId) return socket.emit('activeRoomResult', { found: false });
+    const match = findActiveRoomForUser(socket.data.userId);
+    if (!match) return socket.emit('activeRoomResult', { found: false });
+    const payload = attachSocketToRoomPlayer({ socket, room: match.room, code: match.code, player: match.player });
+    socket.emit('activeRoomResult', { found: true, roomCode: match.code, ...payload });
+    const activePlayers = getActiveRoomPlayers(match.room);
+    io.to(match.code).emit('lobbyUpdate', {
+      players: serializeRoomPlayers(match.room),
+    });
+    io.to(match.code).emit('playerRejoined', {
+      playerName: match.player.name,
+      playerIdx: match.player.idx,
       activeCount: activePlayers.length,
     });
   });
