@@ -5,7 +5,7 @@ import { ING_IMG, ingChosen, ingKey } from '../utils/gameHelpers.js';
 import burgerIcon from '../../imagenes/hamburguesas/ham.png';
 import { UserAvatar } from './UserAvatar.jsx';
 
-export function OpponentCard({ player, index, color, isActive, onIngredientClick, onRegisterRef, onRegisterIngredientRef, onRegisterMainHatRef, T }) {
+export function OpponentCard({ player, index, color, isActive, showExtraPlay = false, onIngredientClick, onRegisterRef, onRegisterIngredientRef, onRegisterMainHatRef, T }) {
   const burger = player.burgers[player.currentBurger];
   const currentBurgerProgress = (() => {
     if (!burger || player.currentBurger >= player.totalBurgers) return null;
@@ -119,6 +119,23 @@ export function OpponentCard({ player, index, color, isActive, onIngredientClick
               </div>
             );
           })}
+        </div>
+      )}
+
+      {showExtraPlay && (
+        <div style={{
+          marginTop: 4,
+          marginBottom: 4,
+          padding: '7px 9px',
+          borderRadius: 8,
+          background: 'rgba(255,215,0,0.12)',
+          border: '1px solid rgba(255,215,0,0.28)',
+          color: '#fff3bf',
+          fontSize: 11,
+          fontWeight: 800,
+          lineHeight: 1.2,
+        }}>
+          {T('extraPlayLabel')}
         </div>
       )}
 
