@@ -116,6 +116,7 @@ const en = {
   extraPlayMsg: "You can play an ingredient!",
   yourTurn: "Your turn",
   turnOfPlayer: (name) => `${name}'s turn`,
+  playerExtraPlay: (name) => `${name} used an extra action`,
   tapContinue: "Tap to continue...",
   playerWon: (name) => `${name} won!`,
   wonByAbandon: "You win by abandonment!",

@@ -116,6 +116,7 @@ const it = {
   extraPlayMsg: "Puoi giocare un ingrediente!",
   yourTurn: "Il tuo turno",
   turnOfPlayer: (name) => `Turno di ${name}`,
+  playerExtraPlay: (name) => `${name} ha usato un'azione extra`,
   tapContinue: "Tocca per continuare...",
   playerWon: (name) => `${name} ha vinto!`,
   wonByAbandon: "Hai vinto per abbandono!",

@@ -5,10 +5,11 @@ import { Btn } from '../components/Btn.jsx';
 import imgGlotonHead from '../../imagenes/acciones/comer.png';
 
 export function TransitionScreen({ player, onContinue, isExtraPlay, isCurrentUserTurn, T }) {
-  const title = isExtraPlay
-    ? T('extraPlayMsg')
-    : (isCurrentUserTurn
-      ? T('yourTurn')
+  const isOpponentExtraPlay = !isCurrentUserTurn && isExtraPlay;
+  const title = isCurrentUserTurn
+    ? (isExtraPlay ? T('extraPlayMsg') : T('yourTurn'))
+    : (isOpponentExtraPlay
+      ? (typeof T('playerExtraPlay') === 'function' ? T('playerExtraPlay')(player?.name || 'Jugador') : `${player?.name || 'Jugador'} usó una acción extra`)
       : (typeof T('turnOfPlayer') === 'function' ? T('turnOfPlayer')(player?.name || 'Jugador') : `Turno de ${player?.name || 'Jugador'}`));
 
   return (
@@ -38,9 +39,11 @@ export function TransitionScreen({ player, onContinue, isExtraPlay, isCurrentUse
       <h2 style={{ fontSize: 28, fontWeight: 900, color: '#FFD700', marginBottom: 8 }}>
         {title}
       </h2>
-      <div style={{ fontSize: 22, color: '#eee', marginBottom: 6 }}>
-        {player?.name}
-      </div>
+      {!isOpponentExtraPlay && (
+        <div style={{ fontSize: 22, color: '#eee', marginBottom: 6 }}>
+          {player?.name}
+        </div>
+      )}
       <div style={{ fontSize: 13, color: '#555', marginTop: 20 }}>
         {T('tapContinue')}
       </div>

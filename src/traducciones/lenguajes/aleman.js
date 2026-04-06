@@ -116,6 +116,7 @@ const de = {
   extraPlayMsg: "Du kannst eine Zutat spielen!",
   yourTurn: "Dein Zug",
   turnOfPlayer: (name) => `${name} ist dran`,
+  playerExtraPlay: (name) => `${name} hat eine Extra-Aktion benutzt`,
   tapContinue: "Tippe zum Fortfahren...",
   playerWon: (name) => `${name} hat gewonnen!`,
   wonByAbandon: "Sieg durch Aufgabe!",
