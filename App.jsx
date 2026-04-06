@@ -227,6 +227,7 @@ export default function App() {
 
   // â”€â”€ Auth state â”€â”€
   const [user, setUser] = useState(() => (shouldLogoutOnLoad ? null : getSavedUser()));
+  const activeRoomLookupAttemptedForUserRef = useRef(null);
   // â”€â”€ UI language state â”€â”€
   const [uiLang, setUiLangState] = useState(() => getUILang());
   const [tutorialPrompt, setTutorialPrompt] = useState(null);
@@ -1734,15 +1735,115 @@ export default function App() {
     return key ? localStorage.getItem(key) === '1' : false;
   }
 
+  function finishAuthArrival(nextUser, meta = {}) {
+    setPhase('setup');
+    if (meta?.isNewUser && !hasSeenTutorialPrompt(nextUser?.id)) setTutorialPrompt('familiarity');
+    else setTutorialPrompt(null);
+  }
+
+  function applyRecoveredRoom(payload, fallbackPlayerName = '') {
+    const {
+      roomCode: resumedRoomCode,
+      myIdx,
+      isHost: host,
+      phase: serverPhase,
+      players: pls,
+      roomIsPublic: pub,
+      roomDisplayName: rn,
+      gameState,
+    } = payload || {};
+    const resolvedPlayerName = pls?.find?.((p) => p.idx === myIdx)?.name || fallbackPlayerName || '';
+    setIsOnline(true);
+    setIsHost(!!host);
+    setMyPlayerIdx(myIdx || 0);
+    setMyRoomPlayerName(resolvedPlayerName);
+    setRoomCode(resumedRoomCode || '');
+    setRoomIsPublic(!!pub);
+    setRoomDisplayName(rn || '');
+    setLobbyPlayers(Array.isArray(pls) ? pls : []);
+    setTutorialPrompt(null);
+
+    if (serverPhase === 'playing') {
+      if (host && gameState) {
+        setPlayers(gameState.players);
+        setDeck(gameState.deck);
+        setDiscard(gameState.discard);
+        setCp(gameState.cp);
+        setLog(gameState.log || []);
+        setExtraPlay(gameState.extraPlay || false);
+        setCurrentGameConfig(gameState.gameConfig || null);
+        setPendingHatLimitSelection(gameState.pendingHatLimitSelection || null);
+        setModal(null);
+        setPendingNeg(gameState.pendingNeg || null);
+        setLastNegationEvent(gameState.lastNegationEvent || null);
+        setLastForkEvent(gameState.lastForkEvent || null);
+        setLastComeComodinesEvent(gameState.lastComeComodinesEvent || null);
+        setLastGlotonEvent(gameState.lastGlotonEvent || null);
+        setLastMilanesaEvent(gameState.lastMilanesaEvent || null);
+        setLastEnsaladaEvent(gameState.lastEnsaladaEvent || null);
+        setLastPizzaEvent(gameState.lastPizzaEvent || null);
+        setLastParrillaEvent(gameState.lastParrillaEvent || null);
+        setLastClosetCoverEvent(gameState.lastClosetCoverEvent || null);
+        setLastHatStealEvent(gameState.lastHatStealEvent || null);
+        if (gameState.winner) {
+          setWinner(gameState.winner);
+          clearRoomSession();
+          setPhase('gameover');
+          return;
+        }
+      }
+      saveRoomSession({ roomCode: resumedRoomCode, playerName: resolvedPlayerName, myPlayerIdx: myIdx || 0, isHost: !!host, phase: 'playing' });
+      setPhase('playing');
+      return;
+    }
+
+    saveRoomSession({ roomCode: resumedRoomCode, playerName: resolvedPlayerName, myPlayerIdx: myIdx || 0, isHost: !!host, phase: 'onlineLobby' });
+    setPhase('onlineLobby');
+    socket.once('gameStarted', () => {
+      saveRoomSession({ roomCode: resumedRoomCode, playerName: resolvedPlayerName, myPlayerIdx: myIdx || 0, isHost: !!host, phase: 'playing' });
+      setPhase('playing');
+    });
+  }
+
+  function tryResumeActiveRoomForUser(nextUser, meta = {}) {
+    if (!nextUser?.id) {
+      finishAuthArrival(nextUser, meta);
+      return;
+    }
+    setPhase('reconnecting');
+    const timeout = setTimeout(() => {
+      socket.off('activeRoomResult');
+      finishAuthArrival(nextUser, meta);
+    }, 8000);
+
+    socket.once('activeRoomResult', (payload) => {
+      clearTimeout(timeout);
+      if (!payload?.found) {
+        finishAuthArrival(nextUser, meta);
+        return;
+      }
+      applyRecoveredRoom(payload, nextUser.displayName || nextUser.username || '');
+    });
+
+    if (socket.connected) socket.disconnect();
+    socket.connect();
+    socket.once('connect', () => {
+      socket.emit('findMyActiveRoom');
+    });
+  }
+
   function handleAuthSuccess(nextUser, meta = {}) {
     setUser(nextUser);
-    setPhase('setup');
-    if (meta?.isNewUser && !hasSeenTutorialPrompt(nextUser?.id)) {
-      setTutorialPrompt('familiarity');
-    } else {
-      setTutorialPrompt(null);
-    }
+    activeRoomLookupAttemptedForUserRef.current = nextUser?.id || null;
+    tryResumeActiveRoomForUser(nextUser, meta);
   }
+
+  useEffect(() => {
+    if (!user?.id || phase !== 'setup' || isOnline || getRoomSession()) return;
+    if (activeRoomLookupAttemptedForUserRef.current === user.id) return;
+    activeRoomLookupAttemptedForUserRef.current = user.id;
+    tryResumeActiveRoomForUser(user);
+  }, [user, phase, isOnline]);
 
   function resolveTutorialPendingAction(resolution) {
     if (!resolution) return;
