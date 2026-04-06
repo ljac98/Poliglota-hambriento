@@ -89,6 +89,13 @@ export const LANG_BADGE = {
   italiano:"#8D7B5A", aleman:"#2E7D32", portugues:"#5D4037"
 };
 
+export const EXTRA_PLAY_INDICATOR_STYLE = {
+  background: 'rgba(255,215,0,0.12)',
+  border: '1px solid rgba(255,215,0,0.28)',
+  color: '#fff3bf',
+  fontWeight: 800,
+};
+
 // ═══ INGREDIENT TRANSLATIONS ═══
 export const ING_NAMES = {
   pan:     {espanol:"Pan",     ingles:"Bread",   frances:"Pain",    italiano:"Pane",     aleman:"Brot",     portugues:"Pão"},

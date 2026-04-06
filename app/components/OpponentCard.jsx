@@ -1,5 +1,5 @@
 import React from 'react';
-import { ING_EMOJI, ING_BG } from '../../constants/index.js';
+import { ING_EMOJI, ING_BG, EXTRA_PLAY_INDICATOR_STYLE } from '../../constants/index.js';
 import { HatBadge } from '../../components/HatComponents.jsx';
 import { ING_IMG, ingChosen, ingKey } from '../utils/gameHelpers.js';
 import burgerIcon from '../../imagenes/hamburguesas/ham.png';
@@ -124,15 +124,12 @@ export function OpponentCard({ player, index, color, isActive, showExtraPlay = f
 
       {showExtraPlay && (
         <div style={{
+          ...EXTRA_PLAY_INDICATOR_STYLE,
           marginTop: 4,
           marginBottom: 4,
           padding: '7px 9px',
           borderRadius: 8,
-          background: 'rgba(255,215,0,0.12)',
-          border: '1px solid rgba(255,215,0,0.28)',
-          color: '#fff3bf',
           fontSize: 11,
-          fontWeight: 800,
           lineHeight: 1.2,
         }}>
           {T('extraPlayLabel')}

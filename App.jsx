@@ -4,7 +4,7 @@ import { clearAuth, getProfile, getSavedUser, saveUserLocally } from './src/api.
 import {
   LANGUAGES, LANG_BORDER, LANG_BG, LANG_TEXT,
   ING_EMOJI, ING_BG, AI_NAMES, getIngName, getActionInfo,
-  ING_NAMES, ACTION_CARDS, languageMatches, normalizeGameLanguage, getRandomGameLanguage,
+  ING_NAMES, ACTION_CARDS, EXTRA_PLAY_INDICATOR_STYLE, languageMatches, normalizeGameLanguage, getRandomGameLanguage,
 } from './constants';
 import { generateDeck, initPlayer, canPlayCard } from './game';
 import { shuffle, randInt, uid } from './game/utils';
@@ -4902,17 +4902,14 @@ export default function App() {
         <>
           {extraPlay && (
             <div style={{
+              ...EXTRA_PLAY_INDICATOR_STYLE,
               display: 'inline-flex',
               alignItems: 'center',
               gap: 8,
               marginBottom: 8,
               padding: '6px 10px',
               borderRadius: 999,
-              background: 'rgba(255,215,0,0.12)',
-              border: '1px solid rgba(255,215,0,0.28)',
-              color: '#fff3bf',
               fontSize: 12,
-              fontWeight: 800,
             }}>
               <span style={{ color: '#FFD700' }}>+</span>
               <span>{T('extraPlayLabel')}</span>
