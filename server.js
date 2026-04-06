@@ -570,16 +570,18 @@ app.post('/api/profile/avatar', requireDB, requireAuth, uploadAvatar.single('ava
       [avatarUrl, req.userId]
     );
     const updated = result.rows[0];
+    const versionedUrl = versionAvatarUrl(updated.avatar_url);
     res.json({
       user: {
         id: updated.id,
         username: updated.username,
         displayName: updated.display_name,
-        avatarUrl: versionAvatarUrl(updated.avatar_url),
+        avatarUrl: versionedUrl,
         wins: updated.wins,
         gamesPlayed: updated.games_played,
       },
     });
+    syncAvatarUpdate(req.userId, versionedUrl, avatarUrl);
   } catch (err) {
     if (err?.message === 'Solo se permiten imÃ¡genes') {
       return res.status(400).json({ error: err.message });
@@ -602,16 +604,18 @@ app.patch('/api/profile/avatar', requireDB, requireAuth, async (req, res) => {
       cleanupProfileAvatarFiles(previous.rows[0]?.username);
     }
     const updated = result.rows[0];
+    const versionedUrl = versionAvatarUrl(updated.avatar_url);
     res.json({
       user: {
         id: updated.id,
         username: updated.username,
         displayName: updated.display_name,
-        avatarUrl: versionAvatarUrl(updated.avatar_url),
+        avatarUrl: versionedUrl,
         wins: updated.wins,
         gamesPlayed: updated.games_played,
       },
     });
+    syncAvatarUpdate(req.userId, versionedUrl, nextAvatar);
   } catch {
     res.status(500).json({ error: 'Error del servidor' });
   }
@@ -749,6 +753,20 @@ function broadcastLobbyList() {
   io.to('lobby-browser').emit('lobbyListUpdate', getPublicRoomsList());
 }
 
+// â”€â”€ Broadcast avatar change to all devices of the user + active lobby â”€â”€
+function syncAvatarUpdate(userId, versionedAvatarUrl, rawAvatarUrl) {
+  io.to(`user:${userId}`).emit('avatarUpdated', { avatarUrl: versionedAvatarUrl });
+  for (const room of rooms.values()) {
+    const player = room.players.find(p => p.userId === userId);
+    if (!player) continue;
+    player.avatarUrl = rawAvatarUrl;
+    if (!room.started) {
+      io.to(room.code).emit('lobbyUpdate', { players: serializeRoomPlayers(room) });
+    }
+    break;
+  }
+}
+
 // â”€â”€ Notify friends when a user goes online/offline â”€â”€
 async function notifyFriendsStatus(userId, isOnline) {
   if (!dbAvailable) return;
@@ -768,6 +786,7 @@ io.on('connection', socket => {
 
   // â”€â”€ Track online users & notify friends â”€â”€
   if (socket.data.userId) {
+    socket.join(`user:${socket.data.userId}`);
     onlineUsers.set(socket.data.userId, socket.id);
     notifyFriendsStatus(socket.data.userId, true);
   }

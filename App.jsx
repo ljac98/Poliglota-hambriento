@@ -603,6 +603,19 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    const handleAvatarUpdated = ({ avatarUrl }) => {
+      setUser(prev => {
+        if (!prev) return prev;
+        const next = { ...prev, avatarUrl: avatarUrl ?? null };
+        saveUserLocally(next);
+        return next;
+      });
+    };
+    socket.on('avatarUpdated', handleAvatarUpdated);
+    return () => socket.off('avatarUpdated', handleAvatarUpdated);
+  }, []);
+
+  useEffect(() => {
     const handleFriendRemoved = (data) => {
       setFriendRemovedNotif(data);
       setTimeout(() => setFriendRemovedNotif(prev => prev === data ? null : prev), 10000);
