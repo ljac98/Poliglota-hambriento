@@ -1,6 +1,6 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 
-const API_BASE = import.meta.env.DEV ? 'http://localhost:3001' : '';
+const API_BASE = '';
 
 export function resolveAvatarUrl(avatarUrl) {
   if (!avatarUrl || typeof avatarUrl !== 'string') return null;
@@ -30,6 +30,11 @@ export function UserAvatar({ name, username, avatarUrl, size = 44, square = fals
   const hueB = (hash * 1.7 + 40) % 360;
   const initials = useMemo(() => getInitials(name, username), [name, username]);
   const normalizedAvatarUrl = useMemo(() => resolveAvatarUrl(avatarUrl), [avatarUrl]);
+  const [imgError, setImgError] = useState(false);
+
+  useEffect(() => {
+    setImgError(false);
+  }, [normalizedAvatarUrl]);
 
   return (
     <div
@@ -55,10 +60,11 @@ export function UserAvatar({ name, username, avatarUrl, size = 44, square = fals
         ...style,
       }}
     >
-      {normalizedAvatarUrl ? (
+      {normalizedAvatarUrl && !imgError ? (
         <img
           src={normalizedAvatarUrl}
           alt={name || username || 'avatar'}
+          onError={() => setImgError(true)}
           style={{
             width: '100%',
             height: '100%',
