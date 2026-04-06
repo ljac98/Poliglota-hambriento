@@ -2217,14 +2217,16 @@ export default function App() {
         lastHatStealSeenRef.current = state.lastHatStealEvent.id;
         setHatStealFx(state.lastHatStealEvent);
       }
-      if (state.winner) { setWinner(state.winner); clearRoomSession(); setPhase('gameover'); }
-      else if (state.cp === myPlayerIdx && lastSyncCpRef.current !== myPlayerIdx) {
-        // Only show transition when cp just changed to this player's turn
-        setPhase('transition');
+      const turnChanged = state.cp !== lastSyncCpRef.current;
+      if (state.winner) {
+        setWinner(state.winner);
+        clearRoomSession();
+        setPhase('gameover');
+      } else if (turnChanged) {
+        if (state.cp === myPlayerIdx) setPhase('playing');
+        else setPhase('transition');
       } else if (state.cp === myPlayerIdx && state.extraPlay && !lastExtraPlayRef.current) {
         setPhase('transition');
-      } else if (state.cp !== myPlayerIdx) {
-        setPhase('playing');
       }
       lastSyncCpRef.current = state.cp;
       lastExtraPlayRef.current = state.extraPlay || false;
@@ -4746,6 +4748,7 @@ export default function App() {
             index={realIdx}
             color={PLAYER_COLORS[realIdx % PLAYER_COLORS.length]}
             isActive={cp === realIdx}
+            showExtraPlay={cp === realIdx && extraPlay}
             onRegisterRef={(playerIdx, el) => {
               if (el) playerAreaRefs.current[playerIdx] = el;
               else delete playerAreaRefs.current[playerIdx];
@@ -4795,11 +4798,6 @@ export default function App() {
       />
       <div style={{ flex: 1 }}>
         <div style={{ fontWeight: 900, fontSize: 16, color: humanColor }}>{human.name}</div>
-        {extraPlay && (
-          <div style={{ fontSize: 11, color: '#FFD700', marginTop: 2 }}>
-            {T('extraPlayLabel')}
-          </div>
-        )}
         {hasSharedGoals && (
           <div style={{
             marginTop: 6,
@@ -4901,22 +4899,42 @@ export default function App() {
         <span>Hamburguesas completadas: {human.currentBurger}/{human.totalBurgers}</span>
       </div>
       {human.currentBurger < human.totalBurgers && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ fontSize: 11, color: '#FFD700', width: 14, fontWeight: 700 }}>
-            {'\u25B6'}
-          </span>
-          <BurgerTarget
-            ingredients={human.burgers[human.currentBurger]}
-            table={human.table}
-            isCurrent
-            highlightIngredients={highlightedBurgerIngredients}
-            onRegisterSlotRef={(slotIdx, el) => {
-              if (el) humanBurgerSlotRefs.current[slotIdx] = el;
-              else delete humanBurgerSlotRefs.current[slotIdx];
-            }}
-            onIngredientClick={(ing) => setModal({ type: 'ingredientInfo', ingredient: ing })}
-          />
-        </div>
+        <>
+          {extraPlay && (
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              marginBottom: 8,
+              padding: '6px 10px',
+              borderRadius: 999,
+              background: 'rgba(255,215,0,0.12)',
+              border: '1px solid rgba(255,215,0,0.28)',
+              color: '#fff3bf',
+              fontSize: 12,
+              fontWeight: 800,
+            }}>
+              <span style={{ color: '#FFD700' }}>+</span>
+              <span>{T('extraPlayLabel')}</span>
+            </div>
+          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 11, color: '#FFD700', width: 14, fontWeight: 700 }}>
+              {'\u25B6'}
+            </span>
+            <BurgerTarget
+              ingredients={human.burgers[human.currentBurger]}
+              table={human.table}
+              isCurrent
+              highlightIngredients={highlightedBurgerIngredients}
+              onRegisterSlotRef={(slotIdx, el) => {
+                if (el) humanBurgerSlotRefs.current[slotIdx] = el;
+                else delete humanBurgerSlotRefs.current[slotIdx];
+              }}
+              onIngredientClick={(ing) => setModal({ type: 'ingredientInfo', ingredient: ing })}
+            />
+          </div>
+        </>
       )}
       {human.currentBurger >= human.totalBurgers && (
         <div style={{ fontSize: 12, color: '#7be495', fontWeight: 700 }}>
