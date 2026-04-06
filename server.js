@@ -660,7 +660,9 @@ io.use((socket, next) => {
 });
 
 // â”€â”€ Static files â”€â”€
-app.use('/uploads', express.static(uploadsPath));
+app.use('/uploads', express.static(uploadsPath, {
+  setHeaders: (res) => res.setHeader('Cache-Control', 'no-cache'),
+}));
 if (existsSync(distPath)) {
   app.use(express.static(distPath));
   app.get('*', (req, res) => res.sendFile(join(distPath, 'index.html')));
