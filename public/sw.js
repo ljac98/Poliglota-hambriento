@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hungry-poly-pwa-v4';
+const CACHE_NAME = 'hungry-poly-pwa-v5';
 const PRECACHE_URLS = [
   '/',
   '/manifest.webmanifest',
@@ -53,6 +53,9 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
+
+  // Never cache user-uploaded content — always fetch fresh from the network
+  if (url.pathname.startsWith('/uploads/')) return;
 
   if (event.request.mode === 'navigate' || event.request.destination === 'document') {
     event.respondWith(
