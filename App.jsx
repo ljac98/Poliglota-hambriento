@@ -49,6 +49,7 @@ import { UserAvatar } from './app/components/UserAvatar.jsx';
 import { Btn, Modal, OpponentCard } from './app/components/index.js';
 import { AppPhaseRouter } from './app/screens/index.js';
 import { readUnlockedWordEntries, syncUnlockedWordEntries, unlockRandomWordLocally } from './src/palabras/unlockedWordsStorage.js';
+import { getUnlockableWordById } from './src/palabras/unlockedWordsCatalog.js';
 import {
   ING_IMG,
   ING_AFFECTED_BY,
@@ -188,6 +189,7 @@ export default function App() {
   const [historyInitialFilter, setHistoryInitialFilter] = useState('all');
   const [historyReturnPhase, setHistoryReturnPhase] = useState('setup');
   const [wordsReturnPhase, setWordsReturnPhase] = useState('setup');
+  const [recentUnlockedWord, setRecentUnlockedWord] = useState(null);
   const aiRunning = useRef(false);
   const aiRunningMeta = useRef({ idx: null, startedAt: 0 });
   const languageMenuButtonRef = useRef(null);
@@ -2042,6 +2044,10 @@ export default function App() {
     setPhase('words');
   }
 
+  function closeUnlockedWordModal() {
+    setRecentUnlockedWord(null);
+  }
+
   function didCurrentUserWinGame(currentWinner) {
     if (!currentWinner) return false;
     if (user) {
@@ -2075,16 +2081,24 @@ export default function App() {
 
     (async () => {
       if (!user?.id) {
-        unlockRandomWordLocally(null);
+        const localResult = unlockRandomWordLocally(null);
+        if (localResult?.unlockedWord) setRecentUnlockedWord(localResult.unlockedWord);
         return;
       }
 
       if (isOnline) {
+        const previousEntries = readUnlockedWordEntries(user);
+        const previousIds = new Set(previousEntries.map((entry) => entry.wordId));
         for (let attempt = 0; attempt < 3; attempt += 1) {
           try {
             const words = await getUnlockedWords();
             if (Array.isArray(words)) {
               syncUnlockedWordEntries(user, words);
+              const newEntry = words.find((entry) => entry?.wordId && !previousIds.has(entry.wordId));
+              if (newEntry?.wordId) {
+                const unlockedWord = getUnlockableWordById(newEntry.wordId);
+                if (unlockedWord) setRecentUnlockedWord(unlockedWord);
+              }
               return;
             }
           } catch {}
@@ -2097,15 +2111,18 @@ export default function App() {
         const payload = await unlockRandomWord();
         if (Array.isArray(payload?.words)) {
           syncUnlockedWordEntries(user, payload.words);
+          if (payload?.word) setRecentUnlockedWord(payload.word);
           return;
         }
         if (payload?.entry) {
           syncUnlockedWordEntries(user, [payload.entry, ...readUnlockedWordEntries(user)]);
+          if (payload?.word) setRecentUnlockedWord(payload.word);
           return;
         }
       } catch {}
 
-      unlockRandomWordLocally(user);
+      const localFallback = unlockRandomWordLocally(user);
+      if (localFallback?.unlockedWord) setRecentUnlockedWord(localFallback.unlockedWord);
     })();
   }, [phase, winner, tutorialPractice, postTutorialGame, isOnline, roomCode, user, players, HI]);
 
@@ -2782,6 +2799,7 @@ export default function App() {
   // -- Start game (local / vs AI) --
   function startGame(name, hat, gameConfig, aiCount) {
     unlockRewardSignatureRef.current = null;
+    setRecentUnlockedWord(null);
     const normalizedConfig = normalizeGameConfig(gameConfig);
     const rawDeck = generateDeck(normalizedConfig);
     const deckArr = [...rawDeck];
@@ -2811,6 +2829,7 @@ export default function App() {
   // â”€â”€ Start game (online host) â”€â”€
   function startOnlineGame(hatPicks, gameConfig, onlinePls) {
     unlockRewardSignatureRef.current = null;
+    setRecentUnlockedWord(null);
     const normalizedConfig = normalizeGameConfig(gameConfig);
     const rawDeck = generateDeck(normalizedConfig);
     const deckArr = [...rawDeck];
@@ -4881,6 +4900,48 @@ export default function App() {
                   style={{ color: '#fff' }}
                 >
                   {tutorialCopy.offerNo}
+                </Btn>
+              </div>
+            </div>
+          </Modal>
+        )}
+        {recentUnlockedWord && (
+          <Modal title={T('unlockedWordTitle')}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div style={{ color: '#d9dded', fontSize: 15, fontWeight: 700, lineHeight: 1.45 }}>
+                {T('unlockedWordLead')}
+              </div>
+              <div style={{
+                alignSelf: 'center',
+                padding: '14px 22px',
+                borderRadius: 18,
+                background: 'linear-gradient(180deg, rgba(255,215,0,0.18), rgba(255,255,255,0.04))',
+                border: '2px solid rgba(255,215,0,0.48)',
+                color: '#FFD700',
+                fontSize: 28,
+                fontWeight: 900,
+                letterSpacing: 0.5,
+                textAlign: 'center',
+                boxShadow: '0 0 24px rgba(255,215,0,0.16)',
+              }}>
+                {recentUnlockedWord.word}
+              </div>
+              <div style={{ color: '#8a8fa8', fontSize: 13, fontWeight: 700, textAlign: 'center' }}>
+                {T('wordLanguageLabel')}: {T(recentUnlockedWord.language)}
+              </div>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                <Btn onClick={closeUnlockedWordModal} color="#2a2a4a" style={{ color: '#fff' }}>
+                  {T('close')}
+                </Btn>
+                <Btn
+                  onClick={() => {
+                    closeUnlockedWordModal();
+                    openWords(phase);
+                  }}
+                  color="#FFD700"
+                  style={{ color: '#111' }}
+                >
+                  {T('unlockedWordOpenButton')}
                 </Btn>
               </div>
             </div>

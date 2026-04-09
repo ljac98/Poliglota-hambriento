@@ -10,6 +10,9 @@ export const extraTranslations = Object.freeze({
     wordMeaningLabel: 'Significado',
     wordExampleLabel: 'Ejemplo',
     unlockedAtLabel: 'Desbloqueada',
+    unlockedWordTitle: 'Nueva palabra desbloqueada',
+    unlockedWordLead: 'Desbloqueaste la palabra',
+    unlockedWordOpenButton: 'Ver palabras',
   },
   en: {
     unlockedWordsNav: 'Words',
@@ -22,6 +25,9 @@ export const extraTranslations = Object.freeze({
     wordMeaningLabel: 'Meaning',
     wordExampleLabel: 'Example',
     unlockedAtLabel: 'Unlocked',
+    unlockedWordTitle: 'New word unlocked',
+    unlockedWordLead: 'You unlocked the word',
+    unlockedWordOpenButton: 'View words',
   },
   fr: {
     unlockedWordsNav: 'Mots',
@@ -34,6 +40,9 @@ export const extraTranslations = Object.freeze({
     wordMeaningLabel: 'Definition',
     wordExampleLabel: 'Exemple',
     unlockedAtLabel: 'Debloque',
+    unlockedWordTitle: 'Nouveau mot debloque',
+    unlockedWordLead: 'Tu as debloque le mot',
+    unlockedWordOpenButton: 'Voir les mots',
   },
   it: {
     unlockedWordsNav: 'Parole',
@@ -46,6 +55,9 @@ export const extraTranslations = Object.freeze({
     wordMeaningLabel: 'Significato',
     wordExampleLabel: 'Esempio',
     unlockedAtLabel: 'Sbloccata',
+    unlockedWordTitle: 'Nuova parola sbloccata',
+    unlockedWordLead: 'Hai sbloccato la parola',
+    unlockedWordOpenButton: 'Vedi parole',
   },
   de: {
     unlockedWordsNav: 'Woerter',
@@ -58,6 +70,9 @@ export const extraTranslations = Object.freeze({
     wordMeaningLabel: 'Bedeutung',
     wordExampleLabel: 'Beispiel',
     unlockedAtLabel: 'Freigeschaltet',
+    unlockedWordTitle: 'Neues Wort freigeschaltet',
+    unlockedWordLead: 'Du hast das Wort freigeschaltet',
+    unlockedWordOpenButton: 'Woerter ansehen',
   },
   pt: {
     unlockedWordsNav: 'Palavras',
@@ -70,5 +85,8 @@ export const extraTranslations = Object.freeze({
     wordMeaningLabel: 'Significado',
     wordExampleLabel: 'Exemplo',
     unlockedAtLabel: 'Desbloqueada',
+    unlockedWordTitle: 'Nova palavra desbloqueada',
+    unlockedWordLead: 'Voce desbloqueou a palavra',
+    unlockedWordOpenButton: 'Ver palavras',
   },
 });
