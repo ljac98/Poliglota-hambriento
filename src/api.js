@@ -137,4 +137,12 @@ export async function getBlockedUsers() {
   return request('/api/users/blocked');
 }
 
+export async function getUnlockedWords() {
+  return request('/api/unlocked-words');
+}
+
+export async function unlockRandomWord() {
+  return request('/api/unlocked-words/unlock', { method: 'POST' });
+}
+
 export { getToken };

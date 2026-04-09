@@ -11,3 +11,4 @@ export { OnlineLobby } from './OnlineLobby.jsx';
 export { ReconnectingScreen } from './ReconnectingScreen.jsx';
 export { LeftRoomScreen } from './LeftRoomScreen.jsx';
 export { DownloadAppScreen } from './DownloadAppScreen.jsx';
+export { UnlockedWordsScreen } from './UnlockedWordsScreen.jsx';
