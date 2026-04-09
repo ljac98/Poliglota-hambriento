@@ -8,6 +8,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import multer from 'multer';
 import pool, { initDB } from './db.js';
+import { getUnlockableWordById, pickRandomLockedWordId } from './src/palabras/unlockedWordsCatalog.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'hungry-poly-secret-key-change-in-prod';
 
@@ -102,6 +103,54 @@ function versionAvatarUrl(avatarUrl) {
   } catch {
     return avatarUrl;
   }
+}
+
+async function getUnlockedWordsForUser(userId) {
+  const result = await pool.query(
+    `SELECT word_id, unlocked_at
+     FROM unlocked_words
+     WHERE user_id = $1
+     ORDER BY unlocked_at DESC, id DESC`,
+    [userId]
+  );
+  return result.rows.map((row) => ({
+    wordId: row.word_id,
+    unlockedAt: row.unlocked_at,
+  }));
+}
+
+async function unlockRandomWordForUser(userId) {
+  const existingEntries = await getUnlockedWordsForUser(userId);
+  const existingIds = existingEntries.map((entry) => entry.wordId);
+
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const nextWordId = pickRandomLockedWordId(existingIds);
+    if (!nextWordId) {
+      return { entry: null, word: null, words: existingEntries };
+    }
+    const insertResult = await pool.query(
+      `INSERT INTO unlocked_words (user_id, word_id)
+       VALUES ($1, $2)
+       ON CONFLICT (user_id, word_id) DO NOTHING
+       RETURNING word_id, unlocked_at`,
+      [userId, nextWordId]
+    );
+    const inserted = insertResult.rows[0];
+    if (inserted) {
+      const entry = {
+        wordId: inserted.word_id,
+        unlockedAt: inserted.unlocked_at,
+      };
+      return {
+        entry,
+        word: getUnlockableWordById(inserted.word_id),
+        words: [entry, ...existingEntries],
+      };
+    }
+    existingIds.push(nextWordId);
+  }
+
+  return { entry: null, word: null, words: existingEntries };
 }
 
 // â”€â”€ REST API â”€â”€
@@ -280,6 +329,24 @@ function requireAuth(req, res, next) {
   req.userId = payload.id;
   next();
 }
+
+app.get('/api/unlocked-words', requireDB, requireAuth, async (req, res) => {
+  try {
+    const words = await getUnlockedWordsForUser(req.userId);
+    res.json(words);
+  } catch {
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
+app.post('/api/unlocked-words/unlock', requireDB, requireAuth, async (req, res) => {
+  try {
+    const payload = await unlockRandomWordForUser(req.userId);
+    res.json(payload);
+  } catch {
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+});
 
 // â”€â”€ Search users by username â”€â”€
 app.get('/api/users/search', requireDB, requireAuth, async (req, res) => {
@@ -1322,6 +1389,10 @@ async function saveGameHistory(code, winner, room, playersData) {
       } else {
         await pool.query('UPDATE users SET games_played = games_played + 1 WHERE id = $1', [p.userId]);
       }
+    }
+
+    if (winnerId) {
+      await unlockRandomWordForUser(winnerId);
     }
   } catch (err) {
     console.error('Error guardando historial:', err.message);

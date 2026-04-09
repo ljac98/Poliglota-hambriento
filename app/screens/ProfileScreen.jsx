@@ -100,7 +100,7 @@ function formatDate(dateValue) {
   }
 }
 
-export function ProfileScreen({ profileUserId, initialProfilePreview = null, user, onUserUpdate, onOpenProfile, onBack, onOpenFriends, onOpenHistory, T }) {
+export function ProfileScreen({ profileUserId, initialProfilePreview = null, user, onUserUpdate, onOpenProfile, onBack, onOpenFriends, onOpenHistory, onOpenWords, T }) {
   const uiKey = getUILang();
   const text = getCopy();
   const [profile, setProfile] = useState(() => (
@@ -429,6 +429,9 @@ export function ProfileScreen({ profileUserId, initialProfilePreview = null, use
                         {text.removePhoto}
                       </Btn>
                     )}
+                    <Btn onClick={onOpenWords} color="#9ee6d8" style={{ color: '#102033', fontSize: 13 }}>
+                      {T('unlockedWordsNav')}
+                    </Btn>
                     <div style={{ width: '100%', color: '#8a8fa8', fontSize: 12, fontWeight: 700 }}>{text.photoHint}</div>
                   </div>
                 )}

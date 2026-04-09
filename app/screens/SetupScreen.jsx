@@ -31,7 +31,7 @@ import burgerPollo from '../../imagenes/hamburguesas/ingredientes/pollo.png';
 import burgerHuevo from '../../imagenes/hamburguesas/ingredientes/huevo.png';
 import burgerPalta from '../../imagenes/hamburguesas/ingredientes/palta.png';
 
-export function SetupScreen({ onStart, onStartTutorial, onOnline, onDownload, user, onLogout, onHistory, onFriends, T, installEntryVisible, installEntryTitle, installEntryDesc, installEntryButton, onOpenInstallPrompt }) {
+export function SetupScreen({ onStart, onStartTutorial, onOnline, onDownload, user, onLogout, onHistory, onWords, onFriends, T, installEntryVisible, installEntryTitle, installEntryDesc, installEntryButton, onOpenInstallPrompt }) {
   const uiGameLang = KEY_TO_LANG[getUILang()] || 'espanol';
   const cloneIngredients = INGREDIENTS.filter((ing) => ing !== 'pan');
   const [name, setName] = useState(user?.displayName || '');
@@ -406,28 +406,39 @@ export function SetupScreen({ onStart, onStartTutorial, onOnline, onDownload, us
           <img src={hamImg} alt="hamburguesa" style={{ width: 90, height: 90, objectFit: 'contain' }} />
           <h1 style={{ fontSize: 30, fontWeight: 900, color: '#FFD700', letterSpacing: 1 }}>{T('appTitle')}</h1>
           <p style={{ color: '#888', fontSize: 13, marginTop: 4 }}>{T('tagline')}</p>
-          {user && (
-            <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, flexWrap: 'wrap' }}>
+            {user && (
               <span style={{ color: '#4ecdc4', fontSize: 13, fontWeight: 700 }}>
                 {user.displayName} - {user.wins}W / {user.gamesPlayed}G
               </span>
+            )}
+            {user && (
               <button onClick={onHistory} style={{
                 background: 'none', border: '1px solid #4ecdc4', borderRadius: 8,
                 color: '#4ecdc4', fontSize: 11, padding: '3px 10px', cursor: 'pointer',
                 fontFamily: "'Fredoka',sans-serif", fontWeight: 700,
               }}>{T('history')}</button>
+            )}
+            <button onClick={onWords} style={{
+              background: 'none', border: '1px solid #9ee6d8', borderRadius: 8,
+              color: '#9ee6d8', fontSize: 11, padding: '3px 10px', cursor: 'pointer',
+              fontFamily: "'Fredoka',sans-serif", fontWeight: 700,
+            }}>{T('unlockedWordsNav')}</button>
+            {user && (
               <button onClick={onFriends} style={{
                 background: 'none', border: '1px solid #FFD700', borderRadius: 8,
                 color: '#FFD700', fontSize: 11, padding: '3px 10px', cursor: 'pointer',
                 fontFamily: "'Fredoka',sans-serif", fontWeight: 700,
               }}>{T('friends')}</button>
+            )}
+            {user && (
               <button onClick={onLogout} style={{
                 background: 'none', border: '1px solid #555', borderRadius: 8,
                 color: '#888', fontSize: 11, padding: '3px 10px', cursor: 'pointer',
                 fontFamily: "'Fredoka',sans-serif",
               }}>{T('logout')}</button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {/* Name - only show input if not logged in */}

@@ -12,6 +12,7 @@ import { ProfileScreen } from './ProfileScreen.jsx';
 import { ReconnectingScreen } from './ReconnectingScreen.jsx';
 import { SetupScreen } from './SetupScreen.jsx';
 import { TransitionScreen } from './TransitionScreen.jsx';
+import { UnlockedWordsScreen } from './UnlockedWordsScreen.jsx';
 
 export function AppPhaseRouter({
   phase,
@@ -33,9 +34,11 @@ export function AppPhaseRouter({
   profileReturnPhase,
   historyInitialFilter,
   historyReturnPhase,
+  wordsReturnPhase,
   openProfile,
   onProfileBack,
   openHistory,
+  openWords,
   inviteToast,
   friendReqToast,
   setUser,
@@ -123,6 +126,10 @@ export function AppPhaseRouter({
     return <>{inviteToast}{friendReqToast}<HistoryScreen user={user} initialFilter={historyInitialFilter} onBack={() => setPhase(historyReturnPhase || 'setup')} T={T} /></>;
   }
 
+  if (phase === 'words') {
+    return <>{inviteToast}{friendReqToast}<UnlockedWordsScreen user={user} onBack={() => setPhase(wordsReturnPhase || (user ? 'setup' : 'auth'))} T={T} /></>;
+  }
+
   if (phase === 'friends' && user) {
     return <>{inviteToast}{friendReqToast}<FriendsScreen user={user} onBack={() => setPhase('setup')} T={T} onOpenProfile={(id) => openProfile(id, 'friends')} /></>;
   }
@@ -140,6 +147,7 @@ export function AppPhaseRouter({
           onUserUpdate={setUser}
           onOpenProfile={(id) => openProfile(id, 'profile')}
           onOpenHistory={(filter) => openHistory(filter, 'profile')}
+          onOpenWords={() => openWords('profile')}
           onBack={onProfileBack}
           onOpenFriends={() => setPhase(user ? 'friends' : 'auth')}
         />
@@ -158,6 +166,7 @@ export function AppPhaseRouter({
           user={user}
           onLogout={() => { clearAuth(); setUser(null); setPhase('auth'); }}
           onHistory={() => openHistory('all', 'setup')}
+          onWords={() => openWords('setup')}
           onFriends={() => { socket.connect(); setPhase('friends'); }}
           T={T}
           installEntryVisible={installEntryVisible}

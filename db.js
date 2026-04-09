@@ -52,6 +52,14 @@ export async function initDB() {
       created_at TIMESTAMP DEFAULT NOW(),
       UNIQUE(user_id, blocked_id)
     );
+
+    CREATE TABLE IF NOT EXISTS unlocked_words (
+      id SERIAL PRIMARY KEY,
+      user_id INT REFERENCES users(id) ON DELETE CASCADE,
+      word_id VARCHAR(80) NOT NULL,
+      unlocked_at TIMESTAMP DEFAULT NOW(),
+      UNIQUE(user_id, word_id)
+    );
   `);
 
   await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT');

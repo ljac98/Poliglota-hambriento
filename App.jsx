@@ -1,6 +1,6 @@
 ﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
 import socket from './src/socket.js';
-import { clearAuth, getProfile, getSavedUser, saveUserLocally } from './src/api.js';
+import { clearAuth, getProfile, getSavedUser, getUnlockedWords, saveUserLocally, unlockRandomWord } from './src/api.js';
 import {
   LANGUAGES, LANG_BORDER, LANG_BG, LANG_TEXT,
   ING_EMOJI, ING_BG, AI_NAMES, getIngName, getActionInfo,
@@ -48,6 +48,7 @@ import { UserAvatar } from './app/components/UserAvatar.jsx';
 
 import { Btn, Modal, OpponentCard } from './app/components/index.js';
 import { AppPhaseRouter } from './app/screens/index.js';
+import { readUnlockedWordEntries, syncUnlockedWordEntries, unlockRandomWordLocally } from './src/palabras/unlockedWordsStorage.js';
 import {
   ING_IMG,
   ING_AFFECTED_BY,
@@ -186,6 +187,7 @@ export default function App() {
   const [profileBackStack, setProfileBackStack] = useState([]);
   const [historyInitialFilter, setHistoryInitialFilter] = useState('all');
   const [historyReturnPhase, setHistoryReturnPhase] = useState('setup');
+  const [wordsReturnPhase, setWordsReturnPhase] = useState('setup');
   const aiRunning = useRef(false);
   const aiRunningMeta = useRef({ idx: null, startedAt: 0 });
   const languageMenuButtonRef = useRef(null);
@@ -228,6 +230,7 @@ export default function App() {
   // â”€â”€ Auth state â”€â”€
   const [user, setUser] = useState(() => (shouldLogoutOnLoad ? null : getSavedUser()));
   const activeRoomLookupAttemptedForUserRef = useRef(null);
+  const unlockRewardSignatureRef = useRef(null);
   // â”€â”€ UI language state â”€â”€
   const [uiLang, setUiLangState] = useState(() => getUILang());
   const [tutorialPrompt, setTutorialPrompt] = useState(null);
@@ -2033,6 +2036,78 @@ export default function App() {
     setPhase('history');
   }
 
+  function openWords(returnPhase = phase) {
+    setWordsReturnPhase(returnPhase || (user ? 'setup' : 'auth'));
+    setShowQuickMenu(false);
+    setPhase('words');
+  }
+
+  function didCurrentUserWinGame(currentWinner) {
+    if (!currentWinner) return false;
+    if (user) {
+      return (
+        currentWinner?.userId === user?.id
+        || currentWinner?.id === user?.id
+        || (currentWinner?.username && currentWinner.username === user?.username)
+        || currentWinner?.name === user?.displayName
+        || currentWinner?.name === user?.username
+      );
+    }
+    const me = players[HI];
+    return !!me && currentWinner?.name === me.name;
+  }
+
+  useEffect(() => {
+    if (phase !== 'gameover' || !winner || isTutorial) return;
+    const currentPlayerName = players[HI]?.name || user?.displayName || user?.username || 'guest';
+    const signature = [
+      isOnline ? 'online' : 'local',
+      roomCode || 'local',
+      winner?.userId || winner?.id || winner?.name || 'winner',
+      user?.id || currentPlayerName,
+    ].join('|');
+    if (unlockRewardSignatureRef.current === signature) return;
+    unlockRewardSignatureRef.current = signature;
+    if (!didCurrentUserWinGame(winner)) return;
+
+    const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    (async () => {
+      if (!user?.id) {
+        unlockRandomWordLocally(null);
+        return;
+      }
+
+      if (isOnline) {
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+          try {
+            const words = await getUnlockedWords();
+            if (Array.isArray(words)) {
+              syncUnlockedWordEntries(user, words);
+              return;
+            }
+          } catch {}
+          await pause(350);
+        }
+        return;
+      }
+
+      try {
+        const payload = await unlockRandomWord();
+        if (Array.isArray(payload?.words)) {
+          syncUnlockedWordEntries(user, payload.words);
+          return;
+        }
+        if (payload?.entry) {
+          syncUnlockedWordEntries(user, [payload.entry, ...readUnlockedWordEntries(user)]);
+          return;
+        }
+      } catch {}
+
+      unlockRandomWordLocally(user);
+    })();
+  }, [phase, winner, isTutorial, isOnline, roomCode, user, players, HI]);
+
   function handleQuickLeaveGame() {
     if (phase !== 'playing') return;
     if (isOnline) {
@@ -2705,6 +2780,7 @@ export default function App() {
 
   // -- Start game (local / vs AI) --
   function startGame(name, hat, gameConfig, aiCount) {
+    unlockRewardSignatureRef.current = null;
     const normalizedConfig = normalizeGameConfig(gameConfig);
     const rawDeck = generateDeck(normalizedConfig);
     const deckArr = [...rawDeck];
@@ -2733,6 +2809,7 @@ export default function App() {
 
   // â”€â”€ Start game (online host) â”€â”€
   function startOnlineGame(hatPicks, gameConfig, onlinePls) {
+    unlockRewardSignatureRef.current = null;
     const normalizedConfig = normalizeGameConfig(gameConfig);
     const rawDeck = generateDeck(normalizedConfig);
     const deckArr = [...rawDeck];
@@ -4665,6 +4742,9 @@ export default function App() {
             <Btn onClick={() => goToOnlineHub('lobby')} color="#2a2a4a" style={{ color: '#fff', width: '100%', justifyContent: 'center' }}>
               {T('lobby')}
             </Btn>
+            <Btn onClick={() => openWords(phase)} color="#3a315f" style={{ color: '#fff3bf', width: '100%', justifyContent: 'center' }}>
+              {T('unlockedWordsNav')}
+            </Btn>
             {user && (
               <Btn onClick={handleMenuLogout} color="#ff8a80" style={{ color: '#2b1111', width: '100%', justifyContent: 'center' }}>
                 {T('logout')}
@@ -4700,9 +4780,11 @@ export default function App() {
           profileReturnPhase={profileReturnPhase}
           historyInitialFilter={historyInitialFilter}
           historyReturnPhase={historyReturnPhase}
+          wordsReturnPhase={wordsReturnPhase}
           openProfile={openProfile}
           onProfileBack={handleProfileBack}
           openHistory={openHistory}
+          openWords={openWords}
           inviteToast={inviteToast}
           friendReqToast={friendReqToast}
           setUser={setUser}
