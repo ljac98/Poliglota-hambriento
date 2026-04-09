@@ -2058,7 +2058,8 @@ export default function App() {
   }
 
   useEffect(() => {
-    if (phase !== 'gameover' || !winner || isTutorial) return;
+    const inTutorialMode = tutorialPractice || postTutorialGame;
+    if (phase !== 'gameover' || !winner || inTutorialMode) return;
     const currentPlayerName = players[HI]?.name || user?.displayName || user?.username || 'guest';
     const signature = [
       isOnline ? 'online' : 'local',
@@ -2106,7 +2107,7 @@ export default function App() {
 
       unlockRandomWordLocally(user);
     })();
-  }, [phase, winner, isTutorial, isOnline, roomCode, user, players, HI]);
+  }, [phase, winner, tutorialPractice, postTutorialGame, isOnline, roomCode, user, players, HI]);
 
   function handleQuickLeaveGame() {
     if (phase !== 'playing') return;
